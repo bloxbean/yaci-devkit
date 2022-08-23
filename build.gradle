@@ -1,0 +1,40 @@
+plugins {
+	id 'org.springframework.boot' version '2.7.3'
+	id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+	id 'java'
+}
+
+group = 'com.bloxbean.cardano'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+	mavenLocal()
+}
+
+dependencies {
+	implementation 'org.springframework.shell:spring-shell-starter:2.1.1'
+	implementation 'com.bloxbean.cardano:yaci-core:0.0.1'
+
+	implementation 'org.jeasy:easy-rules-core:4.1.0'
+	implementation 'org.jeasy:easy-rules-mvel:4.1.0'
+
+	implementation 'com.github.freva:ascii-table:1.2.0'
+	implementation 'org.fusesource.jansi:jansi:2.4.0'
+	compileOnly 'org.projectlombok:lombok'
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

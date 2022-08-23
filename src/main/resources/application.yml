@@ -1,0 +1,19 @@
+#spring:
+#  main:
+#    banner-mode: "off"
+version: v0.0.1
+
+spring:
+  banner:
+    location: classpath:/banner.txt
+  devtools:
+    add-properties:logging: false
+
+logging:
+  level:
+    com.bloxbean.cardano.yaci.core.network.Session: error
+
+shell.out.info: CYAN
+shell.out.success: GREEN
+shell.out.warning: YELLOW
+shell.out.error: RED
