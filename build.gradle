@@ -26,8 +26,6 @@ dependencies {
 	implementation 'org.jeasy:easy-rules-core:4.1.0'
 	implementation 'org.jeasy:easy-rules-mvel:4.1.0'
 
-	implementation 'com.github.freva:ascii-table:1.2.0'
-	implementation 'org.fusesource.jansi:jansi:2.4.0'
 	compileOnly 'org.projectlombok:lombok'
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

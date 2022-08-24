@@ -4,16 +4,6 @@ public class AnsiColors {
     // Declaring ANSI_RESET so that we can reset the color
     public static final String ANSI_RESET = "\u001B[0m";
 
-    // Declaring the color
-    // Custom declaration
-    public static final String ANSI_YELLOW = "\u001B[33m";
-    public static final String ANSI_BLACK = "\u001B[30m";
-
-    public static final String ANSI_RED_BACKGROUND
-            = "\u001B[41m";
-    public static final String ANSI_GREEN_BACKGROUND
-            = "\u001B[42m";
-
     // Bold
     public static final String BLACK_BOLD = "\033[1;30m";  // BLACK
     public static final String RED_BOLD = "\033[1;31m";    // RED

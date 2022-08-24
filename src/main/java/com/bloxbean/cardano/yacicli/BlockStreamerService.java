@@ -12,10 +12,7 @@ import com.bloxbean.cardano.yaci.core.reactive.BlockStreamer;
 import com.bloxbean.cardano.yacicli.common.ConsoleHelper;
 import com.bloxbean.cardano.yacicli.common.PromptColor;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
-import com.bloxbean.cardano.yacicli.common.Tuple;
-import com.bloxbean.cardano.yacicli.rule.RuleService;
 import lombok.extern.slf4j.Slf4j;
-import org.fusesource.jansi.Ansi;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.Disposable;
@@ -35,21 +32,20 @@ import static com.bloxbean.cardano.yacicli.common.AnsiColors.*;
 import static com.bloxbean.cardano.yacicli.util.AdaConversionUtil.lovelaceToAda;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.writeLn;
 import static java.util.stream.Collectors.toMap;
-import static org.fusesource.jansi.Ansi.Color.*;
-import static org.fusesource.jansi.Ansi.ansi;
 
 @Component
 @Slf4j
 public class BlockStreamerService {
     private final Random rand = new Random();
-    private final Ansi.Color[] colors = new Ansi.Color[]{BLACK, RED, YELLOW, BLUE, MAGENTA, CYAN, WHITE, DEFAULT};
+    private final String[] colors = new String[]{
+            BLACK_BOLD, RED_BOLD, YELLOW_BOLD, BLUE_BOLD, CYAN_BOLD, WHITE_BOLD
+    };
+
     private ConsoleHelper consoleHelper = new ConsoleHelper();
 
-    private RuleService ruleService;
     private ShellHelper shellHelper;
 
-    public BlockStreamerService(RuleService ruleService, ShellHelper shellHelper) {
-        this.ruleService = ruleService;
+    public BlockStreamerService(ShellHelper shellHelper) {
         this.shellHelper = shellHelper;
     }
 
@@ -78,9 +74,9 @@ public class BlockStreamerService {
         writeLn(shellHelper.getColored("=========================", PromptColor.MAGENTA));
         writeLn(BLUE_BOLD + "Connection Info" + ANSI_RESET);
         writeLn(shellHelper.getColored("=========================", PromptColor.MAGENTA));
-        writeLn(ANSI_YELLOW + "Host          : %s", host + ANSI_RESET);
-        writeLn(ANSI_YELLOW + "Port          : %s", port + ANSI_RESET);
-        writeLn(ANSI_YELLOW + "ProtocolMagic : %s", protocolMagic + ANSI_RESET);
+        writeLn(BLACK_BOLD + "Host          : %s", host + ANSI_RESET);
+        writeLn(BLACK_BOLD + "Port          : %s", port + ANSI_RESET);
+        writeLn(BLACK_BOLD + "ProtocolMagic : %s", protocolMagic + ANSI_RESET);
 
         Flux<List<TransactionBody>> stream = BlockStreamer.fromLatest(host, port, versionTable, wellKnownPoint)
                         .map(block -> {
@@ -117,7 +113,7 @@ public class BlockStreamerService {
                         .collect(Collectors.toList());
 
                 if (showOutputs)
-                    printAmount(amounts);
+                    printGroupAmount(amounts);
 
                 //Print Inputs
                 List<TransactionInput> inputs = transactionBodies.stream()
@@ -154,7 +150,7 @@ public class BlockStreamerService {
                 } catch (InterruptedException e) {
                    break;
                 }
-                consoleHelper.animate(ANSI_YELLOW + "Waiting for next block..." + ANSI_RESET);
+                consoleHelper.animate(YELLOW_BOLD + "Waiting for next block..." + ANSI_RESET);
             }
         });
         waitThread.start();
@@ -169,7 +165,7 @@ public class BlockStreamerService {
     private void printMint(List<Amount> mint) {
         if (mint != null && mint.size() > 0) {
             System.out.println(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Mint tokens" + ANSI_RESET);
-            printNonGroupAmount(mint);
+            printAmount(mint);
         }
     }
 
@@ -177,10 +173,10 @@ public class BlockStreamerService {
         //Print Address
         System.out.println("\n");
         System.out.println(BLACK_BOLD + "Receiver : " + ANSI_RESET + output.getAddress());
-        printNonGroupAmount(output.getAmounts());
+        printAmount(output.getAmounts());
     }
 
-    private void printAmount(List<Amount> amounts) {
+    private void printGroupAmount(List<Amount> amounts) {
         Map<String, BigInteger> assetAmountsMap = amounts.stream()
                 .collect(toMap(
                         amount -> amount.getAssetName(),
@@ -194,18 +190,17 @@ public class BlockStreamerService {
             System.out.print(BLACK_BOLD + "Ada      : " + ANSI_RESET);
             System.out.print(RED_BOLD + lovelaceToAda(lovelaceAmt).toString() + ANSI_RESET);
         }
-       // writeLn(ANSI_YELLOW + "\n===================================" + ANSI_RESET);
+
         writeLn("");
         writeLn(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Tokens    : " + ANSI_RESET);
         writeLn("");
-       // writeLn(ANSI_YELLOW + "====================================" + ANSI_RESET);
 
         assetAmountsMap.remove("lovelace"); //Already printed above
         assetAmountsMap.forEach(
                 (token, qty) -> {
-                    Tuple<Ansi.Color, Ansi.Color> colorTuple = getRandomColor();
+                    String fgColor = getRandomColor();
                     System.out.print(" ");
-                    System.out.print(ansi().fg(colorTuple._2).bg(colorTuple._1).render(token).reset().toString());
+                    System.out.print(fgColor + token + ANSI_RESET);
                     System.out.print( " : " + qty + " || ");
                     System.out.print(ANSI_RESET);
                 }
@@ -214,7 +209,7 @@ public class BlockStreamerService {
         writeLn(ANSI_RESET);
     }
 
-    private void printNonGroupAmount(List<Amount> amounts) {
+    private void printAmount(List<Amount> amounts) {
         Map<String, BigInteger> assetAmountsMap = amounts.stream()
                 .collect(toMap(
                         amount -> amount.getAssetName(),
@@ -233,9 +228,9 @@ public class BlockStreamerService {
         System.out.print(BLACK_BOLD + "Tokens   :" + ANSI_RESET);
         assetAmountsMap.forEach(
                 (token, qty) -> {
-                    Tuple<Ansi.Color, Ansi.Color> colorTuple = getRandomColor();
+                    String fgColor = getRandomColor();
                     System.out.print(" ");
-                    System.out.print(ansi().fg(colorTuple._2).bg(colorTuple._1).render(token).reset().toString());
+                    System.out.print(fgColor + token + ANSI_RESET);
                     System.out.print( " : " + qty + ", ");
                     System.out.print(ANSI_RESET);
                 }
@@ -247,18 +242,14 @@ public class BlockStreamerService {
         writeLn(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Inputs" + ANSI_RESET);
         writeLn("");
         inputs.forEach(input -> {
-            System.out.println(ANSI_GREEN_BACKGROUND + "TxIn" + ANSI_RESET + " " + input.getTransactionId() + "#" + input.getIndex());
+            System.out.println(GREEN_BACKGROUND_BRIGHT + "TxIn" + ANSI_RESET + " " + input.getTransactionId() + "#" + input.getIndex());
         });
         writeLn(ANSI_RESET);
     }
 
-    private Tuple<Ansi.Color, Ansi.Color> getRandomColor() {
+    private String getRandomColor() {
         int index = rand.nextInt(colors.length-1 - 0) + 0;
 
-        Ansi.Color fgColor = BLACK;
-        if (index == 0 || index == 1 || index == 3 || index == 4)
-            fgColor = WHITE;
-
-        return new Tuple(colors[index], fgColor);
+        return colors[index];
     }
 }
