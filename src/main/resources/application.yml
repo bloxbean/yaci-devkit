@@ -12,6 +12,11 @@ spring:
 logging:
   level:
     com.bloxbean.cardano.yaci.core.network.Session: error
+  file:
+    name: yaci.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
 
 shell.out.info: CYAN
 shell.out.success: GREEN

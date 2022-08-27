@@ -79,6 +79,7 @@ public class BlockStreamerService {
         writeLn(BLACK_BOLD + "ProtocolMagic : %s", protocolMagic + ANSI_RESET);
 
         Flux<List<TransactionBody>> stream = BlockStreamer.fromLatest(host, port, versionTable, wellKnownPoint)
+                .stream()
                         .map(block -> {
                             System.out.println("");
                             System.out.println("");
