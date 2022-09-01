@@ -1,0 +1,13 @@
+2022-09-01 22:53:29.123  WARN 7539 --- [main] org.jline                                : The Parser of class org.springframework.shell.jline.ExtendedDefaultParser does not support the CompletingParsedLine interface. Completion with escaped or quoted words won't work correctly.
+2022-09-01 22:53:31.042  INFO 7539 --- [main] c.b.c.y.c.p.chainsync.ChainsyncAgent     : Trying to find the point [slot=16588737, hash='4e9bbbb67e3ae262133d94c3da5bffce7b1127fc436e7433b87668dba34c354a']
+2022-09-01 22:53:31.280  INFO 7539 --- [nioEventLoopGroup-2-1] c.b.cardano.yaci.core.network.N2NClient  : Connected !!!
+2022-09-01 22:53:31.418  INFO 7539 --- [nioEventLoopGroup-2-1] c.b.c.y.c.p.handshake.HandshakeAgent     : Handshake Ok!!! AcceptVersion(versionNumber=9, versionData=VersionData(networkMagic=764824073, initiatorAndResponderDiffusionMode=true))
+2022-09-01 22:53:52.536  INFO 7539 --- [main] c.b.c.y.c.p.chainsync.ChainsyncAgent     : Trying to find the point [slot=16588737, hash='4e9bbbb67e3ae262133d94c3da5bffce7b1127fc436e7433b87668dba34c354a']
+2022-09-01 22:53:52.650  INFO 7539 --- [nioEventLoopGroup-3-1] c.b.cardano.yaci.core.network.N2NClient  : Connected !!!
+2022-09-01 22:53:52.764  INFO 7539 --- [nioEventLoopGroup-3-1] c.b.c.y.c.p.handshake.HandshakeAgent     : Handshake Ok!!! AcceptVersion(versionNumber=9, versionData=VersionData(networkMagic=764824073, initiatorAndResponderDiffusionMode=true))
+2022-09-01 22:54:28.265  INFO 7539 --- [main] c.b.c.y.c.p.chainsync.ChainsyncAgent     : Trying to find the point [slot=16588737, hash='4e9bbbb67e3ae262133d94c3da5bffce7b1127fc436e7433b87668dba34c354a']
+2022-09-01 22:54:28.551  INFO 7539 --- [nioEventLoopGroup-4-1] c.b.cardano.yaci.core.network.N2NClient  : Connected !!!
+2022-09-01 22:54:28.848  INFO 7539 --- [nioEventLoopGroup-4-1] c.b.c.y.c.p.handshake.HandshakeAgent     : Handshake Ok!!! AcceptVersion(versionNumber=9, versionData=VersionData(networkMagic=764824073, initiatorAndResponderDiffusionMode=true))
+2022-09-01 22:56:02.740  INFO 7539 --- [main] c.b.c.y.c.p.chainsync.ChainsyncAgent     : Trying to find the point [slot=16588737, hash='4e9bbbb67e3ae262133d94c3da5bffce7b1127fc436e7433b87668dba34c354a']
+2022-09-01 22:56:03.043  INFO 7539 --- [nioEventLoopGroup-5-1] c.b.cardano.yaci.core.network.N2NClient  : Connected !!!
+2022-09-01 22:56:03.351  INFO 7539 --- [nioEventLoopGroup-5-1] c.b.c.y.c.p.handshake.HandshakeAgent     : Handshake Ok!!! AcceptVersion(versionNumber=9, versionData=VersionData(networkMagic=764824073, initiatorAndResponderDiffusionMode=true))

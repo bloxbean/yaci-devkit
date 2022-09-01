@@ -2,7 +2,11 @@ package com.bloxbean.cardano.yacicli;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
+import com.bloxbean.cardano.yacicli.output.BoxOutputFormatter;
+import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
+import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import org.slf4j.LoggerFactory;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -15,10 +19,12 @@ public class Commands {
 
     private BlockStreamerService blockStreamerService;
     private ShellHelper shellHelper;
-
+    private OutputFormatter outputFormatter;
+    
     public Commands(BlockStreamerService blockStreamerService, ShellHelper shellHelper) {
         this.blockStreamerService = blockStreamerService;
         this.shellHelper = shellHelper;
+        this.outputFormatter = new DefaultOutputFormatter(shellHelper);
     }
 
     @ShellMethod(value = "Stream recent blocks from Cardano node", key = "tail")
@@ -32,10 +38,16 @@ public class Commands {
                      @ShellOption(value = {"-i", "--show-inputs"}, defaultValue = "true", help = "Show inputs") boolean showInputs,
                      @ShellOption(value = {"-o", "--show-outputs"}, defaultValue = "true", help = "Show outputs") boolean showOutputs,
                      @ShellOption(value = {"--grouping"}, defaultValue = "false", help="Enable grouping") boolean grouping,
-                     @ShellOption(value = {"--log-level"}, defaultValue = ShellOption.NULL, help = "Log level") String logLevel
+                     @ShellOption(value = {"--log-level"}, defaultValue = ShellOption.NULL, help = "Log level") String logLevel,
+                     @ShellOption(value = {"--output-format"}, defaultValue = "Default", help = "Output Format (Default, Box") String outputFormat
     ) throws InterruptedException {
         String output = shellHelper.getSuccessMessage("Starting tail ...");
-        blockStreamerService.tail(host, port, protocolMagic, slot, blockHash, showMint, showInputs, showOutputs, grouping);
+        if ( outputFormat.equals("Box")){
+            outputFormatter = new BoxOutputFormatter();
+        } else {
+            outputFormatter = new DefaultOutputFormatter(shellHelper);
+        }
+        blockStreamerService.tail(host, port, protocolMagic, slot, blockHash, showMint, showInputs, showOutputs, grouping, outputFormatter);
     }
 
     @ShellMethod(value = "Set log level", key = "logging")
