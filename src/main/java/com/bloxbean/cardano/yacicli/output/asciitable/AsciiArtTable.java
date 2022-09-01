@@ -1,4 +1,4 @@
-package com.bloxbean.cardano.yacicli.output.ansitable;
+package com.bloxbean.cardano.yacicli.output.asciitable;
 
 import java.io.PrintStream;
 import java.util.ArrayList;

@@ -3,8 +3,8 @@ package com.bloxbean.cardano.yacicli.output;
 import com.bloxbean.cardano.yacicli.commands.tail.model.CliAmount;
 import com.bloxbean.cardano.yacicli.commands.tail.model.CliBlock;
 import com.bloxbean.cardano.yacicli.commands.tail.model.CliConnection;
-import com.bloxbean.cardano.yacicli.output.ansitable.AsciiArtContentGroup;
-import com.bloxbean.cardano.yacicli.output.ansitable.AsciiArtTable;
+import com.bloxbean.cardano.yacicli.output.asciitable.AsciiArtContentGroup;
+import com.bloxbean.cardano.yacicli.output.asciitable.AsciiArtTable;
 
 import java.util.ArrayList;
 import java.util.List;
