@@ -1,4 +1,4 @@
-package com.bloxbean.cardano.yacicli;
+package com.bloxbean.cardano.yacicli.commands.tail;
 
 import com.bloxbean.cardano.yaci.core.common.Constants;
 import com.bloxbean.cardano.yaci.core.model.Amount;
@@ -9,9 +9,12 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.messages.VersionTable;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.util.N2NVersionTableConstant;
 import com.bloxbean.cardano.yaci.core.reactive.BlockStreamer;
+import com.bloxbean.cardano.yacicli.commands.tail.model.CliReceiver;
 import com.bloxbean.cardano.yacicli.common.ConsoleHelper;
-import com.bloxbean.cardano.yacicli.common.PromptColor;
-import com.bloxbean.cardano.yacicli.common.ShellHelper;
+import com.bloxbean.cardano.yacicli.commands.tail.model.CliAmount;
+import com.bloxbean.cardano.yacicli.commands.tail.model.CliBlock;
+import com.bloxbean.cardano.yacicli.commands.tail.model.CliConnection;
+import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -22,7 +25,6 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -30,27 +32,20 @@ import java.util.stream.Collectors;
 import static com.bloxbean.cardano.yaci.core.util.Constants.LOVELACE;
 import static com.bloxbean.cardano.yacicli.common.AnsiColors.*;
 import static com.bloxbean.cardano.yacicli.util.AdaConversionUtil.lovelaceToAda;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.writeLn;
 import static java.util.stream.Collectors.toMap;
 
 @Component
 @Slf4j
 public class BlockStreamerService {
-    private final Random rand = new Random();
-    private final String[] colors = new String[]{
-            BLACK_BOLD, RED_BOLD, YELLOW_BOLD, BLUE_BOLD, CYAN_BOLD, WHITE_BOLD
-    };
 
-    private ConsoleHelper consoleHelper = new ConsoleHelper();
+    private final ConsoleHelper consoleHelper = new ConsoleHelper();
 
-    private ShellHelper shellHelper;
-
-    public BlockStreamerService(ShellHelper shellHelper) {
-        this.shellHelper = shellHelper;
+    public BlockStreamerService() {
     }
 
     public void tail(String host, int port, long protocolMagic, long slot, String blockHash,
-                     boolean showMint, boolean showInputs, boolean showOutputs, boolean grouping) throws InterruptedException {
+                     boolean showMint, boolean showInputs, boolean showOutputs, boolean grouping, OutputFormatter outputFormatter) throws InterruptedException {
+
         if (!StringUtils.hasLength(host)) {
             host = Constants.MAINNET_IOHK_RELAY_ADDR;
         }
@@ -71,60 +66,83 @@ public class BlockStreamerService {
 
         VersionTable versionTable = N2NVersionTableConstant.v4AndAbove(protocolMagic);
 
-        writeLn(shellHelper.getColored("=========================", PromptColor.MAGENTA));
-        writeLn(BLUE_BOLD + "Connection Info" + ANSI_RESET);
-        writeLn(shellHelper.getColored("=========================", PromptColor.MAGENTA));
-        writeLn(BLACK_BOLD + "Host          : %s", host + ANSI_RESET);
-        writeLn(BLACK_BOLD + "Port          : %s", port + ANSI_RESET);
-        writeLn(BLACK_BOLD + "ProtocolMagic : %s", protocolMagic + ANSI_RESET);
+        CliConnection connection = CliConnection.builder()
+                .host(host)
+                .port(port)
+                .protocolMagic(protocolMagic)
+                .build();
+
+        String formattedConnection = outputFormatter.formatConnection(connection);
+        System.out.println(formattedConnection);
+
+        final CliBlock outputBlock = new CliBlock();
 
         Flux<List<TransactionBody>> stream = BlockStreamer.fromLatest(host, port, versionTable, wellKnownPoint)
                 .stream()
-                        .map(block -> {
-                            System.out.println("");
-                            System.out.println("");
-                            writeLn(RED_BACKGROUND_BRIGHT + BLACK_BOLD + "Block : %s", block.getHeader().getHeaderBody().getBlockNumber() + ANSI_RESET);
-                            writeLn(YELLOW_BOLD + "=================================================================" + ANSI_RESET);
-                            return block.getTransactionBodies();
-                        });
+                .map(block -> {
+                    outputBlock.setBlockNumber(block.getHeader().getHeaderBody().getBlockNumber());
+                    return block.getTransactionBodies();
+                });
 
         Disposable disposable = stream.subscribe(transactionBodies -> {
             if (!grouping) {
-                AtomicInteger counter = new AtomicInteger();
 
                 transactionBodies.stream().forEach(transactionBody -> {
-                    printTransactionHeader(transactionBody, counter.getAndIncrement());
-                    if (showInputs)
-                        printInputs(transactionBody.getInputs());
 
-                    if (showMint)
-                        printMint(transactionBody.getMint());
+                    if (showInputs) {
+                        outputBlock.setShowInput(true);
+                        setInputs(transactionBody.getInputs(), outputBlock);
+                    }
+
+                    if (showMint){
+                        outputBlock.setShowMint(true);
+                        setMint(transactionBody.getMint(), outputBlock);
+                    }
 
                     if (showOutputs) {
-                        System.out.println(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Outputs" + ANSI_RESET);
-                        transactionBody.getOutputs().forEach(transactionOutput -> printOutput(transactionOutput));
+                        outputBlock.setShowOutput(true);
+                        transactionBody.getOutputs().forEach(transactionOutput -> setOutput(transactionOutput, outputBlock));
                     }
                 });
 
+                String formattedBlock = outputFormatter.formatBlock(outputBlock);
+                System.out.println();
+                System.out.println(formattedBlock);
+                outputBlock.getInputs().clear();
+
             } else {
+
+                outputBlock.setShowGrouping(true);
+
                 List<Amount> amounts = transactionBodies.stream()
                         .flatMap(transactionBody ->
                                 transactionBody.getOutputs().stream()
                                         .flatMap(txOutput -> txOutput.getAmounts().stream()))
                         .collect(Collectors.toList());
 
-                if (showOutputs)
-                    printGroupAmount(amounts);
+                if (showOutputs) {
+                    outputBlock.setShowOutput(true);
+                    setGroupAmount(amounts, outputBlock);
+                }
 
                 //Print Inputs
                 List<TransactionInput> inputs = transactionBodies.stream()
                         .flatMap(transactionBody -> transactionBody.getInputs().stream())
                         .collect(Collectors.toList());
 
-                if (showInputs)
-                    printInputs(inputs);
+                if (showInputs) {
+                    outputBlock.setShowInput(true);
+                    setInputs(inputs, outputBlock);
+                }
+
+                String formattedBlock = outputFormatter.formatBlock(outputBlock);
+                System.out.println();
+                System.out.println(formattedBlock);
+                outputBlock.getInputs().clear();
             }
         });
+
+
 
         Thread waitThread = startWaitThread();
         try {
@@ -158,26 +176,20 @@ public class BlockStreamerService {
         return waitThread;
     }
 
-    private void printTransactionHeader(TransactionBody transactionBody, int index) {
-        System.out.println("\n");
-        writeLn(GREEN_BACKGROUND_BRIGHT + BLACK_BOLD + index + "> Transaction #" + transactionBody.getTxHash() + ANSI_RESET);
-    }
-
-    private void printMint(List<Amount> mint) {
+    private void setMint(List<Amount> mint, CliBlock block) {
         if (mint != null && mint.size() > 0) {
-            System.out.println(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Mint tokens" + ANSI_RESET);
-            printAmount(mint);
+            block.setMintTokens(getAmount(mint));
         }
     }
 
-    private void printOutput(TransactionOutput output) {
-        //Print Address
-        System.out.println("\n");
-        System.out.println(BLACK_BOLD + "Receiver : " + ANSI_RESET + output.getAddress());
-        printAmount(output.getAmounts());
+    private void setOutput(TransactionOutput output, CliBlock block) {
+        CliReceiver cliReceiver = new CliReceiver();
+        cliReceiver.setReceiver(output.getAddress());
+        cliReceiver.setReceiverAmount(getAmount(output.getAmounts()));
+        block.getReceivers().add(cliReceiver);
     }
 
-    private void printGroupAmount(List<Amount> amounts) {
+    private void setGroupAmount(List<Amount> amounts, CliBlock outputBlock) {
         Map<String, BigInteger> assetAmountsMap = amounts.stream()
                 .collect(toMap(
                         amount -> amount.getAssetName(),
@@ -187,30 +199,25 @@ public class BlockStreamerService {
 
         BigInteger lovelaceAmt = assetAmountsMap.get(LOVELACE);
         if (lovelaceAmt == null) lovelaceAmt = BigInteger.ZERO;
+        CliAmount cliAmount = new CliAmount();
         if ( lovelaceAmt != BigInteger.ZERO) {
-            System.out.print(BLACK_BOLD + "Ada      : " + ANSI_RESET);
-            System.out.print(RED_BOLD + lovelaceToAda(lovelaceAmt).toString() + ANSI_RESET);
+            cliAmount.setTotalAda(lovelaceToAda(lovelaceAmt).doubleValue());
         }
-
-        writeLn("");
-        writeLn(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Tokens    : " + ANSI_RESET);
-        writeLn("");
 
         assetAmountsMap.remove("lovelace"); //Already printed above
         assetAmountsMap.forEach(
                 (token, qty) -> {
-                    String fgColor = getRandomColor();
-                    System.out.print(" ");
-                    System.out.print(fgColor + token + ANSI_RESET);
-                    System.out.print( " : " + qty + " || ");
-                    System.out.print(ANSI_RESET);
+                    cliAmount.getTokens().add(token + " : " + qty);
                 }
         );
 
-        writeLn(ANSI_RESET);
+        outputBlock.setGroupingAmount(cliAmount);
     }
 
-    private void printAmount(List<Amount> amounts) {
+    private CliAmount getAmount(List<Amount> amounts) {
+
+        CliAmount cliAmount = new CliAmount();
+
         Map<String, BigInteger> assetAmountsMap = amounts.stream()
                 .collect(toMap(
                         amount -> amount.getAssetName(),
@@ -220,37 +227,23 @@ public class BlockStreamerService {
 
         BigInteger lovelaceAmt = assetAmountsMap.get(LOVELACE);
         if (lovelaceAmt == null) lovelaceAmt = BigInteger.ZERO;
-        if ( lovelaceAmt != BigInteger.ZERO) {
-            System.out.print(BLACK_BOLD + "Ada      : " + ANSI_RESET);
-            System.out.print(RED_BOLD + lovelaceToAda(lovelaceAmt).toString() + ANSI_RESET);
-        }
-        System.out.println("");
+        cliAmount.setTotalAda(lovelaceToAda(lovelaceAmt).doubleValue());
+
         assetAmountsMap.remove("lovelace"); //Already printed above
-        System.out.print(BLACK_BOLD + "Tokens   :" + ANSI_RESET);
         assetAmountsMap.forEach(
                 (token, qty) -> {
-                    String fgColor = getRandomColor();
-                    System.out.print(" ");
-                    System.out.print(fgColor + token + ANSI_RESET);
-                    System.out.print( " : " + qty + ", ");
-                    System.out.print(ANSI_RESET);
+                    cliAmount.getTokens().add(token + " : " + qty);
                 }
         );
+
+        return cliAmount;
     }
 
-    private void printInputs(Collection<TransactionInput> inputs) {
-        writeLn("");
-        writeLn(YELLOW_BACKGROUND_BRIGHT + BLACK_BOLD + "Inputs" + ANSI_RESET);
-        writeLn("");
+    private void setInputs(Collection<TransactionInput> inputs, CliBlock outputBlock) {
         inputs.forEach(input -> {
-            System.out.println(GREEN_BACKGROUND_BRIGHT + "TxIn" + ANSI_RESET + " " + input.getTransactionId() + "#" + input.getIndex());
+            outputBlock.getInputs().add("TxIn: " + input.getTransactionId() + "#" + input.getIndex());
         });
-        writeLn(ANSI_RESET);
     }
 
-    private String getRandomColor() {
-        int index = rand.nextInt(colors.length-1 - 0) + 0;
-
-        return colors[index];
-    }
 }
+

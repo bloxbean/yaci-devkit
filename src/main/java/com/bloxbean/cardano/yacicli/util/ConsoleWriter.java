@@ -5,6 +5,11 @@ public class ConsoleWriter {
         System.out.println(String.format(str, args));
     }
 
+    public static String strLn(String str, Object...args) {
+        return String.format(str, args) + "\n";
+    }
+
+
     public static void writeWithTab(String str) {
         System.out.print("\t" + str);
     }
