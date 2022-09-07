@@ -9,6 +9,9 @@ public class ConsoleWriter {
         return String.format(str, args) + "\n";
     }
 
+    public static String strLn(String str) {
+        return str + "\n";
+    }
 
     public static void writeWithTab(String str) {
         System.out.print("\t" + str);
