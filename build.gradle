@@ -4,10 +4,6 @@ plugins {
 	id 'java'
 }
 
-group = 'com.bloxbean.cardano'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
-
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
@@ -21,7 +17,7 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.shell:spring-shell-starter:2.1.1'
-	implementation 'com.bloxbean.cardano:yaci-core:0.0.1'
+	implementation 'com.bloxbean.cardano:yaci-core:0.0.4'
 
 	implementation 'org.jeasy:easy-rules-core:4.1.0'
 	implementation 'org.jeasy:easy-rules-mvel:4.1.0'

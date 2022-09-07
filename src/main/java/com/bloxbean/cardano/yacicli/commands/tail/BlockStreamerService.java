@@ -9,11 +9,8 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.messages.VersionTable;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.util.N2NVersionTableConstant;
 import com.bloxbean.cardano.yaci.core.reactive.BlockStreamer;
-import com.bloxbean.cardano.yacicli.commands.tail.model.CliReceiver;
+import com.bloxbean.cardano.yacicli.commands.tail.model.*;
 import com.bloxbean.cardano.yacicli.common.ConsoleHelper;
-import com.bloxbean.cardano.yacicli.commands.tail.model.CliAmount;
-import com.bloxbean.cardano.yacicli.commands.tail.model.CliBlock;
-import com.bloxbean.cardano.yacicli.commands.tail.model.CliConnection;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -26,11 +23,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.bloxbean.cardano.yaci.core.util.Constants.LOVELACE;
-import static com.bloxbean.cardano.yacicli.common.AnsiColors.*;
+import static com.bloxbean.cardano.yacicli.common.AnsiColors.ANSI_RESET;
+import static com.bloxbean.cardano.yacicli.common.AnsiColors.YELLOW_BOLD;
 import static com.bloxbean.cardano.yacicli.util.AdaConversionUtil.lovelaceToAda;
 import static java.util.stream.Collectors.toMap;
 
@@ -43,86 +41,114 @@ public class BlockStreamerService {
     public BlockStreamerService() {
     }
 
-    public void tail(String host, int port, long protocolMagic, long slot, String blockHash,
-                     boolean showMint, boolean showInputs, boolean showOutputs, boolean grouping, OutputFormatter outputFormatter) throws InterruptedException {
+    public void tail(String host, int port, String network, long protocolMagic, long slot, String blockHash,
+                     boolean showMint, boolean showInputs, boolean showMetadata, boolean showDatumhash, boolean showInlineDatum, boolean grouping, OutputFormatter outputFormatter) throws InterruptedException {
 
-        if (!StringUtils.hasLength(host)) {
-            host = Constants.MAINNET_IOHK_RELAY_ADDR;
-        }
+        CliConnection connection = getConnectionInfo(host, port, network, protocolMagic, slot, blockHash);
+        if (connection == null) return;
 
-        if (port == 0) {
-            port = Constants.MAINNET_IOHK_RELAY_PORT;
-        }
-
-        if (protocolMagic == 0) {
-            protocolMagic = Constants.MAINNET_PROTOCOL_MAGIC;
-        }
-
-        Point wellKnownPoint = null;
-        if (slot !=0 && StringUtils.hasLength(blockHash))
-            wellKnownPoint = new Point(slot, blockHash);
-        else
-            wellKnownPoint = Constants.WELL_KNOWN_MAINNET_POINT;
-
-        VersionTable versionTable = N2NVersionTableConstant.v4AndAbove(protocolMagic);
-
-        CliConnection connection = CliConnection.builder()
-                .host(host)
-                .port(port)
-                .protocolMagic(protocolMagic)
-                .build();
+        VersionTable versionTable = N2NVersionTableConstant.v4AndAbove(connection.getProtocolMagic());
 
         String formattedConnection = outputFormatter.formatConnection(connection);
         System.out.println(formattedConnection);
 
         final CliBlock outputBlock = new CliBlock();
+        outputBlock.setShowMetadata(showMetadata);
+        outputBlock.setShowDatumhases(showDatumhash);
+        outputBlock.setShowInlineDatums(showInlineDatum);
+        outputBlock.setShowInput(showInputs);
+        outputBlock.setShowMint(showMint);
+        outputBlock.setShowGrouping(grouping);
 
-        Flux<List<TransactionBody>> stream = BlockStreamer.fromLatest(host, port, versionTable, wellKnownPoint)
+        Flux<List<TransactionBody>> stream = BlockStreamer.fromLatest(connection.getHost(), connection.getPort(), connection.getWellKnownPoint(), versionTable)
                 .stream()
                 .map(block -> {
                     outputBlock.setBlockNumber(block.getHeader().getHeaderBody().getBlockNumber());
+                    outputBlock.setBlockSize(block.getHeader().getHeaderBody().getBlockBodySize());
+
+                    List<String> metadataList = block.getAuxiliaryDataMap().values().stream()
+                            .map(auxData -> auxData.getMetadataJson())
+                            .collect(Collectors.toList());
+                    outputBlock.setMetadataList(metadataList);
+
+                    long nV1scripts = block.getTransactionWitness()
+                            .stream().map(witnesses -> witnesses.getPlutusV1Scripts())
+                            .filter(plutusScripts -> plutusScripts != null)
+                            .flatMap(plutusScripts -> plutusScripts.stream())
+                            .collect(Collectors.toList())
+                            .size();
+
+                    long nV2scripts = block.getTransactionWitness()
+                            .stream().map(witnesses -> witnesses.getPlutusV2Scripts())
+                            .filter(plutusScripts -> plutusScripts != null)
+                            .flatMap(plutusScripts -> plutusScripts.stream())
+                            .collect(Collectors.toList())
+                            .size();
+
+                    outputBlock.setNoPlutusV1Scripts(nV1scripts);
+                    outputBlock.setNoPlutusV2Scripts(nV2scripts);
+
                     return block.getTransactionBodies();
                 });
 
         Disposable disposable = stream.subscribe(transactionBodies -> {
             if (!grouping) {
-
                 transactionBodies.stream().forEach(transactionBody -> {
-
                     if (showInputs) {
-                        outputBlock.setShowInput(true);
+                        // outputBlock.setShowInput(true);
                         setInputs(transactionBody.getInputs(), outputBlock);
                     }
 
-                    if (showMint){
-                        outputBlock.setShowMint(true);
+                    if (showMint) {
+                        //outputBlock.setShowMint(true);
                         setMint(transactionBody.getMint(), outputBlock);
                     }
 
-                    if (showOutputs) {
-                        outputBlock.setShowOutput(true);
-                        transactionBody.getOutputs().forEach(transactionOutput -> setOutput(transactionOutput, outputBlock));
-                    }
-                });
+                    transactionBody.getOutputs().forEach(transactionOutput -> setOutput(transactionOutput, outputBlock));
 
+                });
                 String formattedBlock = outputFormatter.formatBlock(outputBlock);
                 System.out.println();
                 System.out.println(formattedBlock);
                 outputBlock.getInputs().clear();
 
             } else {
+                if (transactionBodies != null)
+                    outputBlock.setTotalTxs(transactionBodies.size());
+
+                AtomicLong totalFees = new AtomicLong(0);
+                transactionBodies.forEach(transactionBody -> totalFees.addAndGet(transactionBody.getFee().longValue()));
+                outputBlock.setTotalFees(totalFees.longValue());
+
+                for (TransactionBody body : transactionBodies) {
+                    List<String> inlineDatum = body.getOutputs().stream()
+                            .map(transactionOutput -> transactionOutput.getInlineDatum())
+                            .filter(iDatum -> iDatum != null)
+                            .collect(Collectors.toList());
+                    outputBlock.setInlineDatums(inlineDatum);
+
+                    List<String> datumHash = body.getOutputs().stream().map(transactionOutput -> transactionOutput.getDatumHash())
+                            .filter(dHash -> dHash != null)
+                            .collect(Collectors.toList());
+                    outputBlock.setDatumHashes(datumHash);
+                }
 
                 outputBlock.setShowGrouping(true);
-
                 List<Amount> amounts = transactionBodies.stream()
                         .flatMap(transactionBody ->
                                 transactionBody.getOutputs().stream()
                                         .flatMap(txOutput -> txOutput.getAmounts().stream()))
                         .collect(Collectors.toList());
 
-                if (showOutputs) {
-                    outputBlock.setShowOutput(true);
-                    setGroupAmount(amounts, outputBlock);
+                List<Amount> mintAmounts = transactionBodies.stream()
+                        .flatMap(transactionBody -> transactionBody.getMint().stream())
+                        .collect(Collectors.toList());
+
+                setGroupAmount(amounts, outputBlock);
+
+                if (showMint) {
+                    //outputBlock.setShowMint(true);
+                    setMint(mintAmounts, outputBlock);
                 }
 
                 //Print Inputs
@@ -131,7 +157,7 @@ public class BlockStreamerService {
                         .collect(Collectors.toList());
 
                 if (showInputs) {
-                    outputBlock.setShowInput(true);
+                    // outputBlock.setShowInput(true);
                     setInputs(inputs, outputBlock);
                 }
 
@@ -140,8 +166,9 @@ public class BlockStreamerService {
                 System.out.println(formattedBlock);
                 outputBlock.getInputs().clear();
             }
-        });
 
+            outputBlock.clear();
+        });
 
 
         Thread waitThread = startWaitThread();
@@ -157,17 +184,122 @@ public class BlockStreamerService {
         }
     }
 
+    private CliConnection getConnectionInfo(String host, int port, String network, long protocolMagic, long slot, String blockHash) {
+        Point wellKnownPoint = null;
+        if (StringUtils.hasLength(network)) {
+            if ("mainnet".equals(network)) {
+                if (!StringUtils.hasLength(host)) {
+                    host = Constants.MAINNET_IOHK_RELAY_ADDR;
+                }
+
+                if (port == 0) {
+                    port = Constants.MAINNET_IOHK_RELAY_PORT;
+                }
+
+                if (protocolMagic == 0) {
+                    protocolMagic = Constants.MAINNET_PROTOCOL_MAGIC;
+                }
+
+                if (slot != 0 && StringUtils.hasLength(blockHash))
+                    wellKnownPoint = new Point(slot, blockHash);
+                else
+                    wellKnownPoint = Constants.WELL_KNOWN_MAINNET_POINT;
+            } else if ("legacy_testnet".equals(network)) {
+                if (!StringUtils.hasLength(host)) {
+                    host = Constants.TESTNET_IOHK_RELAY_ADDR;
+                }
+
+                if (port == 0) {
+                    port = Constants.TESTNET_IOHK_RELAY_PORT;
+                }
+
+                if (protocolMagic == 0) {
+                    protocolMagic = Constants.LEGACY_TESTNET_PROTOCOL_MAGIC;
+                }
+
+                if (slot != 0 && StringUtils.hasLength(blockHash))
+                    wellKnownPoint = new Point(slot, blockHash);
+                else
+                    wellKnownPoint = Constants.WELL_KNOWN_TESTNET_POINT;
+            } else if ("prepod".equals(network)) {
+                if (!StringUtils.hasLength(host)) {
+                    host = Constants.PREPOD_IOHK_RELAY_ADDR;
+                }
+
+                if (port == 0) {
+                    port = Constants.PREPOD_IOHK_RELAY_PORT;
+                }
+
+                if (protocolMagic == 0) {
+                    protocolMagic = Constants.PREPOD_PROTOCOL_MAGIC;
+                }
+
+                if (slot != 0 && StringUtils.hasLength(blockHash))
+                    wellKnownPoint = new Point(slot, blockHash);
+                else
+                    wellKnownPoint = Constants.WELL_KNOWN_PREPOD_POINT;
+            } else if ("preview".equals(network)) {
+                if (!StringUtils.hasLength(host)) {
+                    host = Constants.PREVIEW_IOHK_RELAY_ADDR;
+                }
+
+                if (port == 0) {
+                    port = Constants.PREVIEW_IOHK_RELAY_PORT;
+                }
+
+                if (protocolMagic == 0) {
+                    protocolMagic = Constants.PREVIEW_PROTOCOL_MAGIC;
+                }
+
+                if (slot != 0 && StringUtils.hasLength(blockHash))
+                    wellKnownPoint = new Point(slot, blockHash);
+                else
+                    wellKnownPoint = Constants.WELL_KNOWN_PREVIEW_POINT;
+            } else {
+                System.out.println("[Error] Invalid Network");
+                return null;
+            }
+        } else {
+            if (!StringUtils.hasLength(host)) {
+                host = Constants.MAINNET_IOHK_RELAY_ADDR;
+            }
+
+            if (port == 0) {
+                port = Constants.MAINNET_IOHK_RELAY_PORT;
+            }
+
+            if (protocolMagic == 0) {
+                protocolMagic = Constants.MAINNET_PROTOCOL_MAGIC;
+            }
+
+            if (slot != 0 && StringUtils.hasLength(blockHash))
+                wellKnownPoint = new Point(slot, blockHash);
+            else
+                wellKnownPoint = Constants.WELL_KNOWN_MAINNET_POINT;
+        }
+
+
+        CliConnection connection = CliConnection.builder()
+                .host(host)
+                .port(port)
+                .protocolMagic(protocolMagic)
+                .wellKnownPoint(wellKnownPoint)
+                .build();
+        return connection;
+    }
+
     private Thread startWaitThread() {
         Thread waitThread = new Thread(() -> {
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
+                return;
             }
             while (true) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                   break;
+                    break;
                 }
                 consoleHelper.animate(YELLOW_BOLD + "Waiting for next block..." + ANSI_RESET);
             }
@@ -200,14 +332,15 @@ public class BlockStreamerService {
         BigInteger lovelaceAmt = assetAmountsMap.get(LOVELACE);
         if (lovelaceAmt == null) lovelaceAmt = BigInteger.ZERO;
         CliAmount cliAmount = new CliAmount();
-        if ( lovelaceAmt != BigInteger.ZERO) {
+        if (lovelaceAmt != BigInteger.ZERO) {
             cliAmount.setTotalAda(lovelaceToAda(lovelaceAmt).doubleValue());
         }
 
         assetAmountsMap.remove("lovelace"); //Already printed above
         assetAmountsMap.forEach(
                 (token, qty) -> {
-                    cliAmount.getTokens().add(token + " : " + qty);
+                    cliAmount.getTokenList().add(token + " : " + qty);
+                    cliAmount.getTokens().add(new Token(token, qty));
                 }
         );
 
@@ -232,7 +365,8 @@ public class BlockStreamerService {
         assetAmountsMap.remove("lovelace"); //Already printed above
         assetAmountsMap.forEach(
                 (token, qty) -> {
-                    cliAmount.getTokens().add(token + " : " + qty);
+                    cliAmount.getTokenList().add(token + ": " + qty);
+                    cliAmount.getTokens().add(new Token(token, qty));
                 }
         );
 

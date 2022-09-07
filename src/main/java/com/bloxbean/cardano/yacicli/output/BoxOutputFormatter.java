@@ -11,7 +11,7 @@ import java.util.List;
 
 import static com.bloxbean.cardano.yacicli.common.AnsiColors.*;
 
-public class BoxOutputFormatter implements OutputFormatter{
+public class BoxOutputFormatter implements OutputFormatter {
 
     @Override
     public String formatConnection(CliConnection connection) {
@@ -29,7 +29,6 @@ public class BoxOutputFormatter implements OutputFormatter{
         asciiArtTable.addContentGroup(connectionContentGroup);
 
         return asciiArtTable.getOutput();
-
     }
 
     @Override
@@ -38,22 +37,21 @@ public class BoxOutputFormatter implements OutputFormatter{
         AsciiArtTable asciiArtTable = new AsciiArtTable();
         asciiArtTable.setNoHeaderColumns(numColumns);
 
-        AsciiArtContentGroup blockContentGroup = new AsciiArtContentGroup( YELLOW_BOLD_BRIGHT + CliBlock.HEADER + ANSI_RESET);
+        AsciiArtContentGroup blockContentGroup = new AsciiArtContentGroup(YELLOW_BOLD_BRIGHT + CliBlock.HEADER + ANSI_RESET);
         blockContentGroup.setNoHeaderColumns(2);
-        blockContentGroup.add(GREEN_BOLD_BRIGHT + "Block:     " + ANSI_RESET , CYAN_BOLD_BRIGHT + block.getBlockNumber() + ANSI_RESET);
+        blockContentGroup.add(GREEN_BOLD_BRIGHT + "Block:     " + ANSI_RESET, CYAN_BOLD_BRIGHT + block.getBlockNumber() + ANSI_RESET);
         asciiArtTable.addContentGroup(blockContentGroup);
 
-        if ( block.isShowGrouping() ) {
-            formatBlockAmount(numColumns, "Outputs", block.getGroupingAmount().getTotalAda(), block.getGroupingAmount().getTokens(), asciiArtTable);
+        if (block.isShowGrouping()) {
+            formatBlockAmount(numColumns, "Outputs", block.getGroupingAmount().getTotalAda(), block.getGroupingAmount().getTokenList(), asciiArtTable);
         } else {
-            if ( block.isShowOutput() ){
-                block.getReceivers().forEach( cliReceiver -> {
-                    String header = "Receiver: " + cliReceiver.getReceiver();
-                    formatBlockAmount(numColumns, header, cliReceiver.getReceiverAmount().getTotalAda(), cliReceiver.getReceiverAmount().getTokens(), asciiArtTable);
-                });
-            }
-            if ( block.isShowMint() ){
-                formatBlockAmount(numColumns, "Mints", block.getMintTokens().getTotalAda(), block.getMintTokens().getTokens(), asciiArtTable);
+            block.getReceivers().forEach(cliReceiver -> {
+                String header = "Receiver: " + cliReceiver.getReceiver();
+                formatBlockAmount(numColumns, header, cliReceiver.getReceiverAmount().getTotalAda(), cliReceiver.getReceiverAmount().getTokenList(), asciiArtTable);
+            });
+
+            if (block.isShowMint()) {
+                formatBlockAmount(numColumns, "Mints", block.getMintTokens().getTotalAda(), block.getMintTokens().getTokenList(), asciiArtTable);
             }
         }
 
@@ -68,17 +66,14 @@ public class BoxOutputFormatter implements OutputFormatter{
             asciiArtTable.addContentGroup(transactionContentGroup);
         }
 
-
         return asciiArtTable.getOutput();
-
-
     }
 
-    private void formatBlockAmount(int numColumns, String header, double totalAda, List<String> tokens, AsciiArtTable asciiArtTable){
+    private void formatBlockAmount(int numColumns, String header, double totalAda, List<String> tokens, AsciiArtTable asciiArtTable) {
 
         AsciiArtContentGroup amountContentGroup = new AsciiArtContentGroup(YELLOW_BOLD_BRIGHT + header + ANSI_RESET);
         amountContentGroup.setNoHeaderColumns(2);
-        amountContentGroup.add(GREEN_BOLD_BRIGHT + "Ada:       " + ANSI_RESET , CYAN_BOLD_BRIGHT + totalAda + ANSI_RESET);
+        amountContentGroup.add(GREEN_BOLD_BRIGHT + "Ada:       " + ANSI_RESET, CYAN_BOLD_BRIGHT + totalAda + ANSI_RESET);
 
         asciiArtTable.addContentGroup(amountContentGroup);
 
@@ -92,14 +87,13 @@ public class BoxOutputFormatter implements OutputFormatter{
 
     }
 
-
     public static void main(String[] args) {
         BoxOutputFormatter boxOutputFormatter = new BoxOutputFormatter();
         CliConnection connection = CliConnection.builder()
-                                        .host("relays-new.cardano-mainnet.iohk.io")
-                                        .port(3001)
-                                        .protocolMagic(764824073)
-                                        .build();
+                .host("relays-new.cardano-mainnet.iohk.io")
+                .port(3001)
+                .protocolMagic(764824073)
+                .build();
 
         //String formattedConnection = boxOutputFormatter.formatConnection(connection);
         //System.out.println(formattedConnection);
@@ -107,9 +101,9 @@ public class BoxOutputFormatter implements OutputFormatter{
         CliBlock block = CliBlock
                 .builder()
                 .blockNumber(7669983)
-                .groupingAmount( CliAmount.builder()
+                .groupingAmount(CliAmount.builder()
                         .totalAda(718.360769)
-                        .tokens(List.of("d�C2p^�ȁ!�8I�8�Z�wW�ޒ1�6�* : 1",  "ADAPunks5916 : 1", "MetAliensVRclub01838 : 1", "ADAPunks5914 : 1", "YellowGang090 : 1"))
+                        .tokenList(List.of("d�C2p^�ȁ!�8I�8�Z�wW�ޒ1�6�* : 1", "ADAPunks5916 : 1", "MetAliensVRclub01838 : 1", "ADAPunks5914 : 1", "YellowGang090 : 1"))
                         .build())
                 .inputs(List.of("TxIn: 80c963f461d3aaf62809cf478c996aa36ce968fa98d73169d3181a37867dd874#1", "TxIn: 5495a4011ad01e61d02becdf50ff3fbf5106119f0ba098e89c66735755545922#1"))
                 .build();
@@ -119,6 +113,5 @@ public class BoxOutputFormatter implements OutputFormatter{
         String formattedBlock = boxOutputFormatter.formatBlock(block);
 
         System.out.println(formattedBlock);
-
     }
 }

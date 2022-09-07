@@ -1,11 +1,11 @@
 package com.bloxbean.cardano.yacicli.output.asciitable;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
 
 public class AsciiArtTable {
 

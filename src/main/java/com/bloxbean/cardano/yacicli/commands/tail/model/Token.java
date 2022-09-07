@@ -5,17 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigInteger;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CliAmount {
-
-    double totalAda;
-    List<String> tokenList = new ArrayList<>();
-    List<Token> tokens = new ArrayList<>();
-
+public class Token {
+    private String name;
+    private BigInteger amount;
 }

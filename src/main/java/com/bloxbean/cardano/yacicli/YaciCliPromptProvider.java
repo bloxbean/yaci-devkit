@@ -10,6 +10,6 @@ public class YaciCliPromptProvider implements PromptProvider {
     @Override
     public AttributedString getPrompt() {
         return new AttributedString("yaci-cli:>",
-        AttributedStyle.DEFAULT.foreground(AttributedStyle.BLUE));
+        AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN).bold());
     }
 }
