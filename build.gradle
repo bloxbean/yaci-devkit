@@ -1,5 +1,6 @@
 plugins {
 	id 'org.springframework.boot' version '2.7.3'
+	id 'org.springframework.experimental.aot' version '0.12.1'
 	id 'io.spring.dependency-management' version '1.0.13.RELEASE'
 	id 'java'
 }
@@ -10,13 +11,20 @@ configurations {
 	}
 }
 
+sourceCompatibility = '11'
+
 repositories {
+	maven { url 'https://repo.spring.io/release' }
 	mavenCentral()
 	mavenLocal()
 }
 
+ext {
+	set('springShellVersion', "2.1.1")
+}
+
 dependencies {
-	implementation 'org.springframework.shell:spring-shell-starter:2.1.1'
+	implementation 'org.springframework.shell:spring-shell-starter'
 	implementation 'com.bloxbean.cardano:yaci-core:0.0.4'
 
 	implementation 'org.jeasy:easy-rules-core:4.1.0'
@@ -29,6 +37,12 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.shell:spring-shell-dependencies:${springShellVersion}"
+	}
 }
 
 tasks.named('test') {

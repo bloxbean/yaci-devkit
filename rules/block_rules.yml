@@ -1,0 +1,10 @@
+---
+name: Block Size check
+description: If blocksize > 30k
+priority: 1
+condition: "block.header.headerBody.blockBodySize > 30000"
+actions:
+  - "System.out.println(\"Block size > 30k\")"
+  - "result.map.put(\"AVG_BLOCK\", true)"
+
+---
