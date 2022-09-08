@@ -12,6 +12,8 @@ import com.bloxbean.cardano.yaci.core.reactive.BlockStreamer;
 import com.bloxbean.cardano.yacicli.commands.tail.model.*;
 import com.bloxbean.cardano.yacicli.common.ConsoleHelper;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
+import com.bloxbean.cardano.yacicli.rule.Result;
+import com.bloxbean.cardano.yacicli.rule.RuleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -37,8 +39,10 @@ import static java.util.stream.Collectors.toMap;
 public class BlockStreamerService {
 
     private final ConsoleHelper consoleHelper = new ConsoleHelper();
+    private RuleService ruleService;
 
-    public BlockStreamerService() {
+    public BlockStreamerService(RuleService ruleService) {
+        this.ruleService = ruleService;
     }
 
     public void tail(String host, int port, String network, long protocolMagic, long slot, String blockHash,
@@ -60,9 +64,15 @@ public class BlockStreamerService {
         outputBlock.setShowMint(showMint);
         outputBlock.setShowGrouping(grouping);
 
+        Result ruleResult = new Result();
+
         Flux<List<TransactionBody>> stream = BlockStreamer.fromLatest(connection.getHost(), connection.getPort(), connection.getWellKnownPoint(), versionTable)
                 .stream()
                 .map(block -> {
+                    //Initialize ruleResult
+                    ruleResult.clear();
+                    ruleService.executeRules(block, ruleResult);
+
                     outputBlock.setBlockNumber(block.getHeader().getHeaderBody().getBlockNumber());
                     outputBlock.setBlockSize(block.getHeader().getHeaderBody().getBlockBodySize());
 

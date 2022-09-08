@@ -86,32 +86,4 @@ public class BoxOutputFormatter implements OutputFormatter {
         asciiArtTable.addContentGroup(tokenContentGroup);
 
     }
-
-    public static void main(String[] args) {
-        BoxOutputFormatter boxOutputFormatter = new BoxOutputFormatter();
-        CliConnection connection = CliConnection.builder()
-                .host("relays-new.cardano-mainnet.iohk.io")
-                .port(3001)
-                .protocolMagic(764824073)
-                .build();
-
-        //String formattedConnection = boxOutputFormatter.formatConnection(connection);
-        //System.out.println(formattedConnection);
-
-        CliBlock block = CliBlock
-                .builder()
-                .blockNumber(7669983)
-                .groupingAmount(CliAmount.builder()
-                        .totalAda(718.360769)
-                        .tokenList(List.of("d�C2p^�ȁ!�8I�8�Z�wW�ޒ1�6�* : 1", "ADAPunks5916 : 1", "MetAliensVRclub01838 : 1", "ADAPunks5914 : 1", "YellowGang090 : 1"))
-                        .build())
-                .inputs(List.of("TxIn: 80c963f461d3aaf62809cf478c996aa36ce968fa98d73169d3181a37867dd874#1", "TxIn: 5495a4011ad01e61d02becdf50ff3fbf5106119f0ba098e89c66735755545922#1"))
-                .build();
-
-        block.setShowGrouping(true);
-        block.setShowInput(true);
-        String formattedBlock = boxOutputFormatter.formatBlock(block);
-
-        System.out.println(formattedBlock);
-    }
 }
