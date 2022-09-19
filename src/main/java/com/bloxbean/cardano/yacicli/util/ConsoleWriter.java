@@ -1,12 +1,36 @@
 package com.bloxbean.cardano.yacicli.util;
 
+import com.bloxbean.cardano.yacicli.common.AnsiColors;
+
 public class ConsoleWriter {
     public static void writeLn(String str, Object...args) {
-        System.out.println(String.format(str, args));
+        if (args.length != 0)
+            System.out.println(String.format(str, args));
+        else
+            System.out.println(str);
+    }
+
+    public static String success(String str, Object...args) {
+        String PREFIX = AnsiColors.GREEN + "[Success] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
+    public static String error(String str, Object...args) {
+        String PREFIX = AnsiColors.RED + "[ERROR] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+           return PREFIX + str;
     }
 
     public static String strLn(String str, Object...args) {
-        return String.format(str, args) + "\n";
+        if (args.length > 0)
+            return String.format(str, args) + "\n";
+        else
+            return str + "\n";
     }
 
     public static String strLn(String str) {

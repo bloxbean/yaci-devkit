@@ -1,6 +1,5 @@
 package com.bloxbean.cardano.yacicli.output;
 
-import com.bloxbean.cardano.yacicli.commands.tail.model.CliAmount;
 import com.bloxbean.cardano.yacicli.commands.tail.model.CliBlock;
 import com.bloxbean.cardano.yacicli.commands.tail.model.CliConnection;
 import com.bloxbean.cardano.yacicli.output.asciitable.AsciiArtContentGroup;
