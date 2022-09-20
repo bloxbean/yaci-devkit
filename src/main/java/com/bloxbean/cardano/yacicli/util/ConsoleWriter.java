@@ -11,7 +11,7 @@ public class ConsoleWriter {
     }
 
     public static String success(String str, Object...args) {
-        String PREFIX = AnsiColors.GREEN + "[Success] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.BLUE + "[Success] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else

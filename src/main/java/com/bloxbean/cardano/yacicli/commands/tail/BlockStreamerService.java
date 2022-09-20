@@ -45,12 +45,28 @@ public class BlockStreamerService {
         this.ruleService = ruleService;
     }
 
+    public void tail(String host, int port, long protocolMagic, boolean showMint, boolean showInputs, boolean showMetadata,
+                     boolean showDatumhash, boolean showInlineDatum, boolean grouping, OutputFormatter outputFormatter) throws InterruptedException {
+        CliConnection cliConnection = CliConnection.builder()
+                .host(host)
+                .port(port)
+                .protocolMagic(protocolMagic)
+                .wellKnownPoint(Point.ORIGIN)
+                .build();
+
+        tail(cliConnection, showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
+    }
+
     public void tail(String host, int port, String network, long protocolMagic, long slot, String blockHash,
                      boolean showMint, boolean showInputs, boolean showMetadata, boolean showDatumhash, boolean showInlineDatum, boolean grouping, OutputFormatter outputFormatter) throws InterruptedException {
 
         CliConnection connection = getConnectionInfo(host, port, network, protocolMagic, slot, blockHash);
         if (connection == null) return;
 
+        tail(connection, showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
+    }
+
+    private void tail(CliConnection connection, boolean showMint, boolean showInputs, boolean showMetadata, boolean showDatumhash, boolean showInlineDatum, boolean grouping, OutputFormatter outputFormatter) {
         VersionTable versionTable = N2NVersionTableConstant.v4AndAbove(connection.getProtocolMagic());
 
         String formattedConnection = outputFormatter.formatConnection(connection);

@@ -1,39 +1,36 @@
 package com.bloxbean.cardano.yacicli.commands.groups;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.bloxbean.cardano.yacicli.commands.address.AddressCommands;
+import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.commands.tail.themes.ColorModeFactory;
+import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
 import com.bloxbean.cardano.yacicli.output.BoxOutputFormatter;
 import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
-import org.slf4j.LoggerFactory;
-import org.springframework.shell.standard.ShellCommandGroup;
-import org.springframework.shell.standard.ShellComponent;
-import org.springframework.shell.standard.ShellMethod;
-import org.springframework.shell.standard.ShellOption;
-import org.springframework.util.StringUtils;
+import org.springframework.shell.Availability;
+import org.springframework.shell.standard.*;
 
 @ShellComponent
 @ShellCommandGroup(Groups.GENERAL_CMD_GROUP)
 public class Commands {
-    private Logger root = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-
     private final BlockStreamerService blockStreamerService;
     private final AddressCommands addressCommands;
+    private final RootLogService rootLogService;
     private ShellHelper shellHelper;
     private OutputFormatter outputFormatter;
 
-    public Commands(BlockStreamerService blockStreamerService, AddressCommands addressCommands, ShellHelper shellHelper) {
+    public Commands(BlockStreamerService blockStreamerService, AddressCommands addressCommands, RootLogService rootLogService, ShellHelper shellHelper) {
         this.blockStreamerService = blockStreamerService;
         this.addressCommands = addressCommands;
+        this.rootLogService = rootLogService;
         this.shellHelper = shellHelper;
         this.outputFormatter = new DefaultOutputFormatter(shellHelper);
     }
 
     @ShellMethod(value = "Stream recent blocks from Cardano node", key = "tail")
+    @ShellMethodAvailability("generalCmdAvailability")
     public void tail(
             @ShellOption(help = "Cardano Node host", defaultValue = ShellOption.NULL) String host,
             @ShellOption(help = "Cardano Node Port", defaultValue = "0") int port,
@@ -67,28 +64,7 @@ public class Commands {
 
     @ShellMethod(value = "Set log level", key = "logging")
     public void logLevel(@ShellOption(value = {"--set-level"}, defaultValue = ShellOption.NULL, help = "Log level") String logLevel) {
-        setLogLevel(logLevel);
-    }
-
-    private void setLogLevel(String logLevel) {
-        if (StringUtils.hasLength(logLevel)) {
-            switch (logLevel) {
-                case "info":
-                    root.setLevel(Level.INFO);
-                    break;
-                case "debug":
-                    root.setLevel(Level.DEBUG);
-                    break;
-                case "trace":
-                    root.setLevel(Level.TRACE);
-                    break;
-                case "error":
-                    root.setLevel(Level.ERROR);
-                    break;
-                default:
-                    break;
-            }
-        }
+        rootLogService.setLogLevel(logLevel);
     }
 
     @ShellMethod(value = "Generate Address", key = "gen-address")
@@ -96,4 +72,9 @@ public class Commands {
         addressCommands.generateNew(mainnet);
     }
 
+    public Availability generalCmdAvailability() {
+        return CommandContext.INSTANCE.getCurrentMode() == CommandContext.Mode.REGULAR
+                ? Availability.available()
+                : Availability.unavailable("you are not in general command mode");
+    }
 }

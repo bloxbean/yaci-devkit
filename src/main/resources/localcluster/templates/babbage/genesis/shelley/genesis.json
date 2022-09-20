@@ -52,7 +52,7 @@
     "tau": 0.1
   },
   "securityParam": 10,
-  "slotLength": 1,
+  "slotLength": ${slotLength},
   "slotsPerKESPeriod": 129600,
   "staking": {
     "pools": {

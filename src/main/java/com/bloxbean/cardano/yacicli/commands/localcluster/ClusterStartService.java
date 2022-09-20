@@ -22,7 +22,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.writeLn;
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.success;
 
 @Component
 @Slf4j
@@ -34,20 +36,21 @@ public class ClusterStartService {
 
     private Queue<String> logs = EvictingQueue.create(200);
 
-    public void startCluster(Path clusterFolder) {
+    public void startCluster(Path clusterFolder, Consumer<String> writer) {
+        logs.clear();
 
         if (processes.size() > 0) {
-            writeLn("A cluster is already running. You can only run one cluster at a time.");
+            writer.accept("A cluster is already running. You can only run one cluster at a time.");
             return;
         }
 
         try {
             if (checkIfFirstRun(clusterFolder))
-                setupFirstRun(clusterFolder);
+                setupFirstRun(clusterFolder, writer);
 
-            Process process1 = startNode(clusterFolder, 1);
-            Process process2 = startNode(clusterFolder, 2);
-            Process process3 = startNode(clusterFolder, 3);
+            Process process1 = startNode(clusterFolder, 1, writer);
+            Process process2 = startNode(clusterFolder, 2, writer);
+            Process process3 = startNode(clusterFolder, 3, writer);
 
             processes.add(process1);
             processes.add(process2);
@@ -65,7 +68,9 @@ public class ClusterStartService {
 
     public void stopCluster(Consumer<String> writer) {
         try {
-            writer.accept("Trying to stop the running cluster !!!");
+            if (processes != null && processes.size() > 0)
+                writer.accept("Trying to stop the running cluster ...");
+
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
                     process.descendants().forEach(processHandle -> {
@@ -76,13 +81,16 @@ public class ClusterStartService {
                     writer.accept("Stopping node process : " + process);
                     process.waitFor(15, TimeUnit.SECONDS);
                     if (!process.isAlive())
-                        writer.accept("Process killed successfully : " + process);
+                        writer.accept(success("Killed : " + process));
                     else
-                        writer.accept("Process could not be killed : " + process);
+                        writer.accept(error("Process could not be killed : " + process));
                 }
             }
+
+            logs.clear();
         } catch (Exception e) {
             log.error("Error stopping process", e);
+            writer.accept(error("Cluster could not be stopped. Please kill the process manually." + e.getMessage()));
         }
 
         processes.clear();
@@ -103,9 +111,9 @@ public class ClusterStartService {
 
     }
 
-    private Process startNode(Path clusterFolder, int nodeNo) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startNode(Path clusterFolder, int nodeNo, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         String clusterFolderPath = clusterFolder.toAbsolutePath().toString();
-        String startScript = "node-spo" + nodeNo;
+        String startScript = NODE_FOLDER_PREFIX + nodeNo;
 
         ProcessBuilder builder = new ProcessBuilder();
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
@@ -114,11 +122,11 @@ public class ClusterStartService {
             builder.command("sh", startScript + ".sh");
         }
 
-        File nodeStartDir = new File(clusterFolderPath, "node-spo" + nodeNo);
+        File nodeStartDir = new File(clusterFolderPath, NODE_FOLDER_PREFIX + nodeNo);
         builder.directory(nodeStartDir);
         Process process = builder.start();
 
-        writeLn("Starting node from directory : " + nodeStartDir.getAbsolutePath());
+        writer.accept(success("Starting node from directory : " + nodeStartDir.getAbsolutePath()));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     logs.add(String.format("[Node: %s] ", nodeNo) +  line);
@@ -132,11 +140,11 @@ public class ClusterStartService {
 //        future.get(10, TimeUnit.SECONDS);
     }
 
-    private boolean setupFirstRun(Path clusterFolder) throws IOException {
+    private boolean setupFirstRun(Path clusterFolder, Consumer<String> writer) throws IOException {
         Path byronGenesis = clusterFolder.resolve("genesis/byron/genesis.json");
 
         if (!Files.exists(byronGenesis)) {
-            writeLn("Byron genesis file is not found");
+            writer.accept(error("Byron genesis file is not found"));
             return false;
         }
 
@@ -146,12 +154,13 @@ public class ClusterStartService {
         jsonNode.set("startTime", new LongNode(unixTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
 
-        writeLn("Start time updated ...");
+        writer.accept(success("Update Start time"));
         return true;
     }
 
     private boolean checkIfFirstRun(Path clusterFolder) {
-        Path db = clusterFolder.resolve("db");
+        String node1Folder = NODE_FOLDER_PREFIX + 1;
+        Path db = clusterFolder.resolve(node1Folder).resolve("db");
         if (Files.exists(db))
             return false;
         else

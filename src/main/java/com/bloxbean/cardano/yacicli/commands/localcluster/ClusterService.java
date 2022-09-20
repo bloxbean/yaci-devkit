@@ -1,8 +1,12 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
+import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.bloxbean.cardano.yacicli.util.ZipUtil;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,8 +23,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.ZipInputStream;
 
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 import static java.nio.file.attribute.PosixFilePermission.*;
 
@@ -31,6 +38,7 @@ public class ClusterService {
     public static final String CLASSPATH_LOCALCLUSTER_ZIP = "classpath:localcluster.zip";
     private ClusterConfig clusterConfig;
     private ClusterStartService clusterStartService;
+    private BlockStreamerService blockStreamerService;
 
     @Autowired
     ResourceLoader resourceLoader;
@@ -38,9 +46,13 @@ public class ClusterService {
     @Autowired
     TemplateEngine templateEngine;
 
-    public ClusterService(ClusterConfig config, ClusterStartService clusterStartService) {
+    @Autowired
+    ObjectMapper objectMapper;
+
+    public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
         this.clusterStartService = clusterStartService;
+        this.blockStreamerService = blockStreamerService;
     }
 
     public void startClusterContext(String clusterName, Consumer<String> writer) {
@@ -59,7 +71,7 @@ public class ClusterService {
 
     public void startCluster(String clusterName) {
         try {
-            clusterStartService.startCluster(getClusterFolder(clusterName));
+            clusterStartService.startCluster(getClusterFolder(clusterName), msg -> writeLn(msg));
         } catch (Exception e) {
             System.out.println("Error a creating local cluster");
             throw new RuntimeException(e);
@@ -97,33 +109,33 @@ public class ClusterService {
         }
     }
 
-    private Path getClusterFolder(String clusterName) {
+    public Path getClusterFolder(String clusterName) {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public boolean createClusterFolder(String clusterName, int[] ports, boolean clean, boolean overwrite, Consumer<String> consumer) throws IOException {
-        if(!checkCardanoNodeBin()) return false;
+    public boolean createClusterFolder(String clusterName, int[] ports, double slotLength,  boolean overwrite, Consumer<String> writer) throws IOException {
+        if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
         if (Files.exists(destPath) && !overwrite) {
-            consumer.accept(destPath.toAbsolutePath().toString() + " already exists");
+            writer.accept(error(destPath.toAbsolutePath().toString() + " already exists"));
             return true;
         } else {
             if (!Files.exists(destPath))
                 destPath = Files.createDirectories(destPath);
 
             if (!Files.exists(destPath)) {
-                consumer.accept("Directory could not be created");
+                writer.accept(error("Directory could not be created"));
                 return false;
             }
 
             if (overwrite) {
                 //cleanup
                 FileUtils.deleteDirectory(destPath.toFile());
-                consumer.accept("Deleted existing folder");
+                writer.accept(success("Delete existing folder"));
             }
 
-            consumer.accept("Create cluster folder !!!");
+            writer.accept(success("Create cluster folder !!!"));
 
             //Copy localclusterzip to tmp folder
             Resource resource = resourceLoader.getResource(CLASSPATH_LOCALCLUSTER_ZIP);
@@ -147,15 +159,22 @@ public class ClusterService {
             for (int i=1;i<=3;i++) {
                 updatePorts(destPath, ports, i);
             }
-            consumer.accept(success("Updated ports"));
-            consumer.accept(success("Cluster %s created", clusterName));
+
+            //Update genesis
+            updateGenesis(destPath, slotLength, writer);
+
+            //Update node config
+            saveClusterInfo(destPath, ports, slotLength);
+
+            writer.accept(success("Update ports"));
+            writer.accept(success("Create Cluster : %s", clusterName));
 
             return true;
         }
 
     }
 
-    private boolean checkCardanoNodeBin() throws IOException {
+    private boolean checkCardanoNodeBin(Consumer<String> writer) throws IOException {
         Path binFolder = Path.of(clusterConfig.getCLIBinFolder());
         if (!Files.exists(binFolder))
             Files.createDirectories(binFolder);
@@ -165,8 +184,8 @@ public class ClusterService {
         if (Files.exists(cardanoNodeCli))
             return true;
 
-        writeLn(error("cardno-node binary is not found in %s", clusterConfig.getCLIBinFolder()));
-        writeLn(error("Please download and copy cardano-node, cardano-cli executables (1.35.3 or later) to %s and try again (Set execute permission if required)", clusterConfig.getCLIBinFolder()));
+        writer.accept(error("cardno-node binary is not found in %s", clusterConfig.getCLIBinFolder()));
+        writer.accept(error("Please download and copy cardano-node, cardano-cli executables (1.35.3 or later) to %s and try again (Set execute permission if required)", clusterConfig.getCLIBinFolder()));
         return false;
         //Download
 
@@ -174,8 +193,24 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
+    private void updateGenesis(Path clusterFolder, double slotLength, Consumer<String> writer) throws IOException {
+        //Shelley genesis file
+        Path genesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
+        Map<String, String> values = new HashMap<>();
+        values.put("slotLength", String.valueOf(slotLength));
+
+        //Update Node run script
+        try {
+            templateEngine.replaceValues(genesisFile, values);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+
+        writer.accept(success("Slot length updated in genesis.json"));
+    }
+
     private void updatePorts(Path destPath, int[] ports, int nodeNo) throws IOException {
-        String nodeName = "node-spo" + nodeNo;
+        String nodeName = NODE_FOLDER_PREFIX + nodeNo;
         String nodeScript =  getOSSpecificScriptName(nodeName);
         Path nodeRunScript = destPath.resolve(nodeName).resolve(nodeScript);
         int nodePort = ports[nodeNo-1]; //Node no = 1..3
@@ -201,6 +236,38 @@ public class ClusterService {
         Path topology = destPath.resolve(nodeName).resolve("topology.json");
         try {
             templateEngine.replaceValues(topology, values);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    private ClusterInfo saveClusterInfo(Path clusterFolder, int[] nodePorts, double slotLength) throws IOException {
+        String[] socketPaths = new String[3];
+        IntStream.range(0,3).forEach(i -> {
+                socketPaths[i] = clusterFolder.resolve(NODE_FOLDER_PREFIX + (i+1)).resolve("node.sock").toString();
+        });
+
+        //Create node_config
+        ClusterInfo clusterInfo = ClusterInfo.builder()
+                .nodePorts(nodePorts)
+                .socketPaths(socketPaths)
+                .build();
+
+        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
+        objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(clusterInfoPath), clusterInfo);
+
+        return clusterInfo;
+    }
+
+    public ClusterInfo getClusterInfo(String clusterName) throws IOException {
+        Path clusterFolder = getClusterFolder(clusterName);
+        if (!Files.exists(clusterFolder)) {
+            throw new IllegalStateException("Cluster not found : " + clusterName);
+        }
+
+        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
+        try {
+            return objectMapper.readValue(new File(clusterInfoPath), ClusterInfo.class);
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -236,4 +303,18 @@ public class ClusterService {
     public void logs(Consumer<String> writer) {
         clusterStartService.showLogs(writer);
     }
+
+    public void ltail(String clusterName, boolean showMint, boolean showInputs, boolean showMetadata,
+                      boolean showDatumhash, boolean showInlineDatum, boolean grouping, OutputFormatter outputFormatter) throws IOException {
+        try {
+            ClusterInfo clusterInfo = getClusterInfo(clusterName);
+            blockStreamerService.tail("localhost", clusterInfo.getNodePorts()[0], clusterInfo.getProtocolMagic(), showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
+        } catch (IOException ex) {
+            throw ex;
+        } catch (InterruptedException ex) {
+            if (log.isDebugEnabled())
+                log.error("Interrupt exception", ex);
+        }
+    }
+
 }

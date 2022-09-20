@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class NodeConfig {
-    private int port;
+public class ClusterInfo {
+    private int[] nodePorts;
+    private String[] socketPaths;
+    @Builder.Default
+    private long protocolMagic = 42;
 }
