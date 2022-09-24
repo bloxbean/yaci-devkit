@@ -140,10 +140,9 @@ public class ClusterCommands {
         localClusterService.stopCluster(msg -> writeLn(msg));
     }
 
-    @ShellMethod(value = "Logs local cluster", key = "logs")
+    @ShellMethod(value = "Show recent logs for running cluster", key = "logs")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void logsLocalCluster() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.logs(msg -> writeLn(msg));
     }
 
