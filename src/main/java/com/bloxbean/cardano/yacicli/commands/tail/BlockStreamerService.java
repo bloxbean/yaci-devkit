@@ -300,8 +300,12 @@ public class BlockStreamerService {
 
             if (slot != 0 && StringUtils.hasLength(blockHash))
                 wellKnownPoint = new Point(slot, blockHash);
-            else
-                wellKnownPoint = Constants.WELL_KNOWN_MAINNET_POINT;
+            else {
+                if (protocolMagic == Constants.MAINNET_PROTOCOL_MAGIC)
+                    wellKnownPoint = Constants.WELL_KNOWN_MAINNET_POINT;
+                else
+                    wellKnownPoint = Point.ORIGIN;
+            }
         }
 
 
