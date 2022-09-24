@@ -18,6 +18,14 @@ public class ConsoleWriter {
             return PREFIX + str;
     }
 
+    public static String info(String str, Object...args) {
+        String PREFIX = AnsiColors.YELLOW_BRIGHT + "[Info] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
     public static String error(String str, Object...args) {
         String PREFIX = AnsiColors.RED + "[ERROR] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)

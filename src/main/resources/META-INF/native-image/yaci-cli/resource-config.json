@@ -1,0 +1,13 @@
+{
+  "resources": {
+    "includes": [
+      {"pattern": "localcluster.zip$"},
+      {"pattern": ".*/wordlist/*.txt"},
+      {"pattern":  ".*:META-INF/native/libnetty_transport_native_kqueue_aarch_64.jnilib"},
+      {"pattern":  ".*:META-INF/native/libnetty_transport_native_kqueue.jnilib"}
+    ],
+    "excludes": [
+
+    ]
+  }
+}

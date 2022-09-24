@@ -2,8 +2,8 @@ package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.client.api.model.Utxo;
+import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
-import com.bloxbean.cardano.yacicli.commands.groups.Groups;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
 import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
@@ -73,8 +73,10 @@ public class ClusterCommands {
     ) {
 
         try {
-            if (ports.length != 3)
+            if (ports.length != 3) {
                 writeLn(error("Please provide 3 ports for 3 node cluster"));
+                return;
+            }
 
             boolean success = localClusterService.createClusterFolder(clusterName, ports, slotLength, overwrite, (msg) -> writeLn(msg));
 
@@ -143,15 +145,6 @@ public class ClusterCommands {
     public void logsLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.logs(msg -> writeLn(msg));
-    }
-
-    @ShellMethod(value = "Exit local cluster (Babbage)", key = "exit-cluster")
-    @ShellMethodAvailability("localClusterCmdAvailability")
-    public void exitLocalClusterMode() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
-        localClusterService.stopCluster(msg -> writeLn(msg));
-
-        CommandContext.INSTANCE.setCurrentMode(CommandContext.Mode.REGULAR);
     }
 
     @ShellMethod(value = "Tail local cluster", key = "ltail")

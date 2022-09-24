@@ -1,4 +1,4 @@
-package com.bloxbean.cardano.yacicli.commands.groups;
+package com.bloxbean.cardano.yacicli.commands.common;
 
 public class Groups {
     public static final String GENERAL_CMD_GROUP = "General Commands";
