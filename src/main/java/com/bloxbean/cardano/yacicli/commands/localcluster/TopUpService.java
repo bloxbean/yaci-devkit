@@ -42,6 +42,7 @@ import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.bala
 import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
 import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
 import static com.bloxbean.cardano.yacicli.util.AdaConversionUtil.adaToLovelace;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.infoLabel;
 
 //@Component
 public class TopUpService {
@@ -137,7 +138,7 @@ public class TopUpService {
         Transaction signedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
                 .buildAndSign(txBuilder, signerFrom(senderSkey));
 
-        System.out.println(">> " + signedTransaction.serializeToHex());
+        writer.accept(infoLabel("Txn Cbor", signedTransaction.serializeToHex()));
 
         //Submit Tx using LocalStateQuery mini-protocol
         localNodeClientFactory.getTxSubmissionClient().submitTx(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));

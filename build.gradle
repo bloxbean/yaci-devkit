@@ -26,10 +26,13 @@ ext {
 
 dependencies {
 	implementation 'org.springframework.shell:spring-shell-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springdoc:springdoc-openapi-webflux-ui:1.6.11'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
 
-	implementation 'com.bloxbean.cardano:yaci-core:0.0.5'
+	implementation 'com.bloxbean.cardano:yaci-core:0.0.8'
 	implementation 'com.bloxbean.cardano:cardano-client-lib:0.3.0-beta2'
+	implementation 'com.bloxbean.cardano:cardano-client-backend:0.3.0-beta2'
 
 	implementation 'org.jeasy:easy-rules-core:4.1.0'
 	implementation 'org.jeasy:easy-rules-mvel:4.1.0'

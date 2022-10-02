@@ -19,17 +19,25 @@ For all other platforms, please use the generic JAR file.
 
 #### 1. Go to the download section to download the yaci-cli binary. There are two kinds of distributions available.
 
-**a. Native Binary**
-     
-     Supported Platforms :  Ubuntu (amd64), Mac OS (Intel / M1)
-   
 **b. Generic Jar**
    
      Supported platforms : All platforms
    
      Requirement :  **Java 11**
 
-#### 2. For Native Binary
+**a. Native Binary**
+
+     Supported Platforms :  Ubuntu (amd64), Mac OS (Intel / M1)
+
+#### 2. For Generic Jar
+
+You need **Java 11** to run yaci-cli jar file.
+
+```
+$> java -jar yaci-cli-0.0.2.jar
+```
+
+#### 3. For Native Binary
 
 - Download platform specific binary if available.
 - Rename the downloaded file to yaci-cli and change the permission
@@ -42,14 +50,6 @@ $> mv yaci-cli-<os>-<arch>-<version>  yaci-cli
 $> chmod +x yaci-cli
 
 $> ./yaci-cli
-```
-
-#### 3. For Generic Jar 
-
-You need **Java 11** to run yaci-cli jar file.
-
-```
-$> java -jar yaci-cli-0.0.2.jar
 ```
 
 ## How to use ?

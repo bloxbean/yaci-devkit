@@ -18,8 +18,24 @@ public class ConsoleWriter {
             return PREFIX + str;
     }
 
+    public static String successLabel(String label, String str, Object...args) {
+        String PREFIX = AnsiColors.BLUE + "[" + label + "] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
     public static String info(String str, Object...args) {
         String PREFIX = AnsiColors.YELLOW_BRIGHT + "[Info] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
+    public static String infoLabel(String label, String str, Object...args) {
+        String PREFIX = AnsiColors.YELLOW_BRIGHT + "[" + label + "] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -47,5 +63,10 @@ public class ConsoleWriter {
 
     public static void writeWithTab(String str) {
         System.out.print("\t" + str);
+    }
+
+    public static String header(String color, String str) {
+        String text = color + str + AnsiColors.ANSI_RESET;
+        return text;
     }
 }

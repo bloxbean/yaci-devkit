@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
+import com.bloxbean.cardano.yacicli.common.AnsiColors;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
 import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
@@ -106,9 +107,10 @@ public class ClusterCommands {
 
     private void printClusterInfo(String clusterName) throws IOException {
         ClusterInfo clusterInfo = localClusterService.getClusterInfo(clusterName);
-        writeLn("\n###### Node Details ######");
-        writeLn("Node ports : " + StringUtils.join(ArrayUtils.toObject(clusterInfo.getNodePorts()), " - "));
-        writeLn("Node Socket Paths: ");
+        writeLn("");
+        writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details ######"));
+        writeLn(successLabel("Node ports", StringUtils.join(ArrayUtils.toObject(clusterInfo.getNodePorts()), " - ")));
+        writeLn(successLabel("Node Socket Paths", ""));
         for (String socketPath : clusterInfo.getSocketPaths())
             writeLn(socketPath);
     }
@@ -184,17 +186,19 @@ public class ClusterCommands {
             Map<String, List<Utxo>> utxosMap = topUpService.getFundsAtGenesisKeys();
 
             utxosMap.entrySet().forEach(entry -> {
-                writeLn("\nAddress : " + entry.getKey());
-                writeLn("Utxos:");
+                writeLn(header(AnsiColors.CYAN_BOLD, "Address"));
+                writeLn(entry.getKey());
+                writeLn(header(AnsiColors.CYAN_BOLD, "Utxos"));
                 entry.getValue().forEach(utxo -> {
                     writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
                 });
+                writeLn("");
             });
             topUpService.shutdown();
         } catch (Exception e) {
             // if (log.isDebugEnabled())
             log.error("Error", e);
-            writeLn(error("Topup error : " + e.getMessage()));
+            writeLn(error("Topup error" + e.getMessage()));
         } finally {
             rootLogService.setLogLevel(orgLevel);
         }
@@ -241,7 +245,6 @@ public class ClusterCommands {
             TopUpService topUpService = new TopUpService(clusterFolder, protocolMagic, msg -> writeLn(msg));
 
             List<Utxo> utxos = topUpService.getUtxos(address);
-            writeLn("Utxos:");
             utxos.forEach(utxo -> {
                 writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
             });

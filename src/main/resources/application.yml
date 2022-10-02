@@ -3,6 +3,8 @@
 #    banner-mode: "off"
 version: v0.0.2
 
+server:
+  port: 0
 spring:
   banner:
     location: classpath:/banner.txt
@@ -11,7 +13,10 @@ spring:
 
 logging:
   level:
-    com.bloxbean.cardano.yaci.core.network.Session: error
+    org.springdoc: error
+    org.springframework: error
+    com.bloxbean.cardano.yaci.core.network: error
+    com.bloxbean.cardano.yaci.core.protocol.handshake: error
 
 shell.out.info: CYAN
 shell.out.success: GREEN

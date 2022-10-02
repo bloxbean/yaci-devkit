@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,9 @@ public class ClusterService {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    private ReactiveWebServerApplicationContext server;
+
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
         this.clusterStartService = clusterStartService;
@@ -72,6 +76,7 @@ public class ClusterService {
     public void startCluster(String clusterName) {
         try {
             clusterStartService.startCluster(getClusterFolder(clusterName), msg -> writeLn(msg));
+            writeLn(info("Swagger Url to interact with the cluster's node : " + "http://localhost:" + server.getWebServer().getPort() +"/swagger-ui.html"));
         } catch (Exception e) {
             System.out.println("Error a creating local cluster");
             throw new RuntimeException(e);
@@ -105,7 +110,7 @@ public class ClusterService {
             if (!clusterFolder.toFile().exists())
                 writer.accept(success("ClusterFolder %s deleted", clusterFolder.getFileName().toString()));
         } else {
-            writer.accept(strLn("Cluster folder not found : %s", clusterFolder));
+            writer.accept(error("Cluster folder not found : %s", clusterFolder));
         }
     }
 

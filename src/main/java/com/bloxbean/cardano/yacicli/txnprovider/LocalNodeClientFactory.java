@@ -9,8 +9,7 @@ import com.bloxbean.cardano.yaci.core.protocol.localtx.model.TxSubmissionRequest
 
 import java.util.function.Consumer;
 
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.success;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 public class LocalNodeClientFactory {
     private LocalStateQueryClient localStateQueryClient;
@@ -25,7 +24,7 @@ public class LocalNodeClientFactory {
             @Override
             public void txAccepted(TxSubmissionRequest txSubmissionRequest, MsgAcceptTx msgAcceptTx) {
                 writer.accept(success("Transaction submitted successfully"));
-                writer.accept("Tx Hash : " + txSubmissionRequest.getTxHash());
+                writer.accept(infoLabel("Tx Hash", txSubmissionRequest.getTxHash()));
             }
 
             @Override

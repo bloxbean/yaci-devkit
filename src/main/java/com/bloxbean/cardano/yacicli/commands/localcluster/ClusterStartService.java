@@ -23,8 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.success;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
 @Slf4j
@@ -69,16 +68,16 @@ public class ClusterStartService {
     public void stopCluster(Consumer<String> writer) {
         try {
             if (processes != null && processes.size() > 0)
-                writer.accept("Trying to stop the running cluster ...");
+                writer.accept(info("Trying to stop the running cluster ..."));
 
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
                     process.descendants().forEach(processHandle -> {
-                        writer.accept("Process : " + processHandle.pid());
+                        writer.accept(infoLabel("Process", String.valueOf(processHandle.pid())));
                         processHandle.destroyForcibly();
                         });
                     process.destroy();
-                    writer.accept("Stopping node process : " + process);
+                    writer.accept(info("Stopping node process : " + process));
                     process.waitFor(15, TimeUnit.SECONDS);
                     if (!process.isAlive())
                         writer.accept(success("Killed : " + process));
