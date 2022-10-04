@@ -36,53 +36,48 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build:
-    name: ${{ matrix.version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        version: [ '22.2.0']
-        os: [macos-latest, ubuntu-latest]
-        include:
-          - os: 'macos-latest'
-            label: 'mac'
-          - os: 'ubuntu-latest'
-            label: 'linux'
-    steps:
-      - uses: actions/checkout@v2
-      - uses: graalvm/setup-graalvm@v1
-        with:
-          version: '22.2.0'
-          java-version: '11'
-          components: 'native-image'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Decode GPG Key
-        run: |
-          mkdir -p ~/.gradle/
-          echo "${{secrets.SIGNING_KEY}}" > ~/.gradle/secring.gpg.b64
-          base64 -d ~/.gradle/secring.gpg.b64 > ~/.gradle/secring.gpg
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      - name: Build yaci-cli
-        run: |
-          export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
-          ./gradlew clean build nativeCompile -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} -Psigning.password=${{ secrets.SIGNING_PASSWORD }} -Psigning.secretKeyRingFile=$(echo ~/.gradle/secring.gpg) --warn --stacktrace
-        if: runner.os != 'Windows'
-      - name: 'Get Version Number'
-        run: |
-          ARTIFACT_VERSION=$(./gradlew properties -q | grep "version:" | awk '{print $2}')
-          echo "VERSION=${ARTIFACT_VERSION}" >> $GITHUB_ENV
-#      - name: Upload binary
-#        uses: actions/upload-artifact@v2
+#  build:
+#    name: ${{ matrix.version }} on ${{ matrix.os }}
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        version: [ '22.2.0']
+#        os: [macos-latest, ubuntu-latest]
+#        include:
+#          - os: 'macos-latest'
+#            label: 'mac'
+#          - os: 'ubuntu-latest'
+#            label: 'linux'
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: graalvm/setup-graalvm@v1
 #        with:
-#          name: yaci-cli-${{matrix.label}}-amd64-${{env.VERSION}}
-#          path: build/native/nativeCompile/yaci-cli
-      - name: Rename output file
-        run: mv build/native/nativeCompile/yaci-cli build/native/nativeCompile/yaci-cli-${{matrix.label}}-amd64-${{env.VERSION}}
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            build/native/nativeCompile/yaci-cli-${{matrix.label}}-amd64-${{env.VERSION}}
-          prerelease: true
+#          version: '22.2.0'
+#          java-version: '11'
+#          components: 'native-image'
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Decode GPG Key
+#        run: |
+#          mkdir -p ~/.gradle/
+#          echo "${{secrets.SIGNING_KEY}}" > ~/.gradle/secring.gpg.b64
+#          base64 -d ~/.gradle/secring.gpg.b64 > ~/.gradle/secring.gpg
+#      - name: Grant execute permission for gradlew
+#        run: chmod +x gradlew
+#      - name: Build yaci-cli
+#        run: |
+#          export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
+#          ./gradlew clean build nativeCompile -Psigning.keyId=${{ secrets.SIGNING_KEY_ID }} -Psigning.password=${{ secrets.SIGNING_PASSWORD }} -Psigning.secretKeyRingFile=$(echo ~/.gradle/secring.gpg) --warn --stacktrace
+#        if: runner.os != 'Windows'
+#      - name: 'Get Version Number'
+#        run: |
+#          ARTIFACT_VERSION=$(./gradlew properties -q | grep "version:" | awk '{print $2}')
+#          echo "VERSION=${ARTIFACT_VERSION}" >> $GITHUB_ENV
+#      - name: Rename output file
+#        run: mv build/native/nativeCompile/yaci-cli build/native/nativeCompile/yaci-cli-${{matrix.label}}-amd64-${{env.VERSION}}
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: |
+#            build/native/nativeCompile/yaci-cli-${{matrix.label}}-amd64-${{env.VERSION}}
+#          prerelease: true
