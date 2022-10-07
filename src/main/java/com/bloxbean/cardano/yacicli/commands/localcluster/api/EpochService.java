@@ -49,8 +49,8 @@ public class EpochService {
     }
 
     @Operation(summary = "Get current protocol parameters. The {number} path variable is ignored. So any value can be passed.")
-    @GetMapping("epochs/{number}/parameters")
-    Mono<ProtocolParams> getProtocolParameters(@PathVariable(value = "number") Integer number) {
+    @GetMapping("parameters")
+    Mono<ProtocolParams> getProtocolParameters() {
         try {
             LocalStateQueryClient localStateQueryClient = localQueryClientUtil.getLocalQueryClient();
             localStateQueryClient.start();

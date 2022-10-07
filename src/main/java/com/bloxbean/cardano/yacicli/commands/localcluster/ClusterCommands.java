@@ -38,7 +38,7 @@ public class ClusterCommands {
         this.shellHelper = shellHelper;
     }
 
-    @ShellMethod(value = "List local cluster (Babbage)", key = "list-clusters")
+    @ShellMethod(value = "List local clusters (Babbage)", key = "list-clusters")
     public void listLocalClusters() {
         try {
             List<String> clusters = localClusterService.listClusters();
@@ -66,7 +66,7 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Create local cluster mode(Babbage)", key = "create-cluster")
+    @ShellMethod(value = "Create a local cluster (Babbage)", key = "create-cluster")
     public void createCluster(@ShellOption(value = {"-n", "--name"}, help = "Cluster Name") String clusterName,
                               @ShellOption(value = {"--ports"}, help = "Node ports (Used with --create option only)", defaultValue = "3001, 3002, 3003", arity = 3) int[] ports,
                               @ShellOption(value = {"-s", "--slotLength"}, help = "Slot Length (Valid values are 0.1 to 1)", defaultValue = "0.5", arity = 3) double slotLength,
@@ -115,7 +115,7 @@ public class ClusterCommands {
             writeLn(socketPath);
     }
 
-    @ShellMethod(value = "Delete local cluster", key = "delete-cluster")
+    @ShellMethod(value = "Delete a local cluster", key = "delete-cluster")
     public void deleteLocalCluster(@ShellOption(value = {"-n", "--name"}, help = "Cluster Name") String clusterName) {
         try {
             localClusterService.deleteCluster(clusterName, (msg) -> {
@@ -128,14 +128,14 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Start local cluster (Babbage)", key = "start")
+    @ShellMethod(value = "Start a local cluster (Babbage)", key = "start")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void startLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.startCluster(clusterName);
     }
 
-    @ShellMethod(value = "Stop local cluster (Babbage)", key = "stop")
+    @ShellMethod(value = "Stop the running local cluster (Babbage)", key = "stop")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void stopLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);

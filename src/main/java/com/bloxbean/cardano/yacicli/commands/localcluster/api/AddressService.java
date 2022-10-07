@@ -23,10 +23,7 @@ public class AddressService {
 
     @Operation(summary = "Get utxos by address")
     @GetMapping(path = "{address}/utxos")
-    Mono<List<Utxo>> getUtxos(@PathVariable("address") String address,
-                              @RequestParam(value = "count", defaultValue = "100", required = false) int count,
-                              @RequestParam(value = "page", defaultValue = "1", required = false) int page,
-                              @RequestParam(value = "order", defaultValue = "asc", required = false) String order) {
+    Mono<List<Utxo>> getUtxos(@PathVariable("address") String address) {
 
         try {
             LocalStateQueryClient localStateQueryClient = localQueryClientUtil.getLocalQueryClient();
