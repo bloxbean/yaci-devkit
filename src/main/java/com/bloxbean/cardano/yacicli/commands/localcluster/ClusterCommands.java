@@ -166,7 +166,7 @@ public class ClusterCommands {
         OutputFormatter outputFormatter = new DefaultOutputFormatter(shellHelper);
         try {
             localClusterService.ltail(clusterName, showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
-        } catch (IOException e) {
+        } catch (Exception e) {
             writeLn(error(e.getMessage()));
         }
     }

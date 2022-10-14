@@ -159,7 +159,6 @@ public class LocalNodeService {
 
     public void shutdown() {
         try {
-            System.out.println("Shutdown called...");
             localNodeClientFactory.shutdown();
         } catch (Exception e) {
             log.error("Shutdown error", e);
