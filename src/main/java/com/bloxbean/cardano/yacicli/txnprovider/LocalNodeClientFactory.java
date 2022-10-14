@@ -44,7 +44,12 @@ public class LocalNodeClientFactory {
     }
 
     public void shutdown() {
-        localStateQueryClient.shutdown();
-        txSubmissionClient.shutdown();
+        try {
+            localStateQueryClient.shutdown();
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            txSubmissionClient.shutdown();
+        }
     }
 }

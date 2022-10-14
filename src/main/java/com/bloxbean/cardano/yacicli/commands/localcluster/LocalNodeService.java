@@ -20,14 +20,15 @@ import com.bloxbean.cardano.client.function.helper.InputBuilders;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
 import com.bloxbean.cardano.yaci.core.model.Era;
-import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQuery;
-import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQueryResult;
+import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.*;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.model.TxSubmissionRequest;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.bloxbean.cardano.yacicli.txnprovider.LocalNodeClientFactory;
 import com.bloxbean.cardano.yacicli.txnprovider.LocalProtocolSupplier;
 import com.bloxbean.cardano.yacicli.txnprovider.LocalUtxoSupplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -45,7 +46,8 @@ import static com.bloxbean.cardano.yacicli.util.AdaConversionUtil.adaToLovelace;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.infoLabel;
 
 //@Component
-public class TopUpService {
+@Slf4j
+public class LocalNodeService {
     private final static String UTXO_KEYS_FOLDER = "utxo-keys";
     private LocalNodeClientFactory localNodeClientFactory;
     private UtxoSupplier utxoSupplier;
@@ -54,7 +56,7 @@ public class TopUpService {
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Tuple<VerificationKey, SecretKey>> utxoKeys;
 
-    public TopUpService(Path clusterFolder, long protocolMagic, Consumer<String> writer) throws IOException {
+    public LocalNodeService(Path clusterFolder, long protocolMagic, Consumer<String> writer) throws IOException {
         this.utxoKeys = new ArrayList<>();
         String socketFile = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toAbsolutePath().toString();
         this.localNodeClientFactory = new LocalNodeClientFactory(socketFile, protocolMagic, writer);
@@ -142,11 +144,26 @@ public class TopUpService {
 
         //Submit Tx using LocalStateQuery mini-protocol
         localNodeClientFactory.getTxSubmissionClient().submitTx(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
-        localNodeClientFactory.shutdown();
+        //localNodeClientFactory.shutdown();
+    }
+
+    public Tuple<Long, Point> getTip() {
+        Mono<BlockHeightQueryResult> blockHeightMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new BlockHeightQuery());
+        BlockHeightQueryResult result = blockHeightMono.block(Duration.ofSeconds(5));
+
+        Mono<ChainPointQueryResult> chainPointMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new ChainPointQuery());
+        ChainPointQueryResult chainPointQueryResult = chainPointMono.block(Duration.ofSeconds(5));
+
+        return new Tuple<>(result.getBlockHeight(), chainPointQueryResult.getChainPoint());
     }
 
     public void shutdown() {
-        localNodeClientFactory.shutdown();
+        try {
+            System.out.println("Shutdown called...");
+            localNodeClientFactory.shutdown();
+        } catch (Exception e) {
+            log.error("Shutdown error", e);
+        }
     }
 
 }

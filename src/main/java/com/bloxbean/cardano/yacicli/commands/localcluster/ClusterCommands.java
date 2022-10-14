@@ -2,11 +2,13 @@ package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.client.api.model.Utxo;
+import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
+import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import lombok.extern.slf4j.Slf4j;
@@ -178,12 +180,13 @@ public class ClusterCommands {
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
 
+        LocalNodeService localNodeService = null;
         try {
             long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
             Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            TopUpService topUpService = new TopUpService(clusterFolder, protocolMagic, msg -> {
+            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> {
             });
-            Map<String, List<Utxo>> utxosMap = topUpService.getFundsAtGenesisKeys();
+            Map<String, List<Utxo>> utxosMap = localNodeService.getFundsAtGenesisKeys();
 
             utxosMap.entrySet().forEach(entry -> {
                 writeLn(header(AnsiColors.CYAN_BOLD, "Address"));
@@ -194,13 +197,14 @@ public class ClusterCommands {
                 });
                 writeLn("");
             });
-            topUpService.shutdown();
         } catch (Exception e) {
             // if (log.isDebugEnabled())
             log.error("Error", e);
             writeLn(error("Topup error" + e.getMessage()));
         } finally {
             rootLogService.setLogLevel(orgLevel);
+            if (localNodeService != null)
+                localNodeService.shutdown();
         }
     }
 
@@ -214,19 +218,21 @@ public class ClusterCommands {
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
 
+        LocalNodeService localNodeService = null;
         try {
             long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
             Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            TopUpService topUpService = new TopUpService(clusterFolder, protocolMagic, msg -> writeLn(msg));
+            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> writeLn(msg));
 
-            topUpService.topUp(address, adaValue, msg -> writeLn(msg));
-            topUpService.shutdown();
+            localNodeService.topUp(address, adaValue, msg -> writeLn(msg));
         } catch (Exception e) {
             // if (log.isDebugEnabled())
             log.error("Error", e);
             writeLn(error("Topup error : " + e.getMessage()));
         } finally {
             rootLogService.setLogLevel(orgLevel);
+            if (localNodeService != null)
+                localNodeService.shutdown();
         }
     }
 
@@ -239,22 +245,54 @@ public class ClusterCommands {
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
 
+        LocalNodeService localNodeService = null;
         try {
             long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
             Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            TopUpService topUpService = new TopUpService(clusterFolder, protocolMagic, msg -> writeLn(msg));
+            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> writeLn(msg));
 
-            List<Utxo> utxos = topUpService.getUtxos(address);
+            List<Utxo> utxos = localNodeService.getUtxos(address);
             utxos.forEach(utxo -> {
                 writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
             });
-            topUpService.shutdown();
         } catch (Exception e) {
             // if (log.isDebugEnabled())
             log.error("Error", e);
-            writeLn(error("Topup error : " + e.getMessage()));
+            writeLn(error("Get utxos error : " + e.getMessage()));
         } finally {
             rootLogService.setLogLevel(orgLevel);
+            if (localNodeService != null)
+                localNodeService.shutdown();
+        }
+    }
+
+    @ShellMethod(value = "Get tip/current block number", key = "tip")
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void getTip() {
+        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+
+        Level orgLevel = rootLogService.getLogLevel();
+        if (!rootLogService.isDebugLevel())
+            rootLogService.setLogLevel(Level.OFF);
+
+        LocalNodeService localNodeService = null;
+        try {
+            long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
+            Path clusterFolder = localClusterService.getClusterFolder(clusterName);
+            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> writeLn(msg));
+
+            Tuple<Long, Point> tuple = localNodeService.getTip();
+            writeLn(successLabel("Block#", String.valueOf(tuple._1)));
+            writeLn(successLabel("Slot#", String.valueOf(tuple._2.getSlot())));
+            writeLn(successLabel("Block Hash", String.valueOf(tuple._2.getHash())));
+        } catch (Exception e) {
+            // if (log.isDebugEnabled())
+            log.error("Error", e);
+            writeLn(error("Find tip error : " + e.getMessage()));
+        } finally {
+            rootLogService.setLogLevel(orgLevel);
+            if (localNodeService != null)
+                localNodeService.shutdown();
         }
     }
 
