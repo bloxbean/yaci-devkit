@@ -4,21 +4,23 @@ sidebar_position: 1
 
 # tail
 
+To stream block data from a local/remote Cardano node in real-time, you can use ``tail`` command.
+
 Once you start yaci-cli, you should see a prompt "yaci-cli:>"
 
 ## 1. Change background
 
-For terminal with light background, use --color-mode option with "tail" command
+For terminal with light background, use --color-mode option.
 
 ```
 yaci-cli:> tail --color-mode light
 ```
 
-## 2. Stream from a Cardano node (tail)
+## 2. Stream from a Cardano node
 
 Use "tail" command to stream from a Cardano node. The tail command supports :-
 
-a> Stream from a public network (mainnet, legacy_testnet, prepod, preview) using a public relay
+a> Stream from a public network (mainnet, legacy_testnet, prepod, preview) using a known public relay
 
 b> Stream from a public network using your own Cardano node
 
@@ -44,13 +46,13 @@ yaci-cli> tail --network preview
 ### 2.2 Stream from a public network using your own Cardano node
 
 ```
-yaci-cli> tail --network tail --network mainnet --host <Cardano Node Host> --port <Cardano Node Port)
+yaci-cli> tail --network mainnet --host <Cardano Node Host> --port <Cardano Node Port)
 
 ```
 
 ### 2.3 Stream from a private network
 
-To stream data from a private network, please provide host, port, protocol magic, known host, known port
+To stream data from a private network, provide host, port, protocol magic, known host, known port
 
 Example:
 

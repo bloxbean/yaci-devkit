@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Installation
 
-Go to the download section to download the yaci-cli Jar
+Download the latest yaci-cli Jar from [GitHub](https://github.com/bloxbean/yaci-cli/) 
 
 **Supported platforms :** All platforms
 
@@ -21,6 +21,9 @@ Go to the download section to download the yaci-cli Jar
 $> java -jar yaci-cli-<version>.jar
 ```
 Once you start yaci-cli, you should see a prompt "yaci-cli:>"
+
+To use ``local-cluster`` features, you need to copy ``cardano-node`` binary to ``$userhome/.yaci-cli/bin`` folder. This folder
+will be automatically created when you run yaci-cli first time.
 
 #### To see help message
 

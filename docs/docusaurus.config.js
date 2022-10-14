@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Yaci CLI',
-  tagline: 'A Command Line Tool For Cardano Blockchain',
+  tagline: 'A Developer Focused Command-Line Tool for Cardano',
   url: 'https://yaci-cli.bloxbean.com',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -115,8 +115,9 @@ const config = {
         copyright: `© ${new Date().getFullYear()} BloxBean project. Built with Docusaurus.`,
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
+        theme: require('prism-react-renderer/themes/dracula'),
+        // theme: lightCodeTheme,
+        // darkTheme: lightCodeTheme,
       },
     }),
 };

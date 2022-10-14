@@ -5,7 +5,7 @@ import styles from './styles.module.css';
 const FeatureList = [
   {
     title: 'Stream Blockchain Data',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    Svg: require('@site/static/img/server-data-svgrepo-com.svg').default,
     description: (
       <>
         A simple command <code>(tail)</code> to stream
@@ -15,7 +15,7 @@ const FeatureList = [
   },
   {
     title: 'Manage Local Development Cluster',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    Svg: require('@site/static/img/nodes-vector-svgrepo-com.svg').default,
     description: (
       <>
         Create, manage and destroy local development
@@ -25,7 +25,7 @@ const FeatureList = [
   },
   {
     title: 'Powered by Yaci Core',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    Svg: require('@site/static/img/poweredby.svg').default,
     description: (
       <>
         Yaci CLI uses Yaci Core, <code>a mini-protocol implementation in java</code>, to
