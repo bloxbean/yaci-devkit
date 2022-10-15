@@ -6,8 +6,6 @@ sidebar_position: 2
 
 Download the latest yaci-cli Jar from [GitHub](https://github.com/bloxbean/yaci-cli/) 
 
-**Supported platforms :** All platforms
-
 **Requirement :**  Java 11 and above
 
 [//]: # (a. Native Binary)

@@ -5,6 +5,12 @@ sidebar_position: 2
 
 # Local Cluster Mode
 
+:::info
+
+This feature is currently supported only on **Linux** and **MacOS**
+
+:::
+
 **Need your own Cardano private network during development ?**
 
 Using Local Cluster Mode commands, you can easily create and manage one or more 3-nodes local private network(s) on your local machine.

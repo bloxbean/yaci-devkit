@@ -1,112 +1,55 @@
 # yaci-cli
-A CLI to stream data from a Cardano Node. 
+A CLI tool aims to help developers building on Cardano. 
+
+[https://yaci-cli.bloxbean.com/](https://yaci-cli.bloxbean.com/)
+
+### Key Features
+- Stream blockchain data from a Cardano node
+- Create and manage a local private Cardano network (3 nodes cluster)  (Supported on Linux and MacOS)
 
 <i>More features will be added in future releases.</i>
 
-This CLI uses [Yaci](https://github.com/bloxbean/yaci-core), a mini protocol implementation in java, to interact with a remote Cardano node.
-
-You can find native binaries for Ubuntu (amd64), Mac (Intel, M1) in download section. 
-
-For all other platforms, please use the generic JAR file.
+This CLI uses [Yaci](https://github.com/bloxbean/yaci-core), a mini protocol implementation in java, to interact with a remote/local Cardano node.
 
 **Note:**
 **This is a command line tool. It works best in a terminal with Dark background. For terminal with light background, use "--color-mode light" option to change the color scheme**
 
 
-# How to Use:
+### For more details, check this [**User Guide**](https://yaci-cli.bloxbean.com/docs/intro)
 
 ## Installation Steps
 
-#### 1. Go to the download section to download the yaci-cli binary. There are two kinds of distributions available.
+- Go to the download section to download the yaci-cli Jar.
 
-**b. Generic Jar**
-   
-     Supported platforms : All platforms
-   
-     Requirement :  **Java 11**
+- Requirement :  Java 11 and above
 
-**a. Native Binary**
-
-     Supported Platforms :  Ubuntu (amd64), Mac OS (Intel / M1)
-
-#### 2. For Generic Jar
-
-You need **Java 11** to run yaci-cli jar file.
+- To run
 
 ```
-$> java -jar yaci-cli-0.0.2.jar
+$> java -jar yaci-cli-<version>.jar
 ```
 
-#### 3. For Native Binary
 
-- Download platform specific binary if available.
-- Rename the downloaded file to yaci-cli and change the permission
-- Run yaci-cli from a terminal
-- On Mac OS, you may need to allow this app to run (From System Preferences -> Security & Privacy)
+## How to Use ?
 
-```
-$> mv yaci-cli-<os>-<arch>-<version>  yaci-cli
-
-$> chmod +x yaci-cli
-
-$> ./yaci-cli
-```
-
-## How to use ?
-
-Once you start yaci-cli, you should see a prompt "yaci-cli:>"
-
-#### 1. To see help message
-
-```
-yaci-cli:> help
-
-yaci-cli:> help <command>
-
-yaci-cli:> help tail
-```
-
-#### 2. For terminal with light background, use --color-mode option with "tail" command
-
-```
-yaci-cli:> tail --color-mode light
-```
-
-#### 2. Stream from a Cardano node (tail)
-
-Use "tail" command to stream from a Cardano node. The tail command supports :-
-
-a> Stream from a public network (mainnet, legacy_testnet, prepod, preview) using a public relay
-
-b> Stream from a public network using your own Cardano node
-
-c> Stream from a private network
-
-
-**Stream from a public network using public relay**
+### Stream from a public network using public relay
 
 Specify the network name to stream using a public relay. The supported networks are  mainnet / legacy_testnet / prepod/ preview
 
 Default network: mainnet
 
 ```
-yaci-cli> tail    
-
-yaci-cli> tail --network legacy_testnet
-
-yaci-cli> tail --network prepod
-
-yaci-cli> tail --network preview
+yaci-cli> tail --network <network>
 ```
 
-**Stream from a public network using your own Cardano node**
+### Stream from a public network using your own Cardano node
 
 ```
 yaci-cli> tail --network tail --network mainnet --host <Cardano Node Host> --port <Cardano Node Port)
 
 ```
 
-**Stream from a private network**
+### Stream from a private network
 
 To stream data from a private network, please provide host, port, protocol magic, known host, known port
 
@@ -116,19 +59,15 @@ Example:
 yaci-cli:>tail --host localhost --port 30000 --protocol-magic 1 --known-slot 7055961 --known-blockhash f5753d8e7df48ed77eb1bc886e9b42c629e8a885ee88cfc994c127d2dff19641
 ```
 
+### Create and start a cluster
+```shell
+yaci-cli>create-cluster mydevcluster
+local-cluster:mydevcluster>start
+```
 
-## Build from source
+### Build from source
 
 ```
 export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 ./gradlew clean build -PskipSigning
-```
-
-## Build Native Image
-
-- Install GraalVM and set the path
-
-```
-export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
-./gradlew clean build nativeCompile -PskipSigning
 ```
