@@ -22,7 +22,7 @@ public class ZipUtil {
 
         while (zipEntry != null) {
             boolean isDirectory = false;
-            if (zipEntry.getName().endsWith(File.separator)) {
+            if (zipEntry.getName().endsWith(File.separator) || zipEntry.isDirectory()) {
                 isDirectory = true;
             }
 

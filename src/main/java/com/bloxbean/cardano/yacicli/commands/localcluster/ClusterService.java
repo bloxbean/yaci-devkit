@@ -288,10 +288,12 @@ public class ClusterService {
                             if (log.isDebugEnabled())
                                 log.debug("Copied : " + source.toAbsolutePath().toString());
 
-                            if (destination.getFileName().toString().endsWith("key") || destination.getFileName().toString().endsWith("cert")) {
-                                Files.setPosixFilePermissions(destination, Set.of(OWNER_READ, PosixFilePermission.OWNER_WRITE));
-                            } else if (destination.getFileName().toString().endsWith("sh") || destination.getFileName().toString().endsWith("bat")) {
-                                Files.setPosixFilePermissions(destination, Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE, GROUP_EXECUTE, GROUP_READ));
+                            if (OSUtil.getOperatingSystem() != OSUtil.OS.WINDOWS) {
+                                if (destination.getFileName().toString().endsWith("key") || destination.getFileName().toString().endsWith("cert")) {
+                                    Files.setPosixFilePermissions(destination, Set.of(OWNER_READ, PosixFilePermission.OWNER_WRITE));
+                                } else if (destination.getFileName().toString().endsWith("sh") || destination.getFileName().toString().endsWith("bat")) {
+                                    Files.setPosixFilePermissions(destination, Set.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE, GROUP_EXECUTE, GROUP_READ));
+                                }
                             }
                         }
                     } catch (IOException e) {
