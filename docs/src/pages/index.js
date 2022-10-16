@@ -31,7 +31,7 @@ export default function Home() {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      description="Yaci CLI - A CLI tool aims to help developers building on Cardano">
       <HomepageHeader />
       <main>
         <HomepageFeatures />
