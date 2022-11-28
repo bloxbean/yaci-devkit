@@ -71,6 +71,7 @@ public class ClusterCommands {
     @ShellMethod(value = "Create a local cluster (Babbage)", key = "create-cluster")
     public void createCluster(@ShellOption(value = {"-n", "--name"}, help = "Cluster Name") String clusterName,
                               @ShellOption(value = {"--ports"}, help = "Node ports (Used with --create option only)", defaultValue = "3001, 3002, 3003", arity = 3) int[] ports,
+                              @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
                               @ShellOption(value = {"-s", "--slotLength"}, help = "Slot Length (Valid values are 0.1 to 1)", defaultValue = "0.5", arity = 3) double slotLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing cluster directory. default: false") boolean overwrite
     ) {
@@ -81,7 +82,7 @@ public class ClusterCommands {
                 return;
             }
 
-            boolean success = localClusterService.createClusterFolder(clusterName, ports, slotLength, overwrite, (msg) -> writeLn(msg));
+            boolean success = localClusterService.createClusterFolder(clusterName, ports, submitApiPort, slotLength, overwrite, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);
@@ -115,6 +116,8 @@ public class ClusterCommands {
         writeLn(successLabel("Node Socket Paths", ""));
         for (String socketPath : clusterInfo.getSocketPaths())
             writeLn(socketPath);
+        writeLn(successLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
+        writeLn(successLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
     }
 
     @ShellMethod(value = "Delete a local cluster", key = "delete-cluster")
@@ -148,6 +151,12 @@ public class ClusterCommands {
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void logsLocalCluster() {
         localClusterService.logs(msg -> writeLn(msg));
+    }
+
+    @ShellMethod(value = "Show recent logs for submit api process", key = "submit-api-logs")
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void logsSubmitApi() {
+        localClusterService.submitApiLogs(msg -> writeLn(msg));
     }
 
     @ShellMethod(value = "Tail local cluster", key = "ltail")

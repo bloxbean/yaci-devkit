@@ -75,7 +75,7 @@ public class ClusterService {
 
     public void startCluster(String clusterName) {
         try {
-            clusterStartService.startCluster(getClusterFolder(clusterName), msg -> writeLn(msg));
+            clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), msg -> writeLn(msg));
             writeLn(info("Swagger Url to interact with the cluster's node : " + "http://localhost:" + server.getWebServer().getPort() +"/swagger-ui.html"));
         } catch (Exception e) {
             System.out.println("Error a creating local cluster");
@@ -118,7 +118,8 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public boolean createClusterFolder(String clusterName, int[] ports, double slotLength,  boolean overwrite, Consumer<String> writer) throws IOException {
+    public boolean createClusterFolder(String clusterName, int[] ports, int submitApiPort,
+                                       double slotLength,  boolean overwrite, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -168,8 +169,10 @@ public class ClusterService {
             //Update genesis
             updateGenesis(destPath, slotLength, writer);
 
+            updateSubmitApiFiles(destPath, submitApiPort);
+
             //Update node config
-            saveClusterInfo(destPath, ports, slotLength);
+            saveClusterInfo(destPath, ports, submitApiPort, slotLength);
 
             writer.accept(success("Update ports"));
             writer.accept(success("Create Cluster : %s", clusterName));
@@ -190,7 +193,7 @@ public class ClusterService {
             return true;
 
         writer.accept(error("cardno-node binary is not found in %s", clusterConfig.getCLIBinFolder()));
-        writer.accept(error("Please download and copy cardano-node, cardano-cli executables (1.35.3 or later) to %s and try again (Set execute permission if required)", clusterConfig.getCLIBinFolder()));
+        writer.accept(error("Please download and copy cardano-node, cardano-cli, cardano-submit-api executables (1.35.3 or later) to %s and try again (Set execute permission if required)", clusterConfig.getCLIBinFolder()));
         return false;
         //Download
 
@@ -246,7 +249,22 @@ public class ClusterService {
         }
     }
 
-    private ClusterInfo saveClusterInfo(Path clusterFolder, int[] nodePorts, double slotLength) throws IOException {
+    private void updateSubmitApiFiles(Path destPath, int submitApiPort) throws IOException {
+        Map<String, String> values = new HashMap<>();
+        values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
+        values.put("SUBMIT_API_PORT", String.valueOf(submitApiPort));
+        values.put("PROTOCOL_MAGIC", String.valueOf(42)); //Fixed for now
+
+        //Update submit api script
+        Path submitApiSh = destPath.resolve("submit-api.sh");
+        try {
+            templateEngine.replaceValues(submitApiSh, values);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
+    private ClusterInfo saveClusterInfo(Path clusterFolder, int[] nodePorts, int submitApiPort, double slotLength) throws IOException {
         String[] socketPaths = new String[3];
         IntStream.range(0,3).forEach(i -> {
                 socketPaths[i] = clusterFolder.resolve(NODE_FOLDER_PREFIX + (i+1)).resolve("node.sock").toString();
@@ -255,6 +273,7 @@ public class ClusterService {
         //Create node_config
         ClusterInfo clusterInfo = ClusterInfo.builder()
                 .nodePorts(nodePorts)
+                .submitApiPort(submitApiPort)
                 .socketPaths(socketPaths)
                 .build();
 
@@ -309,6 +328,10 @@ public class ClusterService {
 
     public void logs(Consumer<String> writer) {
         clusterStartService.showLogs(writer);
+    }
+
+    public void submitApiLogs(Consumer<String> writer) {
+        clusterStartService.showSubmitApiLogs(writer);
     }
 
     public void ltail(String clusterName, boolean showMint, boolean showInputs, boolean showMetadata,

@@ -34,9 +34,17 @@ public class ClusterStartService {
     private List<Process> processes = new ArrayList<>();
 
     private Queue<String> logs = EvictingQueue.create(200);
+    private Queue<String> submitApiLogs = EvictingQueue.create(100);
 
-    public void startCluster(Path clusterFolder, Consumer<String> writer) {
+    private ClusterConfig clusterConfig;
+
+    public ClusterStartService(ClusterConfig clusterConfig) {
+        this.clusterConfig = clusterConfig;
+    }
+
+    public void startCluster(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
         logs.clear();
+        submitApiLogs.clear();
 
         if (processes.size() > 0) {
             writer.accept("A cluster is already running. You can only run one cluster at a time.");
@@ -50,10 +58,13 @@ public class ClusterStartService {
             Process process1 = startNode(clusterFolder, 1, writer);
             Process process2 = startNode(clusterFolder, 2, writer);
             Process process3 = startNode(clusterFolder, 3, writer);
+            Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
 
             processes.add(process1);
             processes.add(process2);
             processes.add(process3);
+            if (submitApiProcess != null)
+                processes.add(submitApiProcess);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -87,6 +98,7 @@ public class ClusterStartService {
             }
 
             logs.clear();
+            submitApiLogs.clear();
         } catch (Exception e) {
             log.error("Error stopping process", e);
             writer.accept(error("Cluster could not be stopped. Please kill the process manually." + e.getMessage()));
@@ -108,6 +120,20 @@ public class ClusterStartService {
             }
         }
 
+    }
+
+    public void showSubmitApiLogs(Consumer<String> consumer) {
+        if (submitApiLogs.isEmpty()) {
+            consumer.accept("No log to show");
+        } else {
+            int counter = 0;
+            while(!submitApiLogs.isEmpty()) {
+                counter++;
+                if (counter == 100)
+                    return;
+                consumer.accept(submitApiLogs.poll());
+            }
+        }
     }
 
     private Process startNode(Path clusterFolder, int nodeNo, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
@@ -137,6 +163,36 @@ public class ClusterStartService {
 //        int exitCode = process.waitFor();
 //        assert exitCode == 0;
 //        future.get(10, TimeUnit.SECONDS);
+    }
+
+    private Process startSubmitApi(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        String clusterFolderPath = clusterFolder.toAbsolutePath().toString();
+
+        //Check if cardano-submit-api exists
+        String cardanoSubmitCli = "cardano-submit-api";
+        Path binFolder = Path.of(clusterConfig.getCLIBinFolder());
+        Path cardanoSubmitCliPath = binFolder.resolve(cardanoSubmitCli);
+        if (!Files.exists(cardanoSubmitCliPath)) {
+            writer.accept(info("Cardano submit api could not be started."));
+            writer.accept(info("To start submit api, you need to copy cardano-submit-api binary to " + clusterConfig.getCLIBinFolder()));
+            return null;
+        }
+
+        ProcessBuilder builder = new ProcessBuilder();
+        builder.command("sh", "submit-api.sh");
+
+        File submitApiStartDir = new File(clusterFolderPath);
+        builder.directory(submitApiStartDir);
+        Process process = builder.start();
+
+        writer.accept(success("Started submit api : http://localhost:" +  clusterInfo.getSubmitApiPort()));
+        ProcessStream processStream =
+                new ProcessStream(process.getInputStream(), line -> {
+                    submitApiLogs.add("[SubmitApi] " +  line);
+                });
+        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
+
+        return process;
     }
 
     private boolean setupFirstRun(Path clusterFolder, Consumer<String> writer) throws IOException {

@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ClusterInfo {
     private int[] nodePorts;
+    private int submitApiPort;
     private String[] socketPaths;
     @Builder.Default
     private long protocolMagic = 42;
