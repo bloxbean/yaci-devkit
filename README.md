@@ -71,3 +71,9 @@ local-cluster:mydevcluster>start
 export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 ./gradlew clean build -PskipSigning
 ```
+
+### Docker build
+
+```shell
+docker buildx build --push --platform linux/amd64,linux/arm64 --tag bloxbean/yaci-cli:<version> . 
+```

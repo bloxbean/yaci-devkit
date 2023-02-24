@@ -37,4 +37,13 @@ public class YaciCliApplication {
 		}
 	}
 
+    @PostConstruct
+    public void addShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                System.exit(1);
+            }
+        });
+    }
+
 }
