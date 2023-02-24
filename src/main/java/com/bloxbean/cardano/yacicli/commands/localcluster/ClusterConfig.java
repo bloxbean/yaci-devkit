@@ -23,21 +23,21 @@ public class ClusterConfig {
     @Value("${local.cluster.home:#{null}}")
     private String clusterHome;
 
-    @Value("${cardano.cli.path: #{null}}")
+    @Value("${cardano.cli.path:#{null}}")
     private String cardanoCliPath;
 
     public String getClusterHome() {
-        if (!StringUtils.hasLength(clusterHome))
+        if (clusterHome == null || !StringUtils.hasLength(clusterHome.trim()))
             return Path.of(YACI_CLI_HOME, "local-clusters").toAbsolutePath().toString();
 
         return clusterHome;
     }
 
     public String getCLIBinFolder() {
-        if (!StringUtils.hasLength(clusterHome))
+        if (cardanoCliPath == null || !StringUtils.hasLength(cardanoCliPath.trim()))
             return Path.of(YACI_CLI_HOME, "bin").toAbsolutePath().toString();
-
-        return clusterHome;
+        else
+            return Path.of(cardanoCliPath).toAbsolutePath().toString();
     }
 
     public String getCardanoCliPath() {
