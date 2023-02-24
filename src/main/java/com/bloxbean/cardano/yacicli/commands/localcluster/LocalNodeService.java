@@ -1,7 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.client.address.Address;
-import com.bloxbean.cardano.client.address.AddressService;
+import com.bloxbean.cardano.client.address.AddressProvider;
 import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
 import com.bloxbean.cardano.client.api.UtxoSupplier;
 import com.bloxbean.cardano.client.api.model.Amount;
@@ -87,7 +87,7 @@ public class LocalNodeService {
         for (Tuple<VerificationKey, SecretKey> tuple : utxoKeys) {
             HdPublicKey hdPublicKey = new HdPublicKey();
             hdPublicKey.setKeyData(tuple._1.getBytes());
-            Address address = AddressService.getInstance().getEntAddress(hdPublicKey, Networks.testnet());
+            Address address = AddressProvider.getEntAddress(hdPublicKey, Networks.testnet());
 
             Mono<UtxoByAddressQueryResult> utxosMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(Era.Alonzo, address));
             UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));

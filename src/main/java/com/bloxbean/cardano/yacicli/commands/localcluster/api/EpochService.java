@@ -4,7 +4,6 @@ import co.nstant.in.cbor.model.Array;
 import co.nstant.in.cbor.model.DataItem;
 import com.bloxbean.cardano.client.api.model.ProtocolParams;
 import com.bloxbean.cardano.client.backend.model.EpochContent;
-import com.bloxbean.cardano.yaci.core.helpers.LocalStateQueryClient;
 import com.bloxbean.cardano.yaci.core.model.Era;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.CurrentProtocolParamQueryResult;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.CurrentProtocolParamsQuery;
@@ -12,9 +11,10 @@ import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQuery;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQueryResult;
 import com.bloxbean.cardano.yaci.core.util.CborSerializationUtil;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
+import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
+import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -36,12 +36,13 @@ public class EpochService {
     @GetMapping("latest")
     public Mono<EpochContent> getLatestEpoch() {
         try {
-            LocalStateQueryClient localStateQueryClient = localQueryClientUtil.getLocalQueryClient();
-            localStateQueryClient.start();
+            LocalClientProvider localClientProvider = localQueryClientUtil.getLocalQueryClient();
+            LocalStateQueryClient localStateQueryClient = localClientProvider.getLocalStateQueryClient();
+            localClientProvider.start();
             Mono<EpochNoQueryResult> mono = localStateQueryClient.executeQuery(new EpochNoQuery(Era.Alonzo));
 
             return mono.map(epochNoQueryResult -> EpochContent.builder().epoch(Integer.valueOf((int) epochNoQueryResult.getEpochNo())).build())
-                    .doOnTerminate(() -> localStateQueryClient.shutdown());
+                    .doOnTerminate(() -> localClientProvider.shutdown());
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -52,8 +53,9 @@ public class EpochService {
     @GetMapping("parameters")
     Mono<ProtocolParams> getProtocolParameters() {
         try {
-            LocalStateQueryClient localStateQueryClient = localQueryClientUtil.getLocalQueryClient();
-            localStateQueryClient.start();
+            LocalClientProvider localClientProvider = localQueryClientUtil.getLocalQueryClient();
+            LocalStateQueryClient localStateQueryClient = localClientProvider.getLocalStateQueryClient();
+            localClientProvider.start();
             Mono<CurrentProtocolParamQueryResult> mono = localStateQueryClient.executeQuery(new CurrentProtocolParamsQuery(Era.Alonzo));
 
             return mono.map(currentProtocolParameters -> {
@@ -95,7 +97,7 @@ public class EpochService {
                         protocolParams.setCoinsPerUtxoSize(String.valueOf(currentProtocolParameters.getProtocolParams().getAdaPerUtxoByte()));
                         return protocolParams;
                     })
-                    .doOnTerminate(() -> localStateQueryClient.shutdown());
+                    .doOnTerminate(() -> localClientProvider.shutdown());
 
         } catch (Exception e) {
             throw new RuntimeException(e);

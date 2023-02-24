@@ -2,10 +2,10 @@ package com.bloxbean.cardano.yacicli.txnprovider;
 
 import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
 import com.bloxbean.cardano.client.api.model.ProtocolParams;
-import com.bloxbean.cardano.yaci.core.helpers.LocalStateQueryClient;
 import com.bloxbean.cardano.yaci.core.model.Era;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.CurrentProtocolParamQueryResult;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.CurrentProtocolParamsQuery;
+import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
 
 import java.math.BigDecimal;
 

@@ -35,7 +35,7 @@ public class Commands {
     public void tail(
             @ShellOption(help = "Cardano Node host", defaultValue = ShellOption.NULL) String host,
             @ShellOption(help = "Cardano Node Port", defaultValue = "0") int port,
-            @ShellOption(defaultValue = ShellOption.NULL, help = "Provide a known network (mainnet, legacy_testnet, prepod, preview)") String network,
+            @ShellOption(defaultValue = ShellOption.NULL, help = "Provide a known network (mainnet, legacy_testnet, preprod, preview)") String network,
             @ShellOption(value = {"--protocol-magic"}, help = "Protocol Magic", defaultValue = "0") long protocolMagic,
             @ShellOption(value = {"--known-slot"}, help = "Well known slot", defaultValue = "0") long slot,
             @ShellOption(value = {"--known-blockhash"}, help = "Well known block hash", defaultValue = ShellOption.NULL) String blockHash,

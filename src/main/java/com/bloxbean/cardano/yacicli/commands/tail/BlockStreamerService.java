@@ -8,7 +8,7 @@ import com.bloxbean.cardano.yaci.core.model.TransactionOutput;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.messages.VersionTable;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.util.N2NVersionTableConstant;
-import com.bloxbean.cardano.yaci.core.reactive.BlockStreamer;
+import com.bloxbean.cardano.yaci.helper.reactive.BlockStreamer;
 import com.bloxbean.cardano.yacicli.commands.tail.model.*;
 import com.bloxbean.cardano.yacicli.common.ConsoleHelper;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
@@ -247,23 +247,23 @@ public class BlockStreamerService {
                     wellKnownPoint = new Point(slot, blockHash);
                 else
                     wellKnownPoint = Constants.WELL_KNOWN_TESTNET_POINT;
-            } else if ("prepod".equals(network)) {
+            } else if ("preprod".equals(network)) {
                 if (!StringUtils.hasLength(host)) {
-                    host = Constants.PREPOD_IOHK_RELAY_ADDR;
+                    host = Constants.PREPROD_IOHK_RELAY_ADDR;
                 }
 
                 if (port == 0) {
-                    port = Constants.PREPOD_IOHK_RELAY_PORT;
+                    port = Constants.PREPROD_IOHK_RELAY_PORT;
                 }
 
                 if (protocolMagic == 0) {
-                    protocolMagic = Constants.PREPOD_PROTOCOL_MAGIC;
+                    protocolMagic = Constants.PREPROD_PROTOCOL_MAGIC;
                 }
 
                 if (slot != 0 && StringUtils.hasLength(blockHash))
                     wellKnownPoint = new Point(slot, blockHash);
                 else
-                    wellKnownPoint = Constants.WELL_KNOWN_PREPOD_POINT;
+                    wellKnownPoint = Constants.WELL_KNOWN_PREPROD_POINT;
             } else if ("preview".equals(network)) {
                 if (!StringUtils.hasLength(host)) {
                     host = Constants.PREVIEW_IOHK_RELAY_ADDR;

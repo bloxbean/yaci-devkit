@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.api;
 
-import com.bloxbean.cardano.yaci.core.helpers.LocalStateQueryClient;
+import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
+import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import org.springframework.stereotype.Component;
@@ -15,12 +16,12 @@ public class LocalQueryClientUtil {
         this.localClusterService = clusterService;
     }
 
-    public LocalStateQueryClient getLocalQueryClient() throws Exception {
+    public LocalClientProvider getLocalQueryClient() throws Exception {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
         String[] socketPaths = localClusterService.getClusterInfo(clusterName).getSocketPaths();
-        LocalStateQueryClient localStateQueryClient = new LocalStateQueryClient(socketPaths[0], protocolMagic);
 
-        return localStateQueryClient;
+        LocalClientProvider localClientProvider = new LocalClientProvider(socketPaths[0], protocolMagic);
+        return localClientProvider;
     }
 }

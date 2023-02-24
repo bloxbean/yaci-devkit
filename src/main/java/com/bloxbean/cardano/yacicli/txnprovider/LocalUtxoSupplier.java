@@ -4,10 +4,10 @@ import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.api.UtxoSupplier;
 import com.bloxbean.cardano.client.api.common.OrderEnum;
 import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.yaci.core.helpers.LocalStateQueryClient;
 import com.bloxbean.cardano.yaci.core.model.Era;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQuery;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQueryResult;
+import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
 
 import java.util.Collections;
 import java.util.List;

@@ -1,26 +1,28 @@
 package com.bloxbean.cardano.yacicli.txnprovider;
 
-import com.bloxbean.cardano.yaci.core.helpers.LocalStateQueryClient;
-import com.bloxbean.cardano.yaci.core.helpers.LocalTxSubmissionClient;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.LocalTxSubmissionListener;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgAcceptTx;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgRejectTx;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.model.TxSubmissionRequest;
+import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
+import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
+import com.bloxbean.cardano.yaci.helper.LocalTxSubmissionClient;
 
 import java.util.function.Consumer;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 public class LocalNodeClientFactory {
+    private LocalClientProvider localClientProvider;
     private LocalStateQueryClient localStateQueryClient;
     private LocalTxSubmissionClient txSubmissionClient;
 
     public LocalNodeClientFactory(String socketFile, long protocolMagic, Consumer<String> writer) {
-        this.localStateQueryClient = new LocalStateQueryClient(socketFile, protocolMagic);
-        this.localStateQueryClient.start(result -> {});
+        this.localClientProvider = new LocalClientProvider(socketFile, protocolMagic);
+        this.localStateQueryClient = localClientProvider.getLocalStateQueryClient();
 
-        this.txSubmissionClient = new LocalTxSubmissionClient(socketFile, protocolMagic);
-        this.txSubmissionClient.addTxSubmissionListener(new LocalTxSubmissionListener() {
+        this.txSubmissionClient = localClientProvider.getTxSubmissionClient();
+        this.localClientProvider.addTxSubmissionListener(new LocalTxSubmissionListener() {
             @Override
             public void txAccepted(TxSubmissionRequest txSubmissionRequest, MsgAcceptTx msgAcceptTx) {
                 writer.accept(success("Transaction submitted successfully"));
@@ -32,7 +34,7 @@ public class LocalNodeClientFactory {
                 writer.accept(error("Transaction submission failed"));
             }
         });
-        this.txSubmissionClient.start(txResult -> {});
+        this.localClientProvider.start();
     }
 
     public LocalStateQueryClient getLocalStateQueryClient() {
@@ -45,11 +47,11 @@ public class LocalNodeClientFactory {
 
     public void shutdown() {
         try {
-            localStateQueryClient.shutdown();
+            localClientProvider.shutdown();
         } catch (Exception e) {
             throw e;
         } finally {
-            txSubmissionClient.shutdown();
+            localClientProvider.shutdown();
         }
     }
 }
