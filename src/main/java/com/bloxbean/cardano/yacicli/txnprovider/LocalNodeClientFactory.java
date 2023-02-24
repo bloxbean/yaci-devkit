@@ -31,7 +31,7 @@ public class LocalNodeClientFactory {
 
             @Override
             public void txRejected(TxSubmissionRequest txSubmissionRequest, MsgRejectTx msgRejectTx) {
-                writer.accept(error("Transaction submission failed"));
+                writer.accept(error("Transaction submission failed. " + msgRejectTx.getReasonCbor()));
             }
         });
         this.localClientProvider.start();

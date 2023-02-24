@@ -143,7 +143,7 @@ public class LocalNodeService {
         writer.accept(infoLabel("Txn Cbor", signedTransaction.serializeToHex()));
 
         //Submit Tx using LocalStateQuery mini-protocol
-        localNodeClientFactory.getTxSubmissionClient().submitTx(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
+        localNodeClientFactory.getTxSubmissionClient().submitTxCallback(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
         //localNodeClientFactory.shutdown();
     }
 
