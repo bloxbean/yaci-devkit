@@ -1,5 +1,5 @@
 {
-  "activeSlotsCoeff": 0.1,
+  "activeSlotsCoeff": 0.25,
   "epochLength": 500,
   "genDelegs": {
     "337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e": {
