@@ -1,7 +1,7 @@
 #spring:
 #  main:
 #    banner-mode: "off"
-application.version: v0.0.6
+application.version: v0.0.7
 
 server:
   port: 0
@@ -22,3 +22,5 @@ shell.out.info: CYAN
 shell.out.success: GREEN
 shell.out.warning: YELLOW
 shell.out.error: RED
+
+

@@ -52,7 +52,7 @@ public class ClusterCommands {
     }
 
     @ShellMethod(value = "Enter local cluster mode(Babbage)", key = "cluster")
-    public void startLocalClusterContext(@ShellOption(value = {"-n", "--name"}, help = "Cluster Name") String clusterName) {
+    public void startLocalClusterContext(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName) {
         try {
             if (CommandContext.INSTANCE.getCurrentMode() == CommandContext.Mode.LOCAL_CLUSTER) {
                 localClusterService.stopCluster(msg -> writeLn(msg));
@@ -69,11 +69,12 @@ public class ClusterCommands {
     }
 
     @ShellMethod(value = "Create a local cluster (Babbage)", key = "create-cluster")
-    public void createCluster(@ShellOption(value = {"-n", "--name"}, help = "Cluster Name") String clusterName,
+    public void createCluster(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName,
                               @ShellOption(value = {"--ports"}, help = "Node ports (Used with --create option only)", defaultValue = "3001, 3002, 3003", arity = 3) int[] ports,
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
                               @ShellOption(value = {"-s", "--slotLength"}, help = "Slot Length (Valid values are 0.1 to 1)", defaultValue = "0.5", arity = 3) double slotLength,
-                              @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing cluster directory. default: false") boolean overwrite
+                              @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing cluster directory. default: false") boolean overwrite,
+                              @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the cluster after create. default: false") boolean start
     ) {
 
         try {
@@ -90,6 +91,9 @@ public class ClusterCommands {
                 //change to Local Cluster Context
                 CommandContext.INSTANCE.setCurrentMode(CommandContext.Mode.LOCAL_CLUSTER);
                 CommandContext.INSTANCE.setProperty(CUSTER_NAME, clusterName);
+
+                if (start)
+                    startLocalCluster();
             }
         } catch (Exception e) {
             log.error("Error", e);
@@ -145,6 +149,24 @@ public class ClusterCommands {
     public void stopLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.stopCluster(msg -> writeLn(msg));
+    }
+
+    @ShellMethod(value = "Reset local cluster. Delete data and logs folder and restart.", key = "reset")
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void resetLocalCluster() {
+        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        localClusterService.stopCluster(msg -> writeLn(msg));
+        try {
+            localClusterService.deleteClusterDataFolder(clusterName, (msg) -> {
+                writeLn(msg);
+            });
+
+            startLocalCluster();
+        } catch (IOException e) {
+            if (log.isDebugEnabled())
+                log.error("Delete error", e);
+            writeLn(error("Deletion failed for cluster db & logs: %s", clusterName));
+        }
     }
 
     @ShellMethod(value = "Show recent logs for running cluster", key = "logs")

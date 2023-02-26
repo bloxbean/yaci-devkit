@@ -8,9 +8,12 @@ import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQ
 import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
 import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.List;
 
 @RestController
@@ -24,19 +27,23 @@ public class AddressService {
 
     @Operation(summary = "Get utxos by address")
     @GetMapping(path = "{address}/utxos")
-    Mono<List<Utxo>> getUtxos(@PathVariable("address") String address) {
+    List<Utxo> getUtxos(@PathVariable("address") String address) {
 
+        LocalClientProvider localClientProvider = null;
         try {
-            LocalClientProvider localClientProvider = localQueryClientUtil.getLocalQueryClient();
+            localClientProvider = localQueryClientUtil.getLocalQueryClient();
             LocalStateQueryClient localStateQueryClient = localClientProvider.getLocalStateQueryClient();
             localClientProvider.start();
             UtxoByAddressQuery utxoByAddressQuery = new UtxoByAddressQuery(Era.Alonzo, new Address(address));
-            Mono<UtxoByAddressQueryResult> mono = localStateQueryClient.executeQuery(utxoByAddressQuery);
+            UtxoByAddressQueryResult mono = (UtxoByAddressQueryResult) localStateQueryClient.executeQuery(utxoByAddressQuery).block(Duration.ofSeconds(8));
 
-            return mono.map(utxoByAddressQueryResult -> utxoByAddressQueryResult.getUtxoList()).doOnTerminate(() -> localClientProvider.shutdown());
+            return mono.getUtxoList();
 
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            if (localClientProvider != null)
+                localClientProvider.shutdown();
         }
     }
 }

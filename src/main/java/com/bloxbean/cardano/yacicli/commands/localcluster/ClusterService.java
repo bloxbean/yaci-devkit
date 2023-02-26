@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext;
+import org.springframework.boot.web.context.WebServerApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -51,7 +51,9 @@ public class ClusterService {
     ObjectMapper objectMapper;
 
     @Autowired
-    private ReactiveWebServerApplicationContext server;
+    private WebServerApplicationContext server;
+//    @Autowired
+//    private ReactiveWebServerApplicationContext server;
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -109,6 +111,26 @@ public class ClusterService {
             FileUtils.deleteDirectory(clusterFolder.toFile());
             if (!clusterFolder.toFile().exists())
                 writer.accept(success("ClusterFolder %s deleted", clusterFolder.getFileName().toString()));
+        } else {
+            writer.accept(error("Cluster folder not found : %s", clusterFolder));
+        }
+    }
+
+    public void deleteClusterDataFolder(String clusterName, Consumer<String> writer) throws IOException {
+        Path clusterFolder = getClusterFolder(clusterName);
+        if (Files.exists(clusterFolder)) {
+            for (int i=0; i<3; i++) {
+                String nodeName = NODE_FOLDER_PREFIX + (i+1);
+                Path dbFolder = clusterFolder.resolve(nodeName).resolve("db");
+                Path logsFolder = clusterFolder.resolve(nodeName).resolve("logs");
+                if (dbFolder.toFile().exists())
+                    FileUtils.deleteDirectory(dbFolder.toFile());
+                if (logsFolder.toFile().exists())
+                    FileUtils.deleteDirectory(logsFolder.toFile());
+                if (!dbFolder.toFile().exists())
+                writer.accept(success("Cluster db and logs folders deleted. %s, %s", clusterName, nodeName));
+            }
+
         } else {
             writer.accept(error("Cluster folder not found : %s", clusterFolder));
         }

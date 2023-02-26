@@ -1,7 +1,7 @@
 plugins {
-	id 'org.springframework.boot' version '2.7.3'
-	id 'org.springframework.experimental.aot' version '0.12.1'
-	id 'io.spring.dependency-management' version '1.0.13.RELEASE'
+    id 'org.springframework.boot' version '3.0.3'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'org.graalvm.buildtools.native' version '0.9.18'
 	id 'java'
 	id 'signing'
 }
@@ -12,7 +12,7 @@ configurations {
 	}
 }
 
-sourceCompatibility = '11'
+sourceCompatibility = '17'
 
 repositories {
 	maven { url 'https://repo.spring.io/release' }
@@ -21,13 +21,13 @@ repositories {
 }
 
 ext {
-	set('springShellVersion', "2.1.1")
+    set('springShellVersion', "3.0.0")
 }
 
 dependencies {
 	implementation 'org.springframework.shell:spring-shell-starter'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springdoc:springdoc-openapi-webflux-ui:1.6.11'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
 
 	implementation 'com.bloxbean.cardano:yaci:0.1.8'
@@ -60,11 +60,11 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-springAot {
-	removeXmlSupport = false
-	removeSpelSupport = false
-	removeYamlSupport = false
-}
+//springAot {
+//	removeXmlSupport = false
+//	removeSpelSupport = false
+//	removeYamlSupport = false
+//}
 
 task genClusterTemplatesZip(type: Zip) {
 	from sourceSets.main.resources
@@ -72,7 +72,10 @@ task genClusterTemplatesZip(type: Zip) {
 	archiveName 'localcluster.zip'
 	destinationDir(new File("build/resources/main"))
 }
-generateAot.dependsOn genClusterTemplatesZip
+
+compileJava {
+    dependsOn genClusterTemplatesZip
+}
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 if (isReleaseVersion && !project.hasProperty("skipSigning")) {

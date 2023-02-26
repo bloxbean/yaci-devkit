@@ -1,12 +1,12 @@
 package com.bloxbean.cardano.yacicli;
 
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,14 +36,5 @@ public class YaciCliApplication {
 				Files.createDirectories(path);
 		}
 	}
-
-    @PostConstruct
-    public void addShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                System.exit(1);
-            }
-        });
-    }
 
 }
