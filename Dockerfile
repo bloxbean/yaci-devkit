@@ -19,8 +19,10 @@ RUN mkdir -p /config
 COPY docker/application.properties /config/
 
 WORKDIR /
-#EXPOSE 8080
+EXPOSE 3001
+EXPOSE 3002
+EXPOSE 3003
 EXPOSE 8090
-EXPOSE 38421
+EXPOSE 10000
 
 CMD java -Dcom.sun.management.jmxremote -noverify ${JAVA_OPTS} -jar yaci-cli.jar
