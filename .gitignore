@@ -36,3 +36,4 @@ out/
 ### VS Code ###
 .vscode/
 spring-shell.log
+yaci-cli.history
