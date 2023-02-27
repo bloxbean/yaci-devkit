@@ -12,17 +12,19 @@ RUN sh download-$TARGETARCH.sh
 #RUN apk --no-cache add curl
 
 RUN echo "I'm building for $TARGETOS/$TARGETARCH"
+RUN mkdir "/app"
 
-COPY build/libs/yaci-cli-*.jar yaci-cli.jar
+COPY build/libs/yaci-cli-*.jar /app/yaci-cli.jar
 
-RUN mkdir -p /config
-COPY docker/application.properties /config/
+RUN mkdir -p /app/config
+COPY docker/application.properties /app/config/
 
-WORKDIR /
+
+WORKDIR /app
 EXPOSE 3001
 EXPOSE 3002
 EXPOSE 3003
 EXPOSE 8090
 EXPOSE 10000
 
-CMD java -Dcom.sun.management.jmxremote -noverify ${JAVA_OPTS} -jar yaci-cli.jar
+CMD java -Dcom.sun.management.jmxremote -noverify ${JAVA_OPTS} -jar /app/yaci-cli.jar

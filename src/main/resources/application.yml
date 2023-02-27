@@ -1,7 +1,7 @@
 #spring:
 #  main:
 #    banner-mode: "off"
-application.version: v0.0.7
+application.version: v0.0.8
 
 server:
   port: 0
@@ -24,3 +24,7 @@ shell.out.warning: YELLOW
 shell.out.error: RED
 
 
+spring.shell.history.enabled: true
+spring.shell.history.name: yaci-cli.history
+#spring.shell.config.location
+#spring.shell.config.env
