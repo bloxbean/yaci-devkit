@@ -1,22 +1,14 @@
-package com.bloxbean.cardano.yacicli.commands.localcluster.api;
+package com.bloxbean.cardano.yacicli.commands.localcluster.common;
 
 import co.nstant.in.cbor.model.Array;
 import co.nstant.in.cbor.model.DataItem;
+import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
 import com.bloxbean.cardano.client.api.model.ProtocolParams;
-import com.bloxbean.cardano.client.backend.model.EpochContent;
-import com.bloxbean.cardano.yaci.core.model.Era;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.CurrentProtocolParamQueryResult;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.CurrentProtocolParamsQuery;
-import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQuery;
-import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQueryResult;
 import com.bloxbean.cardano.yaci.core.util.CborSerializationUtil;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
-import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
 import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
-import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
@@ -24,49 +16,20 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
-@RequestMapping(path = "/local-cluster/api/epochs")
-public class EpochService {
+public class LocalProtocolSupplier implements ProtocolParamsSupplier {
+    private LocalStateQueryClient localStateQueryClient;
 
-    private LocalQueryClientUtil localQueryClientUtil;
-
-    public EpochService(LocalQueryClientUtil localQueryClientUtil) {
-        this.localQueryClientUtil = localQueryClientUtil;
+    public LocalProtocolSupplier(LocalStateQueryClient localStateQueryClient) {
+        this.localStateQueryClient = localStateQueryClient;
     }
 
-    @GetMapping("latest")
-    public EpochContent getLatestEpoch() {
-
-        LocalClientProvider localClientProvider = null;
-        try { //TODO -- replace with try-with-resource
-            localClientProvider = localQueryClientUtil.getLocalQueryClient();
-            LocalStateQueryClient localStateQueryClient = localClientProvider.getLocalStateQueryClient();
-            localClientProvider.start();
-            Mono<EpochNoQueryResult> mono = localStateQueryClient.executeQuery(new EpochNoQuery(Era.Alonzo));
-
-            long epochNo = mono.block(Duration.ofSeconds(5)).getEpochNo();
-            return EpochContent.builder().epoch(Integer.valueOf((int) epochNo)).build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (localClientProvider != null)
-                localClientProvider.shutdown();
-        }
-    }
-
-    @Operation(summary = "Get current protocol parameters. The {number} path variable is ignored. So any value can be passed.")
-    @GetMapping("parameters")
-    ProtocolParams getProtocolParameters() {
-        LocalClientProvider localClientProvider = null;
+    @Override
+    public ProtocolParams getProtocolParams() {
         try {
-            localClientProvider = localQueryClientUtil.getLocalQueryClient();
-            LocalStateQueryClient localStateQueryClient = localClientProvider.getLocalStateQueryClient();
-            localClientProvider.start();
-            Mono<CurrentProtocolParamQueryResult> mono = localStateQueryClient.executeQuery(new CurrentProtocolParamsQuery(Era.Alonzo));
+            Mono<CurrentProtocolParamQueryResult> mono = localStateQueryClient.executeQuery(new CurrentProtocolParamsQuery());
 
             CurrentProtocolParamQueryResult currentProtocolParameters = mono.block(Duration.ofSeconds(6));
 
-            // return mono.map(currentProtocolParameters -> {
             ProtocolParams protocolParams = new ProtocolParams();
             protocolParams.setMinFeeA(currentProtocolParameters.getProtocolParams().getMinFeeA());
             protocolParams.setMinFeeB(currentProtocolParameters.getProtocolParams().getMinFeeB());
@@ -106,9 +69,6 @@ public class EpochService {
             return protocolParams;
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            if (localClientProvider != null)
-                localClientProvider.shutdown();
         }
     }
 
@@ -120,7 +80,7 @@ public class EpochService {
         Map<String, Long> costs = new HashMap<>();
         int i = 0;
         for (DataItem costDI : plutusV1CostModelArray.getDataItems()) {
-            costs.put(String.valueOf(i++), CborSerializationUtil.toLong(costDI));
+            costs.put(String.format("%03d", i++), CborSerializationUtil.toLong(costDI));
         }
 
         return costs;

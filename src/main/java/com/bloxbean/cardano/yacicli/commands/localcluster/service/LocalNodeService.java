@@ -1,4 +1,4 @@
-package com.bloxbean.cardano.yacicli.commands.localcluster;
+package com.bloxbean.cardano.yacicli.commands.localcluster.service;
 
 import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.address.AddressProvider;
@@ -19,14 +19,17 @@ import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
-import com.bloxbean.cardano.yaci.core.model.Era;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.*;
+import com.bloxbean.cardano.yaci.core.protocol.localtx.LocalTxSubmissionListener;
+import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgAcceptTx;
+import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgRejectTx;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.model.TxSubmissionRequest;
+import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
+import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.common.Tuple;
-import com.bloxbean.cardano.yacicli.txnprovider.LocalNodeClientFactory;
-import com.bloxbean.cardano.yacicli.txnprovider.LocalProtocolSupplier;
-import com.bloxbean.cardano.yacicli.txnprovider.LocalUtxoSupplier;
+import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalProtocolSupplier;
+import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalUtxoSupplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -41,27 +44,42 @@ import java.util.function.Consumer;
 import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
 import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.balanceTx;
 import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
-import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
 import static com.bloxbean.cardano.yacicli.util.AdaConversionUtil.adaToLovelace;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.infoLabel;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
-//@Component
 @Slf4j
 public class LocalNodeService {
     private final static String UTXO_KEYS_FOLDER = "utxo-keys";
-    private LocalNodeClientFactory localNodeClientFactory;
+//    private LocalQueryClientUtil localQueryClientUtil;
+//    private LocalNodeClientFactory localNodeClientFactory;
+    private LocalClientProvider localClientProvider;
     private UtxoSupplier utxoSupplier;
     private ProtocolParamsSupplier protocolParamsSupplier;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Tuple<VerificationKey, SecretKey>> utxoKeys;
 
-    public LocalNodeService(Path clusterFolder, long protocolMagic, Consumer<String> writer) throws IOException {
+    public LocalNodeService(Path clusterFolder, LocalClientProviderHelper localQueryClientUtil, Consumer<String> writer) throws Exception {
         this.utxoKeys = new ArrayList<>();
-        String socketFile = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toAbsolutePath().toString();
-        this.localNodeClientFactory = new LocalNodeClientFactory(socketFile, protocolMagic, writer);
-        this.utxoSupplier = new LocalUtxoSupplier(localNodeClientFactory.getLocalStateQueryClient());
-        this.protocolParamsSupplier = new LocalProtocolSupplier(localNodeClientFactory.getLocalStateQueryClient());
+//        String socketFile = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toAbsolutePath().toString();
+//        this.localNodeClientFactory = new LocalNodeClientFactory(socketFile, protocolMagic, writer);
+        this.localClientProvider = localQueryClientUtil.getLocalClientProvider();
+        this.localClientProvider.addTxSubmissionListener(new LocalTxSubmissionListener() {
+            @Override
+            public void txAccepted(TxSubmissionRequest txSubmissionRequest, MsgAcceptTx msgAcceptTx) {
+                writer.accept(success("Transaction submitted successfully"));
+                writer.accept(infoLabel("Tx Hash", txSubmissionRequest.getTxHash()));
+            }
+
+            @Override
+            public void txRejected(TxSubmissionRequest txSubmissionRequest, MsgRejectTx msgRejectTx) {
+                writer.accept(error("Transaction submission failed. " + msgRejectTx.getReasonCbor()));
+            }
+        });
+        this.localClientProvider.start();
+
+        this.utxoSupplier = new LocalUtxoSupplier(localClientProvider.getLocalStateQueryClient());
+        this.protocolParamsSupplier = new LocalProtocolSupplier(localClientProvider.getLocalStateQueryClient());
 
         loadUtxoKeys(clusterFolder);
     }
@@ -78,7 +96,7 @@ public class LocalNodeService {
             VerificationKey vkey = objectMapper.readValue(vkeyPath.toFile(), VerificationKey.class);
             utxoKeys.add(new Tuple<>(vkey, skey));
         }
-        ;
+
     }
 
     public Map<String, List<Utxo>> getFundsAtGenesisKeys() {
@@ -89,7 +107,7 @@ public class LocalNodeService {
             hdPublicKey.setKeyData(tuple._1.getBytes());
             Address address = AddressProvider.getEntAddress(hdPublicKey, Networks.testnet());
 
-            Mono<UtxoByAddressQueryResult> utxosMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(Era.Alonzo, address));
+            Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(address));
             UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));
             utxosMap.put(address.toBech32(), result.getUtxoList());
         }
@@ -98,7 +116,7 @@ public class LocalNodeService {
     }
 
     public List<Utxo> getUtxos(String address) {
-        Mono<UtxoByAddressQueryResult> utxosMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(Era.Alonzo, new Address(address)));
+        Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(new Address(address)));
         UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));
 
         return result.getUtxoList();
@@ -143,15 +161,15 @@ public class LocalNodeService {
         writer.accept(infoLabel("Txn Cbor", signedTransaction.serializeToHex()));
 
         //Submit Tx using LocalStateQuery mini-protocol
-        localNodeClientFactory.getTxSubmissionClient().submitTxCallback(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
+        localClientProvider.getTxSubmissionClient().submitTxCallback(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
         //localNodeClientFactory.shutdown();
     }
 
     public Tuple<Long, Point> getTip() {
-        Mono<BlockHeightQueryResult> blockHeightMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new BlockHeightQuery());
+        Mono<BlockHeightQueryResult> blockHeightMono = localClientProvider.getLocalStateQueryClient().executeQuery(new BlockHeightQuery());
         BlockHeightQueryResult result = blockHeightMono.block(Duration.ofSeconds(5));
 
-        Mono<ChainPointQueryResult> chainPointMono = localNodeClientFactory.getLocalStateQueryClient().executeQuery(new ChainPointQuery());
+        Mono<ChainPointQueryResult> chainPointMono = localClientProvider.getLocalStateQueryClient().executeQuery(new ChainPointQuery());
         ChainPointQueryResult chainPointQueryResult = chainPointMono.block(Duration.ofSeconds(5));
 
         return new Tuple<>(result.getBlockHeight(), chainPointQueryResult.getChainPoint());
@@ -159,7 +177,7 @@ public class LocalNodeService {
 
     public void shutdown() {
         try {
-            localNodeClientFactory.shutdown();
+            localClientProvider.shutdown();
         } catch (Exception e) {
             log.error("Shutdown error", e);
         }

@@ -369,4 +369,7 @@ public class ClusterService {
         }
     }
 
+    public boolean isFirstRunt(String clusterName) {
+        return clusterStartService.checkIfFirstRun(getClusterFolder(clusterName));
+    }
 }

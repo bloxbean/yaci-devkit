@@ -1,44 +1,48 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
-import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.client.api.model.Utxo;
+import com.bloxbean.cardano.client.transaction.spec.PlutusData;
+import com.bloxbean.cardano.client.transaction.spec.serializers.PlutusDataJsonConverter;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.FirstRunDone;
+import com.bloxbean.cardano.yacicli.commands.localcluster.service.AccountService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.ShellHelper;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.*;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @ShellComponent
 @ShellCommandGroup(Groups.CLUSTER_CMD_GROUP)
+@RequiredArgsConstructor
 @Slf4j
 public class ClusterCommands {
     public static final String CUSTER_NAME = "custer_name";
     private final ClusterService localClusterService;
     private final RootLogService rootLogService;
-
-    private ShellHelper shellHelper;
-
-    public ClusterCommands(ClusterService clusterService, RootLogService rootLogService, ShellHelper shellHelper) {
-        this.localClusterService = clusterService;
-        this.rootLogService = rootLogService;
-        this.shellHelper = shellHelper;
-    }
+    private final ClusterUtilService clusterUtilService;
+    private final AccountService accountService;
+    private final ShellHelper shellHelper;
+    private final ApplicationEventPublisher publisher;
 
     @ShellMethod(value = "List local clusters (Babbage)", key = "list-clusters")
     public void listLocalClusters() {
@@ -142,6 +146,20 @@ public class ClusterCommands {
     public void startLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.startCluster(clusterName);
+
+        if (localClusterService.isFirstRunt(clusterName))
+            publisher.publishEvent(new FirstRunDone(clusterName));
+        else {
+            writeLn("Let's wait for the next block to make sure server started properly !!!");
+            //Wait for 1 block to make sure server started properly
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+            }
+            boolean success = clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
+            writeLn(infoLabel("OK", "Server Started"));
+        }
+
     }
 
     @ShellMethod(value = "Stop the running local cluster (Babbage)", key = "stop")
@@ -207,36 +225,16 @@ public class ClusterCommands {
     public void listDefaultAccounts() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
 
-        Level orgLevel = rootLogService.getLogLevel();
-        if (!rootLogService.isDebugLevel())
-            rootLogService.setLogLevel(Level.OFF);
-
-        LocalNodeService localNodeService = null;
-        try {
-            long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
-            Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> {
+        Map<String, List<Utxo>> utxosMap = accountService.getUtxosAtDefaultAccounts(clusterName, msg -> writeLn(msg));
+        utxosMap.entrySet().forEach(entry -> {
+            writeLn(header(AnsiColors.CYAN_BOLD, "Address"));
+            writeLn(entry.getKey());
+            writeLn(header(AnsiColors.CYAN_BOLD, "Utxos"));
+            entry.getValue().forEach(utxo -> {
+                writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
             });
-            Map<String, List<Utxo>> utxosMap = localNodeService.getFundsAtGenesisKeys();
-
-            utxosMap.entrySet().forEach(entry -> {
-                writeLn(header(AnsiColors.CYAN_BOLD, "Address"));
-                writeLn(entry.getKey());
-                writeLn(header(AnsiColors.CYAN_BOLD, "Utxos"));
-                entry.getValue().forEach(utxo -> {
-                    writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
-                });
-                writeLn("");
-            });
-        } catch (Exception e) {
-            // if (log.isDebugEnabled())
-            log.error("Error", e);
-            writeLn(error("Topup error" + e.getMessage()));
-        } finally {
-            rootLogService.setLogLevel(orgLevel);
-            if (localNodeService != null)
-                localNodeService.shutdown();
-        }
+            writeLn("");
+        });
     }
 
     @ShellMethod(value = "Topup account", key = "topup")
@@ -245,56 +243,42 @@ public class ClusterCommands {
                       @ShellOption(value = {"-v", "--value"}, help = "Ada value") double adaValue) {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
 
-        Level orgLevel = rootLogService.getLogLevel();
-        if (!rootLogService.isDebugLevel())
-            rootLogService.setLogLevel(Level.OFF);
+        accountService.topup(clusterName, address, adaValue, msg -> writeLn(msg));
+        clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
 
-        LocalNodeService localNodeService = null;
-        try {
-            long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
-            Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> writeLn(msg));
-
-            localNodeService.topUp(address, adaValue, msg -> writeLn(msg));
-        } catch (Exception e) {
-            // if (log.isDebugEnabled())
-            log.error("Error", e);
-            writeLn(error("Topup error : " + e.getMessage()));
-        } finally {
-            rootLogService.setLogLevel(orgLevel);
-            if (localNodeService != null)
-                localNodeService.shutdown();
-        }
+        writeLn(info("Available utxos") + "\n");
+        getUtxos(address, false);
     }
 
     @ShellMethod(value = "Get utxos at an address", key = "utxos")
     @ShellMethodAvailability("localClusterCmdAvailability")
-    public void getUtxos(@ShellOption(value = {"-a", "--address"}, help = "Address") String address) {
+    public void getUtxos(@ShellOption(value = {"-a", "--address"}, help = "Address") String address,
+                         @ShellOption(value = {"--pretty-print-inline-datum"}, defaultValue = "false") boolean prettyPrintInlineDatum) {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
 
-        Level orgLevel = rootLogService.getLogLevel();
-        if (!rootLogService.isDebugLevel())
-            rootLogService.setLogLevel(Level.OFF);
+        List<Utxo> utxos = accountService.getUtxos(clusterName, address, msg -> writeLn(msg));
 
-        LocalNodeService localNodeService = null;
-        try {
-            long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
-            Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> writeLn(msg));
+        AtomicInteger index = new AtomicInteger(0);
+        utxos.forEach(utxo -> {
+            writeLn(index.incrementAndGet() + ". " + utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
+            if (utxo.getInlineDatum() != null) {
+                if (prettyPrintInlineDatum) {
+                    try {
+                        writeLn("InlineDatum : \n" +
+                                PlutusDataJsonConverter.toJson(PlutusData.deserialize(HexUtil.decodeHexString(utxo.getInlineDatum()))));
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else
+                    writeLn("InlineDatum: " + utxo.getInlineDatum());
+            }
+            if (utxo.getDataHash() != null)
+                writeLn("DatumHash: " + utxo.getDataHash());
 
-            List<Utxo> utxos = localNodeService.getUtxos(address);
-            utxos.forEach(utxo -> {
-                writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
-            });
-        } catch (Exception e) {
-            // if (log.isDebugEnabled())
-            log.error("Error", e);
-            writeLn(error("Get utxos error : " + e.getMessage()));
-        } finally {
-            rootLogService.setLogLevel(orgLevel);
-            if (localNodeService != null)
-                localNodeService.shutdown();
-        }
+            if (utxo.getReferenceScriptHash() != null)
+                writeLn("ReferenceScriptHash: " + utxo.getReferenceScriptHash());
+            writeLn("--------------------------------------------------------------------------------------");
+        });
     }
 
     @ShellMethod(value = "Get tip/current block number", key = "tip")
@@ -302,29 +286,10 @@ public class ClusterCommands {
     public void getTip() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
 
-        Level orgLevel = rootLogService.getLogLevel();
-        if (!rootLogService.isDebugLevel())
-            rootLogService.setLogLevel(Level.OFF);
-
-        LocalNodeService localNodeService = null;
-        try {
-            long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
-            Path clusterFolder = localClusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, protocolMagic, msg -> writeLn(msg));
-
-            Tuple<Long, Point> tuple = localNodeService.getTip();
-            writeLn(successLabel("Block#", String.valueOf(tuple._1)));
-            writeLn(successLabel("Slot#", String.valueOf(tuple._2.getSlot())));
-            writeLn(successLabel("Block Hash", String.valueOf(tuple._2.getHash())));
-        } catch (Exception e) {
-            // if (log.isDebugEnabled())
-            log.error("Error", e);
-            writeLn(error("Find tip error : " + e.getMessage()));
-        } finally {
-            rootLogService.setLogLevel(orgLevel);
-            if (localNodeService != null)
-                localNodeService.shutdown();
-        }
+        Tuple<Long, Point> tuple = clusterUtilService.getTip(msg -> writeLn(msg));
+        writeLn(successLabel("Block#", String.valueOf(tuple._1)));
+        writeLn(successLabel("Slot#", String.valueOf(tuple._2.getSlot())));
+        writeLn(successLabel("Block Hash", String.valueOf(tuple._2.getHash())));
     }
 
     public Availability localClusterCmdAvailability() {

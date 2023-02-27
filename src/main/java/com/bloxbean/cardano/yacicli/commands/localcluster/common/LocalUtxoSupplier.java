@@ -1,10 +1,10 @@
-package com.bloxbean.cardano.yacicli.txnprovider;
+package com.bloxbean.cardano.yacicli.commands.localcluster.common;
 
 import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.api.UtxoSupplier;
 import com.bloxbean.cardano.client.api.common.OrderEnum;
 import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.yaci.core.model.Era;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQuery;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.UtxoByAddressQueryResult;
 import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
@@ -30,7 +30,7 @@ public class LocalUtxoSupplier implements UtxoSupplier {
             return Collections.EMPTY_LIST;
 
         UtxoByAddressQueryResult queryResult = (UtxoByAddressQueryResult) localStateQueryClient
-                .executeQuery(new UtxoByAddressQuery(Era.Alonzo, new Address(address))).block();
+                .executeQuery(new UtxoByAddressQuery(new Address(address))).block();
 
         List<Utxo> utxos = queryResult.getUtxoList();
 

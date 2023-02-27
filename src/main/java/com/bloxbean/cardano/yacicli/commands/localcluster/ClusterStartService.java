@@ -213,7 +213,7 @@ public class ClusterStartService {
         return true;
     }
 
-    private boolean checkIfFirstRun(Path clusterFolder) {
+    public boolean checkIfFirstRun(Path clusterFolder) {
         String node1Folder = NODE_FOLDER_PREFIX + 1;
         Path db = clusterFolder.resolve(node1Folder).resolve("db");
         if (Files.exists(db))
