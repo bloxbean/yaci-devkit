@@ -50,6 +50,9 @@ public class ClusterUtilService {
     public boolean waitForNextBlocks(int noOfBlocks, Consumer<String> writer) {
         int counter = 0;
         Tuple<Long, Point> tip = getTip(writer);
+        if (tip == null)
+            tip = new Tuple<>(0L, new Point(0, ""));
+
         Tuple<Long, Point> newTip = new Tuple<>(tip._1, tip._2);
         while (newTip._1 <= tip._1) {
             writer.accept("Waiting for next block...");
@@ -58,6 +61,9 @@ public class ClusterUtilService {
             } catch (InterruptedException e) {
             }
             newTip = getTip(writer);
+            if (newTip == null)
+                newTip = new Tuple<>(0L, new Point(0, ""));
+
             counter++;
             if (counter == 20) {
                 writer.accept(error("Waited too long. Something is wrong. You may want to recreate the cluster or just reset data with 'reset' option ..."));
