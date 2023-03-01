@@ -1,0 +1,182 @@
+package com.bloxbean.cardano.yacicli.commands.localcluster.yacistore;
+
+import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.google.common.collect.EvictingQueue;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class YaciStoreService {
+    private final ClusterService clusterService;
+    private List<Process> processes = new ArrayList<>();
+
+    @Value("${yaci.store.folder:/store}")
+    private String storeBinFolder;
+
+    @Value("${yaci.store.enabled:false}")
+    private boolean enableYaciStore;
+
+    private Queue<String> logs = EvictingQueue.create(300);
+
+    @EventListener
+    public void handleClusterStarted(ClusterStarted clusterStarted) {
+        logs.clear();
+        if (!enableYaciStore)
+            return;
+
+        if (!clusterStarted.getClusterName().equals("default")) {
+            writeLn("Yaci Store is only supported for 'default' cluster");
+            return;
+        }
+
+        try {
+            Process process = startApp(clusterStarted.getClusterName());
+            processes.add(process);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Process startApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        ProcessBuilder builder = new ProcessBuilder();
+        builder.directory(new File(storeBinFolder));
+        if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+            builder.command("java", "-jar", "");
+        } else {
+            builder.command("java", "-jar", storeBinFolder + File.separator + "yaci-store.jar");
+        }
+
+        Process process = builder.start();
+
+        writeLn(success("Yaci store starting ..."));
+        AtomicBoolean started = new AtomicBoolean(false);
+        ProcessStream processStream =
+                new ProcessStream(process.getInputStream(), line -> {
+                    logs.add(line);
+                    if (line != null && line.contains("Started YaciStoreApplication")) {
+                        writeLn(infoLabel("OK", "Yaci Store Started"));
+                        started.set(true);
+                    }
+                });
+        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
+
+        int counter = 0;
+        while (counter < 20) {
+            counter++;
+            if (started.get())
+                break;
+            Thread.sleep(1000);
+            writeLn("Waiting for Yaci Store to start ...");
+        }
+
+        if (counter == 20) {
+            writeLn("Waited too long. Could not start Yaci Store. Something is wrong..");
+        }
+
+        return process;
+    }
+
+    @EventListener
+    public void handleClusterStopped(ClusterStopped clusterStopped) {
+        try {
+            if (processes != null && processes.size() > 0)
+                writeLn(info("Trying to stop yaci-store ..."));
+
+            for (Process process : processes) {
+                if (process != null && process.isAlive()) {
+                    process.descendants().forEach(processHandle -> {
+                        writeLn(infoLabel("Process", String.valueOf(processHandle.pid())));
+                        processHandle.destroyForcibly();
+                    });
+                    process.destroyForcibly();
+                    killForcibly(process);
+                    writeLn(info("Stopping yaci-store process : " + process));
+                    process.waitFor(15, TimeUnit.SECONDS);
+                    if (!process.isAlive()) {
+                        writeLn(success("Killed : " + process));
+                    } else {
+                        writeLn(error("Process could not be killed : " + process));
+                    }
+                }
+            }
+
+            logs.clear();
+        } catch (Exception e) {
+            log.error("Error stopping process", e);
+            writeLn(error("Yaci Store could not be stopped. Please kill the process manually." + e.getMessage()));
+        }
+
+        processes.clear();
+    }
+
+    @EventListener
+    public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
+        Path clusterFolder = clusterService.getClusterFolder(clusterDeleted.getClusterName());
+        String dbDir = "yaci_store";
+        Path dbPath = clusterFolder.resolve(dbDir);
+
+        if (dbPath.toFile().exists()) {
+            try {
+                FileUtils.deleteDirectory(dbPath.toFile());
+            } catch (IOException e) {
+                writeLn(error("Yaci store db could not be deleted, " + dbPath.toAbsolutePath()));
+            }
+        }
+    }
+
+    private void killForcibly(Process process) {
+        try {
+            ProcessBuilder builder = new ProcessBuilder();
+            builder.command("kill", "-9", String.valueOf(process.pid()));
+
+            Process killProcess = builder.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void showLogs(Consumer<String> consumer) {
+        if (logs.isEmpty()) {
+            consumer.accept("No log to show");
+        } else {
+            int counter = 0;
+            while (!logs.isEmpty()) {
+                counter++;
+                if (counter == 200)
+                    return;
+                consumer.accept(logs.poll());
+            }
+        }
+    }
+
+    public boolean isEnableYaciStore() {
+        return enableYaciStore;
+    }
+
+    public void setEnableYaciStore(boolean enableYaciStore) {
+        this.enableYaciStore = enableYaciStore;
+    }
+}

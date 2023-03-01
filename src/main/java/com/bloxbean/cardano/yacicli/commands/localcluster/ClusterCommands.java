@@ -7,6 +7,9 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.ClusterUtilService;
@@ -134,6 +137,7 @@ public class ClusterCommands {
             localClusterService.deleteCluster(clusterName, (msg) -> {
                 writeLn(msg);
             });
+            publisher.publishEvent(new ClusterDeleted(clusterName));
         } catch (IOException e) {
             if (log.isDebugEnabled())
                 log.error("Delete error", e);
@@ -147,9 +151,10 @@ public class ClusterCommands {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.startCluster(clusterName);
 
-        if (localClusterService.isFirstRunt(clusterName))
+        if (localClusterService.isFirstRunt(clusterName)) {
             publisher.publishEvent(new FirstRunDone(clusterName));
-        else {
+            publisher.publishEvent(new ClusterStarted(clusterName));
+        } else {
             writeLn("Let's wait for the next block to make sure server started properly !!!");
             //Wait for 1 block to make sure server started properly
             try {
@@ -158,6 +163,8 @@ public class ClusterCommands {
             }
             boolean success = clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
             writeLn(infoLabel("OK", "Server Started"));
+            if (success)
+                publisher.publishEvent(new ClusterStarted(clusterName));
         }
 
     }
@@ -167,6 +174,8 @@ public class ClusterCommands {
     public void stopLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.stopCluster(msg -> writeLn(msg));
+
+        publisher.publishEvent(new ClusterStopped(clusterName));
     }
 
     @ShellMethod(value = "Reset local cluster. Delete data and logs folder and restart.", key = "reset")
@@ -174,10 +183,13 @@ public class ClusterCommands {
     public void resetLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         localClusterService.stopCluster(msg -> writeLn(msg));
+        publisher.publishEvent(new ClusterStopped(clusterName));
+
         try {
             localClusterService.deleteClusterDataFolder(clusterName, (msg) -> {
                 writeLn(msg);
             });
+            publisher.publishEvent(new ClusterDeleted(clusterName));
 
             startLocalCluster();
         } catch (IOException e) {

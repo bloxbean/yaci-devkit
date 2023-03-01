@@ -1,2 +1,6 @@
 build/libs/yaci-cli-*-aot.jar
 build/libs/yaci-cli-*-plain.jar
+yaci-store-*-sources.jar
+yaci-store-*-plain.jar
+yaci-store-*-javadoc.jar
+
