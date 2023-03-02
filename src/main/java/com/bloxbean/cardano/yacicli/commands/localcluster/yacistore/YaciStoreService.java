@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.yacistore;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
@@ -31,10 +32,9 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class YaciStoreService {
     private final ClusterService clusterService;
-    private List<Process> processes = new ArrayList<>();
+    private final ClusterConfig clusterConfig;
 
-    @Value("${yaci.store.folder:/store}")
-    private String storeBinFolder;
+    private List<Process> processes = new ArrayList<>();
 
     @Value("${yaci.store.enabled:false}")
     private boolean enableYaciStore;
@@ -53,20 +53,30 @@ public class YaciStoreService {
         }
 
         try {
-            Process process = startApp(clusterStarted.getClusterName());
-            processes.add(process);
+            Process process = startStoreApp(clusterStarted.getClusterName());
+            if (process != null)
+                processes.add(process);
+//            Process viewerProcess = startViewerApp(clusterStarted.getClusterName());
+//                processes.add(viewerProcess);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private Process startApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startStoreApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         ProcessBuilder builder = new ProcessBuilder();
-        builder.directory(new File(storeBinFolder));
+        builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
+
+        Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
+        if (!yaciStoreJar.toFile().exists()) {
+            writeLn(error("yaci-store.jar is not found at " + clusterConfig.getYaciStoreBinPath()));
+            return null;
+        }
+
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-            builder.command("java", "-jar", "");
+            builder.command("java", "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         } else {
-            builder.command("java", "-jar", storeBinFolder + File.separator + "yaci-store.jar");
+            builder.command("java", "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         }
 
         Process process = builder.start();
@@ -94,6 +104,49 @@ public class YaciStoreService {
 
         if (counter == 20) {
             writeLn("Waited too long. Could not start Yaci Store. Something is wrong..");
+        }
+
+        return process;
+    }
+
+    private Process startViewerApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        ProcessBuilder builder = new ProcessBuilder();
+
+        Path yaciViewerFolder = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-viewer");
+        if (!yaciViewerFolder.toFile().exists()) {
+            writeLn(error("yaci-viewer folder is not found at " + clusterConfig.getYaciStoreBinPath()));
+            return null;
+        }
+
+        builder.directory(yaciViewerFolder.toFile());
+
+        builder.command("npm", "run", "dev");
+
+        Process process = builder.start();
+
+        writeLn(success("Yaci Viewer starting ..."));
+        AtomicBoolean started = new AtomicBoolean(false);
+        ProcessStream processStream =
+                new ProcessStream(process.getInputStream(), line -> {
+                    logs.add(line);
+                    if (line != null && line.contains("ready in")) {
+                        writeLn(infoLabel("OK", "Yaci Viwer was started successfully"));
+                        started.set(true);
+                    }
+                });
+        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
+
+        int counter = 0;
+        while (counter < 20) {
+            counter++;
+            if (started.get())
+                break;
+            Thread.sleep(1000);
+            writeLn("Waiting for Yaci Viewer to start ...");
+        }
+
+        if (counter == 20) {
+            writeLn("Waited too long. Could not start Yaci Viewer. Something is wrong..");
         }
 
         return process;

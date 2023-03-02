@@ -23,21 +23,18 @@ public class YaciStoreCommands {
     }
 
     @ShellMethod(value = "Enable Yaci Store")
-    @ShellMethodAvailability("yaciStoreEnableAvailability")
     public void enableYaciStore() {
         yaciStoreService.setEnableYaciStore(true);
         writeLn(infoLabel("OK", "Yaci Store Status: Enable"));
     }
 
     @ShellMethod(value = "Disble Yaci Store")
-    @ShellMethodAvailability("yaciStoreEnableAvailability")
     public void disableYaciStore() {
         yaciStoreService.setEnableYaciStore(false);
         writeLn(infoLabel("OK", "Yaci Store Status: Disable"));
     }
 
     @ShellMethod(value = "Check if Yaci Store is enable or disable")
-    @ShellMethodAvailability("yaciStoreEnableAvailability")
     public void checkYaciStoreStatus() {
         if (yaciStoreService.isEnableYaciStore())
             writeLn(info("Yaci Store Status: Enable"));

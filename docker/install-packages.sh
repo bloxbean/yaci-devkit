@@ -20,7 +20,7 @@ apt-get -y upgrade
 apt-get -y install --no-install-recommends wget
 apt-get -y install --no-install-recommends unzip
 apt-get -y install --no-install-recommends git
-
+apt-get -y install --reinstall ca-certificates
 # Delete cached files we don't need anymore (note that if you're
 # using official Docker images for Debian or Ubuntu, this happens
 # automatically, you don't need to do it yourself):

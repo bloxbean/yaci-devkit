@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import static com.bloxbean.cardano.yacicli.YaciCliConfig.YACI_CLI_HOME;
 
 @Component
-@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClusterConfig {
@@ -25,6 +24,9 @@ public class ClusterConfig {
 
     @Value("${cardano.cli.path:#{null}}")
     private String cardanoCliPath;
+
+    @Value("${yaci.store.folder:#{null}}")
+    private String yaciStoreBinFolder;
 
     public String getClusterHome() {
         if (clusterHome == null || !StringUtils.hasLength(clusterHome.trim()))
@@ -40,7 +42,10 @@ public class ClusterConfig {
             return Path.of(cardanoCliPath).toAbsolutePath().toString();
     }
 
-    public String getCardanoCliPath() {
-        return cardanoCliPath;
+    public String getYaciStoreBinPath() {
+        if (yaciStoreBinFolder == null || !StringUtils.hasLength(yaciStoreBinFolder.trim()))
+            return Path.of(YACI_CLI_HOME, "bin").toAbsolutePath().toString();
+        else
+            return Path.of(yaciStoreBinFolder).toAbsolutePath().toString();
     }
 }

@@ -1,17 +1,7 @@
-# temp container to build using gradle
-FROM bitnami/java:17-debian-11 AS YACI_STORE_BUILD
-WORKDIR /
-RUN mkdir -p /app
-COPY docker/install-packages.sh .
-RUN chmod -R 755 install-packages.sh
-RUN ./install-packages.sh
-RUN echo 77a5291
-RUN git clone https://github.com/bloxbean/yaci-store.git
-WORKDIR /yaci-store
-RUN git checkout 77a5291
-RUN ./gradlew clean build
-
-FROM bitnami/java:17-debian-11
+FROM ubuntu:22.04
+ENV JAVA_HOME=/opt/java/openjdk
+COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -25,7 +15,9 @@ RUN groupadd -r app && useradd --no-log-init -r -g app app
 RUN mkdir "/app"
 RUN chown app:app /app
 
-USER app
+#Commented for now
+#USER app
+
 WORKDIR /app
 
 COPY docker/download-$TARGETARCH.sh .
@@ -33,16 +25,19 @@ RUN sh download-$TARGETARCH.sh
 #RUN apk --no-cache add curl
 
 RUN echo "I'm building for $TARGETOS/$TARGETARCH"
-RUN #mkdir "/app"
+
+RUN mkdir -p /app/store/config
+COPY docker/store-application.properties /app/store/config/application.properties
+RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.3/yaci-store-all-0.0.3.jar -O /app/store/yaci-store.jar
 
 COPY build/libs/yaci-cli-*.jar /app/yaci-cli.jar
 
 RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/
 
-RUN mkdir -p /app/store/config
-COPY docker/store-application.properties /app/store/config/application.properties
-COPY --from=YACI_STORE_BUILD /yaci-store/applications/all/build/libs/yaci-store-all*.jar /app/store/yaci-store.jar
+ENV PATH="$PATH:/app/cardano-bin"
+ENV CARDANO_NODE_SOCKET_PATH=/clusters/default/node-spo1/node.sock
+ENV PROTOCOL_MAGIC=42
 
 WORKDIR /app
 EXPOSE 3001
@@ -53,4 +48,3 @@ EXPOSE 10000
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar","/app/yaci-cli.jar"]
-#CMD java -Dcom.sun.management.jmxremote -noverify ${JAVA_OPTS} -jar /app/yaci-cli.jar
