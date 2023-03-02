@@ -22,6 +22,17 @@ Yaci Store Api URL            : http://localhost:8080/api/v1/   (Can be used in 
 
 Yaci Local Cluster Api URL    : http://localhost:10000/local-cluster/api/   (Can be used in Java app with Blockfrost backend)
 
+# How to Run
+
+## Pre-requisites
+
+- Docker Compose
+
+## Clone this Git repo
+
+```shell
+$> git clone https://github.com/bloxbean/yaci-devkit.git
+```
 
 ## To start the DevKit docker composer
 
