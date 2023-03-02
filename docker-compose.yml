@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  yaci-cli:
+    image: bloxbean/yaci-cli:0.0.9
+    ports:
+      - "3001:3001"
+      - "8090:8090"
+      - "10000:10000"
+      - "8080:8080"
+    volumes:
+      - ~/clusters:/clusters
+    env_file:
+      - env
+    entrypoint:
+      - sleep
+      - infinity
+
+  yaci-viewer:
+    image: bloxbean/yaci-viewer:0.0.2
+    ports:
+      - "5173:5173"
+    env_file:
+      - env
+
