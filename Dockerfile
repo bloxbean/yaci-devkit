@@ -9,6 +9,6 @@ WORKDIR /yaci-viewer
 
 RUN npm install && npm run build
 
-EXPOSE 4173
+EXPOSE 5173
 
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "dev"]
