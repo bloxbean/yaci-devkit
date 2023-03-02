@@ -60,13 +60,13 @@ topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4el
 Once the docker compose is up, start Yaci CLI using ```yaci-cli.sh```
 
 ```shell
-$> ./yaci-cli.sh
+./yaci-cli.sh
 ```
 
 ## To stop DevKit
 
 ```shell
-$> ./stop.sh
+./stop.sh
 ```
 
 ## Yaci CLI - Few Key Commands
