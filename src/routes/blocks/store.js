@@ -1,10 +1,14 @@
 import {writable} from 'svelte/store';
-import {ws_url} from '../../constant.js'
+import { variables } from '../../lib/variables'
 
 export const blocksStore = writable({});
 export const aggregateStore = writable({});
+export const recentTxStore = writable({});
 
-const socket = new WebSocket(ws_url);
+export let blocksCache = [];
+export let txCache = [];
+
+const socket = new WebSocket(variables.wsUrl);
 
 // Connection opened
 socket.addEventListener('open', function (event) {
@@ -20,21 +24,40 @@ socket.addEventListener('close', function (event) {
 socket.addEventListener('message', function (event) {
     try {
         const data = JSON.parse(event.data);
-        if (data.resType == 'INIT_DATA') {
+        if (data.res_type == 'INIT_DATA') {
             console.log("Inside init data")
             data.blocks.forEach(value => blocksStore.set(value));
+            data.recent_txs.forEach(value => recentTxStore.set(value));
             if (data.aggregateData)
                 aggregateStore.set(data.aggregateData);
-        } else if (data.resType == 'BLOCK_DATA') {
+        } else if (data.res_type == 'BLOCK_DATA') {
             blocksStore.set(data);
-        } else if (data.resType == 'AGGR_DATA') {
+        } else if (data.res_type == 'AGGR_DATA') {
             aggregateStore.set(data);
+        }
+        else if (data.res_type == 'RECENT_TXS_DATA') {
+            console.log(data);
+            data.recent_txs.forEach(tx => recentTxStore.set(tx));
         }
         console.log(data);
 
     } catch (error) {
 
     }
+});
+
+blocksStore.subscribe(currentMessage => {
+    if (blocksCache.length > 30)
+        blocksCache = [currentMessage, ...blocksCache.slice(0, 30)];
+    else
+        blocksCache = [currentMessage, ...blocksCache];
+});
+
+recentTxStore.subscribe(currentMessage => {
+    if (txCache.length > 30)
+        txCache = [currentMessage, ...txCache.slice(0, 30)];
+    else
+        txCache = [currentMessage, ...txCache];
 });
 
 export const sendMessage = (message) => {

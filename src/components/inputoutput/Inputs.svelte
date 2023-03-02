@@ -1,5 +1,5 @@
 <script>
-    import AmountBadges from "./AmountBadges.svelte";
+    import AmountBadges from "../AmountBadges.svelte";
 
     export let inputs = []
 </script>

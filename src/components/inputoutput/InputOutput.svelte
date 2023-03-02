@@ -1,7 +1,7 @@
 <script>
-    import {lovelaceToAda} from "../util/ada_util.js";
+    import {lovelaceToAda} from "../../util/ada_util.js";
     import {Badge} from 'flowbite-svelte';
-    import AmountBadges from "./AmountBadges.svelte";
+    import AmountBadges from "../AmountBadges.svelte";
     import Inputs from "./Inputs.svelte";
     import Outputs from "./Outputs.svelte";
 
@@ -14,34 +14,12 @@
             <div class="py-8 flex flex-wrap md:flex-nowrap">
                 <div class="md:w-64 md:mb-0 mb-6 flex-shrink-0 flex flex-col">
                     <span class="font-semibold title-font text-gray-700">Inputs</span>
-                    <!--                    <span class="mt-1 text-gray-500 text-sm">12 Jun 2019</span>-->
                 </div>
-<!--                <div class="md:w-64 md:mb-0 mb-6 flex-shrink-0 flex flex-col">-->
-<!--                    <span class="font-semibold title-font text-gray-700">Inputs</span>-->
-<!--                    &lt;!&ndash;                    <span class="mt-1 text-gray-500 text-sm">12 Jun 2019</span>&ndash;&gt;-->
-<!--                </div>-->
-<!--                <div class="md:flex-grow">-->
-<!--                    {#each tx.inputs as input}-->
-<!--                        <div class="mb-14">-->
-<!--                            <div>-->
-<!--                                {input.owner_addr}-->
-<!--                            </div>-->
-<!--                            <div class="text-xs">-->
-<!--                                {input.tx_hash}#{input.output_index}-->
-<!--                            </div>-->
-
-<!--                            <div class="float-right">-->
-<!--                                <AmountBadges amounts={input.amounts}></AmountBadges>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    {/each}-->
-<!--                </div>-->
                 <Inputs inputs={tx.inputs}></Inputs>
             </div>
             <div class="py-8 flex flex-wrap md:flex-nowrap">
                 <div class="md:w-64 md:mb-0 mb-6 flex-shrink-0 flex flex-col">
                     <span class="font-semibold title-font text-gray-700">Outputs</span>
-                    <!--                    <span class="mt-1 text-gray-500 text-sm">12 Jun 2019</span>-->
                 </div>
                 <Outputs outputs="{tx.outputs}"></Outputs>
             </div>
