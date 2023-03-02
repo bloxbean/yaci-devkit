@@ -31,13 +31,13 @@ Yaci Local Cluster Api URL    : http://localhost:10000/local-cluster/api/   (Can
 ## Clone this Git repo
 
 ```shell
-$> git clone https://github.com/bloxbean/yaci-devkit.git
+git clone https://github.com/bloxbean/yaci-devkit.git
 ```
 
 ## To start the DevKit docker composer
 
 ```shell
-$> ./start.sh
+./start.sh
 ```
 ## Update env file to fund test accounts
 
