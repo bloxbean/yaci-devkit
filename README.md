@@ -53,7 +53,7 @@ topup_addresses=<address1>:<ada_value>,<address2><ada_value>
 topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4elx4jh2f7xtftjrdxddr88wg6sfszu8r3gktpjtqrr00q9:20000,addr_test1qqwpl7h3g84mhr36wpetk904p7fchx2vst0z696lxk8ujsjyruqwmlsm344gfux3nsj6njyzj3ppvrqtt36cp9xyydzqzumz82:10000
 ```
 
-**Note:** You can also use ``topup`` command in yaci cli to fund your test addressses later.
+**Note:** You can also use the topup command in Yaci CLI to fund your test addresses later.
 
 ## To start yaci-cli
 
