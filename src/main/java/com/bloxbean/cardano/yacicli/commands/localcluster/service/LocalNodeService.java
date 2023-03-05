@@ -119,6 +119,15 @@ public class LocalNodeService {
         Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(new Address(address)));
         UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));
 
+        //TODO -- Replace "." in the unit name. As yaci sends "." in unit name, but cardano-client-lib's Amount needs without "."
+        result.getUtxoList()
+                .stream()
+                .flatMap(utxo -> utxo.getAmount().stream())
+                .forEach(amount -> {
+                    if (amount.getUnit() != null && amount.getUnit().contains("."))
+                        amount.setUnit(amount.getUnit().replace(".", ""));
+                });
+
         return result.getUtxoList();
     }
 
