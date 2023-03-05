@@ -17,7 +17,9 @@ import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
+import com.bloxbean.cardano.client.transaction.spec.PlutusData;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
+import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.*;
@@ -32,6 +34,7 @@ import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalProtocolSu
 import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalUtxoSupplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
@@ -120,13 +123,24 @@ public class LocalNodeService {
         UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));
 
         //TODO -- Replace "." in the unit name. As yaci sends "." in unit name, but cardano-client-lib's Amount needs without "."
-        result.getUtxoList()
-                .stream()
-                .flatMap(utxo -> utxo.getAmount().stream())
-                .forEach(amount -> {
-                    if (amount.getUnit() != null && amount.getUnit().contains("."))
-                        amount.setUnit(amount.getUnit().replace(".", ""));
-                });
+        for (Utxo utxo: result.getUtxoList()) {
+            for (Amount amount: utxo.getAmount()) {
+                if (amount.getUnit() != null && amount.getUnit().contains("."))
+                    amount.setUnit(amount.getUnit().replace(".", ""));
+            }
+
+            //Update dataHash if dataHash is empty but inline datum has value
+            String dataHash = utxo.getDataHash();
+            try {
+                if (!StringUtils.hasText(dataHash) && StringUtils.hasText(utxo.getInlineDatum())) {
+                    byte[] inlineDatumBytes = HexUtil.decodeHexString(utxo.getInlineDatum());
+                    dataHash = PlutusData.deserialize(inlineDatumBytes).getDatumHash();
+                    utxo.setDataHash(dataHash);
+                }
+            } catch (Exception e) {
+                log.error("Invalid inline datum found in utxo tx : {}, index: {}, inline_datum: {}", utxo.getTxHash(), utxo.getOutputIndex(), utxo.getInlineDatum());
+            }
+        }
 
         return result.getUtxoList();
     }
