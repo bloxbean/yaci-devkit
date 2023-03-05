@@ -18,9 +18,13 @@ Yaci Store Swagger UI         : http://localhost:8080/swagger-ui.html  (Browser)
 
 Yaci Local Cluster Swagger UI : http://localhost:10000/swagger-ui.html  (Browser)
 
+Yaci Local Cluster Api URL    : http://localhost:10000/local-cluster/api/   (Can be used in Java app with Blockfrost backend)
 Yaci Store Api URL            : http://localhost:8080/api/v1/   (Can be used in Java app with Blockfrost backend)
 
-Yaci Local Cluster Api URL    : http://localhost:10000/local-cluster/api/   (Can be used in Java app with Blockfrost backend)
+### Current Versions
+- Yaci CLI    : v0.0.10
+- Yaci Store  : v0.0.4
+- Yaci Viewer : v0.0.2
 
 # How to Run
 
@@ -99,6 +103,18 @@ local-cluster:default>reset
 
 ```
 local-cluster:default>stop
+```
+
+**To toup new address**
+
+```shell
+local-cluster:default> topup <address> <ada value>
+```
+
+**To check utxos at an address**
+
+```shell
+local-cluster:default> utxos <address>
 ```
 
 
