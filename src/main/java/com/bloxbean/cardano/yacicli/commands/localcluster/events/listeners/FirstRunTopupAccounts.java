@@ -46,6 +46,9 @@ public class FirstRunTopupAccounts {
                                 writeLn(infoLabel("OK", "Topup done"));
                         }
                     }
+                } else {
+                    Thread.sleep(1000);
+                    clusterUtilService.waitForNextBlocks(1, writer);
                 }
             }
         } catch (Exception e) {
