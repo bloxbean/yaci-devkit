@@ -17,7 +17,6 @@ import static com.bloxbean.cardano.yacicli.YaciCliConfig.YACI_CLI_HOME;
 public class ClusterConfig {
     public final static String CLUSTER_INFO_FILE = "cluster-info.json";
     public final static String NODE_FOLDER_PREFIX = "node-spo";
-    public final static long PROTOCOL_MAGIC = 42;
 
     @Value("${local.cluster.home:#{null}}")
     private String clusterHome;

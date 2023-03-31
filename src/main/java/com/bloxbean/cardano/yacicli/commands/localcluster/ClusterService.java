@@ -24,7 +24,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.zip.ZipInputStream;
 
 import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
@@ -119,7 +118,7 @@ public class ClusterService {
     public void deleteClusterDataFolder(String clusterName, Consumer<String> writer) throws IOException {
         Path clusterFolder = getClusterFolder(clusterName);
         if (Files.exists(clusterFolder)) {
-            for (int i=0; i<3; i++) {
+            for (int i=0; i<1; i++) {
                 String nodeName = NODE_FOLDER_PREFIX + (i+1);
                 Path dbFolder = clusterFolder.resolve(nodeName).resolve("db");
                 Path logsFolder = clusterFolder.resolve(nodeName).resolve("logs");
@@ -140,8 +139,8 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public boolean createClusterFolder(String clusterName, int[] ports, int submitApiPort,
-                                       double slotLength,  boolean overwrite, Consumer<String> writer) throws IOException {
+    public boolean createClusterFolder(String clusterName, int port, int submitApiPort,
+                                       double slotLength, double blockTime, long protocolMagic, boolean overwrite, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -183,18 +182,17 @@ public class ClusterService {
             copy(sourcePath, destPath);
             FileUtils.deleteDirectory(tempLocalCluster.toFile());
 
+            double activeCoeff = slotLength / blockTime;
             //Update configuration
-            for (int i=1;i<=3;i++) {
-                updatePorts(destPath, ports, i);
-            }
+            updatePorts(destPath, port, 1);
 
             //Update genesis
-            updateGenesis(destPath, slotLength, writer);
+            updateGenesis(destPath, slotLength, activeCoeff, protocolMagic, writer);
 
-            updateSubmitApiFiles(destPath, submitApiPort);
+            updateSubmitApiFiles(destPath, protocolMagic, submitApiPort);
 
             //Update node config
-            saveClusterInfo(destPath, ports, submitApiPort, slotLength);
+            saveClusterInfo(destPath, port, submitApiPort, slotLength, blockTime, protocolMagic);
 
             writer.accept(success("Update ports"));
             writer.accept(success("Create Cluster : %s", clusterName));
@@ -223,15 +221,19 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
-    private void updateGenesis(Path clusterFolder, double slotLength, Consumer<String> writer) throws IOException {
+    private void updateGenesis(Path clusterFolder, double slotLength, double activeSlotsCoeff, long protocolMagic, Consumer<String> writer) throws IOException {
         //Shelley genesis file
-        Path genesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
+        Path shelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
+        Path byronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
         Map<String, String> values = new HashMap<>();
         values.put("slotLength", String.valueOf(slotLength));
+        values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
+        values.put("protocolMagic", String.valueOf(protocolMagic));
 
-        //Update Node run script
+        //Update Genesis files
         try {
-            templateEngine.replaceValues(genesisFile, values);
+            templateEngine.replaceValues(shelleyGenesisFile, values);
+            templateEngine.replaceValues(byronGenesisFile, values);
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -239,21 +241,15 @@ public class ClusterService {
         writer.accept(success("Slot length updated in genesis.json"));
     }
 
-    private void updatePorts(Path destPath, int[] ports, int nodeNo) throws IOException {
+    private void updatePorts(Path destPath, int port, int nodeNo) throws IOException {
         String nodeName = NODE_FOLDER_PREFIX + nodeNo;
         String nodeScript =  getOSSpecificScriptName(nodeName);
         Path nodeRunScript = destPath.resolve(nodeName).resolve(nodeScript);
-        int nodePort = ports[nodeNo-1]; //Node no = 1..3
+        int nodePort = port; //Node no = 1..3
 
         Map<String, String> values = new HashMap<>();
         values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
         values.put("port", String.valueOf(nodePort));
-
-        int nodeCount = 1;
-        for (int port: ports) { //Set other node port variables
-            if (port != nodePort)
-                values.put("otherPort" + nodeCount++, String.valueOf(port));
-        }
 
         //Update Node run script
         try {
@@ -261,21 +257,13 @@ public class ClusterService {
         } catch (Exception e) {
             throw new IOException(e);
         }
-
-        //Update topology.json
-        Path topology = destPath.resolve(nodeName).resolve("topology.json");
-        try {
-            templateEngine.replaceValues(topology, values);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
     }
 
-    private void updateSubmitApiFiles(Path destPath, int submitApiPort) throws IOException {
+    private void updateSubmitApiFiles(Path destPath, long protocolMagic, int submitApiPort) throws IOException {
         Map<String, String> values = new HashMap<>();
         values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
         values.put("SUBMIT_API_PORT", String.valueOf(submitApiPort));
-        values.put("PROTOCOL_MAGIC", String.valueOf(42)); //Fixed for now
+        values.put("PROTOCOL_MAGIC", String.valueOf(protocolMagic));
 
         //Update submit api script
         Path submitApiSh = destPath.resolve("submit-api.sh");
@@ -286,17 +274,17 @@ public class ClusterService {
         }
     }
 
-    private ClusterInfo saveClusterInfo(Path clusterFolder, int[] nodePorts, int submitApiPort, double slotLength) throws IOException {
-        String[] socketPaths = new String[3];
-        IntStream.range(0,3).forEach(i -> {
-                socketPaths[i] = clusterFolder.resolve(NODE_FOLDER_PREFIX + (i+1)).resolve("node.sock").toString();
-        });
+    private ClusterInfo saveClusterInfo(Path clusterFolder, int nodePort, int submitApiPort, double slotLength, double blockTime, long protocolMagic) throws IOException {
+        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toString();
 
         //Create node_config
         ClusterInfo clusterInfo = ClusterInfo.builder()
-                .nodePorts(nodePorts)
+                .nodePort(nodePort)
                 .submitApiPort(submitApiPort)
-                .socketPaths(socketPaths)
+                .socketPath(socketPath)
+                .slotLength(slotLength)
+                .blockTime(blockTime)
+                .protocolMagic(protocolMagic)
                 .build();
 
         String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
@@ -360,7 +348,7 @@ public class ClusterService {
                       boolean showDatumhash, boolean showInlineDatum, boolean grouping, OutputFormatter outputFormatter) throws IOException {
         try {
             ClusterInfo clusterInfo = getClusterInfo(clusterName);
-            blockStreamerService.tail("localhost", clusterInfo.getNodePorts()[0], clusterInfo.getProtocolMagic(), showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
+            blockStreamerService.tail("localhost", clusterInfo.getNodePort(), clusterInfo.getProtocolMagic(), showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
         } catch (IOException ex) {
             throw ex;
         } catch (InterruptedException ex) {

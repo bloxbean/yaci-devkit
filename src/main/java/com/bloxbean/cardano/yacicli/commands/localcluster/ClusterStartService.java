@@ -56,13 +56,9 @@ public class ClusterStartService {
                 setupFirstRun(clusterFolder, writer);
 
             Process process1 = startNode(clusterFolder, 1, writer);
-            Process process2 = startNode(clusterFolder, 2, writer);
-            Process process3 = startNode(clusterFolder, 3, writer);
             Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
 
             processes.add(process1);
-            processes.add(process2);
-            processes.add(process3);
             if (submitApiProcess != null)
                 processes.add(submitApiProcess);
         } catch (IOException e) {

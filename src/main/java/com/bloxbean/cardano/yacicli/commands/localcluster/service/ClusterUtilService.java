@@ -65,7 +65,7 @@ public class ClusterUtilService {
                 newTip = new Tuple<>(0L, new Point(0, ""));
 
             counter++;
-            if (counter == 20) {
+            if (counter == 30) {
                 writer.accept(error("Waited too long. Something is wrong. You may want to recreate the cluster or just reset data with 'reset' option ..."));
                 return false;
             }

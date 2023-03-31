@@ -20,9 +20,9 @@ public class LocalClientProviderHelper {
     public LocalClientProvider getLocalClientProvider() throws Exception {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
-        String[] socketPaths = localClusterService.getClusterInfo(clusterName).getSocketPaths();
+        String socketPath = localClusterService.getClusterInfo(clusterName).getSocketPath();
 
-        LocalClientProvider localClientProvider = new LocalClientProvider(socketPaths[0], protocolMagic);
+        LocalClientProvider localClientProvider = new LocalClientProvider(socketPath, protocolMagic);
         return localClientProvider;
     }
 
