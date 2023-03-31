@@ -77,20 +77,31 @@ public class ClusterCommands {
 
     @ShellMethod(value = "Create a local cluster (Babbage)", key = "create-cluster")
     public void createCluster(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName,
-                              @ShellOption(value = {"--ports"}, help = "Node ports (Used with --create option only)", defaultValue = "3001, 3002, 3003", arity = 3) int[] ports,
+                              @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
-                              @ShellOption(value = {"-s", "--slotLength"}, help = "Slot Length (Valid values are 0.1 to 1)", defaultValue = "0.5", arity = 3) double slotLength,
+                              @ShellOption(value = {"-s", "--slotLength"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
+                              @ShellOption(value = {"-b", "--blockTime"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing cluster directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the cluster after create. default: false") boolean start
     ) {
 
         try {
-            if (ports.length != 3) {
-                writeLn(error("Please provide 3 ports for 3 node cluster"));
+            if (blockTime < 1 || blockTime > 20) {
+                writeLn(error("Block time should be between 1 and 20"));
                 return;
             }
 
-            boolean success = localClusterService.createClusterFolder(clusterName, ports, submitApiPort, slotLength, overwrite, (msg) -> writeLn(msg));
+            if (slotLength > blockTime) {
+                writeLn(error("Slot length should be less than block time"));
+                return;
+            }
+
+            long protocolMagic = 42; //always 42 for now.
+
+            //stop any cluster if running
+            localClusterService.stopCluster(msg -> writeLn(msg));
+
+            boolean success = localClusterService.createClusterFolder(clusterName, port, submitApiPort, slotLength, blockTime, protocolMagic, overwrite, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);
@@ -123,12 +134,13 @@ public class ClusterCommands {
         ClusterInfo clusterInfo = localClusterService.getClusterInfo(clusterName);
         writeLn("");
         writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details ######"));
-        writeLn(successLabel("Node ports", StringUtils.join(ArrayUtils.toObject(clusterInfo.getNodePorts()), " - ")));
+        writeLn(successLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
         writeLn(successLabel("Node Socket Paths", ""));
-        for (String socketPath : clusterInfo.getSocketPaths())
-            writeLn(socketPath);
+        writeLn(clusterInfo.getSocketPath());
         writeLn(successLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
         writeLn(successLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
+        writeLn(successLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
+        writeLn(successLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
     }
 
     @ShellMethod(value = "Delete a local cluster", key = "delete-cluster")

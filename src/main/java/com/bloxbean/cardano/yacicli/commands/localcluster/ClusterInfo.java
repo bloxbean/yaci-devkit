@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ClusterInfo {
-    private int[] nodePorts;
+    private int nodePort;
     private int submitApiPort;
-    private String[] socketPaths;
-    @Builder.Default
-    private long protocolMagic = 42;
+    private String socketPath;
+    private long protocolMagic;
+    private double slotLength;
+    private double blockTime;
 }

@@ -55,7 +55,7 @@
   },
   "protocolConsts": {
     "k": 10,
-    "protocolMagic": 42
+    "protocolMagic": ${protocolMagic}
   },
   "avvmDistr": {}
 }
