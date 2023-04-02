@@ -55,7 +55,7 @@
                 </div>
             </TabItem>
             <TabItem>
-                <span slot="title">Contracts ({contracts.length})</span>
+                <span slot="title">Contracts ({contracts? contracts.length: 0})</span>
 
                     {#each contracts as contract}
                         <div class="text-sm text-gray-500 dark:text-gray-400 mb-20">

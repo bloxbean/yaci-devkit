@@ -1,7 +1,8 @@
 <script>
 	import '../app.postcss';
 	import Nav from "../components/Nav.svelte";
-    import { Footer, FooterCopyright, FooterLinkGroup, FooterLink } from 'flowbite-svelte'
+    import {Footer, FooterCopyright, FooterLinkGroup, FooterLink, Spinner} from 'flowbite-svelte'
+    import {navigating} from "$app/stores";
 </script>
 
 <Nav></Nav>
@@ -11,7 +12,11 @@
 <!--	<a href="/blocks">Blocks</a>-->
 <!--</nav>-->
 <div>
-<slot />
+    {#if $navigating}
+        <div class="text-center"><Spinner/></div>
+    {:else}
+        <slot />
+    {/if}
 </div>
 
 <Footer>
