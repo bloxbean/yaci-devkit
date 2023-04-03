@@ -29,6 +29,39 @@ This CLI uses [Yaci](https://github.com/bloxbean/yaci-core), a mini protocol imp
 $> java -jar yaci-cli-<version>.jar
 ```
 
+## Run using Docker
+
+### 1. Run without exposing ports to host
+
+```
+docker run -it  bloxbean/yaci-cli:<version>
+```
+
+### 2. Run with exposing ports to host
+
+**env**
+
+While using local cluster support, create a file called "env" if you want to enable Yaci Store support and fund your test ada address with some Ada.
+
+```
+yaci_store_enabled=true
+topup_addresses=<address1>:<ada_amount>,<address2>:<ada_amount>
+```
+
+**Docker command**
+
+```
+docker run -it -v ~/clusters:/clusters --env-file env -p 3001:3001 -p 8090:8090 -p 10000:10000 -p 8080:8080 bloxbean/yaci-cli:<version>
+```
+
+- 3001 - Local Cluster Node Port
+- 8090 - Submit Api port
+- 10000 - Local Cluster Api endpoint port
+- 8080 - Yaci Store Api endpoint port
+
+
+
+
 
 ## How to Use ?
 
