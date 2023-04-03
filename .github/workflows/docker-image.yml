@@ -20,13 +20,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Set tag name without prefix
-        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: bloxbean/yaci-viewer:latest,bloxbean/yaci-viewer:${TAG_NAME}
+          tags: bloxbean/yaci-viewer:latest,bloxbean/yaci-viewer:${GITHUB_REF#refs/tags/v}
 
