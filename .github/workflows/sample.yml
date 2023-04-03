@@ -1,0 +1,17 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: TAG Name
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/v}
+      - name: Echo
+        run: |
+          echo $TAG_NAME
