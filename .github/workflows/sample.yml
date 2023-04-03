@@ -12,6 +12,6 @@ jobs:
       - name: TAG Name
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/v}
-      - name: Echo
-        run: |
           echo $TAG_NAME
+      - name: Echo
+        run: echo $TAG_NAME
