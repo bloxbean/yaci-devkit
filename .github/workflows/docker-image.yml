@@ -20,17 +20,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-        with:
-          strip_v: true
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: bloxbean/yaci-viewer:latest,bloxbean/yaci-viewer:${{steps.tag.outputs.tag}}
+          tags: bloxbean/yaci-viewer:latest,bloxbean/yaci-viewer:${{github.ref_name}}
 
