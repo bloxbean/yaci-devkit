@@ -9,7 +9,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - name: TAG Name
-        env:
-          TAG_NAME: ${GITHUB_REF#refs/tags/v}
+      - name: Set tag name without prefix
+        run: echo ::set-env name=TAG_NAME::${GITHUB_REF#refs/tags/v}
+      - name: Print tag name
         run: echo $TAG_NAME
