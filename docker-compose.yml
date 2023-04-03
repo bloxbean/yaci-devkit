@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: bloxbean/yaci-cli:0.0.10
+    image: bloxbean/yaci-cli:0.0.12
     ports:
       - "3001:3001"
       - "8090:8090"
@@ -16,7 +16,7 @@ services:
       - infinity
 
   yaci-viewer:
-    image: bloxbean/yaci-viewer:0.0.2
+    image: bloxbean/yaci-viewer:0.0.3
     ports:
       - "5173:5173"
     env_file:
