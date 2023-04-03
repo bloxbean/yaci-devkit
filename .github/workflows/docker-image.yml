@@ -30,5 +30,5 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: bloxbean/yaci-viewer:latest,bloxbean/yaci-viewer:$TAG_NAME
+          tags: bloxbean/yaci-viewer:latest,bloxbean/yaci-viewer:${{ TAG_NAME }}
 
