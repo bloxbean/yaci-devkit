@@ -8,8 +8,8 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    env:
-      TAG_NAME: ${{ github.ref.replace('refs/tags/v', '') }}
     steps:
+      - name: Set tag name without prefix
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
       - name: Print tag name
         run: echo $TAG_NAME
