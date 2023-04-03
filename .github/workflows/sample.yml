@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: TAG Name
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/v}
-          echo $TAG_NAME
-      - name: Echo
+        env:
+          TAG_NAME: ${GITHUB_REF#refs/tags/v}
         run: echo $TAG_NAME
