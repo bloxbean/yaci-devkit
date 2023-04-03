@@ -16,3 +16,9 @@ To create a production version of your app:
 ```bash
 npm run build
 ```
+
+## Docker Build
+
+```shell
+docker buildx build --push --platform linux/amd64,linux/arm64 --tag bloxbean/yaci-viewer:<version> . 
+```
