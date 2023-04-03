@@ -25,7 +25,7 @@ jobs:
         run: echo "TAG_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
       - name: Build and push
         env:
-          TAG_NAME: ${{ step.metadata.TAG_NAME }}
+          TAG_NAME: ${{ steps.metadata.TAG_NAME }}
         uses: docker/build-push-action@v4
         with:
           context: .
