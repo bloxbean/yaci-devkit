@@ -18,16 +18,16 @@ Urls
 
 **Yaci Local Cluster Swagger UI** : http://localhost:10000/swagger-ui.html  (Browser)
 
-**Yaci Local Cluster Api URL**    : http://localhost:10000/local-cluster/api/   
-<em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend as it exposes required BF compatible minimum apis for tx building and submission)</em>
-
 **Yaci Store Api URL**            : http://localhost:8080/api/v1/  
 <em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend as it exposes required BF compatible minimum apis for tx building and submission)</em>
 
+**Yaci Local Cluster Api URL**    : http://localhost:10000/local-cluster/api/   
+<em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend as it exposes required BF compatible minimum apis for tx building and submission)</em>
+
 # Component Versions
-- Yaci CLI    : v0.0.10
-- Yaci Store  : v0.0.4
-- Yaci Viewer : v0.0.2
+- Yaci CLI    : v0.0.12
+- Yaci Store  : v0.0.5
+- Yaci Viewer : v0.0.3
 
 # How to Run
 
