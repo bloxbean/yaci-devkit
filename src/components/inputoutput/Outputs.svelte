@@ -8,10 +8,10 @@
     {#each outputs as output}
         <div class="mb-14">
             <div>
-                {output.owner_addr}
+                {output.address}
             </div>
             <div class="float-right">
-                <AmountBadges amounts={output.amounts}></AmountBadges>
+                <AmountBadges amounts={output.amount}></AmountBadges>
             </div>
         </div>
     {/each}
