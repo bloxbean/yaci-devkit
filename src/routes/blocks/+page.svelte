@@ -52,7 +52,8 @@
         let currentPage = parseInt(data.page);
         let nextPage = currentPage + 1;
 
-        if (nextPage > parseInt(data.total_pages))
+      //  if (nextPage > parseInt(data.total_pages))
+        if (data.blocks.length == 0)
             nextPage = currentPage;
 
         goto(`/blocks?page=${nextPage}&count=${data.count}`)
