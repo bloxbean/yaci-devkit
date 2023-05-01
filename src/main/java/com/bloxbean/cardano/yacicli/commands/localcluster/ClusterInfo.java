@@ -16,4 +16,5 @@ public class ClusterInfo {
     private long protocolMagic;
     private double slotLength;
     private double blockTime;
+    private long startTime;
 }

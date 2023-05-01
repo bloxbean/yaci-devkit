@@ -53,7 +53,7 @@ public class ClusterStartService {
 
         try {
             if (checkIfFirstRun(clusterFolder))
-                setupFirstRun(clusterFolder, writer);
+                setupFirstRun(clusterInfo, clusterFolder, writer);
 
             Process process1 = startNode(clusterFolder, 1, writer);
             Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
@@ -191,7 +191,7 @@ public class ClusterStartService {
         return process;
     }
 
-    private boolean setupFirstRun(Path clusterFolder, Consumer<String> writer) throws IOException {
+    private boolean setupFirstRun(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
         Path byronGenesis = clusterFolder.resolve("genesis/byron/genesis.json");
 
         if (!Files.exists(byronGenesis)) {
@@ -205,8 +205,20 @@ public class ClusterStartService {
         jsonNode.set("startTime", new LongNode(unixTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
 
+        clusterInfo.setStartTime(unixTime);
+        saveClusterInfo(clusterFolder, clusterInfo);
+
         writer.accept(success("Update Start time"));
         return true;
+    }
+
+    public void saveClusterInfo(Path clusterFolder, ClusterInfo clusterInfo) throws IOException {
+        if (!Files.exists(clusterFolder)) {
+            throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
+        }
+
+        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
+        objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(clusterInfoPath), clusterInfo);
     }
 
     public boolean checkIfFirstRun(Path clusterFolder) {

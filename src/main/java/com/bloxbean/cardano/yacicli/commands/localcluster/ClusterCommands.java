@@ -141,6 +141,7 @@ public class ClusterCommands {
         writeLn(successLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
         writeLn(successLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
         writeLn(successLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
+        writeLn(successLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
     }
 
     @ShellMethod(value = "Delete a local cluster", key = "delete-cluster")

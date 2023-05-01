@@ -287,9 +287,7 @@ public class ClusterService {
                 .protocolMagic(protocolMagic)
                 .build();
 
-        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
-        objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(clusterInfoPath), clusterInfo);
-
+        saveClusterInfo(clusterFolder, clusterInfo);
         return clusterInfo;
     }
 
@@ -305,6 +303,15 @@ public class ClusterService {
         } catch (Exception e) {
             throw new IOException(e);
         }
+    }
+
+    public void saveClusterInfo(Path clusterFolder, ClusterInfo clusterInfo) throws IOException {
+        if (!Files.exists(clusterFolder)) {
+            throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
+        }
+
+        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
+        objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(clusterInfoPath), clusterInfo);
     }
 
     private void copy(Path sourceDir, Path destDir) throws IOException {
