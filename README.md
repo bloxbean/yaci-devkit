@@ -7,6 +7,7 @@ Yaci DevKit docker-compose has following components
 1. [Yaci CLI](https://github.com/bloxbean/yaci-cli)       - A CLI to create/manage a local cluster and other utilities
 2. [Yaci Store](https://github.com/bloxbean/yaci-store)   - A lightweight indexer with H2 DB
 3. [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) - A minimal blockchain data viewer for developers
+4. Cardano Node
 
 Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g., a Java app) to post transactions to your local cluster.
 
@@ -25,9 +26,13 @@ Urls
 <em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend as it exposes required BF compatible minimum apis for tx building and submission)</em>
 
 # Component Versions
-- Yaci CLI    : v0.0.12
-- Yaci Store  : v0.0.5
-- Yaci Viewer : v0.0.3
+- [Yaci CLI](https://github.com/bloxbean/yaci-cli)    : v0.0.14
+- [Yaci Store](https://github.com/bloxbean/yaci-store)  : v0.0.6
+- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.4
+- Cardano Node: 1_35_5
+
+**Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
+  (Include both amd64 and arm64 binaries)
 
 # How to Run
 
@@ -59,6 +64,8 @@ topup_addresses=<address1>:<ada_value>,<address2><ada_value>
 ```
 topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4elx4jh2f7xtftjrdxddr88wg6sfszu8r3gktpjtqrr00q9:20000,addr_test1qqwpl7h3g84mhr36wpetk904p7fchx2vst0z696lxk8ujsjyruqwmlsm344gfux3nsj6njyzj3ppvrqtt36cp9xyydzqzumz82:10000
 ```
+
+**Important:** After updating env file, you need to restart the docker compose using ```./stop.sh``` and ```./start.sh```
 
 **Note:** You can also use the topup command in Yaci CLI to fund your test addresses later.
 
