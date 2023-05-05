@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.EvictingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -193,19 +195,27 @@ public class ClusterStartService {
 
     private boolean setupFirstRun(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
         Path byronGenesis = clusterFolder.resolve("genesis/byron/genesis.json");
+        Path shelleyGenesis = clusterFolder.resolve("genesis/shelley/genesis.json");
 
         if (!Files.exists(byronGenesis)) {
             writer.accept(error("Byron genesis file is not found"));
             return false;
         }
 
+        //Update Byron Genesis file
         ObjectNode jsonNode = (ObjectNode)objectMapper.readTree(byronGenesis.toFile());
-        long unixTime = Instant.now().getEpochSecond();
-
-        jsonNode.set("startTime", new LongNode(unixTime));
+        long byronStartTime = Instant.now().getEpochSecond();
+        jsonNode.set("startTime", new LongNode(byronStartTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
 
-        clusterInfo.setStartTime(unixTime);
+        //Update Shelley Genesis file
+        ObjectNode shelleyJsonNode = (ObjectNode)objectMapper.readTree(shelleyGenesis.toFile());
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
+        String shelleyStart = formatter.format(Instant.now());
+        shelleyJsonNode.set("systemStart", new TextNode(shelleyStart));
+        objectMapper.writer(new DefaultPrettyPrinter()).writeValue(shelleyGenesis.toFile(), shelleyJsonNode);
+
+        clusterInfo.setStartTime(byronStartTime);
         saveClusterInfo(clusterFolder, clusterInfo);
 
         writer.accept(success("Update Start time"));
