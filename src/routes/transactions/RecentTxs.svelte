@@ -1,59 +1,46 @@
 <script>
-    import {
-        Table,
-        TableBody,
-        TableBodyCell,
-        TableBodyRow,
-        TableHead,
-        TableHeadCell,
-        Checkbox,
-        TableSearch,
-        Card
-    } from 'flowbite-svelte';
-
-    import moment from 'moment';
     import {truncate} from "../../util/util.js";
     import {lovelaceToAda} from "../../util/ada_util.js";
 
     export let txs;
     export let noOfTxs = 10;
 </script>
+<div class="bg-white rounded-lg shadow-lg p-6">
+    <h2 class="text-xl font-bold mb-4">Transactions</h2>
+    <div class="space-y-4">
+        {#each [...txs].slice(0, noOfTxs) as tx}
+            {#if tx.hash}
+                <!-- Transaction Card 1 -->
+                <div class="bg-gray-100 p-4 rounded-md">
+                    <p class="text-sm text-gray-600 py-1">
+                        <span class="font-bold">Tx Hash</span>
+                        <span className="text-gray-600 text-right overflow-auto md:overflow-hidden">
+                          <a href="/transactions/{tx.hash}"
+                             class="text-blue-500 hover:underline">{truncate(tx.hash, 40, '...')}</a>
+                        </span>
+                    </p>
+                    <p class="text-sm text-gray-600 py-1">
+                        <span class="font-bold">Block / Slot</span>
+                        <a href="/blocks/{tx.block}" class="text-blue-500 hover:underline">{tx.block}</a> / {tx.slot}
+                    </p>
+                    <p class="text-sm text-gray-600">
+                        <span class="font-bold">Output Addresses</span>
+                    </p>
+                    <div class="flex flex-col items-begin py-1">
+                        {#each tx.output_addresses as address}
+                            <p class="text-sm text-gray-600">{truncate(address, 60, "...")}</p>
+                        {/each}
+                    </div>
+                    <p class="text-sm text-gray-600 py-1">
+                        <span class="font-bold">Output</span>
+                        {lovelaceToAda(tx.output, 2)} Ada
+                    </p>
+                </div>
+            {/if}
+        {/each}
 
-<div class="mt-2">
-
-        <Table noborder={true}>
-            <TableHead
-                    class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
-            >
-                <TableHeadCell>Tx Hash</TableHeadCell>
-                <TableHeadCell>Block / Slot</TableHeadCell>
-                <TableHeadCell>Output Addresses</TableHeadCell>
-                <TableHeadCell>Output (Ada)</TableHeadCell>
-<!--                <TableHeadCell>Size (KB)</TableHeadCell>-->
-<!--                <TableHeadCell>Time</TableHeadCell>-->
-            </TableHead>
-            <TableBody>
-                {#each [...txs].slice(0, noOfTxs) as tx}
-                    {#if tx.hash}
-                        <TableBodyRow noborder>
-                            <TableBodyCell><a href="/transactions/{tx.hash}">{truncate(tx.hash, 20, '...')}</a></TableBodyCell>
-                            <TableBodyCell><a href="/blocks/{tx.block}">{tx.block}</a>/{tx.slot}</TableBodyCell>
-                            <TableBodyCell>
-                                {#each tx.output_addresses as address}
-                                    {truncate(address, 25, "...")}<br/>
-                                {/each}
-                            </TableBodyCell>
-                            <TableBodyCell>{lovelaceToAda(tx.output, 2)}</TableBodyCell>
-<!--                            <TableBodyCell>{block.size / 1000}</TableBodyCell>-->
-<!--                            <TableBodyCell>{moment(block.time).fromNow()}</TableBodyCell>-->
-                        </TableBodyRow>
-                    {/if}
-                {/each}
-            </TableBody>
-        </Table>
-
+    </div>
 </div>
-
 
 <style>
 

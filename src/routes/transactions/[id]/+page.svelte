@@ -1,95 +1,141 @@
 <script>
     import {lovelaceToAda} from '../../../util/ada_util'
-    import TxSearch from "../TxSearch.svelte";
-    import {List, Li, DescriptionList, Textarea} from 'flowbite-svelte';
-    import {Tabs, TabItem, Timeline, TimelineItem, Button} from 'flowbite-svelte';
     import InputOutput from "../../../components/inputoutput/InputOutput.svelte";
     import TxnContext from "../../../components/TxnContext.svelte";
 
-    import {onMount} from "svelte";
     import Inputs from "../../../components/inputoutput/Inputs.svelte";
     import Contract from "../../../components/Contract.svelte";
+    import JsonContent from "../../../components/JsonContent.svelte";
 
     export let data;
     let {tx, contracts, metadata} = data;
+
+    const INPUT_TAB = 0;
+    const CONTRACT_TAB = 1;
+    const COLLATERAL_TAB = 2;
+    const METADATA_TAB = 3;
+    const REFERENCE_INPUT_TAB = 4;
+    const JSON_TAB = 5;
+
+    let activeTabIndex = INPUT_TAB;
 </script>
 
-<section class="text-gray-600 body-font">
-    <div class="container flex flex-wrap px-5 py-24 mx-auto items-center">
-        <div class="md:w-1/2 md:pr-12 md:py-8 md:border-r md:border-b-0 mb-10 md:mb-0 pb-10 border-b border-gray-200">
-            <List tag="dl" color="text-gray-900 dark:text-white">
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Transaction Hash</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{tx.hash}</DescriptionList>
+<section class="py-20">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <article class="bg-gray-50 p-4 shadow-md">
+            <div class="flex flex-col">
+                <div class="bg-gray-200 py-2 px-4 mb-2">
+                    <strong>Transaction Hash</strong>
                 </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Block/Slot</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm"><a href="/blocks/{tx.block_height}">{tx.block_height}</a> / {tx.slot}</DescriptionList>
+                <div class="bg-gray-100 py-2 px-4">
+                    <p>
+                        <small>{tx.hash}</small>
+                    </p>
                 </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">TTL</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{tx.ttl}</DescriptionList>
+            </div>
+            <div class="flex flex-col">
+                <div class="bg-gray-200 py-2 px-4 mb-2">
+                    <strong>Block/Slot</strong>
                 </div>
-            </List>
-        </div>
-        <div class="flex flex-col md:w-1/2 md:pl-12">
-            <List tag="dl" color="text-gray-900 dark:text-white">
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Fee (Ada)</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{lovelaceToAda(tx.fees, 4)}</DescriptionList>
+                <div class="bg-gray-100 py-2 px-4">
+                    <p>
+                        <small><a href="/blocks/{tx.block_height}">{tx.block_height}</a> / {tx.slot}</small>
+                    </p>
                 </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Total Outputs (Ada)</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{lovelaceToAda(tx.total_output, 2)}</DescriptionList>
+            </div>
+            <div class="flex flex-col">
+                <div class="bg-gray-200 py-2 px-4 mb-2">
+                    <strong>TTL</strong>
                 </div>
-            </List>
-        </div>
+                <div class="bg-gray-100 py-2 px-4">
+                    <p>
+                        <small>{tx.ttl}</small>
+                    </p>
+                </div>
+            </div>
+        </article>
+        <article class="bg-gray-50 p-4 shadow-md">
+            <div class="flex flex-col">
+                <div class="bg-gray-200 py-2 px-4 mb-2">
+                    <strong>Fee (Ada)</strong>
+                </div>
+                <div class="bg-gray-100 py-2 px-4">
+                    <p>
+                        <small>{lovelaceToAda(tx.fees, 4)}</small>
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <div class="bg-gray-200 py-2 px-4 mb-2">
+                    <strong>Total Outputs (Ada)</strong>
+                </div>
+                <div class="bg-gray-100 py-2 px-4">
+                    <p>
+                        <small>{lovelaceToAda(tx.total_output, 2)}</small>
+                    </p>
+                </div>
+            </div>
+        </article>
     </div>
-
-    <div class="container px-5 py-24 mx-auto items-center">
-        <Tabs>
-            <TabItem open>
-                <span slot="title">Input / Output</span>
-                <div>
-                    <InputOutput tx={tx}></InputOutput>
-                </div>
-            </TabItem>
-            <TabItem>
-                <span slot="title">Contracts ({contracts? contracts.length: 0})</span>
-
-                    {#each contracts as contract}
-                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-20">
-                        <Contract contract={contract}></Contract>
-                        </div>
-                    {/each}
-            </TabItem>
-            <TabItem>
-                <span slot="title">Collaterals</span>
-                <span class="font-semibold title-font text-gray-700 mb-10">Collateral Inputs</span>
-                <Inputs inputs={tx.collateral_inputs}></Inputs>
-            </TabItem>
-<!--            <TabItem>-->
-<!--                <span slot="title">Certificates</span>-->
-<!--                <p class="text-sm text-gray-500 dark:text-gray-400"><b>Settings:</b> Lorem ipsum dolor sit amet,-->
-<!--                    consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>-->
-<!--            </TabItem>-->
-            <TabItem>
-                <span slot="title">Metadata</span>
-                {metadata? JSON.stringify(metadata, null, 2): []}
-            </TabItem>
-            <TabItem>
-                <span slot="title">Reference Inputs</span>
-                <Inputs inputs={tx.reference_inputs}></Inputs>
-            </TabItem>
-            <TabItem>
-                <div slot="title">Json</div>
-                <div>
-                    <TxnContext tx={tx}></TxnContext>
-
-                </div>
-
-            </TabItem>
-        </Tabs>
-    </div>
-
 </section>
+
+<section class="py-10">
+    <div class="tabs">
+        <a href="#" class="tab tab-lifted {activeTabIndex == 0 ? 'tab-active' : ''}"
+           on:click={() => activeTabIndex = INPUT_TAB}>Input / Output</a>
+        <a href="#" class="tab tab-lifted {activeTabIndex == 1 ? 'tab-active' : ''}"
+           on:click={() => activeTabIndex = CONTRACT_TAB}>Contracts</a>
+        <a href="#" class="tab tab-lifted {activeTabIndex == 2 ? 'tab-active' : ''}"
+           on:click={() => activeTabIndex = COLLATERAL_TAB}>Collaterals</a>
+        <a href="#" class="tab tab-lifted {activeTabIndex == 3 ? 'tab-active' : ''}"
+           on:click={() => activeTabIndex = METADATA_TAB}>Metadata</a>
+        <a href="#" class="tab tab-lifted {activeTabIndex == 4 ? 'tab-active' : ''}"
+           on:click={() => activeTabIndex = REFERENCE_INPUT_TAB}>Reference Inputs</a>
+        <a href="#" class="tab tab-lifted {activeTabIndex == 5 ? 'tab-active' : ''}"
+           on:click={() => activeTabIndex = JSON_TAB}>Json</a>
+    </div>
+
+    {#if activeTabIndex == INPUT_TAB}
+        <div>
+            <div>
+                <InputOutput tx={tx}></InputOutput>
+            </div>
+        </div>
+    {/if}
+
+    {#if activeTabIndex == CONTRACT_TAB}
+        <div>
+            {#each contracts as contract}
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-20">
+                    <Contract contract={contract}></Contract>
+                </div>
+            {/each}
+        </div>
+    {/if}
+
+    {#if activeTabIndex == COLLATERAL_TAB}
+        <div>
+            <Inputs inputs={tx.collateral_inputs}></Inputs>
+        </div>
+    {/if}
+
+    {#if activeTabIndex == METADATA_TAB}
+        <div>
+            <JsonContent text={metadata}></JsonContent>
+        </div>
+    {/if}
+
+    {#if activeTabIndex == REFERENCE_INPUT_TAB}
+        <div>
+            <Inputs inputs={tx.reference_inputs}></Inputs>
+        </div>
+    {/if}
+
+    {#if activeTabIndex == JSON_TAB}
+        <div>
+            <TxnContext tx={tx}></TxnContext>
+        </div>
+    {/if}
+</section>
+
+

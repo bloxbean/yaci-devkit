@@ -31,13 +31,10 @@
         // onDestroy(unsubscribe);
     })
 </script>
+    <RecentBlocks blocks={messages} noOfBlocks="10"/>
+    <!--{#if aggregates}-->
+    <!--<BlocksAggr aggregates={aggregates}/>-->
+    <!--{/if}-->
 
-<!-- <div class="grid grid-flow-row-dense grid-cols-5 grid-rows-1 gap-x-4">
-    <div class=" col-span-3"> -->
-
-        <RecentBlocks blocks={messages} noOfBlocks="10"/>
-    <!-- </div>
-</div> -->
 <style>
-
 </style>

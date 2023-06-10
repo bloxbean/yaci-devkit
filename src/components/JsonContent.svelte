@@ -7,9 +7,11 @@
         placeholder: 'Leave a comment...',
     };
 
-    export let tx = {};
+    export let text = {};
 
     function toPrettyJson(obj) {
+        if (!obj)
+            return "{}";
         return JSON.stringify(obj, null, 2)
     }
 
@@ -18,7 +20,7 @@
 <div class="p-4 w-full">
     <div class="flex flex-col mt-4">
         <div class="md:flex-grow">
-            <textarea {...textareaprops} value={toPrettyJson(tx)} class="w-full h-max text-base" disabled></textarea>
+            <textarea {...textareaprops} value={toPrettyJson(text)} class="w-full h-max text-base" disabled></textarea>
         </div>
     </div>
 </div>

@@ -1,8 +1,6 @@
 const config = {
 	content: [
-		'./src/**/*.{html,js,svelte,ts}',
-		"./node_modules/flowbite-svelte/**/*.{html,js,svelte,ts}",
-		'./node_modules/tw-elements/dist/js/**/*.js'
+		'./src/**/*.{html,js,svelte,ts}'
 	],
 
 	theme: {
@@ -10,8 +8,7 @@ const config = {
 	},
 
 	plugins: [
-		require('flowbite/plugin'),
-		require('tw-elements/dist/plugin')
+        require('daisyui')
 	],
 	darkMode: 'class',
 };

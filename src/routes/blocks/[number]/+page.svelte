@@ -1,51 +1,90 @@
 <script>
-    import {DescriptionList, List} from "flowbite-svelte";
-
     export let data;
     let {block} = data;
 </script>
-
-<section class="text-gray-600 body-font">
-    <div class="container flex flex-wrap px-5 py-24 mx-auto items-center">
-        <div class="md:w-1/2 md:pr-12 md:py-8 md:border-r md:border-b-0 mb-10 md:mb-0 pb-10 border-b border-gray-200">
-            <List tag="dl" color="text-gray-900 dark:text-white">
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Hash</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.hash}</DescriptionList>
-                </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Number</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.number}</DescriptionList>
-                </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Slot</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.slot}</DescriptionList>
-                </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Era</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.era}</DescriptionList>
-                </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Size</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.block_body_size/1000} KB</DescriptionList>
-                </div>
-            </List>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <article class="bg-gray-50 rounded-lg shadow-md p-4">
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Hash</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.hash}</small>
+                </p>
+            </div>
         </div>
-        <div class="flex flex-col md:w-1/2 md:pl-12">
-            <List tag="dl" color="text-gray-900 dark:text-white">
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Prev Hash</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.prev_hash}</DescriptionList>
-                </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1"># of Txs</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.no_of_txs}</DescriptionList>
-                </div>
-                <div class="flex flex-col pb-3">
-                    <DescriptionList tag="dt" class="mb-1">Protocol version</DescriptionList>
-                    <DescriptionList tag="dd" class="text-sm">{block.protocol_version}</DescriptionList>
-                </div>
-            </List>
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Number</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.number}</small>
+                </p>
+            </div>
         </div>
-    </div>
-</section>
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Slot</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.slot}</small>
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Era</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.era}</small>
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Size</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.block_body_size}</small>
+                </p>
+            </div>
+        </div>
+    </article>
+    <article class="bg-gray-50 rounded-lg shadow-md p-4">
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Prev Hash</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.prev_hash}</small>
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong># of Txs</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.no_of_txs}</small>
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col">
+            <div class="bg-gray-200 py-2 px-4 mb-2">
+                <strong>Protocol version</strong>
+            </div>
+            <div class="bg-gray-100 py-2 px-4">
+                <p>
+                    <small>{block.protocol_version}</small>
+                </p>
+            </div>
+        </div>
+    </article>
+</div>

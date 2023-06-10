@@ -1,23 +1,26 @@
 <script>
 
-    import {Navbar, NavBrand, NavHamburger, NavLi, NavUl} from "flowbite-svelte";
 </script>
-
-<Navbar let:hidden let:toggle>
-    <NavBrand href="/">
-<!--        <img-->
-<!--                src="https://flowbite.com/docs/images/logo.svg"-->
-<!--                class="mr-3 h-6 sm:h-9"-->
-<!--                alt="Flowbite Logo"-->
-<!--        />-->
-        <span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white">
-      Yaci Viewer
-    </span>
-    </NavBrand>
-    <NavHamburger on:click={toggle} />
-    <NavUl {hidden}>
-        <NavLi href="/" active={true}>Home</NavLi>
-        <NavLi href="/blocks">Blocks</NavLi>
-        <NavLi href="/transactions">Transactions</NavLi>
-    </NavUl>
-</Navbar>
+<div class="navbar bg-base-100">
+    <div class="flex-1">
+        <a class="btn btn-ghost normal-case text-xl" href="/">Yaci Viewer</a>
+    </div>
+    <div class="flex-none">
+        <ul class="menu menu-horizontal px-1">
+            <li><a href="/">Home</a></li>
+            <li><a href="/blocks">Blocks</a></li>
+            <li><a href="/transactions">Transactions</a></li>
+            <!--            <li>-->
+            <!--                <details>-->
+            <!--                    <summary>-->
+            <!--                        Parent-->
+            <!--                    </summary>-->
+            <!--                    <ul class="p-2 bg-base-100">-->
+            <!--                        <li><a>Link 1</a></li>-->
+            <!--                        <li><a>Link 2</a></li>-->
+            <!--                    </ul>-->
+            <!--                </details>-->
+            <!--            </li>-->
+        </ul>
+    </div>
+</div>

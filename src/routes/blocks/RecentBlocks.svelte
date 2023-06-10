@@ -1,49 +1,26 @@
 <script>
-    import {
-        Table,
-        TableBody,
-        TableBodyCell,
-        TableBodyRow,
-        TableHead,
-        TableHeadCell,
-        Checkbox,
-        TableSearch,
-        Card
-    } from 'flowbite-svelte';
-
     import moment from 'moment';
 
     export let blocks;
     export let noOfBlocks = 10;
 </script>
 
-<div class="mt-2">
-
-        <Table noborder={true}>
-            <TableHead
-                    class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
-            >
-                <TableHeadCell>Block</TableHeadCell>
-                <TableHeadCell>Slot</TableHeadCell>
-                <TableHeadCell>Txns</TableHeadCell>
-                <TableHeadCell>Size (KB)</TableHeadCell>
-                <TableHeadCell>Time</TableHeadCell>
-            </TableHead>
-            <TableBody>
-                {#each [...blocks].slice(0, noOfBlocks) as block}
-                    {#if block.number}
-                        <TableBodyRow noborder>
-                            <TableBodyCell><a href="/blocks/{block.number}"> {block.number}</a></TableBodyCell>
-                            <TableBodyCell>{block.slot}</TableBodyCell>
-                            <TableBodyCell>{block.ntx}</TableBodyCell>
-                            <TableBodyCell>{block.size / 1000}</TableBodyCell>
-                            <TableBodyCell>{moment(block.time).fromNow()}</TableBodyCell>
-                        </TableBodyRow>
-                    {/if}
-                {/each}
-            </TableBody>
-        </Table>
-
+<div class="bg-white rounded-lg shadow-lg p-6">
+    <h2 class="text-xl font-bold mb-4">Recent Blocks</h2>
+    <div class="space-y-4">
+        {#each [...blocks].slice(0, noOfBlocks) as block}
+            {#if block.number}
+                <!-- Block Card 1 -->
+                <div class="bg-gray-100 p-4 rounded-md">
+                    <h3 class="text-sm font-bold"><span class="font-bold">Block</span> <a href="/blocks/{block.number}" class="text-blue-500 hover:underline">{block.number}</a></h3>
+                    <p class="text-sm text-gray-600"><span class="font-bold">Slot</span> {block.slot}</p>
+                    <p class="text-sm text-gray-600"><span class="font-bold">Txs</span> {block.ntx}</p>
+                    <p class="text-sm text-gray-600"><span class="font-bold">Size</span> {block.size / 1000}</p>
+                    <p class="text-sm text-gray-600"><span class="font-bold">Time</span> {moment(block.time).fromNow()}</p>
+                </div>
+            {/if}
+        {/each}
+    </div>
 </div>
 
 

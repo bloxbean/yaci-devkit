@@ -2,18 +2,6 @@
     import {lovelaceToAda} from "../../util/ada_util.js";
 
     import {page} from '$app/stores';
-    import {
-        Table,
-        TableBody,
-        TableBodyCell,
-        TableBodyRow,
-        TableHead,
-        TableHeadCell,
-        Checkbox,
-        TableSearch,
-        Card, Pagination, ChevronLeft, ChevronRight, Search, Button
-    } from 'flowbite-svelte';
-    import {redirect} from "@sveltejs/kit";
     import {goto} from "$app/navigation";
 
     export let data;
@@ -40,14 +28,6 @@
     $: activeUrl = $page.url.searchParams.get('page')
 
     let pages = [];
-    console.log(data.total_pages);
-    // for (let i = 1; i <= data.total_pages; i++) {
-    //     if ( i < 4)
-    //         pages.push({name: i, href: '/transactions?page=' + i + '&count=' + data.count});
-    //     else if (i > data.total_pages - 4)
-    //         pages.push({name: i, href: '/transactions?page=' + i + '&count=' + data.count});
-    //
-    // }
 
     $:{
         pages.forEach((page) => {
@@ -91,83 +71,63 @@
     };
 
 </script>
-
-<section class="text-gray-600 body-font">
-    <div class="container px-5 py-10 mx-auto">
-        <form on:submit|preventDefault="{handleSearch}">
-            <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none"
-                         stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
+<section class="container mx-auto mt-4">
+    <div class="mb-4 flex justify-center">
+        <form class="flex items-center" on:submit|preventDefault="{handleSearch}">
+            <div class="flex items-center">
                 <input type="search" id="search" bind:value={searchTx}
-                       class="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                       placeholder="Transaction Hash" required>
-                <button type="submit"
-                        class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                       placeholder="Transaction Hash" required
+                       class="px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-96 mr-2">
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     Search
                 </button>
             </div>
         </form>
     </div>
-    <div class="container px-5 py-1 mx-auto">
-        <Pagination {pages} on:previous={previous} on:next={next} icon>
-            <svelte:fragment slot="prev">
-                <span class="sr-only">Previous</span>
-                <ChevronLeft class="w-5 h-5"/>
-            </svelte:fragment>
-            <svelte:fragment slot="next">
-                <span class="sr-only">Next</span>
-                <ChevronRight class="w-5 h-5"/>
-            </svelte:fragment>
-        </Pagination>
+    <!-- Rest of the table code -->
+</section>
+
+<section class="container mx-auto">
+    <div class="flex flex-wrap justify-between mb-2">
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={previous}>&lt; Previous</a>
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={next}>Next &gt;</a>
     </div>
-    <div class="container px-5 py-1 mx-auto">
-
-        <Table noborder={true}>
-            <TableHead
-                    class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
-            >
-                <TableHeadCell>Tx Hash</TableHeadCell>
-                <TableHeadCell>Block / Slot</TableHeadCell>
-                <TableHeadCell>Total Output (Ada)</TableHeadCell>
-                <TableHeadCell>Fee (Ada)</TableHeadCell>
-                <TableHeadCell>Output Addresses</TableHeadCell>
-            </TableHead>
-            <TableBody>
-                {#each data.txs as tx}
-                    <TableBodyRow noborder>
-                        <TableBodyCell>
-                            <a href="/transactions/{tx.tx_hash}" class="">{tx.tx_hash}</a>
-                        </TableBodyCell>
-                        <TableBodyCell><a href="/blocks/{tx.block_number}" class="">{tx.block_number}</a> /
-                            <br/>{tx.slot}</TableBodyCell>
-                        <TableBodyCell>{lovelaceToAda(tx.total_output)} </TableBodyCell>
-                        <TableBodyCell>{lovelaceToAda(tx.fee)}</TableBodyCell>
-                        <TableBodyCell>
-                            {#each tx.output_addresses as address}
-                                {truncate(address, 25, "...")}<br/>
-                            {/each}
-                        </TableBodyCell>
-                    </TableBodyRow>
-
-                {/each}
-            </TableBody>
-        </Table>
-
-        <Pagination {pages} on:previous={previous} on:next={next} icon>
-            <svelte:fragment slot="prev">
-                <span class="sr-only">Previous</span>
-                <ChevronLeft class="w-5 h-5"/>
-            </svelte:fragment>
-            <svelte:fragment slot="next">
-                <span class="sr-only">Next</span>
-                <ChevronRight class="w-5 h-5"/>
-            </svelte:fragment>
-        </Pagination>
+    <div class="overflow-x-auto">
+        <table class="w-full bg-white border border-gray-300">
+            <thead>
+            <tr>
+                <th class="py-2 px-4 bg-gray-100 font-bold">Tx Hash</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block / Slot</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Total Output (Ada)</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Fee (Ada)</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold">Output Addresses</th>
+            </tr>
+            </thead>
+            <tbody>
+            {#each data.txs as tx, index}
+                <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                    <td class="py-2 px-4">
+                        <a href="/transactions/{tx.tx_hash}" class="text-blue-500">{tx.tx_hash}</a>
+                    </td>
+                    <td class="py-2 px-4 text-center">
+                        <a href="/blocks/{tx.block_number}" class="text-blue-500">{tx.block_number}</a> /
+                        <br>
+                        {tx.slot}
+                    </td>
+                    <td class="py-2 px-4 text-center">{lovelaceToAda(tx.total_output)}</td>
+                    <td class="py-2 px-4 text-center">{lovelaceToAda(tx.fee)}</td>
+                    <td class="py-2 px-4">
+                        {#each tx.output_addresses as address}
+                            {truncate(address, 25, "...")}<br>
+                        {/each}
+                    </td>
+                </tr>
+            {/each}
+            </tbody>
+        </table>
+    </div>
+    <div class="flex flex-wrap justify-between mt-2 mb-4">
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={previous}>&lt; Previous</a>
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={next}>Next &gt;</a>
     </div>
 </section>

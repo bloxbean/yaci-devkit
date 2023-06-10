@@ -1,6 +1,5 @@
 <script>
-    import {onDestroy, onMount} from 'svelte';
-    // import {recentTxStore} from "../blocks/store.js";
+    import {onMount} from 'svelte';
     import RecentTxs from "./RecentTxs.svelte";
 
     let message;
@@ -23,18 +22,11 @@
                 messages = [currentMessage, ...messages];
         });
 
-
         //TODO call unsubscribe
         // onDestroy(unsubscribe);
     })
 </script>
-
-<!-- <div class="grid grid-flow-row-dense grid-cols-5 grid-rows-1 gap-x-4">
-    <div class=" col-span-3"> -->
-
         <RecentTxs txs={messages} noOfTxs="10"/>
-    <!-- </div>
-</div> -->
 <style>
 
 </style>

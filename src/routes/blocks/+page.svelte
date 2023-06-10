@@ -1,16 +1,4 @@
 <script>
-    import Blocks from "./Blocks.svelte";
-    import {
-        Table,
-        TableBody,
-        TableBodyCell,
-        TableBodyRow,
-        TableHead,
-        TableHeadCell,
-        Checkbox,
-        TableSearch,
-        Card, Pagination, ChevronLeft, ChevronRight
-    } from 'flowbite-svelte';
     import {goto} from "$app/navigation";
     import {page} from "$app/stores";
 
@@ -18,12 +6,6 @@
 
     $: activeUrl = $page.url.searchParams.get('page')
     let pages = [];
-    console.log(data.total_pages);
-    // for (let i = data.page; i <= data.total_pages; i++) {
-    //
-    //         // pages.push({name: i, href: '/blocks?page=' + i + '&count=' + data.count});
-    //
-    // }
 
     $:{
         pages.forEach((page) => {
@@ -46,13 +28,11 @@
         if (prevPage <= 0)
             prevPage= 1;
         goto(`/blocks?page=${prevPage}&count=${data.count}`)
-        // alert('Previous btn clicked. Make a call to your server to fetch data.');
     };
     const next = () => {
         let currentPage = parseInt(data.page);
         let nextPage = currentPage + 1;
 
-      //  if (nextPage > parseInt(data.total_pages))
         if (data.blocks.length == 0)
             nextPage = currentPage;
 
@@ -67,56 +47,39 @@
     };
 </script>
 
-<section class="text-gray-600 body-font">
-    <div class="container px-5 py-1 mx-auto">
-        <Pagination {pages} on:previous={previous} on:next={next} icon>
-            <svelte:fragment slot="prev">
-                <span class="sr-only">Previous</span>
-                <ChevronLeft class="w-5 h-5"/>
-            </svelte:fragment>
-            <svelte:fragment slot="next">
-                <span class="sr-only">Next</span>
-                <ChevronRight class="w-5 h-5"/>
-            </svelte:fragment>
-        </Pagination>
+<section class="container mx-auto">
+    <div class="flex flex-wrap justify-between mb-2">
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={previous}>&lt; Previous</a>
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={next}>Next &gt;</a>
     </div>
-    <div class="container px-5 py-1 mx-auto">
-        <Table noborder={true}>
-            <TableHead
-                    class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
-            >
-                <TableHeadCell>Blocks</TableHeadCell>
-                <TableHeadCell>Slot</TableHeadCell>
-                <TableHeadCell>Issuer Vkey</TableHeadCell>
-                <TableHeadCell>Size (kb)</TableHeadCell>
-                <TableHeadCell># of Txs</TableHeadCell>
-            </TableHead>
-            <TableBody>
-                {#each data.blocks as block}
-                        <TableBodyRow noborder>
-                            <TableBodyCell>
-                                <a href="/blocks/{block.number}" class="">{block.number}</a>
-                            </TableBodyCell>
-                            <TableBodyCell>{block.slot}</TableBodyCell>
-                            <TableBodyCell>{block.issuer_vkey} </TableBodyCell>
-                            <TableBodyCell>{block.block_body_size/1000}</TableBodyCell>
-                            <TableBodyCell>
-                               {block.no_of_txs}
-                            </TableBodyCell>
-                        </TableBodyRow>
-
-                {/each}
-            </TableBody>
-        </Table>
-        <Pagination {pages} on:previous={previous} on:next={next} icon>
-            <svelte:fragment slot="prev">
-                <span class="sr-only">Previous</span>
-                <ChevronLeft class="w-5 h-5"/>
-            </svelte:fragment>
-            <svelte:fragment slot="next">
-                <span class="sr-only">Next</span>
-                <ChevronRight class="w-5 h-5"/>
-            </svelte:fragment>
-        </Pagination>
+    <div class="overflow-x-auto">
+        <table class="w-full bg-white border border-gray-300">
+            <thead>
+            <tr>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Blocks</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Slot</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Pool</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Size (kb)</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center"># of Txs</th>
+            </tr>
+            </thead>
+            <tbody>
+            {#each data.blocks as block, index}
+                <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                    <td class="py-2 px-4 text-center">
+                        <a href="/blocks/{block.number}" class="text-blue-500">{block.number}</a>
+                    </td>
+                    <td class="py-2 px-4 text-center">{block.slot}</td>
+                    <td class="py-2 px-4 text-center">{block.slot_leader}</td>
+                    <td class="py-2 px-4 text-center">{block.block_body_size / 1000}</td>
+                    <td class="py-2 px-4 text-center">{block.no_of_txs}</td>
+                </tr>
+            {/each}
+            </tbody>
+        </table>
+    </div>
+    <div class="flex flex-wrap justify-between mt-2 mb-4">
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={previous}>&lt; Previous</a>
+        <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={next}>Next &gt;</a>
     </div>
 </section>
