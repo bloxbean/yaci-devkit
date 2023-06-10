@@ -87,7 +87,7 @@
     <!-- Rest of the table code -->
 </section>
 
-<section class="container mx-auto">
+<section class="container mx-auto text-sm">
     <div class="flex flex-wrap justify-between mb-2">
         <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={previous}>&lt; Previous</a>
         <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={next}>Next &gt;</a>

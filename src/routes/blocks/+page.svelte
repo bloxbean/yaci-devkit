@@ -47,7 +47,23 @@
     };
 </script>
 
-<section class="container mx-auto">
+<section class="container mx-auto mt-4 text-sm">
+    <div class="mb-4 flex justify-center">
+        <form class="flex items-center" on:submit|preventDefault="{handleSearch}">
+            <div class="flex items-center">
+                <input type="search" id="search" bind:value={blockNo}
+                       placeholder="Block Number" required
+                       class="px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-96 mr-2">
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Search
+                </button>
+            </div>
+        </form>
+    </div>
+    <!-- Rest of the table code -->
+</section>
+
+<section class="container mx-auto text-sm">
     <div class="flex flex-wrap justify-between mb-2">
         <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={previous}>&lt; Previous</a>
         <a href="#" class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" role="button" on:click={next}>Next &gt;</a>
