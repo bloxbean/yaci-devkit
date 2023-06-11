@@ -103,7 +103,10 @@ public class YaciStoreService {
         }
 
         if (counter == 20) {
-            writeLn("Waited too long. Could not start Yaci Store. Something is wrong..");
+            writeLn(error("Waited too long. Could not start Yaci Store. Something is wrong.."));
+            writeLn(error("Use \"yaci-store-logs\" to see the logs"));
+            writeLn(error("Please verify if another yaci-store in running in the same port. " +
+                    "If so, please check the process and kill it manually. e.g. kill -9 <pid>"));
         }
 
         return process;
