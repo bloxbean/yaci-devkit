@@ -5,5 +5,5 @@
     |  | \ '-'  |\ `--.|  |        '  '--'\|  '--.|  |
     `--'  `--`--' `---'`--'         `-----'`-----'`--'
                                                 ${application.version}
-                    [0;103m [1;95m A BloxBean Project [BLOXB pool] [0m
+                                  [0;103m [1;95m A BloxBean Project [0m
 
