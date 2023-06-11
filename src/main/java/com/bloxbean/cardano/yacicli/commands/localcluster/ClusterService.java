@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.context.WebServerApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -51,6 +53,10 @@ public class ClusterService {
 
     @Autowired
     private WebServerApplicationContext server;
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
+
 //    @Autowired
 //    private ReactiveWebServerApplicationContext server;
 
@@ -86,6 +92,7 @@ public class ClusterService {
 
     public void stopCluster(Consumer<String> writer) {
         clusterStartService.stopCluster(writer);
+        publisher.publishEvent(new ClusterStopped());
     }
 
     public List<String> listClusters() throws IOException {
