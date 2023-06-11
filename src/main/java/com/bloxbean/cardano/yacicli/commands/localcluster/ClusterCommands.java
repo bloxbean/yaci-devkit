@@ -79,8 +79,9 @@ public class ClusterCommands {
     public void createCluster(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName,
                               @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
-                              @ShellOption(value = {"-s", "--slotLength"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
-                              @ShellOption(value = {"-b", "--blockTime"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
+                              @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
+                              @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
+                              @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing cluster directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the cluster after create. default: false") boolean start
     ) {
@@ -96,12 +97,20 @@ public class ClusterCommands {
                 return;
             }
 
+            if (epochLength < 20) {
+                writeLn(error("Epoch length should be 20 or more"));
+                return;
+            }
+
             long protocolMagic = 42; //always 42 for now.
 
             //stop any cluster if running
             localClusterService.stopCluster(msg -> writeLn(msg));
+            publisher.publishEvent(new ClusterStopped(clusterName));
 
-            boolean success = localClusterService.createClusterFolder(clusterName, port, submitApiPort, slotLength, blockTime, protocolMagic, overwrite, (msg) -> writeLn(msg));
+            boolean success = localClusterService.createClusterFolder(clusterName, port, submitApiPort, slotLength, blockTime,
+                    epochLength,
+                    protocolMagic, overwrite, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);

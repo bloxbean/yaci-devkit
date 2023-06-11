@@ -140,7 +140,8 @@ public class ClusterService {
     }
 
     public boolean createClusterFolder(String clusterName, int port, int submitApiPort,
-                                       double slotLength, double blockTime, long protocolMagic, boolean overwrite, Consumer<String> writer) throws IOException {
+                                       double slotLength, double blockTime, int epochLength,
+                                       long protocolMagic, boolean overwrite, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -187,7 +188,7 @@ public class ClusterService {
             updatePorts(destPath, port, 1);
 
             //Update genesis
-            updateGenesis(destPath, slotLength, activeCoeff, protocolMagic, writer);
+            updateGenesis(destPath, slotLength, activeCoeff, epochLength, protocolMagic, writer);
 
             updateSubmitApiFiles(destPath, protocolMagic, submitApiPort);
 
@@ -221,7 +222,7 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
-    private void updateGenesis(Path clusterFolder, double slotLength, double activeSlotsCoeff, long protocolMagic, Consumer<String> writer) throws IOException {
+    private void updateGenesis(Path clusterFolder, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
         //Shelley genesis file
         Path shelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
         Path byronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
@@ -229,6 +230,7 @@ public class ClusterService {
         values.put("slotLength", String.valueOf(slotLength));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("protocolMagic", String.valueOf(protocolMagic));
+        values.put("epochLength", String.valueOf(epochLength));
 
         //Update Genesis files
         try {

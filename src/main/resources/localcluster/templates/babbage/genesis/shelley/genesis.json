@@ -1,6 +1,6 @@
 {
   "activeSlotsCoeff": ${activeSlotsCoeff},
-  "epochLength": 500,
+  "epochLength": ${epochLength},
   "genDelegs": {
     "337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e": {
       "delegate": "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
@@ -22,7 +22,7 @@
     "60ba957a0fff6816021b2afa7900beea68fd10f2d78fb5b64de0d2379c": 3000000000000000
   },
   "maxKESEvolutions": 60,
-  "maxLovelaceSupply": 20000000000000000,
+  "maxLovelaceSupply": 45000000000000000,
   "networkId": "Testnet",
   "networkMagic": ${protocolMagic},
   "protocolParams": {
@@ -32,30 +32,30 @@
     "extraEntropy": {
       "tag": "NeutralNonce"
     },
-    "keyDeposit": 0,
+    "keyDeposit": 2000000,
     "maxBlockBodySize": 65536,
     "maxBlockHeaderSize": 1100,
     "maxTxSize": 16384,
     "minFeeA": 44,
     "minFeeB": 155381,
-    "minPoolCost": 0,
+    "minPoolCost": 340000000,
     "minUTxOValue": 1000000,
     "nOpt": 100,
-    "poolDeposit": 0,
+    "poolDeposit": 500000000,
     "protocolVersion": {
       "major": 7,
       "minor": 0
     },
-    "rho": 0.1,
-    "tau": 0.1
+    "rho": 0.003,
+    "tau": 0.20
   },
-  "securityParam": 10,
+  "securityParam": 3,
   "slotLength": ${slotLength},
   "slotsPerKESPeriod": 129600,
   "staking": {
   "pools": {
     "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57": {
-        "cost": 0,
+        "cost": 340000000,
         "margin": 0,
         "metadata": null,
         "owners": [],
