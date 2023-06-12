@@ -18,7 +18,7 @@
             network_info.epoch_slot = currentMessage.epoch_slot;
             network_info.slots_per_epoch = currentMessage.slots_per_epoch;
             if (network_info.epoch_slot && network_info.slots_per_epoch) {
-                network_info.epoch_progress = Math.round((network_info.epoch_slot / network_info.slots_per_epoch) * 100);
+                network_info.epoch_progress = ((network_info.epoch_slot / network_info.slots_per_epoch) * 100).toFixed(2);
             }
         });
 
@@ -49,14 +49,14 @@
         </div>
         <div class="bg-gray-100 rounded-lg p-4">
             <h3 class="text-xl font-semibold mb-2">Epoch Progress</h3>
-            {#if network_info.epoch_progress}
+            <!--{#if network_info.epoch_progress}-->
                 <div class="flex items-center">
                     <div class="w-3/4 bg-gray-300 rounded-lg overflow-hidden">
                         <div class="bg-blue-500 h-2" style="width: {network_info.epoch_progress}%;"></div>
                     </div>
                     <p class="ml-2 text-gray-700">{network_info.epoch_progress}%</p>
                 </div>
-            {/if}
+            <!--{/if}-->
         </div>
     </div>
 </section>
