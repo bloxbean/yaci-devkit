@@ -22,13 +22,10 @@ Urls
 **Yaci Store Api URL**            : http://localhost:8080/api/v1/  
 <em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend or Javascript app with Lucid JS + Blockfrost provider as it exposes required BF compatible minimum apis for tx building and submission)</em>
 
-**Yaci Local Cluster Api URL**    : http://localhost:10000/local-cluster/api/   
-<em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend as it exposes required BF compatible minimum apis for tx building and submission)</em>
-
 # Component Versions
-- [Yaci CLI](https://github.com/bloxbean/yaci-cli)    : v0.0.14
-- [Yaci Store](https://github.com/bloxbean/yaci-store)  : v0.0.6
-- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.4
+- [Yaci CLI](https://github.com/bloxbean/yaci-cli)    : v0.0.15
+- [Yaci Store](https://github.com/bloxbean/yaci-store)  : v0.0.9
+- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.5
 - Cardano Node: 1_35_5
 
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
@@ -127,6 +124,12 @@ local-cluster:default> topup <address> <ada value>
 local-cluster:default> utxos <address>
 ```
 
+### Docker Build
+
+```shell
+cd src
+docker buildx build --platform linux/amd64,linux/arm64 --tag bloxbean/yaci-devkit:<version> . 
+```
 
 
 

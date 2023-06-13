@@ -29,9 +29,9 @@ RUN echo "I'm building for $TARGETOS/$TARGETARCH"
 RUN mkdir -p /app/store/config
 COPY docker/store-application.properties /app/store/config/application.properties
 
-RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.6/yaci-store-all-0.0.6.jar -O /app/store/yaci-store.jar
+RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.9/yaci-store-all-0.0.9.jar -O /app/store/yaci-store.jar
 
-RUN wget https://github.com/bloxbean/yaci-cli/releases/download/v0.0.14/yaci-cli-0.0.14.jar -O /app/yaci-cli.jar
+RUN wget https://github.com/bloxbean/yaci-cli/releases/download/v0.0.15/yaci-cli-0.0.15.jar -O /app/yaci-cli.jar
 
 RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/
