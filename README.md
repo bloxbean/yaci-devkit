@@ -1,6 +1,10 @@
-# Yaci DevKit
+<div align="center">
+<img src="static/DevKit.png" width="200">
 
-A set of dev tools for development on Cardano.
+<h4>A set of dev tools for development on Cardano.</h4>
+</div>
+
+# Components
 
 Yaci DevKit docker-compose has following components
 
@@ -11,8 +15,8 @@ Yaci DevKit docker-compose has following components
 
 Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g., a Java app) to post transactions to your local cluster.
 
-Urls
---------------------------------------------
+# Urls
+
 **Yaci Viewer**                   : http://localhost:5173   (Browser)
 
 **Yaci Store Swagger UI**         : http://localhost:8080/swagger-ui.html  (Browser)
