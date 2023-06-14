@@ -10,7 +10,7 @@ Say goodbye to lengthy iterations and hello to lightning-fast feedback loops. Wi
 their progress by leveraging a custom Cardano devnet that can be created and destroyed in a matter of seconds.
 
 Powered by the user-friendly **Yaci CLI**, the devnet can be easily reset with a single command. This means you can iterate, 
-experiment, and refine your code without any hassle. Time is of the essence, and Yaci DevKit ensures you make the most of it.
+experiment, and refine your code without any hassle. 
 
 Tailor your devnet to suit your specific needs using the flexible configuration options available through the CLI. While 
 the default devnet is optimized for speed, with a 1-second block time, 1-second slot, and 500 slots per epoch, you have the
