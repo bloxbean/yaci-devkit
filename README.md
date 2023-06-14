@@ -176,6 +176,16 @@ local-cluster:default> utxos <address>
 
 For more details about **Yaci CLI**, please check https://yaci-cli.bloxbean.com .
 
+### Videos
+
+#### 1. Yaci DevKit + Lucid JS Demo
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/r8K99dOPync/0.jpg)](https://www.youtube.com/watch?v=r8K99dOPync)
+
+#### 2. Yaci Viewer with Local Devnet and Cardano Client Lib Demo
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rfwTuKXtqzg/0.jpg)](https://www.youtube.com/watch?v=rfwTuKXtqzg)
+
 ### Docker Build
 
 ```shell
