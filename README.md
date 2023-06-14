@@ -75,7 +75,7 @@ git clone https://github.com/bloxbean/yaci-devkit.git
 ```shell
 ./start.sh
 ```
-## Update env file to fund test accounts
+## Update env file to fund test accounts (Optional)
 
 Update ```env``` file to include your test Cardano addresses to automatically topup Ada.
 
