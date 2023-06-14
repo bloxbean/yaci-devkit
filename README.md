@@ -109,7 +109,7 @@ Once the docker compose is up, start Yaci CLI using ```yaci-cli.sh```
 
 ## Yaci CLI - Few Key Commands
 
-This section explains a few key commands specific to Yaci CLI. For more details, please check https://yaci-cli.bloxbean.com.
+This section explains a few key commands specific to Yaci CLI.
 
 ### Create a default devnet
 
@@ -173,6 +173,8 @@ local-cluster:default> topup <address> <ada value>
 ```shell
 local-cluster:default> utxos <address>
 ```
+
+For more details about **Yaci CLI**, please check https://yaci-cli.bloxbean.com .
 
 ### Docker Build
 
