@@ -176,6 +176,13 @@ local-cluster:default> utxos <address>
 
 For more details about **Yaci CLI**, please check https://yaci-cli.bloxbean.com .
 
+### Default Pool Id
+
+If you are testing pool delegation and reward withdrawal transaction in your application, you can use the following pool id
+which is already registered in the devnet.
+
+**pool1wvqhvyrgwch4jq9aa84hc8q4kzvyq2z3xr6mpafkqmx9wce39zy**
+
 ### Videos
 
 #### 1. Yaci DevKit + Lucid JS Demo
