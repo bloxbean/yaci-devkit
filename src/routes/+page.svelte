@@ -28,7 +28,7 @@
     </div>
 </section>
 
-{#if blocks.length > 0 && Object.keys(blocks[0]).length === 0}
+{#if blocks.length == 0 || (blocks.length > 0 && Object.keys(blocks[0]).length === 0)}
     <section class="flex flex-col items-center mt-24">
         <span class="text-xl font-bold mb-2 text-gray-800  px-4 py-2 rounded-lg">Waiting for live data</span>
         <span class="loading loading-ring loading-lg"></span>
