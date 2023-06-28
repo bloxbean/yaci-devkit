@@ -15,7 +15,7 @@ services:
       - infinity
 
   yaci-viewer:
-    image: bloxbean/yaci-viewer:0.0.5
+    image: bloxbean/yaci-viewer:0.0.6
     ports:
       - "5173:5173"
     env_file:
