@@ -16,5 +16,10 @@ public class ClusterInfo {
     private long protocolMagic;
     private double slotLength;
     private double blockTime;
+    private int epochLength;
+    private boolean p2pEnabled;
     private long startTime;
+    private boolean masterNode;
+    private boolean isBlockProducer;
+    private String adminNodeUrl; //Only for peer nodes
 }

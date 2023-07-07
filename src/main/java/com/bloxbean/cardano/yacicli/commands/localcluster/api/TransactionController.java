@@ -34,11 +34,6 @@ public class TransactionController {
             ResponseEntity<String> responseEntity = restTemplate
                     .exchange(SUBMIT_API_URL, HttpMethod.POST, entity, String.class);
 
-            if (responseEntity.getStatusCode().is2xxSuccessful()) {
-                clusterUtilService.waitForNextBlocks(1, msg -> {
-                });
-            }
-
             return responseEntity;
         } catch (Exception e) {
             return ResponseEntity.badRequest()

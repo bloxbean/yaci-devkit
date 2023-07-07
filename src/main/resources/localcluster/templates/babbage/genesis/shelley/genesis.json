@@ -49,7 +49,7 @@
     "rho": 0.003,
     "tau": 0.20
   },
-  "securityParam": 3,
+  "securityParam": 12,
   "slotLength": ${slotLength},
   "slotsPerKESPeriod": 129600,
   "staking": {

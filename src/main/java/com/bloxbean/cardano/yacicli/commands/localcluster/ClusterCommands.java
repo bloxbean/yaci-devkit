@@ -1,8 +1,8 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.client.transaction.spec.PlutusData;
-import com.bloxbean.cardano.client.transaction.spec.serializers.PlutusDataJsonConverter;
+import com.bloxbean.cardano.client.plutus.spec.PlutusData;
+import com.bloxbean.cardano.client.plutus.spec.serializers.PlutusDataJsonConverter;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
@@ -21,8 +21,6 @@ import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.*;
@@ -47,18 +45,18 @@ public class ClusterCommands {
     private final ShellHelper shellHelper;
     private final ApplicationEventPublisher publisher;
 
-    @ShellMethod(value = "List local clusters (Babbage)", key = "list-clusters")
+    @ShellMethod(value = "List devnet nodes. Use `list-nodes`. Deprecated: `list-clusters`", key = {"list-nodes", "list-clusters"})
     public void listLocalClusters() {
         try {
             List<String> clusters = localClusterService.listClusters();
-            writeLn("Available Clusters:");
+            writeLn("Available DevNet nodes:");
             clusters.forEach(cluster -> writeLn(cluster));
         } catch (Exception e) {
-            writeLn(error("Cluster listing failed. " + e.getMessage()));
+            writeLn(error("DevNet listing failed. " + e.getMessage()));
         }
     }
 
-    @ShellMethod(value = "Enter local cluster mode(Babbage)", key = "cluster")
+    @ShellMethod(value = "Enter local devnet node mode. Use `node` command. Deprecated: `cluster`", key = {"node", "cluster"})
     public void startLocalClusterContext(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName) {
         try {
             if (CommandContext.INSTANCE.getCurrentMode() == CommandContext.Mode.LOCAL_CLUSTER) {
@@ -75,15 +73,15 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Create a local cluster (Babbage)", key = "create-cluster")
-    public void createCluster(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName,
+    @ShellMethod(value = "Create a local devnet node. Use `create-node`. Deprecated: `create-node`", key = {"create-node", "create-cluster"})
+    public void createCluster(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Node Name") String clusterName,
                               @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
                               @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
                               @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
-                              @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing cluster directory. default: false") boolean overwrite,
-                              @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the cluster after create. default: false") boolean start
+                              @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
+                              @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start
     ) {
 
         try {
@@ -108,9 +106,19 @@ public class ClusterCommands {
             localClusterService.stopCluster(msg -> writeLn(msg));
             publisher.publishEvent(new ClusterStopped(clusterName));
 
-            boolean success = localClusterService.createClusterFolder(clusterName, port, submitApiPort, slotLength, blockTime,
-                    epochLength,
-                    protocolMagic, overwrite, (msg) -> writeLn(msg));
+            ClusterInfo clusterInfo = ClusterInfo.builder()
+                    .nodePort(port)
+                    .submitApiPort(submitApiPort)
+                    .slotLength(slotLength)
+                    .blockTime(blockTime)
+                    .epochLength(epochLength)
+                    .protocolMagic(protocolMagic)
+                    .p2pEnabled(false)
+                    .masterNode(true)
+                    .isBlockProducer(true)
+                    .build();
+
+            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);
@@ -128,7 +136,7 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Get cluster info", key = "info")
+    @ShellMethod(value = "Get devnet info", key = "info")
     @ShellMethodAvailability("localClusterCmdAvailability")
     private void getClusterInfo() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
@@ -153,21 +161,26 @@ public class ClusterCommands {
         writeLn(successLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
     }
 
-    @ShellMethod(value = "Delete a local cluster", key = "delete-cluster")
-    public void deleteLocalCluster(@ShellOption(value = {"-n", "--name"}, help = "Cluster Name") String clusterName) {
+    @ShellMethod(value = "Delete a local devnet node. Use `delete-node`. Deprecated: `delete-cluster`", key = {"delete-node", "delete-cluster"})
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void deleteLocalCluster(@ShellOption(value = {"-n", "--name"}, help = "Node Name") String nodeName) {
+        if (nodeName == null ||  nodeName.isEmpty()) {
+            writeLn(error("Node name is required"));
+            return;
+        }
         try {
-            localClusterService.deleteCluster(clusterName, (msg) -> {
+            localClusterService.deleteCluster(nodeName, (msg) -> {
                 writeLn(msg);
             });
-            publisher.publishEvent(new ClusterDeleted(clusterName));
+            publisher.publishEvent(new ClusterDeleted(nodeName));
         } catch (IOException e) {
             if (log.isDebugEnabled())
                 log.error("Delete error", e);
-            writeLn(error("Deletion failed for cluster: %s", clusterName));
+            writeLn(error("Deletion failed for devnet node: %s", nodeName));
         }
     }
 
-    @ShellMethod(value = "Start a local cluster (Babbage)", key = "start")
+    @ShellMethod(value = "Start local devnet", key = "start")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void startLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
@@ -191,7 +204,7 @@ public class ClusterCommands {
 
     }
 
-    @ShellMethod(value = "Stop the running local cluster (Babbage)", key = "stop")
+    @ShellMethod(value = "Stop the running local devnet", key = "stop")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void stopLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
@@ -200,7 +213,7 @@ public class ClusterCommands {
         publisher.publishEvent(new ClusterStopped(clusterName));
     }
 
-    @ShellMethod(value = "Reset local cluster. Delete data and logs folder and restart.", key = "reset")
+    @ShellMethod(value = "Reset local devnet. Delete data and logs folder and restart.", key = "reset")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void resetLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
@@ -221,7 +234,7 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Show recent logs for running cluster", key = "logs")
+    @ShellMethod(value = "Show recent logs for running devnet node", key = "logs")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void logsLocalCluster() {
         localClusterService.logs(msg -> writeLn(msg));
@@ -233,7 +246,7 @@ public class ClusterCommands {
         localClusterService.submitApiLogs(msg -> writeLn(msg));
     }
 
-    @ShellMethod(value = "Tail local cluster", key = "ltail")
+    @ShellMethod(value = "Tail local devnet", key = "ltail")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void ltail(
             @ShellOption(value = {"-c", "--show-mint"}, defaultValue = "true", help = "Show mint outputs") boolean showMint,

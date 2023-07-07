@@ -50,6 +50,14 @@ public class ConsoleWriter {
            return PREFIX + str;
     }
 
+    public static String warn(String str, Object...args) {
+        String PREFIX = AnsiColors.YELLOW + "[WARN] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
     public static String strLn(String str, Object...args) {
         if (args.length > 0)
             return String.format(str, args) + "\n";

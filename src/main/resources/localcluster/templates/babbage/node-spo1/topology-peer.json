@@ -1,0 +1,23 @@
+{
+  "localRoots": [
+    {
+      "accessPoints": [
+        {
+          "address": "${adminNodeHost}",
+          "port": ${adminNodePort}
+        }
+      ],
+      "advertise": false,
+      "valency": 1
+    }
+  ],
+  "publicRoots": [
+    {
+      "accessPoints": [
+
+      ],
+      "advertise": false
+    }
+  ],
+  "useLedgerAfterSlot": 5
+}
