@@ -146,9 +146,15 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public boolean createClusterFolder(String clusterName, int port, int submitApiPort,
-                                       double slotLength, double blockTime, int epochLength,
-                                       long protocolMagic, boolean overwrite, Consumer<String> writer) throws IOException {
+    public Path getPoolKeys(String clusterName) {
+        return Path.of(clusterConfig.getPoolKeysHome(), clusterName);
+    }
+
+//    public boolean createMasterNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, Consumer<String> writer) throws IOException {
+//        return createNodeClusterFolder(clusterName, clusterInfo, overwrite, writer);
+//    }
+
+    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -190,17 +196,20 @@ public class ClusterService {
             copy(sourcePath, destPath);
             FileUtils.deleteDirectory(tempLocalCluster.toFile());
 
-            double activeCoeff = slotLength / blockTime;
+            double activeCoeff = clusterInfo.getSlotLength() / clusterInfo.getBlockTime();
             //Update configuration
-            updatePorts(destPath, port, 1);
+            updatePorts(destPath, clusterInfo.getNodePort(), 1);
 
             //Update genesis
-            updateGenesis(destPath, slotLength, activeCoeff, epochLength, protocolMagic, writer);
+            updateGenesis(destPath, clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
 
-            updateSubmitApiFiles(destPath, protocolMagic, submitApiPort);
+            //Update P2P configuration
+            updateConfiguration(destPath, clusterInfo.isP2pEnabled(), writer);
+
+            updateSubmitApiFiles(destPath, clusterInfo.getProtocolMagic(), clusterInfo.getSubmitApiPort());
 
             //Update node config
-            saveClusterInfo(destPath, port, submitApiPort, slotLength, blockTime, protocolMagic);
+            saveClusterInfo(destPath, clusterInfo);
 
             writer.accept(success("Update ports"));
             writer.accept(success("Create Cluster : %s", clusterName));
@@ -283,21 +292,20 @@ public class ClusterService {
         }
     }
 
-    private ClusterInfo saveClusterInfo(Path clusterFolder, int nodePort, int submitApiPort, double slotLength, double blockTime, long protocolMagic) throws IOException {
-        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toString();
+    private void updateConfiguration(Path clusterFolder, boolean enableP2P, Consumer<String> writer) throws IOException {
+        //Shelley genesis file
+        Path configurationPath = clusterFolder.resolve("configuration.yaml");
+        Map<String, String> values = new HashMap<>();
+        values.put("enableP2P", String.valueOf(enableP2P));
 
-        //Create node_config
-        ClusterInfo clusterInfo = ClusterInfo.builder()
-                .nodePort(nodePort)
-                .submitApiPort(submitApiPort)
-                .socketPath(socketPath)
-                .slotLength(slotLength)
-                .blockTime(blockTime)
-                .protocolMagic(protocolMagic)
-                .build();
+        //Update Configuration file
+        try {
+            templateEngine.replaceValues(configurationPath, values);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
 
-        saveClusterInfo(clusterFolder, clusterInfo);
-        return clusterInfo;
+        writer.accept(success("Updated configuration.yaml"));
     }
 
     public ClusterInfo getClusterInfo(String clusterName) throws IOException {
@@ -318,6 +326,9 @@ public class ClusterService {
         if (!Files.exists(clusterFolder)) {
             throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
         }
+
+        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toString();
+        clusterInfo.setSocketPath(socketPath);
 
         String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(clusterInfoPath), clusterInfo);
@@ -348,7 +359,7 @@ public class ClusterService {
     }
 
 
-    private String getOSSpecificScriptName(String script) {
+    public String getOSSpecificScriptName(String script) {
         return OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS ? script + ".bat" : script + ".sh";
     }
 
@@ -376,4 +387,5 @@ public class ClusterService {
     public boolean isFirstRunt(String clusterName) {
         return clusterStartService.checkIfFirstRun(getClusterFolder(clusterName));
     }
+
 }

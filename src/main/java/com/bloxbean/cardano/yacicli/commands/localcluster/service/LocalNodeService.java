@@ -17,8 +17,11 @@ import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
-import com.bloxbean.cardano.client.transaction.spec.PlutusData;
+import com.bloxbean.cardano.client.plutus.spec.PlutusData;
+import com.bloxbean.cardano.client.supplier.local.LocalProtocolSupplier;
+import com.bloxbean.cardano.client.supplier.local.LocalUtxoSupplier;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
+import com.bloxbean.cardano.client.transaction.util.TransactionUtil;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
@@ -30,8 +33,6 @@ import com.bloxbean.cardano.yaci.core.protocol.localtx.model.TxSubmissionRequest
 import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
 import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.common.Tuple;
-import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalProtocolSupplier;
-import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalUtxoSupplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
@@ -53,8 +54,6 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class LocalNodeService {
     private final static String UTXO_KEYS_FOLDER = "utxo-keys";
-//    private LocalQueryClientUtil localQueryClientUtil;
-//    private LocalNodeClientFactory localNodeClientFactory;
     private LocalClientProvider localClientProvider;
     private UtxoSupplier utxoSupplier;
     private ProtocolParamsSupplier protocolParamsSupplier;
@@ -64,8 +63,6 @@ public class LocalNodeService {
 
     public LocalNodeService(Path clusterFolder, LocalClientProviderHelper localQueryClientUtil, Consumer<String> writer) throws Exception {
         this.utxoKeys = new ArrayList<>();
-//        String socketFile = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toAbsolutePath().toString();
-//        this.localNodeClientFactory = new LocalNodeClientFactory(socketFile, protocolMagic, writer);
         this.localClientProvider = localQueryClientUtil.getLocalClientProvider();
         this.localClientProvider.addTxSubmissionListener(new LocalTxSubmissionListener() {
             @Override
@@ -182,10 +179,31 @@ public class LocalNodeService {
                 .buildAndSign(txBuilder, signerFrom(senderSkey));
 
         writer.accept(infoLabel("Txn Cbor", signedTransaction.serializeToHex()));
+        String txHash = TransactionUtil.getTxHash(signedTransaction);
 
         //Submit Tx using LocalStateQuery mini-protocol
         localClientProvider.getTxSubmissionClient().submitTxCallback(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
         //localNodeClientFactory.shutdown();
+        int count = 0;
+        while (true) {
+            count++;
+            if (count > 10)
+                break;
+            boolean found = utxoSupplier.getAll(receiver)
+                    .stream()
+                    .filter(utxo -> utxo.getTxHash().equals(txHash))
+                    .findAny()
+                    .isPresent();
+            if (found) {
+                writer.accept(infoLabel("Txn# : ", txHash));
+                break;
+            } else {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                }
+            }
+        }
     }
 
     public Tuple<Long, Point> getTip() {

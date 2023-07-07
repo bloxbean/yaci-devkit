@@ -24,7 +24,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.*;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
@@ -54,10 +54,10 @@ public class ClusterStartService {
         }
 
         try {
-            if (checkIfFirstRun(clusterFolder))
+            if (clusterInfo.isMasterNode() && checkIfFirstRun(clusterFolder))
                 setupFirstRun(clusterInfo, clusterFolder, writer);
 
-            Process process1 = startNode(clusterFolder, 1, writer);
+            Process process1 = startNode(clusterFolder, clusterInfo, 1, writer);
             Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
 
             processes.add(process1);
@@ -84,7 +84,7 @@ public class ClusterStartService {
                     process.descendants().forEach(processHandle -> {
                         writer.accept(infoLabel("Process", String.valueOf(processHandle.pid())));
                         processHandle.destroyForcibly();
-                        });
+                    });
                     process.destroy();
                     writer.accept(info("Stopping node process : " + process));
                     process.waitFor(15, TimeUnit.SECONDS);
@@ -110,7 +110,7 @@ public class ClusterStartService {
             consumer.accept("No log to show");
         } else {
             int counter = 0;
-            while(!logs.isEmpty()) {
+            while (!logs.isEmpty()) {
                 counter++;
                 if (counter == 200)
                     return;
@@ -125,7 +125,7 @@ public class ClusterStartService {
             consumer.accept("No log to show");
         } else {
             int counter = 0;
-            while(!submitApiLogs.isEmpty()) {
+            while (!submitApiLogs.isEmpty()) {
                 counter++;
                 if (counter == 100)
                     return;
@@ -134,9 +134,16 @@ public class ClusterStartService {
         }
     }
 
-    private Process startNode(Path clusterFolder, int nodeNo, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startNode(Path clusterFolder, ClusterInfo clusterInfo, int nodeNo, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         String clusterFolderPath = clusterFolder.toAbsolutePath().toString();
-        String startScript = NODE_FOLDER_PREFIX + nodeNo;
+        String startScript = null;
+        if (clusterInfo.isMasterNode()) {
+            startScript = NODE_FOLDER_PREFIX + nodeNo;
+        } else if (clusterInfo.isBlockProducer()) {
+            startScript = NODE_BP_SCRIPT;
+        } else {
+            startScript = NODE_RELAY_SCRIPT;
+        }
 
         ProcessBuilder builder = new ProcessBuilder();
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
@@ -152,11 +159,10 @@ public class ClusterStartService {
         writer.accept(success("Starting node from directory : " + nodeStartDir.getAbsolutePath()));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
-                    logs.add(String.format("[Node: %s] ", nodeNo) +  line);
+                    logs.add(String.format("[Node: %s] ", nodeNo) + line);
                     //writeLn("[Node: %s] %s", nodeNo, line);
                 });
         Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
-
         return process;
 //        int exitCode = process.waitFor();
 //        assert exitCode == 0;
@@ -183,13 +189,12 @@ public class ClusterStartService {
         builder.directory(submitApiStartDir);
         Process process = builder.start();
 
-        writer.accept(success("Started submit api : http://localhost:" +  clusterInfo.getSubmitApiPort()));
+        writer.accept(success("Started submit api : http://localhost:" + clusterInfo.getSubmitApiPort()));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
-                    submitApiLogs.add("[SubmitApi] " +  line);
+                    submitApiLogs.add("[SubmitApi] " + line);
                 });
         Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
-
         return process;
     }
 
@@ -203,13 +208,13 @@ public class ClusterStartService {
         }
 
         //Update Byron Genesis file
-        ObjectNode jsonNode = (ObjectNode)objectMapper.readTree(byronGenesis.toFile());
+        ObjectNode jsonNode = (ObjectNode) objectMapper.readTree(byronGenesis.toFile());
         long byronStartTime = Instant.now().getEpochSecond();
         jsonNode.set("startTime", new LongNode(byronStartTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
 
         //Update Shelley Genesis file
-        ObjectNode shelleyJsonNode = (ObjectNode)objectMapper.readTree(shelleyGenesis.toFile());
+        ObjectNode shelleyJsonNode = (ObjectNode) objectMapper.readTree(shelleyGenesis.toFile());
         DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
         String shelleyStart = formatter.format(Instant.now());
         shelleyJsonNode.set("systemStart", new TextNode(shelleyStart));
@@ -224,7 +229,7 @@ public class ClusterStartService {
 
     public void saveClusterInfo(Path clusterFolder, ClusterInfo clusterInfo) throws IOException {
         if (!Files.exists(clusterFolder)) {
-            throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
+            throw new IllegalStateException("Cluster folder not found - " + clusterFolder);
         }
 
         String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();

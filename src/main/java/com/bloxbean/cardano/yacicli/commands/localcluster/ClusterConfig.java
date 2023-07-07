@@ -1,7 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,6 +16,8 @@ import static com.bloxbean.cardano.yacicli.YaciCliConfig.YACI_CLI_HOME;
 public class ClusterConfig {
     public final static String CLUSTER_INFO_FILE = "cluster-info.json";
     public final static String NODE_FOLDER_PREFIX = "node-spo";
+    public final static String NODE_RELAY_SCRIPT = "node-relay";
+    public final static String NODE_BP_SCRIPT = "node-bp";
 
     @Value("${local.cluster.home:#{null}}")
     private String clusterHome;
@@ -46,5 +47,9 @@ public class ClusterConfig {
             return Path.of(YACI_CLI_HOME, "bin").toAbsolutePath().toString();
         else
             return Path.of(yaciStoreBinFolder).toAbsolutePath().toString();
+    }
+
+    public String getPoolKeysHome() {
+        return Path.of(YACI_CLI_HOME, "pool-keys").toAbsolutePath().toString();
     }
 }

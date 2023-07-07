@@ -30,9 +30,13 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
 
-	implementation 'com.bloxbean.cardano:yaci:0.1.12'
-	implementation 'com.bloxbean.cardano:cardano-client-lib:0.4.3'
-	implementation 'com.bloxbean.cardano:cardano-client-backend:0.4.3'
+	implementation('com.bloxbean.cardano:yaci:0.2.0-beta2') {
+        exclude group: 'com.bloxbean.cardano', module: 'cardano-client-core'
+    }
+	implementation 'com.bloxbean.cardano:cardano-client-lib:0.5.0-alpha.3'
+	implementation 'com.bloxbean.cardano:cardano-client-backend:0.5.0-alpha.3'
+    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.5.0-alpha.3'
+    implementation 'com.bloxbean.cardano:cardano-client-supplier-local:0.5.0-alpha.3'
 
 	implementation 'org.jeasy:easy-rules-core:4.1.0'
 	implementation 'org.jeasy:easy-rules-mvel:4.1.0'

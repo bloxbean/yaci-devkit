@@ -25,6 +25,8 @@ public class ClusterUtilService {
     private final LocalClientProviderHelper localQueryClientUtil;
     private final RootLogService rootLogService;
 
+    final static int slotsPerKESPeriod = 129600; //TODO -- take from configuration
+
     public Tuple<Long, Point> getTip(Consumer<String> writer) {
         String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
         LocalNodeService localNodeService = null;
@@ -45,6 +47,15 @@ public class ClusterUtilService {
             if (localNodeService != null)
                 localNodeService.shutdown();
         }
+    }
+
+    public int getKESPeriod() {
+        Tuple<Long, Point> tip = getTip((msg) -> {writeLn(msg);});
+
+        if (tip == null)
+            return -1;
+
+        return (int) (tip._2.getSlot() /slotsPerKESPeriod);
     }
 
     public boolean waitForNextBlocks(int noOfBlocks, Consumer<String> writer) {
