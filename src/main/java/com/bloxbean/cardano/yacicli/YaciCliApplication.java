@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli;
 
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -64,4 +65,7 @@ public class YaciCliApplication {
         return Arrays.asList(commands);
     };
 
+    @PreDestroy
+    public void onShutDown() {
+    }
 }

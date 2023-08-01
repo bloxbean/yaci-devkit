@@ -20,7 +20,7 @@ import java.math.BigInteger;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @ShellComponent
-@ShellCommandGroup(Groups.CLUSTER_CMD_GROUP)
+@ShellCommandGroup(Groups.NODE_CMD_GROUP)
 @RequiredArgsConstructor
 @Slf4j
 public class PeerCommand {

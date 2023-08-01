@@ -1,7 +1,7 @@
 #spring:
 #  main:
 #    banner-mode: "off"
-application.version: v0.0.16
+application.version: v0.0.16-beta
 
 server:
   port: 0
