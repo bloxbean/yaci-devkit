@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: bloxbean/yaci-devkit:0.5.0-alpha
+    image: bloxbean/yaci-devkit_dev:0.5.0-alpha
     ports:
       - "3001:3001"
       - "8090:8090"
