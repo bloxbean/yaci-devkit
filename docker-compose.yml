@@ -6,6 +6,7 @@ services:
       - "3001:3001"
       - "8090:8090"
       - "8080:8080"
+      - "10000:10000"
     volumes:
       - ~/clusters:/clusters
     env_file:
