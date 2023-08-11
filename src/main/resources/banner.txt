@@ -4,6 +4,5 @@
   '.    /' ,-.  || .--',--.        |  |    |  |   |  |
     |  | \ '-'  |\ `--.|  |        '  '--'\|  '--.|  |
     `--'  `--`--' `---'`--'         `-----'`-----'`--'
-                                                ${application.version}
-                                  [0;103m [1;95m A BloxBean Project [0m
+          [0;103m [1;95m A BloxBean Project - ${application.version} [0m
 
