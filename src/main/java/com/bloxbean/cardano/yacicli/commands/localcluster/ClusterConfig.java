@@ -28,6 +28,12 @@ public class ClusterConfig {
     @Value("${yaci.store.folder:#{null}}")
     private String yaciStoreBinFolder;
 
+    @Value("${ogmios.folder:#{null}}")
+    private String ogmiosFolder;
+
+    @Value("${kupo.folder:#{null}}")
+    private String kupoFolder;
+
     public String getClusterHome() {
         if (clusterHome == null || !StringUtils.hasLength(clusterHome.trim()))
             return Path.of(YACI_CLI_HOME, "local-clusters").toAbsolutePath().toString();
@@ -51,5 +57,19 @@ public class ClusterConfig {
 
     public String getPoolKeysHome() {
         return Path.of(YACI_CLI_HOME, "pool-keys").toAbsolutePath().toString();
+    }
+
+    public String getOgmiosHome() {
+        if (ogmiosFolder == null || !StringUtils.hasLength(ogmiosFolder.trim()))
+            return Path.of(YACI_CLI_HOME, "bin", "ogmios").toAbsolutePath().toString();
+        else
+            return Path.of(ogmiosFolder).toAbsolutePath().toString();
+    }
+
+    public String getKupoHome() {
+        if (kupoFolder == null || !StringUtils.hasLength(kupoFolder.trim()))
+            return Path.of(YACI_CLI_HOME, "bin", "kupo").toAbsolutePath().toString();
+        else
+            return Path.of(kupoFolder).toAbsolutePath().toString();
     }
 }

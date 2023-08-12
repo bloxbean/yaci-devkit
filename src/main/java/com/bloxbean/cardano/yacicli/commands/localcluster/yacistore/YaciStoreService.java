@@ -2,10 +2,12 @@ package com.bloxbean.cardano.yacicli.commands.localcluster.yacistore;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +55,14 @@ public class YaciStoreService {
         }
 
         try {
+            ClusterInfo clusterInfo = clusterService.getClusterInfo(clusterStarted.getClusterName());
+            if (clusterInfo == null)
+                throw new IllegalStateException("Cluster info not found for cluster: " + clusterStarted.getClusterName()
+                        + ". Please check if the cluster is created.");
+
+            if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
+                return;
+
             Process process = startStoreApp(clusterStarted.getClusterName());
             if (process != null)
                 processes.add(process);
@@ -61,6 +71,18 @@ public class YaciStoreService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
+        boolean yaciPortAvailable = PortUtil.isPortAvailable(clusterInfo.getYaciStorePort());
+        if (!yaciPortAvailable) {
+            writer.accept(error("Yaci Store Port " + clusterInfo.getYaciStorePort() + " is not available. Please check if the port is already in use."));
+        }
+
+        if (!yaciPortAvailable)
+            return false;
+        else
+            return true;
     }
 
     private Process startStoreApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {

@@ -22,15 +22,27 @@ WORKDIR /app
 
 COPY docker/download-$TARGETARCH.sh .
 RUN sh download-$TARGETARCH.sh
+
+#Ogmios download
+COPY docker/download-ogmios.sh .
+RUN sh download-ogmios.sh
+
+#Kupo download
+COPY docker/download-kupo.sh .
+RUN sh download-kupo.sh
+
 #RUN apk --no-cache add curl
 
 RUN echo "I'm building for $TARGETOS/$TARGETARCH"
 
 RUN mkdir -p /app/store/config
 COPY docker/store-application.properties /app/store/config/application.properties
-RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.6/yaci-store-all-0.0.6.jar -O /app/store/yaci-store.jar
 
-COPY build/libs/yaci-cli-*.jar /app/yaci-cli.jar
+RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.11-beta3/yaci-store-all-0.0.11-beta3.jar -O /app/store/yaci-store.jar
+
+# RUN wget https://github.com/bloxbean/yaci-cli/releases/download/v0.0.16-beta/yaci-cli-0.0.16-beta.jar -O /app/yaci-cli.jar
+WORKDIR /app/yaci-cli
+COPY build/libs/yaci-cli-*-SNAPSHOT.jar /app/yaci-cli.jar
 
 RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/
@@ -41,10 +53,10 @@ ENV PROTOCOL_MAGIC=42
 
 WORKDIR /app
 EXPOSE 3001
-EXPOSE 3002
-EXPOSE 3003
 EXPOSE 8090
 EXPOSE 10000
 EXPOSE 8080
+EXPOSE 1337
+EXPOSE 1442
 
 ENTRYPOINT ["java", "-jar","/app/yaci-cli.jar"]

@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
@@ -216,6 +217,8 @@ public class ClusterService {
 
             writer.accept(success("Update ports"));
             writer.accept(success("Create Cluster : %s", clusterName));
+
+            publisher.publishEvent(new ClusterCreated(clusterName));
 
             return true;
         }
