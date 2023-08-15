@@ -29,4 +29,6 @@ public class ClusterInfo {
     private int kupoPort=1442;
     @Builder.Default
     private int yaciStorePort=8080;
+    @Builder.Default
+    private int socatPort=3333;
 }
