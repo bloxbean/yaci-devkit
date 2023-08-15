@@ -5,7 +5,7 @@ on:
       - 'v*'
 
 jobs:
-  buildJar:
+  buildAndRelease:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -44,12 +44,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-#      - name: Set tag name without prefix
-#        id: metadata
-#        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
       - name: Build and push
-#        env:
-#          TAG_NAME: ${{ steps.metadata.outputs.TAG_NAME }}
         uses: docker/build-push-action@v4
         with:
           context: .
