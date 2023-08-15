@@ -1,11 +1,15 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: bloxbean/yaci-devkit:0.4.0
+    image: bloxbean/yaci-cli:0.0.16-beta2
     ports:
       - "3001:3001"
       - "8090:8090"
       - "8080:8080"
+      - "10000:10000"
+      - "1337:1337"
+      - "1442:1442"
+      - "3333:3333"
     volumes:
       - ~/clusters:/clusters
     env_file:
