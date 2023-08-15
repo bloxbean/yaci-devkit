@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,25 +45,40 @@ public class ClusterStartService {
         this.clusterConfig = clusterConfig;
     }
 
-    public void startCluster(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
+    public boolean startCluster(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
         logs.clear();
         submitApiLogs.clear();
 
         if (processes.size() > 0) {
             writer.accept("A cluster is already running. You can only run one cluster at a time.");
-            return;
+            return false;
         }
+
+        //check if all ports are available
+        if (!portAvailabilityCheck(clusterInfo, writer))
+            return false;
 
         try {
             if (clusterInfo.isMasterNode() && checkIfFirstRun(clusterFolder))
                 setupFirstRun(clusterInfo, clusterFolder, writer);
 
-            Process process1 = startNode(clusterFolder, clusterInfo, 1, writer);
-            Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
+            Process nodeProcess = startNode(clusterFolder, clusterInfo, 1, writer);
+            if (nodeProcess == null) {
+                writer.accept(error("Node process could not be started."));
+                return false;
+            }
 
-            processes.add(process1);
+            Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
+            if (submitApiProcess == null) {
+                writer.accept(error("Submit API process could not be started."));
+                return false;
+            }
+
+            processes.add(nodeProcess);
             if (submitApiProcess != null)
                 processes.add(submitApiProcess);
+
+            return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -72,6 +88,23 @@ public class ClusterStartService {
         } catch (TimeoutException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
+        boolean nodePortAvailable = PortUtil.isPortAvailable(clusterInfo.getNodePort());
+        if (!nodePortAvailable) {
+            writer.accept(error("Node Port " + clusterInfo.getNodePort() + " is not available. Please check if the port is already in use."));
+        }
+
+        boolean submitPortAvaiable = PortUtil.isPortAvailable(clusterInfo.getSubmitApiPort());
+        if (!submitPortAvaiable) {
+            writer.accept(error("Submit Api Port " + clusterInfo.getSubmitApiPort() + " is not available. Please check if the port is already in use."));
+        }
+
+        if (!nodePortAvailable || !submitPortAvaiable)
+            return false;
+        else
+            return true;
     }
 
     public void stopCluster(Consumer<String> writer) {

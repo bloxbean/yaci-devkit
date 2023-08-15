@@ -22,4 +22,13 @@ public class ClusterInfo {
     private boolean masterNode;
     private boolean isBlockProducer;
     private String adminNodeUrl; //Only for peer nodes
+
+    @Builder.Default
+    private int ogmiosPort = 1337;
+    @Builder.Default
+    private int kupoPort=1442;
+    @Builder.Default
+    private int yaciStorePort=8080;
+    @Builder.Default
+    private int socatPort=3333;
 }

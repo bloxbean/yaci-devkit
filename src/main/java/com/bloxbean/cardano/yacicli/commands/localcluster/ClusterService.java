@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
@@ -80,10 +81,13 @@ public class ClusterService {
         }
     }
 
-    public void startCluster(String clusterName) {
+    public boolean startCluster(String clusterName) {
         try {
-            clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), msg -> writeLn(msg));
-            writeLn(info("Swagger Url to interact with the cluster's node : " + "http://localhost:" + server.getWebServer().getPort() +"/swagger-ui.html"));
+            boolean startedSuccessfully = clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), msg -> writeLn(msg));
+            if (startedSuccessfully)
+                writeLn(info("Swagger Url to interact with the cluster's node : " + "http://localhost:" + server.getWebServer().getPort() +"/swagger-ui.html"));
+
+            return startedSuccessfully;
         } catch (Exception e) {
             System.out.println("Error a creating local cluster");
             throw new RuntimeException(e);
@@ -213,6 +217,8 @@ public class ClusterService {
 
             writer.accept(success("Update ports"));
             writer.accept(success("Create Cluster : %s", clusterName));
+
+            publisher.publishEvent(new ClusterCreated(clusterName));
 
             return true;
         }
