@@ -5,6 +5,7 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG APP_VERSION
 
 COPY docker/install-packages.sh .
 RUN chmod -R 755 install-packages.sh
@@ -42,7 +43,7 @@ RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.11-beta3/
 
 # RUN wget https://github.com/bloxbean/yaci-cli/releases/download/v0.0.16-beta/yaci-cli-0.0.16-beta.jar -O /app/yaci-cli.jar
 WORKDIR /app/yaci-cli
-COPY build/libs/yaci-cli-*-SNAPSHOT.jar /app/yaci-cli.jar
+COPY build/libs/yaci-cli-${APP_VERSION}.jar /app/yaci-cli.jar
 
 RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/
