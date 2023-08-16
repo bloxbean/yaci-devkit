@@ -41,6 +41,8 @@ Yaci DevKit docker-compose has following components
 2. [Yaci Store](https://github.com/bloxbean/yaci-store)   - A lightweight indexer with H2 DB
 3. [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) - A minimal blockchain data viewer for developers
 4. Cardano Node
+5. Ogmios (Optional)
+6. Kupo (Optional)
 
 Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g., a Java app, Lucid JS app) to post transactions to your local cluster.
 
