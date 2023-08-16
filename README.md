@@ -204,6 +204,19 @@ which is already registered in the devnet.
 
 **pool1wvqhvyrgwch4jq9aa84hc8q4kzvyq2z3xr6mpafkqmx9wce39zy**
 
+## Query Devnet's Cardano Node using cardano-cli
+
+`cardano-cli.sh` is a wrapper script to query the Cardano node running in the devnet. You can use this script to query the Cardano node like
+you usually do with cardano-cli command line tool. You don't need to install cardano-cli in your local machine or use protocol magic number in the command.
+
+**For example:**
+
+To query protocol parameters, you can use the following command.
+
+```shell
+./cardano-cli.sh query protocol-parameters
+```
+
 ### Videos
 
 #### 1. Yaci DevKit + Lucid JS Demo
