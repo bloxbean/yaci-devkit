@@ -214,7 +214,11 @@ which is already registered in the devnet.
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rfwTuKXtqzg/0.jpg)](https://www.youtube.com/watch?v=rfwTuKXtqzg)
 
+# Any questions, ideas or issues?
 
+- Create a Github [Discussion](https://github.com/bloxbean/yaci-devkit/discussions)
+- Create a Github [Issue](https://github.com/bloxbean/yaci-devkit/issues)
+- [Discord Server](https://discord.gg/JtQ54MSw6p)
 
 
 
