@@ -21,6 +21,10 @@ But Yaci DevKit goes beyond just providing a devnet. It equips you with a lightw
 a user-friendly browser-based viewer called **"Yaci Viewer"**. Seamlessly integrated into the DevKit, these components empower 
 you to build and submit transactions effortlessly.
 
+Yaci DevKit also includes [Ogmios](https://ogmios.dev/) and [Kupo](https://cardanosolutions.github.io/kupo/). Both Ogmios 
+and Kupo are optional and can be activated by enabling a specific flag. Thus, if your client SDK supports either Ogmios or Kupo, 
+you can utilize them to submit transactions to your local cluster.
+
 Deploying Yaci DevKit is a breeze with the Docker Compose package, making setup and configuration a hassle-free experience. 
 Manage the entire process using simple commands such as "**start**," "**stop**," and "**reset**," giving you full control over your development
 environment.
@@ -49,11 +53,22 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **Yaci Store Api URL**            : http://localhost:8080/api/v1/  
 <em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend or Javascript app with Lucid JS + Blockfrost provider as it exposes required BF compatible minimum apis for tx building and submission)</em>
 
+**Ogmios Url (Optional)**         : ws://localhost:1337
+
+**Kupo Url (Optional)**           : http://localhost:1442
+
+### Node Ports
+**n2n port**                             : localhost:3001
+
+**n2c port for remote client (socat)**   : localhost:3333
+
 # Component Versions
-- [Yaci CLI](https://github.com/bloxbean/yaci-cli)    : v0.0.15
-- [Yaci Store](https://github.com/bloxbean/yaci-store)  : v0.0.9
-- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.5
-- Cardano Node: 1_35_5
+- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.16-beta2
+- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.0.11-beta3
+- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.6
+- [Cardano Node](https://cardano.org/): 8.1.2
+- [Ogmios](https://ogmios.dev/): 5.6.0
+- [Kupo](https://cardanosolutions.github.io/kupo/): 2.5
 
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
   (Include both amd64 and arm64 binaries)
@@ -91,7 +106,11 @@ topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4el
 
 **Important:** After updating env file, you need to restart the docker compose using ```./stop.sh``` and ```./start.sh```
 
-**Note:** You can also use the topup command in Yaci CLI to fund your test addresses later.
+**Note:** You can also use the ``topup`` command in Yaci CLI to fund your test addresses later.
+
+## Enable Ogmios and Kupo Support (Optional)
+Yaci DevKit bundles both Ogmios and Kupo. However, they are not enabled by default. To activate Ogmios and Kupo support, 
+set ``ogmios_enabled`` flag in ``env`` file to true. Alternatively, you can enable Ogmios support using ``enable-ogmios`` command in Yaci CLI.
 
 ## To start yaci-cli
 
@@ -114,15 +133,15 @@ This section explains a few key commands specific to Yaci CLI.
 ### Create a default devnet
 
 ```
-yaci-cli:>create-cluster
+yaci-cli:>create-node
 ```
 To overwrite data or reset the existing default devnet, use the "-o" flag.
 Use --start flag to start the devnet after creation.
 
 ```
-yaci-cli:>create-cluster -o
+yaci-cli:>create-node -o
 or,
-yaci-cli:>create-cluster -o --start
+yaci-cli:>create-node -o --start
 ```
 
 To create devnet with a custom slots per epoch (By default 500 slots/epoch)
@@ -130,14 +149,14 @@ To create devnet with a custom slots per epoch (By default 500 slots/epoch)
 **For example:** Create and start a devnet with 30 slots per epoch
 
 ```
-yaci-cli> create-cluster -o -e 30 --start
+yaci-cli> create-node -o -e 30 --start
 
 ```
 
-Now, you should be in the "local-cluster" context. To start the devnet, use the "start" command.
+Now, you should be in the "devnet" context. To start the devnet, use the "start" command.
 
 ```
-local-cluster:default>start
+devnet:default>start
 ```
 
 **Note** Now, with Yaci Viewer, you can conveniently check the devnet's data right from the browser. Simply open the following URL
@@ -151,13 +170,13 @@ If your devnet gets stuck or you simply want to reset the data and restart with 
 It will restore your devnet to its initial state, allowing you to continue your development seamlessly.
 
 ```
-local-cluster:default>reset
+devnet:default>reset
 ```
 
 ### To stop
 
 ```
-local-cluster:default>stop
+devnet:default>stop
 ```
 
 ### To fund a new address
@@ -165,13 +184,13 @@ local-cluster:default>stop
 Easily fund your test account with ADA using the "topup" command.
 
 ```shell
-local-cluster:default> topup <address> <ada value>
+devnet:default> topup <address> <ada value>
 ```
 
 ### To check utxos at an address
 
 ```shell
-local-cluster:default> utxos <address>
+devnet:default> utxos <address>
 ```
 
 For more details about **Yaci CLI**, please check https://yaci-cli.bloxbean.com .
@@ -193,12 +212,6 @@ which is already registered in the devnet.
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rfwTuKXtqzg/0.jpg)](https://www.youtube.com/watch?v=rfwTuKXtqzg)
 
-### Docker Build
-
-```shell
-cd src
-docker buildx build --platform linux/amd64,linux/arm64 --tag bloxbean/yaci-devkit:<version> . 
-```
 
 
 
