@@ -75,8 +75,8 @@
                         </a>
                     </td>
                     <td class="py-2 px-4 text-center">
-                        <a href="/blocks/{retirement.block}" class="text-blue-500">
-                            {retirement.block}
+                        <a href="/blocks/{retirement.block_number}" class="text-blue-500">
+                            {retirement.block_number}
                         </a>
                     </td>
                     <td class="py-2 px-4 ">{truncate(retirement.pool_id_bech32, 50, "...")}</td>

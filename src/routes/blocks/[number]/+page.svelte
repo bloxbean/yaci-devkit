@@ -6,10 +6,10 @@
     export let data;
     let {block, txs} = data;
 
-    function getDate(blockTime) {
-        if (!blockTime) return '';
+    function getDate(time) {
+        if (!time) return '';
 
-        const date = new Date(blockTime * 1000);
+        const date = new Date(time * 1000);
         const options = {
             year: 'numeric',
             month: 'long',
@@ -52,7 +52,7 @@
                 </div>
                 <div class="bg-gray-100 py-2 px-4">
                     <p>
-                        <small>{block.epoch_number}</small>
+                        <small>{block.epoch}</small>
                     </p>
                 </div>
             </div>
@@ -84,7 +84,7 @@
                 </div>
                 <div class="bg-gray-100 py-2 px-4">
                     <p>
-                        <small>{block.prev_hash}</small>
+                        <small>{block.previous_block}</small>
                     </p>
                 </div>
             </div>
@@ -94,7 +94,7 @@
                 </div>
                 <div class="bg-gray-100 py-2 px-4">
                     <p>
-                        <small>{block.no_of_txs}</small>
+                        <small>{block.tx_count}</small>
                     </p>
                 </div>
             </div>
@@ -104,7 +104,7 @@
                 </div>
                 <div class="bg-gray-100 py-2 px-4">
                     <p>
-                        <small>{block.block_body_size}</small>
+                        <small>{block.size}</small>
                     </p>
                 </div>
             </div>
@@ -124,7 +124,7 @@
                 </div>
                 <div class="bg-gray-100 py-2 px-4">
                     <p>
-                        <small>{getDate(block.block_time)}, {moment(block.block_time * 1000).fromNow()}</small>
+                        <small>{getDate(block.time)}, {moment(block.time * 1000).fromNow()}</small>
                     </p>
                 </div>
             </div>

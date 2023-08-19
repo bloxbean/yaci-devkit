@@ -76,8 +76,8 @@
                         </a>
                     </td>
                     <td class="py-2 px-4 text-center">
-                        <a href="/blocks/{registration.block}" class="text-blue-500">
-                            {registration.block}
+                        <a href="/blocks/{registration.block_number}" class="text-blue-500">
+                            {registration.block_number}
                         </a>
                     </td>
                     <td class="py-2 px-4 text-center">{getDate(registration.block_time)}</td>

@@ -87,8 +87,8 @@
                     </td>
                     <td class="py-2 px-4 text-center">{block.slot}</td>
                     <td class="py-2 px-4 text-center">{block.slot_leader}</td>
-                    <td class="py-2 px-4 text-center">{block.block_body_size / 1000}</td>
-                    <td class="py-2 px-4 text-center">{block.no_of_txs}</td>
+                    <td class="py-2 px-4 text-center">{block.size / 1000}</td>
+                    <td class="py-2 px-4 text-center">{block.tx_count}</td>
                 </tr>
             {/each}
             </tbody>
