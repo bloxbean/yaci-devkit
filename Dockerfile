@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV STORE_VERSION=0.0.11
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -39,9 +40,8 @@ RUN echo "I'm building for $TARGETOS/$TARGETARCH"
 RUN mkdir -p /app/store/config
 COPY docker/store-application.properties /app/store/config/application.properties
 
-RUN wget https://github.com/bloxbean/yaci-store/releases/download/v0.0.11-beta3/yaci-store-all-0.0.11-beta3.jar -O /app/store/yaci-store.jar
+RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-all-${STORE_VERSION}.jar -O /app/store/yaci-store.jar
 
-# RUN wget https://github.com/bloxbean/yaci-cli/releases/download/v0.0.16-beta/yaci-cli-0.0.16-beta.jar -O /app/yaci-cli.jar
 WORKDIR /app/yaci-cli
 COPY build/libs/yaci-cli-${APP_VERSION}.jar /app/yaci-cli.jar
 
