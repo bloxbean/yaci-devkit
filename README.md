@@ -65,9 +65,9 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **n2c port for remote client (socat)**   : localhost:3333
 
 # Component Versions
-- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.16-beta2
-- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.0.11-beta3
-- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.6
+- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.16
+- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.0.11
+- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.8
 - [Cardano Node](https://cardano.org/): 8.1.2
 - [Ogmios](https://ogmios.dev/): 5.6.0
 - [Kupo](https://cardanosolutions.github.io/kupo/): 2.5
@@ -81,7 +81,13 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 
 - Docker Compose
 
-## Clone this Git repo
+## Get Yaci DevKit
+### Download the latest source zip from release section
+
+Download the latest source zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
+
+### Or, Clone this Git repo
+You can also clone this repo to your local machine using the following command to use the latest Yaci DevKit.
 
 ```shell
 git clone https://github.com/bloxbean/yaci-devkit.git
@@ -92,6 +98,9 @@ git clone https://github.com/bloxbean/yaci-devkit.git
 ```shell
 ./start.sh
 ```
+**Note:** If you have some **ports** already in use, please make sure the mentioned ports in ```env``` file are free. 
+You can also change the ports in ```env``` file. Any changes to ```env``` file will be applied when you restart the docker compose.
+
 ## Update env file to fund test accounts (Optional)
 
 Update ```env``` file to include your test Cardano addresses to automatically topup Ada.
@@ -145,7 +154,11 @@ yaci-cli:>create-node -o
 or,
 yaci-cli:>create-node -o --start
 ```
+**Known Issue:** Yaci DevKit uses a share folder to store the data on host machine. In some setup, this causes issue due to permission.
+If you face similar issue and not able to start the devnet, you can remove ``volumes`` section from ``docker-compose.yml`` file and restart the docker compose.
+It should work fine and create the devnet data in the docker container itself. Please check this [issue](https://github.com/bloxbean/yaci-devkit/issues/11) for more details.
 
+#### Create a devnet with custom slots per epoch
 To create devnet with a custom slots per epoch (By default 500 slots/epoch)
 
 **For example:** Create and start a devnet with 30 slots per epoch
@@ -193,6 +206,12 @@ devnet:default> topup <address> <ada value>
 
 ```shell
 devnet:default> utxos <address>
+```
+
+### To check devnet and url info
+
+```shell
+devnet:default> info
 ```
 
 For more details about **Yaci CLI**, please check https://yaci-cli.bloxbean.com .
