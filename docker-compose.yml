@@ -1,15 +1,15 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: bloxbean/yaci-cli:0.0.16-beta2
+    image: yaci-cli:0.0.16
     ports:
-      - "3001:3001"
-      - "8090:8090"
-      - "8080:8080"
-      - "10000:10000"
-      - "1337:1337"
-      - "1442:1442"
-      - "3333:3333"
+      - "${HOST_N2N_PORT}:3001"
+      - "${HOST_N2C_SOCAT_PORT}:3333"
+      - "${HOST_SUBMIT_API_PORT}:8090"
+      - "${HOST_STORE_API_PORT}:8080"
+      - "${HOST_CLUSTER_API_PORT}:10000"
+      - "${HOST_OGMIOS_PORT}:1337"
+      - "${HOST_KUPO_PORT}:1442"
     volumes:
       - ~/clusters:/clusters
     env_file:
@@ -19,9 +19,9 @@ services:
       - infinity
 
   yaci-viewer:
-    image: bloxbean/yaci-viewer:0.0.6
+    image: bloxbean/yaci-viewer:0.0.8
     ports:
-      - "5173:5173"
+      - "${HOST_VIEWER_PORT}:5173"
     env_file:
       - env
 

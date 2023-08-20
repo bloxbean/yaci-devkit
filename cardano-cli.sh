@@ -5,4 +5,4 @@ then
     CMD="docker compose"
 fi
 
-$CMD exec yaci-cli cardano-cli $* --testnet-magic 42
+$CMD --env-file env  exec yaci-cli cardano-cli $* --testnet-magic 42

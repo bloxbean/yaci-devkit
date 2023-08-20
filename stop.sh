@@ -5,4 +5,4 @@ then
     CMD="docker compose"
 fi
 
-$CMD kill
+$CMD --env-file env kill
