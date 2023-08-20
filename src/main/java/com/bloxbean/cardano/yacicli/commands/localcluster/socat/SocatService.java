@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.socat;
 
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterPortInfoHelper;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
@@ -31,6 +32,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 public class SocatService {
     private final static String SOCAT_SCRIPT = "socat.sh";
     private final ClusterService clusterService;
+    private final ClusterPortInfoHelper clusterPortInfoHelper;
 
     private List<Process> processes = new ArrayList<>();
 
@@ -62,7 +64,7 @@ public class SocatService {
             if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
                 return;
 
-            Process process = startSocat(clusterStarted.getClusterName(), clusterInfo.getSocatPort());
+            Process process = startSocat(clusterStarted.getClusterName(), clusterInfo);
             if (process != null)
                 processes.add(process);
 
@@ -84,7 +86,7 @@ public class SocatService {
             return true;
     }
 
-    private Process startSocat(String cluster, int socatPort) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startSocat(String cluster, ClusterInfo clusterInfo) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         Path clusterFolder = clusterService.getClusterFolder(cluster);
         Objects.requireNonNull(clusterFolder, "Cluster folder not found for cluster: " + cluster);
 
@@ -97,7 +99,7 @@ public class SocatService {
         builder.directory(socatStartDir);
         Process process = builder.start();
 
-        writeLn(success("Started socat : localhost:" + socatPort));
+        writeLn(success("Started n2c through socat : localhost:" + clusterPortInfoHelper.getN2cSocatPort(clusterInfo)));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     socatLogs.add("[socat] " + line);

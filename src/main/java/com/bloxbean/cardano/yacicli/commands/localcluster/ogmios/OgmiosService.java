@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.commands.localcluster.ogmios;
 
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterPortInfoHelper;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
@@ -35,6 +36,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 public class OgmiosService {
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
+    private final ClusterPortInfoHelper clusterPortInfoHelper;
 
     private List<Process> processes = new ArrayList<>();
 
@@ -68,11 +70,11 @@ public class OgmiosService {
             if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
                 return;
 
-            Process process = startOgmios(clusterStarted.getClusterName(), clusterInfo.getOgmiosPort());
+            Process process = startOgmios(clusterStarted.getClusterName(), clusterInfo);
             if (process != null)
                 processes.add(process);
 
-            Process kupoProcess = startKupo(clusterStarted.getClusterName(), clusterInfo.getKupoPort());
+            Process kupoProcess = startKupo(clusterStarted.getClusterName(), clusterInfo);
             if (kupoProcess != null)
                 processes.add(kupoProcess);
         } catch (Exception e) {
@@ -98,7 +100,7 @@ public class OgmiosService {
             return true;
     }
 
-    private Process startOgmios(String cluster, int ogmiosPort) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startOgmios(String cluster, ClusterInfo clusterInfo) throws IOException {
         Path clusterFolder = clusterService.getClusterFolder(cluster);
         Objects.requireNonNull(clusterFolder, "Cluster folder not found for cluster: " + cluster);
 
@@ -121,7 +123,7 @@ public class OgmiosService {
         builder.directory(submitApiStartDir);
         Process process = builder.start();
 
-        writeLn(success("Started ogmios : http://localhost:" + ogmiosPort));
+        writeLn(success("Started ogmios : http://localhost:" + clusterPortInfoHelper.getOgmiosPort(clusterInfo)));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     ogmiosLogs.add("[ogmios] " + line);
@@ -130,7 +132,7 @@ public class OgmiosService {
         return process;
     }
 
-    private Process startKupo(String cluster, int kupoPort) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startKupo(String cluster, ClusterInfo clusterInfo) throws IOException {
         Path clusterFolder = clusterService.getClusterFolder(cluster);
         Objects.requireNonNull(clusterFolder, "Cluster folder not found for cluster: " + cluster);
 
@@ -153,7 +155,7 @@ public class OgmiosService {
         builder.directory(submitApiStartDir);
         Process process = builder.start();
 
-        writeLn(success("Started kupo : http://localhost:" + kupoPort));
+        writeLn(success("Started kupo : http://localhost:" + clusterPortInfoHelper.getKupoPort(clusterInfo)));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     ogmiosLogs.add("[kupo] " + line);

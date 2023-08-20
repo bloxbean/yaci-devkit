@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.EvictingQueue;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -29,8 +30,11 @@ import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.*
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class ClusterStartService {
+    private final ClusterConfig clusterConfig;
+    private final ClusterPortInfoHelper clusterPortInfoHelper;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private AtomicBoolean showLog = new AtomicBoolean(true);
@@ -38,12 +42,6 @@ public class ClusterStartService {
 
     private Queue<String> logs = EvictingQueue.create(200);
     private Queue<String> submitApiLogs = EvictingQueue.create(100);
-
-    private ClusterConfig clusterConfig;
-
-    public ClusterStartService(ClusterConfig clusterConfig) {
-        this.clusterConfig = clusterConfig;
-    }
 
     public boolean startCluster(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
         logs.clear();
@@ -222,7 +220,7 @@ public class ClusterStartService {
         builder.directory(submitApiStartDir);
         Process process = builder.start();
 
-        writer.accept(success("Started submit api : http://localhost:" + clusterInfo.getSubmitApiPort()));
+        writer.accept(success("Started submit api : http://localhost:" + clusterPortInfoHelper.getSubmitApiPort(clusterInfo)));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     submitApiLogs.add("[SubmitApi] " + line);

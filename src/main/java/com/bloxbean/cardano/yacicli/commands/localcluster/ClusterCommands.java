@@ -44,6 +44,7 @@ public class ClusterCommands {
     private final AccountService accountService;
     private final ShellHelper shellHelper;
     private final ApplicationEventPublisher publisher;
+    private final ClusterPortInfoHelper clusterUrlPrinter;
 
     @ShellMethod(value = "List devnet nodes. Use `list-nodes`. Deprecated: `list-clusters`", key = {"list-nodes", "list-clusters"})
     public void listLocalClusters() {
@@ -149,16 +150,7 @@ public class ClusterCommands {
 
     private void printClusterInfo(String clusterName) throws IOException {
         ClusterInfo clusterInfo = localClusterService.getClusterInfo(clusterName);
-        writeLn("");
-        writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details ######"));
-        writeLn(successLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
-        writeLn(successLabel("Node Socket Paths", ""));
-        writeLn(clusterInfo.getSocketPath());
-        writeLn(successLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
-        writeLn(successLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
-        writeLn(successLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
-        writeLn(successLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
-        writeLn(successLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
+        clusterUrlPrinter.printUrls(clusterName, clusterInfo);
     }
 
     @ShellMethod(value = "Delete a local devnet node. Use `delete-node`. Deprecated: `delete-cluster`", key = {"delete-node", "delete-cluster"})
