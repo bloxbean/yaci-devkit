@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: yaci-cli:0.0.16
+    image: bloxbean/yaci-cli:0.0.16
     ports:
       - "${HOST_N2N_PORT}:3001"
       - "${HOST_N2C_SOCAT_PORT}:3333"
