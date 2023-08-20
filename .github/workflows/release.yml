@@ -1,0 +1,30 @@
+name: Build and Publish YaciDevKit Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set tag name without prefix
+        id: metadata
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Zip Folder
+        env:
+          TAG_NAME: ${{ steps.metadata.outputs.TAG_NAME }}
+        run: zip -r yaci-devkit-${{ env.TAG_NAME }}.zip .
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            yaci-devkit-${{ env.TAG_NAME }}.zip
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
