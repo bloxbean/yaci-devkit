@@ -20,7 +20,7 @@
                     <p class="text-sm text-gray-600"><span class="font-bold">Slot</span> {block.slot}</p>
                     <p class="text-sm text-gray-600"><span class="font-bold">Txs</span> {block.ntx}</p>
                     <p class="text-sm text-gray-600"><span class="font-bold">Size</span> {block.size / 1000}</p>
-                    <p class="text-sm text-gray-600"><span class="font-bold">Pool</span> {block.slot_leader}</p>
+                    <p class="text-sm text-gray-600 break-words"><span class="font-bold">Pool</span> {block.slot_leader}</p>
                     <p class="text-sm text-gray-600">
                         <span class="text-xs text-gray-500">
                           {getDate(block.block_time)}, {moment(block.block_time * 1000).fromNow()}

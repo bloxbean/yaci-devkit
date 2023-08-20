@@ -20,7 +20,7 @@
 <div class="p-4 w-full">
     <div class="flex flex-col mt-4">
         <div class="md:flex-grow">
-            <textarea {...textareaprops} value={toPrettyJson(text)} class="w-full h-max text-base" disabled></textarea>
+            <textarea {...textareaprops} value={toPrettyJson(text)} class="w-full h-max textarea-info" disabled></textarea>
         </div>
     </div>
 </div>

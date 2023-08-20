@@ -30,7 +30,7 @@
                 <div class="bg-gray-200 py-2 px-4 mb-2">
                     <strong>Hash</strong>
                 </div>
-                <div class="bg-gray-100 py-2 px-4">
+                <div class="bg-gray-100 py-2 px-4 break-words">
                     <p>
                         <small>{block.hash}</small>
                     </p>
@@ -82,7 +82,7 @@
                 <div class="bg-gray-200 py-2 px-4 mb-2">
                     <strong>Prev Hash</strong>
                 </div>
-                <div class="bg-gray-100 py-2 px-4">
+                <div class="bg-gray-100 py-2 px-4 break-words">
                     <p>
                         <small>{block.previous_block}</small>
                     </p>

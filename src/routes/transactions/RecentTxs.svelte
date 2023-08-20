@@ -26,7 +26,7 @@
                     <p class="text-sm text-gray-600">
                         <span class="font-bold">Output Addresses</span>
                     </p>
-                    <div class="flex flex-col items-begin py-1">
+                    <div class="flex flex-col items-begin py-1 break-words">
                         {#each tx.output_addresses as address}
                             <p class="text-sm text-gray-600">{truncate(address, 60, "...")}</p>
                         {/each}

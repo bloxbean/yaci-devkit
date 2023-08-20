@@ -24,6 +24,13 @@
             elem?.blur();
         }
     };
+
+    function closeDropdown() {
+        const detailsElement = document.querySelector("details");
+        if (detailsElement) {
+            detailsElement.removeAttribute("open");
+        }
+    }
 </script>
 <div class="navbar bg-base-100">
     <div class="flex-1">
@@ -38,10 +45,11 @@
                         Certificates
                     </summary>
                     <ul class="p-2 bg-base-100">
-                        <li><a href="/certificates/stakekey-registrations">Stake Registration</a></li>
-                        <li><a href="/certificates/stakekey-deregistrations">Stake DeRegistration</a></li>
-                        <li><a href="/certificates/pool-registrations">Pool Registration</a></li>
-                        <li><a href="/certificates/pool-retirements">Pool Retirements</a></li>
+                        <li><a href="/certificates/stakekey-registrations" on:click={closeDropdown}>Stake Registration</a></li>
+                        <li><a href="/certificates/stakekey-deregistrations" on:click={closeDropdown}>Stake DeRegistration</a></li>
+                        <li><a href="/certificates/pool-registrations" on:click={closeDropdown}>Pool Registration</a></li>
+                        <li><a href="/certificates/pool-retirements" on:click={closeDropdown}>Pool Retirements</a></li>
+                        <li><a href="/certificates/delegations" on:click={closeDropdown}>Delegations</a></li>
                     </ul>
                 </details>
             </li>

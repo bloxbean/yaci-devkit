@@ -27,7 +27,7 @@
                 <div class="bg-gray-200 py-2 px-4 mb-2">
                     <strong>Transaction Hash</strong>
                 </div>
-                <div class="bg-gray-100 py-2 px-4">
+                <div class="bg-gray-100 py-2 px-4 break-words">
                     <p>
                         <small>{tx.hash}</small>
                     </p>
