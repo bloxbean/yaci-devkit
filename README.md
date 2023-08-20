@@ -108,5 +108,11 @@ export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 ### Docker build
 
 ```shell
-docker buildx build --push --platform linux/amd64,linux/arm64 --tag bloxbean/yaci-cli:<version> . 
+docker build --build-arg="APP_VERSION=<app_version>" -t bloxbean/yaci-cli:<version> . 
 ```
+
+### Docker multi-arch build and push
+```shell
+docker buildx build --build-arg="APP_VERSION=<app_version>" --push --platform linux/amd64,linux/arm64 --tag bloxbean/yaci-cli:<version> . 
+```
+
