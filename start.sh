@@ -1,14 +1,10 @@
-docker-compose up -d
+CMD="docker-compose"
+if ! command -v docker-compose &> /dev/null
+then
+    echo "docker-compose not found, let's try 'docker compose'"
+    CMD="docker compose"
+fi
 
-echo "--------------------------------------------"
-echo "Urls"
-echo "--------------------------------------------"
+$CMD --env-file env up -d
 
-echo "Yaci Viewer                   : http://localhost:5173"
-echo "Yaci Store Swagger UI         : http://localhost:8080/swagger-ui.html"
-
-echo ""
-echo "Yaci Store Api URL            : http://localhost:8080/api/v1/"
-echo ""
-echo "Pool Id: pool1wvqhvyrgwch4jq9aa84hc8q4kzvyq2z3xr6mpafkqmx9wce39zy"
-echo ""
+source ./info.sh

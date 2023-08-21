@@ -1,0 +1,112 @@
+// This demonstrates an example local integration test and how to do scripting with Yaci-Dev-Kit
+
+// Running on OSX: 
+// brew install ammonite-repl
+// cd yaci-devkit
+// cd scripts/scala
+// amm integration_test_sample.sc
+
+import $ivy.`com.bloxbean.cardano:cardano-client-lib:0.5.0-alpha.4`
+import $ivy.`com.bloxbean.cardano:cardano-client-backend-blockfrost:0.5.0-alpha.4`
+
+import $ivy.`com.lihaoyi:requests_3:0.8.0`
+
+import com.bloxbean.cardano.client.api.model.Amount
+import com.bloxbean.cardano.client.crypto._
+import com.bloxbean.cardano.client.account._
+import com.bloxbean.cardano.client.common.model._
+
+import com.bloxbean.cardano.client.address._
+import com.bloxbean.cardano.client.common._
+
+import java.util.Random
+
+import com.bloxbean.cardano.client.quicktx._
+
+import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService
+
+import com.bloxbean.cardano.client.function.helper.SignerProviders
+
+val blockfrostUrl = "http://localhost:8080/api/v1/"
+val blockfrostApiKey = ""
+val backendService = new BFBackendService(blockfrostUrl, blockfrostApiKey)
+val transactionService = backendService.getTransactionService()
+
+def topUpAccount(account: Account, amount: Int): Boolean = {
+    val jsonTopUpPayload = s""" {
+        "address": \"${account.baseAddress()}\",
+        "adaAmount": $amount
+    }
+    """.stripMargin
+
+    val r = requests.post(
+        "http://localhost:10000/local-cluster/api/addresses/topup", 
+        headers = Map("Content-Type" -> "application/json"),
+        data = jsonTopUpPayload
+    )
+    
+    var res = if (r.statusCode == 200) {
+        println(s"Topup with ${amount} for addr:${account.baseAddress} success!")
+
+        true
+    } else {
+        println(s"Topup with ${amount} for addr:${account.baseAddress} failed!")
+
+        false
+    }
+
+    println("Sleeping for 1 sec")
+
+    Thread.sleep(1000L)
+
+    res
+}
+
+def submitTx(txData: Array[Byte]): String = {
+    var result = transactionService.submitTransaction(txData)
+
+    var res = if (result.isSuccessful()) {
+        result.getValue()
+    } else {
+        println(s"Tx failure, reason: ${result.getResponse()}")
+        null
+    }
+
+    res
+}
+
+def serialiseTx(from: Account, to: Account, payAmount: Int) = {
+    val quickTxBuilder = new QuickTxBuilder(backendService)
+
+    val tx = new Tx()
+            .payToAddress(to.baseAddress(), Amount.ada(payAmount))
+            .from(from.baseAddress())
+
+    quickTxBuilder.compose(tx)
+            .withSigner(SignerProviders.signerFrom(from))
+            .buildAndSign()
+            .serialize()
+}
+
+@main
+def main() = {
+    val random = new Random()
+
+    val mainAccount = Account(Networks.testnet())
+    topUpAccount(mainAccount, 1000000)
+
+    for (i <- 1 to 1000) {
+        try {
+            val newAccount = Account(Networks.testnet())
+            val randomAdaAmount = random.nextInt(10000) + 10
+            val isToppedUp = topUpAccount(newAccount, randomAdaAmount)
+
+            val txData = serialiseTx(newAccount, mainAccount, randomAdaAmount - 10)
+            val txId = submitTx(txData)
+
+            println(s"TxId:${txId}")
+        } catch {
+            case e: Exception => println(s"Couldn't process, reason:" + e.getMessage())
+        }
+    }
+}
