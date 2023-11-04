@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: bloxbean/yaci-cli:0.0.16
+    image: bloxbean/yaci-cli:0.0.19
     ports:
       - "${HOST_N2N_PORT}:3001"
       - "${HOST_N2C_SOCAT_PORT}:3333"
@@ -11,7 +11,7 @@ services:
       - "${HOST_OGMIOS_PORT}:1337"
       - "${HOST_KUPO_PORT}:1442"
     volumes:
-      - ~/clusters:/clusters
+      - cluster-data:/clusters
     env_file:
       - env
     entrypoint:
@@ -25,3 +25,5 @@ services:
     env_file:
       - env
 
+volumes:
+  cluster-data:
