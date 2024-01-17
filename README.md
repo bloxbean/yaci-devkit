@@ -246,6 +246,11 @@ To query protocol parameters, you can use the following command.
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rfwTuKXtqzg/0.jpg)](https://www.youtube.com/watch?v=rfwTuKXtqzg)
 
+#### 3. Test Aiken Smart Contract Using Java Offchain Code with Yaci DevKit
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/PTnSc85t0Nk/0.jpg)](https://www.youtube.com/watch?v=PTnSc85t0Nk)
+
+
 # Any questions, ideas or issues?
 
 - Create a Github [Discussion](https://github.com/bloxbean/yaci-devkit/discussions)
