@@ -1,4 +1,4 @@
-version=v5.6.0
+version=v6.0.0
 file=ogmios-${version}-x86_64-linux.zip
 wget https://github.com/CardanoSolutions/ogmios/releases/download/${version}/$file
 

@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.commands.localcluster.service;
 
 import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.client.api.model.Utxo;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalClientProviderHelper;
@@ -26,7 +27,7 @@ public class AccountService {
     private final LocalClientProviderHelper localQueryClientUtil;
     private final RootLogService rootLogService;
 
-    public boolean topup(String clusterName, String address, double adaValue, Consumer<String> writer) {
+    public boolean topup(String clusterName, Era era, String address, double adaValue, Consumer<String> writer) {
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
@@ -34,7 +35,7 @@ public class AccountService {
         LocalNodeService localNodeService = null;
         try {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, localQueryClientUtil, writer);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
 
             localNodeService.topUp(address, adaValue, msg -> writeLn(msg));
             return true;
@@ -50,7 +51,7 @@ public class AccountService {
         }
     }
 
-    public Map<String, List<Utxo>> getUtxosAtDefaultAccounts(String clusterName, Consumer<String> writer) {
+    public Map<String, List<Utxo>> getUtxosAtDefaultAccounts(String clusterName, Era era, Consumer<String> writer) {
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
@@ -58,7 +59,7 @@ public class AccountService {
         LocalNodeService localNodeService = null;
         try {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, localQueryClientUtil, writer);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
             Map<String, List<Utxo>> utxosMap = localNodeService.getFundsAtGenesisKeys();
 
             return utxosMap;
@@ -74,7 +75,7 @@ public class AccountService {
         }
     }
 
-    public List<Utxo> getUtxos(String clusterName, String address, Consumer<String> writer) {
+    public List<Utxo> getUtxos(String clusterName, Era era, String address, Consumer<String> writer) {
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
@@ -82,7 +83,7 @@ public class AccountService {
         LocalNodeService localNodeService = null;
         try {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, localQueryClientUtil, writer);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
 
             List<Utxo> utxos = localNodeService.getUtxos(address);
             return utxos;

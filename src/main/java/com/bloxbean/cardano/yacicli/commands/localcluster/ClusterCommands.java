@@ -4,6 +4,7 @@ import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.plutus.spec.PlutusData;
 import com.bloxbean.cardano.client.plutus.spec.serializers.PlutusDataJsonConverter;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
@@ -37,7 +38,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ClusterCommands {
-    public static final String CUSTER_NAME = "custer_name";
+    public static final String CLUSTER_NAME = "cluster_name";
     private final ClusterService localClusterService;
     private final RootLogService rootLogService;
     private final ClusterUtilService clusterUtilService;
@@ -66,8 +67,10 @@ public class ClusterCommands {
 
             localClusterService.startClusterContext(clusterName, msg -> writeLn(msg));
 
+            var clusterInfo = localClusterService.getClusterInfo(clusterName);
             CommandContext.INSTANCE.setCurrentMode(CommandContext.Mode.LOCAL_CLUSTER);
-            CommandContext.INSTANCE.setProperty(CUSTER_NAME, clusterName);
+            CommandContext.INSTANCE.setProperty(CLUSTER_NAME, clusterName);
+            CommandContext.INSTANCE.setEra(clusterInfo.getEra());
             writeLn(success("Switched to %s", clusterName));
         } catch (Exception e) {
             writeLn(error(e.getMessage()));
@@ -82,7 +85,8 @@ public class ClusterCommands {
                               @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
-                              @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start
+                              @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
+                              @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era
     ) {
 
         try {
@@ -98,6 +102,19 @@ public class ClusterCommands {
 
             if (epochLength < 20) {
                 writeLn(error("Epoch length should be 20 or more"));
+                return;
+            }
+
+            //Era check
+            Era nodeEra;
+            if (era == null || era.isEmpty())
+                nodeEra = Era.Babbage;
+            else if (era.equalsIgnoreCase("babbage"))
+                nodeEra = Era.Babbage;
+            else if (era.equalsIgnoreCase("conway"))
+                nodeEra = Era.Conway;
+            else {
+                writeLn(error("Invalid era. Valid values are babbage, conway"));
                 return;
             }
 
@@ -117,6 +134,7 @@ public class ClusterCommands {
                     .p2pEnabled(false)
                     .masterNode(true)
                     .isBlockProducer(true)
+                    .era(nodeEra)
                     .build();
 
             boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, (msg) -> writeLn(msg));
@@ -126,7 +144,8 @@ public class ClusterCommands {
 
                 //change to Local Cluster Context
                 CommandContext.INSTANCE.setCurrentMode(CommandContext.Mode.LOCAL_CLUSTER);
-                CommandContext.INSTANCE.setProperty(CUSTER_NAME, clusterName);
+                CommandContext.INSTANCE.setProperty(CLUSTER_NAME, clusterName);
+                CommandContext.INSTANCE.setEra(nodeEra);
 
                 if (start)
                     startLocalCluster();
@@ -140,7 +159,7 @@ public class ClusterCommands {
     @ShellMethod(value = "Get devnet info", key = "info")
     @ShellMethodAvailability("localClusterCmdAvailability")
     private void getClusterInfo() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         try {
             printClusterInfo(clusterName);
         } catch (Exception e) {
@@ -175,7 +194,7 @@ public class ClusterCommands {
     @ShellMethod(value = "Start local devnet", key = "start")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void startLocalCluster() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         boolean started = localClusterService.startCluster(clusterName);
         if (!started)
             return;
@@ -201,7 +220,7 @@ public class ClusterCommands {
     @ShellMethod(value = "Stop the running local devnet", key = "stop")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void stopLocalCluster() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         localClusterService.stopCluster(msg -> writeLn(msg));
 
         publisher.publishEvent(new ClusterStopped(clusterName));
@@ -210,7 +229,7 @@ public class ClusterCommands {
     @ShellMethod(value = "Reset local devnet. Delete data and logs folder and restart.", key = "reset")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void resetLocalCluster() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         localClusterService.stopCluster(msg -> writeLn(msg));
         publisher.publishEvent(new ClusterStopped(clusterName));
 
@@ -252,7 +271,7 @@ public class ClusterCommands {
             @ShellOption(value = {"--log-level"}, defaultValue = ShellOption.NULL, help = "Log level") String logLevel,
             @ShellOption(value = {"--color-mode"}, defaultValue = "dark", help = "Color mode (dark, light") String colorMode
     ) {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         OutputFormatter outputFormatter = new DefaultOutputFormatter(shellHelper);
         try {
             localClusterService.ltail(clusterName, showMint, showInputs, showMetadata, showDatumhash, showInlineDatum, grouping, outputFormatter);
@@ -264,9 +283,10 @@ public class ClusterCommands {
     @ShellMethod(value = "Show available utxos at default accounts", key = "show-default-accounts")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void listDefaultAccounts() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
+        Era era = CommandContext.INSTANCE.getEra();
 
-        Map<String, List<Utxo>> utxosMap = accountService.getUtxosAtDefaultAccounts(clusterName, msg -> writeLn(msg));
+        Map<String, List<Utxo>> utxosMap = accountService.getUtxosAtDefaultAccounts(clusterName, era, msg -> writeLn(msg));
         utxosMap.entrySet().forEach(entry -> {
             writeLn(header(AnsiColors.CYAN_BOLD, "Address"));
             writeLn(entry.getKey());
@@ -282,9 +302,10 @@ public class ClusterCommands {
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void topUp(@ShellOption(value = {"-a", "--address"}, help = "Receiver address") String address,
                       @ShellOption(value = {"-v", "--value"}, help = "Ada value") double adaValue) {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
+        Era era = CommandContext.INSTANCE.getEra();
 
-        accountService.topup(clusterName, address, adaValue, msg -> writeLn(msg));
+        accountService.topup(clusterName, era, address, adaValue, msg -> writeLn(msg));
         clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
 
         writeLn(info("Available utxos") + "\n");
@@ -295,9 +316,10 @@ public class ClusterCommands {
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void getUtxos(@ShellOption(value = {"-a", "--address"}, help = "Address") String address,
                          @ShellOption(value = {"--pretty-print-inline-datum"}, defaultValue = "false") boolean prettyPrintInlineDatum) {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
+        Era era = CommandContext.INSTANCE.getEra();
 
-        List<Utxo> utxos = accountService.getUtxos(clusterName, address, msg -> writeLn(msg));
+        List<Utxo> utxos = accountService.getUtxos(clusterName, era, address, msg -> writeLn(msg));
 
         AtomicInteger index = new AtomicInteger(0);
         utxos.forEach(utxo -> {
@@ -325,8 +347,6 @@ public class ClusterCommands {
     @ShellMethod(value = "Get tip/current block number", key = "tip")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void getTip() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
-
         Tuple<Long, Point> tuple = clusterUtilService.getTip(msg -> writeLn(msg));
         writeLn(successLabel("Block#", String.valueOf(tuple._1)));
         writeLn(successLabel("Slot#", String.valueOf(tuple._2.getSlot())));

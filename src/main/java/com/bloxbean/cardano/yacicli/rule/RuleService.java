@@ -21,7 +21,6 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Component
 @Slf4j
 public class RuleService {
     private static final String BLOCK_RULES_FILE = "rules/block_rules.yml";

@@ -2,19 +2,21 @@ package com.bloxbean.cardano.yacicli.commands.localcluster.service;
 
 import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands.CUSTER_NAME;
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands.CLUSTER_NAME;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
@@ -28,14 +30,16 @@ public class ClusterUtilService {
     final static int slotsPerKESPeriod = 129600; //TODO -- take from configuration
 
     public Tuple<Long, Point> getTip(Consumer<String> writer) {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
+        Era era = CommandContext.INSTANCE.getEra();
+
         LocalNodeService localNodeService = null;
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
         try {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, localQueryClientUtil, writer);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
 
             return localNodeService.getTip();
         } catch (Exception e) {
@@ -49,7 +53,9 @@ public class ClusterUtilService {
         }
     }
 
+    @SneakyThrows
     public int getKESPeriod() {
+
         Tuple<Long, Point> tip = getTip((msg) -> {writeLn(msg);});
 
         if (tip == null)

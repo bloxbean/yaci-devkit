@@ -1,8 +1,8 @@
 FROM ubuntu:22.04
 ENV JAVA_HOME=/opt/java/openjdk
-COPY --from=eclipse-temurin:17 $JAVA_HOME $JAVA_HOME
+COPY --from=eclipse-temurin:21 $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
-ENV STORE_VERSION=0.0.13-beta1
+ENV STORE_VERSION=0.1.0-rc2-preview1
 
 ARG TARGETOS
 ARG TARGETARCH

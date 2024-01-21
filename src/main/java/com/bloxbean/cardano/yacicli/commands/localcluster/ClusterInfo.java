@@ -1,5 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class ClusterInfo {
     private boolean masterNode;
     private boolean isBlockProducer;
     private String adminNodeUrl; //Only for peer nodes
+    private Era era;
 
     @Builder.Default
     private int ogmiosPort = 1337;

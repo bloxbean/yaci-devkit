@@ -7,11 +7,11 @@ import com.bloxbean.cardano.yaci.core.protocol.handshake.messages.VersionTable;
 import com.bloxbean.cardano.yaci.core.protocol.handshake.util.N2NVersionTableConstant;
 import com.bloxbean.cardano.yaci.helper.BlockSync;
 import com.bloxbean.cardano.yaci.helper.listener.BlockChainDataListener;
+import com.bloxbean.cardano.yaci.helper.model.Transaction;
 import com.bloxbean.cardano.yacicli.commands.tail.model.*;
 import com.bloxbean.cardano.yacicli.common.ConsoleHelper;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import com.bloxbean.cardano.yacicli.rule.Result;
-import com.bloxbean.cardano.yacicli.rule.RuleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -35,10 +35,10 @@ import static java.util.stream.Collectors.toMap;
 public class BlockStreamerService {
 
     private final ConsoleHelper consoleHelper = new ConsoleHelper();
-    private RuleService ruleService;
+//    private RuleService ruleService;
 
-    public BlockStreamerService(RuleService ruleService) {
-        this.ruleService = ruleService;
+    public BlockStreamerService() {
+//        this.ruleService = ruleService;
     }
 
     public void tail(String host, int port, long protocolMagic, boolean showMint, boolean showInputs, boolean showMetadata,
@@ -81,11 +81,7 @@ public class BlockStreamerService {
         BlockSync blockSync = new BlockSync(connection.getHost(), connection.getPort(), connection.getProtocolMagic(), connection.getWellKnownPoint());
         blockSync.startSyncFromTip(new BlockChainDataListener() {
             @Override
-            public void onBlock(Block block) {
-                //Initialize ruleResult
-                ruleResult.clear();
-                ruleService.executeRules(block, ruleResult);
-
+            public void onBlock(Era era, Block block, List<Transaction> transactions) {
                 outputBlock.setBlockNumber(block.getHeader().getHeaderBody().getBlockNumber());
                 outputBlock.setBlockSize(block.getHeader().getHeaderBody().getBlockBodySize());
 
