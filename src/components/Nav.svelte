@@ -25,8 +25,15 @@
         }
     };
 
-    function closeDropdown() {
-        const detailsElement = document.querySelector("details");
+    function closeDropdownCertificateMenu() {
+        const detailsElement = document.querySelector("#certificate-menu");
+        if (detailsElement) {
+            detailsElement.removeAttribute("open");
+        }
+    }
+
+    function closeDropdownGovernanceMenu() {
+        const detailsElement = document.querySelector("#governance-menu");
         if (detailsElement) {
             detailsElement.removeAttribute("open");
         }
@@ -40,21 +47,33 @@
         <ul class="menu menu-horizontal px-1">
             <li><a href="/">Home</a></li>
             <li>
-                <details>
+                <details id="certificate-menu">
                     <summary>
                         Certificates
                     </summary>
                     <ul class="p-2 bg-base-100">
-                        <li><a href="/certificates/stakekey-registrations" on:click={closeDropdown}>Stake Registration</a></li>
-                        <li><a href="/certificates/stakekey-deregistrations" on:click={closeDropdown}>Stake DeRegistration</a></li>
-                        <li><a href="/certificates/pool-registrations" on:click={closeDropdown}>Pool Registration</a></li>
-                        <li><a href="/certificates/pool-retirements" on:click={closeDropdown}>Pool Retirements</a></li>
-                        <li><a href="/certificates/delegations" on:click={closeDropdown}>Delegations</a></li>
+                        <li><a href="/certificates/stakekey-registrations" on:click={closeDropdownCertificateMenu}>Stake Registration</a></li>
+                        <li><a href="/certificates/stakekey-deregistrations" on:click={closeDropdownCertificateMenu}>Stake DeRegistration</a></li>
+                        <li><a href="/certificates/pool-registrations" on:click={closeDropdownCertificateMenu}>Pool Registration</a></li>
+                        <li><a href="/certificates/pool-retirements" on:click={closeDropdownCertificateMenu}>Pool Retirements</a></li>
+                        <li><a href="/certificates/delegations" on:click={closeDropdownCertificateMenu}>Delegations</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li>
+                <details id="governance-menu">
+                    <summary>
+                        Governance
+                    </summary>
+                    <ul class="p-2 bg-base-100">
+                        <li><a href="/governance/govactions" on:click={closeDropdownGovernanceMenu}>Proposals</a></li>
+                        <li><a href="/governance/votes" on:click={closeDropdownGovernanceMenu}>Votes</a></li>
                     </ul>
                 </details>
             </li>
             <li><a href="/blocks">Blocks</a></li>
             <li><a href="/transactions">Transactions</a></li>
+
         </ul>
     </div>
 </div>
