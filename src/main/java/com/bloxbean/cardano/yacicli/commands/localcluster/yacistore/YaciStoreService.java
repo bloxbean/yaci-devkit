@@ -1,5 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.yacistore;
 
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
@@ -63,7 +64,8 @@ public class YaciStoreService {
             if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
                 return;
 
-            Process process = startStoreApp(clusterStarted.getClusterName());
+            Era era = clusterInfo.getEra();
+            Process process = startStoreApp(clusterStarted.getClusterName(), era);
             if (process != null)
                 processes.add(process);
 //            Process viewerProcess = startViewerApp(clusterStarted.getClusterName());
@@ -85,7 +87,7 @@ public class YaciStoreService {
             return true;
     }
 
-    private Process startStoreApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startStoreApp(String cluster, Era era) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
@@ -96,9 +98,9 @@ public class YaciStoreService {
         }
 
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-            builder.command("java", "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         } else {
-            builder.command("java", "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         }
 
         Process process = builder.start();

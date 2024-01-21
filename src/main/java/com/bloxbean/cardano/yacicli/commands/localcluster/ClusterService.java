@@ -1,5 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
@@ -205,10 +206,10 @@ public class ClusterService {
             updatePorts(destPath, clusterInfo.getNodePort(), 1);
 
             //Update genesis
-            updateGenesis(destPath, clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
+            updateGenesis(destPath, clusterInfo.getEra(), clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
 
             //Update P2P configuration
-            updateConfiguration(destPath, clusterInfo.isP2pEnabled(), writer);
+            updateConfiguration(destPath, clusterInfo, writer);
 
             updateSubmitApiFiles(destPath, clusterInfo.getProtocolMagic(), clusterInfo.getSubmitApiPort());
 
@@ -244,10 +245,24 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
-    private void updateGenesis(Path clusterFolder, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
-        //Shelley genesis file
-        Path shelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
-        Path byronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
+    private void updateGenesis(Path clusterFolder, Era era, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
+        Path srcShelleyGenesisFile = null;
+        Path srcByronGenesisFile = null;
+        Path srcAlonzoGenesisFile = null;
+        if (era == Era.Babbage) {
+            srcByronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
+            srcShelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json");
+        } else if (era == Era.Conway) {
+            srcByronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
+            srcShelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json.conway");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json.conway");
+        }
+
+        Path destByronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
+        Path destShelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
+        Path destAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json");
+
         Map<String, String> values = new HashMap<>();
         values.put("slotLength", String.valueOf(slotLength));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
@@ -256,8 +271,9 @@ public class ClusterService {
 
         //Update Genesis files
         try {
-            templateEngine.replaceValues(shelleyGenesisFile, values);
-            templateEngine.replaceValues(byronGenesisFile, values);
+            templateEngine.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
+            templateEngine.replaceValues(srcShelleyGenesisFile, destShelleyGenesisFile, values);
+            templateEngine.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, new HashMap<>());
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -298,15 +314,25 @@ public class ClusterService {
         }
     }
 
-    private void updateConfiguration(Path clusterFolder, boolean enableP2P, Consumer<String> writer) throws IOException {
-        //Shelley genesis file
-        Path configurationPath = clusterFolder.resolve("configuration.yaml");
+    private void updateConfiguration(Path clusterFolder, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException {
+        Path configurationPath = null;
+
+        if (clusterInfo.getEra() == null || clusterInfo.getEra() == Era.Babbage) {
+            configurationPath = clusterFolder.resolve("configuration.yaml");
+        } else if (clusterInfo.getEra() == Era.Conway) {
+            writer.accept(success("Updating configuration.yaml for conway era"));
+            configurationPath = clusterFolder.resolve("configuration.yaml.conway");
+        }
+
+        Path destConfigPath = clusterFolder.resolve("configuration.yaml");
+        boolean enableP2P = clusterInfo.isP2pEnabled();
+
         Map<String, String> values = new HashMap<>();
         values.put("enableP2P", String.valueOf(enableP2P));
 
         //Update Configuration file
         try {
-            templateEngine.replaceValues(configurationPath, values);
+            templateEngine.replaceValues(configurationPath, destConfigPath, values);
         } catch (Exception e) {
             throw new IOException(e);
         }

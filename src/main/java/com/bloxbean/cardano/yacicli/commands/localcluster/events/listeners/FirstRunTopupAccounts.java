@@ -1,9 +1,11 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.events.listeners;
 
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.ClusterUtilService;
+import com.bloxbean.cardano.yacicli.common.CommandContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
@@ -35,12 +37,14 @@ public class FirstRunTopupAccounts {
                         Thread.sleep(1000);
                         clusterUtilService.waitForNextBlocks(1, writer);
 
+                        Era era = CommandContext.INSTANCE.getEra();
+
                         for (String topupAddress : topupAddresses) {
                             String[] tokens = topupAddress.split(":");
                             String address = tokens[0].trim();
                             String value = tokens[1].trim();
                             writeLn("Topup address: " + address + ", value: " + value + " Ada" + "\n");
-                            accountService.topup(clusterName, address, Double.parseDouble(value), msg -> writeLn(msg));
+                            accountService.topup(clusterName, era, address, Double.parseDouble(value), msg -> writeLn(msg));
                             boolean flag = clusterUtilService.waitForNextBlocks(1, writer);
                             if (flag)
                                 writeLn(infoLabel("OK", "Topup done"));

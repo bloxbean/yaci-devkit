@@ -22,7 +22,7 @@ public class YaciCliPromptProvider implements PromptProvider {
             return new AttributedString("yaci-cli:>",
                     AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN).bold());
         } else {
-            String clusterName = CommandContext.INSTANCE.getProperty(ClusterCommands.CUSTER_NAME);
+            String clusterName = CommandContext.INSTANCE.getProperty(ClusterCommands.CLUSTER_NAME);
             if (clusterName == null)
                 clusterName = "";
 

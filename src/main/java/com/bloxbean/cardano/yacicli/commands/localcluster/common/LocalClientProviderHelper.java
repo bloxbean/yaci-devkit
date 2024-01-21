@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 
-import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands.CUSTER_NAME;
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands.CLUSTER_NAME;
 
 @Component
 public class LocalClientProviderHelper {
@@ -18,7 +18,7 @@ public class LocalClientProviderHelper {
     }
 
     public LocalClientProvider getLocalClientProvider() throws Exception {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
         String socketPath = localClusterService.getClusterInfo(clusterName).getSocketPath();
 
@@ -27,7 +27,7 @@ public class LocalClientProviderHelper {
     }
 
     public Path getClusterFolder() {
-        String clusterName = CommandContext.INSTANCE.getProperty(CUSTER_NAME);
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         return localClusterService.getClusterFolder(clusterName);
     }
 }

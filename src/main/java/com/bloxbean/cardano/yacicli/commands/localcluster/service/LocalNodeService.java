@@ -18,13 +18,12 @@ import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
 import com.bloxbean.cardano.client.plutus.spec.PlutusData;
-import com.bloxbean.cardano.client.supplier.local.LocalProtocolSupplier;
-import com.bloxbean.cardano.client.supplier.local.LocalUtxoSupplier;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.util.TransactionUtil;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.*;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.LocalTxSubmissionListener;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgAcceptTx;
@@ -61,9 +60,12 @@ public class LocalNodeService {
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Tuple<VerificationKey, SecretKey>> utxoKeys;
 
-    public LocalNodeService(Path clusterFolder, LocalClientProviderHelper localQueryClientUtil, Consumer<String> writer) throws Exception {
+    private Era era;
+
+    public LocalNodeService(Path clusterFolder, Era era, LocalClientProviderHelper localQueryClientUtil, Consumer<String> writer) throws Exception {
         this.utxoKeys = new ArrayList<>();
         this.localClientProvider = localQueryClientUtil.getLocalClientProvider();
+        this.era = era;
         this.localClientProvider.addTxSubmissionListener(new LocalTxSubmissionListener() {
             @Override
             public void txAccepted(TxSubmissionRequest txSubmissionRequest, MsgAcceptTx msgAcceptTx) {
@@ -78,8 +80,8 @@ public class LocalNodeService {
         });
         this.localClientProvider.start();
 
-        this.utxoSupplier = new LocalUtxoSupplier(localClientProvider.getLocalStateQueryClient());
-        this.protocolParamsSupplier = new LocalProtocolSupplier(localClientProvider.getLocalStateQueryClient());
+        this.utxoSupplier = new LocalUtxoSupplier(localClientProvider.getLocalStateQueryClient(), era);
+        this.protocolParamsSupplier = new LocalProtocolParamSupplier(localClientProvider.getLocalStateQueryClient(), era);
 
         loadUtxoKeys(clusterFolder);
     }
@@ -107,7 +109,7 @@ public class LocalNodeService {
             hdPublicKey.setKeyData(tuple._1.getBytes());
             Address address = AddressProvider.getEntAddress(hdPublicKey, Networks.testnet());
 
-            Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(address));
+            Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(era, address));
             UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));
             utxosMap.put(address.toBech32(), result.getUtxoList());
         }
@@ -116,7 +118,7 @@ public class LocalNodeService {
     }
 
     public List<Utxo> getUtxos(String address) {
-        Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(new Address(address)));
+        Mono<UtxoByAddressQueryResult> utxosMono = localClientProvider.getLocalStateQueryClient().executeQuery(new UtxoByAddressQuery(era, new Address(address)));
         UtxoByAddressQueryResult result = utxosMono.block(Duration.ofSeconds(10));
 
         //TODO -- Replace "." in the unit name. As yaci sends "." in unit name, but cardano-client-lib's Amount needs without "."

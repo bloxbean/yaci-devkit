@@ -22,4 +22,16 @@ public class TemplateEngine {
         String result = stringSubstitutor.replace(content);
         Files.writeString(file, result, StandardOpenOption.TRUNCATE_EXISTING);
     }
+
+    public void replaceValues(Path sourceFile, Path destFile, Map<String, String> valuesMap) throws Exception {
+
+        // Initialize StringSubstitutor instance with value map
+        StringSubstitutor stringSubstitutor = new StringSubstitutor(valuesMap);
+
+        String content = Files.readString(sourceFile);
+
+        // replace value map to template string
+        String result = stringSubstitutor.replace(content);
+        Files.writeString(destFile, result, StandardOpenOption.TRUNCATE_EXISTING);
+    }
 }

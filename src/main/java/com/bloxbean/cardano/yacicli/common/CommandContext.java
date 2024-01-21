@@ -1,5 +1,7 @@
 package com.bloxbean.cardano.yacicli.common;
 
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +14,7 @@ public enum CommandContext {
 
     private Mode currentMode;
     private Map<String, String> props;
+    private Era era; //Node era
 
     private CommandContext() {
         this.currentMode = Mode.REGULAR;
@@ -33,5 +36,13 @@ public enum CommandContext {
 
     public String getProperty(String key) {
         return props.get(key);
+    }
+
+    public Era getEra() {
+        return era;
+    }
+
+    public void setEra(Era era) {
+        this.era = era;
     }
 }
