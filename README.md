@@ -65,12 +65,12 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **n2c port for remote client (socat)**   : localhost:3333
 
 # Component Versions
-- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.16
-- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.0.11
-- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.8
-- [Cardano Node](https://cardano.org/): 8.1.2
-- [Ogmios](https://ogmios.dev/): 5.6.0
-- [Kupo](https://cardanosolutions.github.io/kupo/): 2.5
+- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.20-beta1
+- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.1.0-rc2-preview1
+- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.9
+- [Cardano Node](https://cardano.org/): 8.7.3
+- [Ogmios](https://ogmios.dev/): v6.0.0
+- [Kupo](https://cardanosolutions.github.io/kupo/): v2.7.2
 
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
   (Include both amd64 and arm64 binaries)
@@ -154,9 +154,18 @@ yaci-cli:>create-node -o
 or,
 yaci-cli:>create-node -o --start
 ```
+
 **Known Issue:** Yaci DevKit uses a share folder to store the data on host machine. In some setup, this causes issue due to permission.
 If you face similar issue and not able to start the devnet, you can remove ``volumes`` section from ``docker-compose.yml`` file and restart the docker compose.
 It should work fine and create the devnet data in the docker container itself. Please check this [issue](https://github.com/bloxbean/yaci-devkit/issues/11) for more details.
+
+#### Create a default devnet node with Conway Era
+
+By default, Yaci DevKit creates a devnet with **Babbage** era. If you want to create a devnet with **Conway** era, use the following command.
+
+```
+yaci-cli:>create-node -o --era conway
+```
 
 #### Create a devnet with custom slots per epoch
 To create devnet with a custom slots per epoch (By default 500 slots/epoch)
