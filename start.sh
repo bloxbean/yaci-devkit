@@ -1,3 +1,4 @@
+#!/bin/bash
 CMD="docker-compose"
 if ! command -v docker-compose &> /dev/null
 then
