@@ -1,0 +1,11 @@
+[
+  {
+    "name" : "io.netty.channel.kqueue.KQueueStaticallyReferencedJniMethods"
+  },
+  {
+    "name" : "io.netty.channel.kqueue.Native"
+  },
+  {
+    "name" : "io.netty.channel.kqueue.BsdSocket"
+  }
+]

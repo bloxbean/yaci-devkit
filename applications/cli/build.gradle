@@ -1,0 +1,96 @@
+plugins {
+    id 'org.springframework.boot' version '3.2.1'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.graalvm.buildtools.native' version '0.9.18'
+	id 'java'
+	id 'signing'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+java {
+    sourceCompatibility = '21'
+}
+
+repositories {
+	//maven { url 'https://repo.spring.io/release' }
+	mavenCentral()
+	mavenLocal()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+}
+
+ext {
+    set('springShellVersion', "3.1.0")
+}
+
+dependencies {
+	implementation 'org.springframework.shell:spring-shell-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+	implementation 'org.springframework.boot:spring-boot-starter-logging'
+
+	implementation('com.bloxbean.cardano:yaci:0.3.0-beta9-e9eb81d-SNAPSHOT') {
+        exclude group: 'com.bloxbean.cardano', module: 'cardano-client-core'
+    }
+	implementation 'com.bloxbean.cardano:cardano-client-lib:0.5.0'
+	implementation 'com.bloxbean.cardano:cardano-client-backend:0.5.0'
+    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.5.0'
+    implementation 'com.bloxbean.cardano:cardano-client-supplier-local:0.5.0'
+
+	implementation 'org.jeasy:easy-rules-core:4.1.0'
+	implementation 'org.jeasy:easy-rules-mvel:4.1.0'
+
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation 'commons-io:commons-io:2.11.0'
+	implementation 'com.google.guava:guava:31.1-jre'
+	implementation 'org.apache.commons:commons-text:1.9'
+
+	implementation 'org.codehaus.janino:janino:3.1.8'
+	compileOnly 'org.projectlombok:lombok'
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.shell:spring-shell-dependencies:${springShellVersion}"
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+//springAot {
+//	removeXmlSupport = false
+//	removeSpelSupport = false
+//	removeYamlSupport = false
+//}
+
+tasks.register('genClusterTemplatesZip', Zip) {
+    from sourceSets.main.resources
+    include 'localcluster/**/*'
+
+    archiveFileName.set('localcluster.zip')
+    destinationDirectory.set(layout.buildDirectory.dir('resources/main'))
+}
+
+
+compileJava {
+    dependsOn genClusterTemplatesZip
+}
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+if (isReleaseVersion && !project.hasProperty("skipSigning")) {
+	signing {
+		sign configurations.archives
+	}
+}

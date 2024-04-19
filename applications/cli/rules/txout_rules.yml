@@ -1,0 +1,10 @@
+---
+name: Hosky check
+description: If hosky present
+priority: 1
+condition: "foreach (amount: txOut.amounts) { return amount.assetName.startsWith('HOSKY')? true: false;}"
+actions:
+  - "System.out.println(\"HOSKY FOUND ----------------------------------- ####### -------------------------\");"
+
+#
+#---

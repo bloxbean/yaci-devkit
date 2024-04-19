@@ -1,0 +1,80 @@
+{
+  "activeSlotsCoeff": ${activeSlotsCoeff},
+  "epochLength": ${epochLength},
+  "genDelegs": {
+    "337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e": {
+      "delegate": "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
+      "vrf": "7053e3ecd2b19db13e5338aa75fb518fc08b6c218f56ad65760d3eb074be95d4"
+    },
+    "b5c3fed76c54bfdcda7993e4171eff2fb853f8ab920ab80047278a91": {
+      "delegate": "fcb677a90948d1d5b358912f54f6baaf762ecf5cd6579c93bcb49cef",
+      "vrf": "c7715f726e8e4f7745ccc646f4350758460de71de5694b244a47761fb106ec6e"
+    },
+    "e34a75849b978bb20c366f531f978b3111b91aae0e469108dca8e433": {
+      "delegate": "81babf3c139646f0f0268abed36d2a54757492a3a68cda2438a37f7e",
+      "vrf": "ca336185cd781a6543b6c1e62ee1eee53e237d5d1fb065f08412d40d61b6ca06"
+    }
+  },
+  "initialFunds": {
+    "007290ea8fa9433c1045a4c8473959ad608e6c03a58c7de33bdbd3ce6f295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062": 300000000000,
+    "605276322ac7882434173dcc6441905f6737689bd309b68ad8b3614fd8": 3000000000000000,
+    "60a0f1aa7dca95017c11e7e373aebcf0c4568cf47ec12b94f8eb5bba8b": 3000000000000000,
+    "60ba957a0fff6816021b2afa7900beea68fd10f2d78fb5b64de0d2379c": 3000000000000000
+  },
+  "maxKESEvolutions": 60,
+  "maxLovelaceSupply": 45000000000000000,
+  "networkId": "Testnet",
+  "networkMagic": ${protocolMagic},
+  "protocolParams": {
+    "a0": 0,
+    "decentralisationParam": 0,
+    "eMax": 18,
+    "extraEntropy": {
+      "tag": "NeutralNonce"
+    },
+    "keyDeposit": 2000000,
+    "maxBlockBodySize": 65536,
+    "maxBlockHeaderSize": 1100,
+    "maxTxSize": 16384,
+    "minFeeA": 44,
+    "minFeeB": 155381,
+    "minPoolCost": 340000000,
+    "minUTxOValue": 1000000,
+    "nOpt": 100,
+    "poolDeposit": 500000000,
+    "protocolVersion": {
+      "major": 8,
+      "minor": 0
+    },
+    "rho": 0.003,
+    "tau": 0.20
+  },
+  "securityParam": 12,
+  "slotLength": ${slotLength},
+  "slotsPerKESPeriod": 129600,
+  "staking": {
+  "pools": {
+    "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57": {
+        "cost": 340000000,
+        "margin": 0,
+        "metadata": null,
+        "owners": [],
+        "pledge": 0,
+        "publicKey": "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57",
+        "relays": [],
+        "rewardAccount": {
+          "credential": {
+            "key hash": "11a14edf73b08a0a27cb98b2c57eb37c780df18fcfcf6785ed5df84a"
+          },
+          "network": "Testnet"
+         },
+          "vrf": "c2b62ffa92ad18ffc117ea3abeb161a68885000a466f9c71db5e4731d6630061"
+      }
+    },
+    "stake": {
+      "295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062": "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57"
+    }
+  },
+  "systemStart": "2022-09-15T04:09:11.577484Z",
+  "updateQuorum": 2
+}
