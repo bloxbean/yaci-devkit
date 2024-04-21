@@ -1,3 +1,16 @@
+FROM eclipse-temurin:21 as build
+ARG APP_VERSION
+ARG COMMIT_ID
+
+WORKDIR /app
+
+COPY . .
+RUN echo git.commit.id.abbrev=${COMMIT_ID} > src/main/resources/git.properties
+
+RUN cat src/main/resources/git.properties
+
+RUN ./gradlew -Pversion=${APP_VERSION} clean build
+
 FROM ubuntu:22.04
 ENV JAVA_HOME=/opt/java/openjdk
 COPY --from=eclipse-temurin:21 $JAVA_HOME $JAVA_HOME
@@ -43,7 +56,7 @@ COPY docker/store-application.properties /app/store/config/application.propertie
 RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-all-${STORE_VERSION}.jar -O /app/store/yaci-store.jar
 
 WORKDIR /app/yaci-cli
-COPY build/libs/yaci-cli-${APP_VERSION}.jar /app/yaci-cli.jar
+COPY --from=build /app/build/libs/yaci-cli-${APP_VERSION}.jar /app/yaci-cli.jar
 
 RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/

@@ -4,6 +4,7 @@ plugins {
     id 'org.graalvm.buildtools.native' version '0.9.18'
 	id 'java'
 	id 'signing'
+    id "com.gorylenko.gradle-git-properties" version "2.4.1"
 }
 
 configurations {
@@ -88,9 +89,12 @@ compileJava {
     dependsOn genClusterTemplatesZip
 }
 
-ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
-if (isReleaseVersion && !project.hasProperty("skipSigning")) {
-	signing {
-		sign configurations.archives
-	}
+processResources {
+    filesMatching('application.properties') {
+        expand(project.properties)
+    }
+}
+
+gitProperties {
+    failOnNoGitDirectory = false
 }

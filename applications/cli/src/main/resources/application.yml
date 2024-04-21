@@ -1,11 +1,13 @@
 #spring:
 #  main:
 #    banner-mode: "off"
-application.version: v0.0.20-beta1
+#application.version: v0.0.20-beta1
 
 server:
   port: 0
 spring:
+  config:
+    import: classpath:/git.properties
   banner:
     location: classpath:/banner.txt
   devtools:
