@@ -259,6 +259,59 @@ To query protocol parameters, you can use the following command.
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/PTnSc85t0Nk/0.jpg)](https://www.youtube.com/watch?v=PTnSc85t0Nk)
 
+# Build From Source
+The Yaci DevKit comprises two main applications: Yaci CLI and Yaci Viewer. You can build these applications from source.
+
+The other components such as Yaci Store, Cardano Node, Ogmios, and Kupo are downloaded from their respective sources during the Docker build.
+
+Both Yaci CLI and Yaci Viewer are located under the applications folder.
+
+## Build using Earthly
+This is the simplest way to build all components and create Docker images. You need to have [Earthly](https://earthly.dev/) installed on your machine.
+
+### Pre-requisites
+- [Earthly](https://earthly.dev/get-earthly)
+- [Docker](https://www.docker.com/)d
+
+### Build Docker Images using Earthly (For Local Development)
+- Clone the repository. 
+- Edit the **version** file to update the `tag`. For a development build, you can use **dev** as the tag. 
+- This tag will be used to tag the Docker images and also in the docker-compose.yml file. 
+- Run the following Earthly command to build the Docker images:
+
+```shell
+earthly --arg-file-path=version +build
+```
+This will build the Yaci DevKit Docker image from `application/cli` and the Yaci Viewer Docker image from `application/viewer`.
+
+### Run DevKit using the built images
+
+Once the images are built, you can run the DevKit using scripts like `start.sh`, `stop.sh`, `yaci-cli.sh`, etc.
+
+### Build Docker Images using Earthly (GitHub Action)
+
+For GitHub Actions, we have a workflow file that builds the Docker images and pushes them to DockerHub.
+The workflow file utilizes a dedicated `docker-publish` tag to build multiplatform images and push them to DockerHub.
+
+## Build Yaci CLI and Yaci Viewer separately
+
+Both Yaci CLI and Yaci Viewer can also be built separately using Java and NodeJS.
+
+### Yaci CLI
+#### Pre-requisites
+- Java 21
+- Gradle
+
+Go to `applications/cli` folder and run the following command to build Yaci CLI.
+
+```shell
+./gradlew clean build
+```
+
+### Yaci Viewer
+
+Yaci Viewer is a Sveltejs application. Check this [README](applications/viewer/README.md) for more details.
+
 
 # Any questions, ideas or issues?
 
