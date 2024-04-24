@@ -82,16 +82,10 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 - Docker Compose
 
 ## Get Yaci DevKit
-### Download the latest source zip from release section
 
-Download the latest source zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
+### Download the latest zip from release section
 
-### Or, Clone this Git repo
-You can also clone this repo to your local machine using the following command to use the latest Yaci DevKit.
-
-```shell
-git clone https://github.com/bloxbean/yaci-devkit.git
-```
+Download the latest zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
 
 ## To start the DevKit docker compose
 
