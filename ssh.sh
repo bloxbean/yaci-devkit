@@ -5,5 +5,5 @@ then
     CMD="docker compose"
 fi
 
-$CMD --env-file env  exec yaci-cli /bin/bash
+$CMD --env-file env --env-file version exec yaci-cli /bin/bash
 
