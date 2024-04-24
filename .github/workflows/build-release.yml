@@ -25,7 +25,7 @@ jobs:
       - name: Docker Login
         run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
       - name: Run build
-        run: earthly --ci --push +build-all-platforms
+        run: earthly --push +build-all-platforms
 
 
 #      - uses: actions/checkout@v2
