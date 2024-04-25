@@ -19,7 +19,7 @@ services:
       - infinity
 
   yaci-viewer:
-    image: bloxbean/yaci-devkit:${tag}
+    image: bloxbean/yaci-viewer:${tag}
     ports:
       - "${HOST_VIEWER_PORT}:5173"
     env_file:
