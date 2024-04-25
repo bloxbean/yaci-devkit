@@ -3,6 +3,7 @@ VERSION 0.8
 ARG --global ALL_BUILD_TARGETS="devkit viewer"
 ARG --global DOCKER_IMAGE_PREFIX="yaci"
 ARG --global tag="dev"
+ARG --global REGISTRY_ORG = "bloxbean"
 
 build:
   LOCALLY
@@ -22,12 +23,11 @@ devkit:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
   FROM DOCKERFILE --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
-  SAVE IMAGE ${DOCKER_IMAGE_PREFIX}-${EARTHLY_TARGET_NAME}:${tag}
-
+  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-${EARTHLY_TARGET_NAME}:${tag}
 viewer:
   ARG EARTHLY_TARGET_NAME
   FROM DOCKERFILE applications/${EARTHLY_TARGET_NAME}/.
-  SAVE IMAGE ${DOCKER_IMAGE_PREFIX}-${EARTHLY_TARGET_NAME}:${tag}
+  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-${EARTHLY_TARGET_NAME}:${tag}
 zip:
   LOCALLY
   RUN rm -rf build
@@ -55,14 +55,14 @@ zip:
   RUN cd /app && zip -r yaci-devkit-${tag}.zip .
   SAVE ARTIFACT yaci-devkit-${tag}.zip AS LOCAL build/yaci-devkit-${tag}.zip
 
-docker-publish:
-    WAIT
-        BUILD +build-all-platforms
-    END
-    LOCALLY
-    LET IMAGE_NAME = ""
-    FOR image_target IN $ALL_BUILD_TARGETS
-        SET IMAGE_NAME = ${DOCKER_IMAGE_PREFIX}-${image_target}
-        RUN docker tag ${IMAGE_NAME}:${tag} bloxbean/${IMAGE_NAME}:${tag}
-        RUN docker push bloxbean/${IMAGE_NAME}:${tag}
-    END
+#docker-publish:
+#    WAIT
+#        BUILD +build-all-platforms
+#    END
+#    LOCALLY
+#    LET IMAGE_NAME = ""
+#    FOR image_target IN $ALL_BUILD_TARGETS
+#        SET IMAGE_NAME = ${DOCKER_IMAGE_PREFIX}-${image_target}
+#        RUN docker tag ${IMAGE_NAME}:${tag} bloxbean/${IMAGE_NAME}:${tag}
+#        RUN docker push bloxbean/${IMAGE_NAME}:${tag}
+#    END
