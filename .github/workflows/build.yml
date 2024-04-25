@@ -1,0 +1,32 @@
+name: Clean, Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  buildAndPush:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          version: v0.8.0
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+      - uses: actions/checkout@v4
+      - name: 'Get Tag from version file'
+        run: |
+          TAG=$(grep "tag=" version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Run build
+        run: earthly +build-all-platforms --tag ${{ env.TAG }}

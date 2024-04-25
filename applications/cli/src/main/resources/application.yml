@@ -1,0 +1,32 @@
+#spring:
+#  main:
+#    banner-mode: "off"
+#application.version: v0.0.20-beta1
+
+server:
+  port: 0
+spring:
+  config:
+    import: classpath:/git.properties
+  banner:
+    location: classpath:/banner.txt
+  devtools:
+    add-properties:logging: false
+
+logging:
+  level:
+    org.springdoc: error
+    org.springframework: error
+    com.bloxbean.cardano.yaci.core.network: error
+    com.bloxbean.cardano.yaci.core.protocol.handshake: error
+
+shell.out.info: CYAN
+shell.out.success: GREEN
+shell.out.warning: YELLOW
+shell.out.error: RED
+
+
+spring.shell.history.enabled: true
+spring.shell.history.name: yaci-cli.history
+#spring.shell.config.location
+#spring.shell.config.env

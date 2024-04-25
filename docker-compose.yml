@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   yaci-cli:
-    image: bloxbean/yaci-cli:0.0.20-beta1
+    image: bloxbean/yaci-devkit:${tag}
     ports:
       - "${HOST_N2N_PORT}:3001"
       - "${HOST_N2C_SOCAT_PORT}:3333"
@@ -19,7 +19,7 @@ services:
       - infinity
 
   yaci-viewer:
-    image: bloxbean/yaci-viewer:0.0.9
+    image: bloxbean/yaci-viewer:${tag}
     ports:
       - "${HOST_VIEWER_PORT}:5173"
     env_file:

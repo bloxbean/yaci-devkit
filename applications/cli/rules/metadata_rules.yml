@@ -1,0 +1,8 @@
+---
+name: Metadata check
+description: Find 674
+priority: 1
+condition: "metadata.get(\"674\") != null"
+actions:
+  - "System.out.println(metadata.get(\"674\"))"
+  - "System.out.println(\"674 Found\")"

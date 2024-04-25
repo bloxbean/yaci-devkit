@@ -6,6 +6,6 @@ then
     CMD="docker compose"
 fi
 
-$CMD --env-file env up -d
+$CMD --env-file env --env-file version up -d
 
 source ./info.sh
