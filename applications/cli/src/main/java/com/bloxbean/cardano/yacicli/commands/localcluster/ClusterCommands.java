@@ -306,10 +306,12 @@ public class ClusterCommands {
         Era era = CommandContext.INSTANCE.getEra();
 
         accountService.topup(clusterName, era, address, adaValue, msg -> writeLn(msg));
-        clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
+        boolean status = clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
 
-        writeLn(info("Available utxos") + "\n");
-        getUtxos(address, false);
+        if (status) {
+            writeLn(info("Available utxos") + "\n");
+            getUtxos(address, false);
+        }
     }
 
     @ShellMethod(value = "Get utxos at an address", key = "utxos")
