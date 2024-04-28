@@ -5,6 +5,7 @@ import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.ClusterUtilService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.service.DefaultAddressService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ public class FirstRunTopupAccounts {
     private final ClusterService localClusterService;
     private final ClusterUtilService clusterUtilService;
     private final AccountService accountService;
+    private final DefaultAddressService defaultAddressService;
 
     @Value("${topup_addresses:#{null}}")
     private String[] topupAddresses;
@@ -31,6 +33,7 @@ public class FirstRunTopupAccounts {
         try {
             String clusterName = firstRunDone.getCluster();
             if (localClusterService.isFirstRunt(clusterName)) {
+                defaultAddressService.printDefaultAddresses(true);
                 if (topupAddresses != null) {
                     if (topupAddresses.length > 0) {
                         writeLn("First run. Let's topup configured addresses");
