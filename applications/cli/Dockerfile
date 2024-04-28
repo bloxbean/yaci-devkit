@@ -40,11 +40,11 @@ RUN sh download-$TARGETARCH.sh
 
 #Ogmios download
 COPY docker/download-ogmios.sh .
-RUN sh download-ogmios.sh
+RUN sh download-ogmios.sh $TARGETARCH
 
 #Kupo download
 COPY docker/download-kupo.sh .
-RUN sh download-kupo.sh
+RUN sh download-kupo.sh $TARGETARCH
 
 #RUN apk --no-cache add curl
 
