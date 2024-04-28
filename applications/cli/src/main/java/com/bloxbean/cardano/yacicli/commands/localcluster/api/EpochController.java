@@ -2,12 +2,12 @@ package com.bloxbean.cardano.yacicli.commands.localcluster.api;
 
 import com.bloxbean.cardano.client.api.model.ProtocolParams;
 import com.bloxbean.cardano.client.backend.model.EpochContent;
-import com.bloxbean.cardano.client.supplier.local.LocalProtocolSupplier;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQuery;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQueryResult;
 import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
 import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
 import com.bloxbean.cardano.yacicli.commands.localcluster.common.LocalClientProviderHelper;
+import com.bloxbean.cardano.yacicli.commands.localcluster.supplier.LocalProtocolSupplier;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
