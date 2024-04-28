@@ -9,7 +9,7 @@ RUN echo git.commit.id.abbrev=${COMMIT_ID} > src/main/resources/git.properties
 
 RUN cat src/main/resources/git.properties
 
-RUN ./gradlew -Pversion=${APP_VERSION} clean build
+RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build
 
 FROM ubuntu:22.04
 ENV JAVA_HOME=/opt/java/openjdk
