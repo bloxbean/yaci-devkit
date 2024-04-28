@@ -305,7 +305,10 @@ public class ClusterCommands {
         String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();
 
-        accountService.topup(clusterName, era, address, adaValue, msg -> writeLn(msg));
+        boolean topupStatus = accountService.topup(clusterName, era, address, adaValue, msg -> writeLn(msg));
+        if (!topupStatus)
+            return;
+
         boolean status = clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
 
         if (status) {
