@@ -76,6 +76,7 @@ public class ClusterUtilService {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
+                return false;
             }
             newTip = getTip(writer);
             if (newTip == null)

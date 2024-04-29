@@ -9,7 +9,7 @@ RUN echo git.commit.id.abbrev=${COMMIT_ID} > src/main/resources/git.properties
 
 RUN cat src/main/resources/git.properties
 
-RUN ./gradlew -Pversion=${APP_VERSION} clean build
+RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build
 
 FROM ubuntu:22.04
 ENV JAVA_HOME=/opt/java/openjdk
@@ -40,11 +40,11 @@ RUN sh download-$TARGETARCH.sh
 
 #Ogmios download
 COPY docker/download-ogmios.sh .
-RUN sh download-ogmios.sh
+RUN sh download-ogmios.sh $TARGETARCH
 
 #Kupo download
 COPY docker/download-kupo.sh .
-RUN sh download-kupo.sh
+RUN sh download-kupo.sh $TARGETARCH
 
 #RUN apk --no-cache add curl
 

@@ -1,5 +1,5 @@
 ${KUPO_BIN} \
-  --ogmios-host localhost \
+  --ogmios-host 0.0.0.0 \
   --ogmios-port ${OGMIOS_PORT} \
   --host 0.0.0.0 \
   --port ${KUPO_PORT} \

@@ -1,6 +1,6 @@
 VERSION 0.8
 
-ARG --global ALL_BUILD_TARGETS="devkit viewer"
+ARG --global ALL_BUILD_TARGETS="cli viewer"
 ARG --global DOCKER_IMAGE_PREFIX="yaci"
 ARG --global tag="dev"
 ARG --global REGISTRY_ORG = "bloxbean"
@@ -19,7 +19,7 @@ build-all-platforms:
   END
   BUILD +zip
 
-devkit:
+cli:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
   FROM DOCKERFILE --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
@@ -43,6 +43,7 @@ zip:
   COPY  docker-compose.yml \
                  env \
                  ssh.sh \
+                 devkit.sh \
                  start.sh \
                  stop.sh \
                  yaci-cli.sh \

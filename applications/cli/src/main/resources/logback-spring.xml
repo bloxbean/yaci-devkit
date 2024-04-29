@@ -21,7 +21,7 @@
             <pattern>%clr(%d){faint} %clr(${PID:- }){magenta} %clr([%15.15t]){magenta} %clr(%-5p) %clr(%-40c{40}){cyan} - %m%n</pattern>
         </encoder>
     </appender>
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>

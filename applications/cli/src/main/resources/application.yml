@@ -17,6 +17,7 @@ logging:
   level:
     org.springdoc: error
     org.springframework: error
+    ch.qos.logback: error
     com.bloxbean.cardano.yaci.core.network: error
     com.bloxbean.cardano.yaci.core.protocol.handshake: error
 

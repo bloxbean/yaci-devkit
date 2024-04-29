@@ -37,8 +37,7 @@ public class AccountService {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
             localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
 
-            localNodeService.topUp(address, adaValue, msg -> writeLn(msg));
-            return true;
+            return localNodeService.topUp(address, adaValue, msg -> writeLn(msg));
         } catch (Exception e) {
             // if (log.isDebugEnabled())
             log.error("Error", e);

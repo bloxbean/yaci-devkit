@@ -69,13 +69,10 @@ public class LocalNodeService {
         this.localClientProvider.addTxSubmissionListener(new LocalTxSubmissionListener() {
             @Override
             public void txAccepted(TxSubmissionRequest txSubmissionRequest, MsgAcceptTx msgAcceptTx) {
-                writer.accept(success("Transaction submitted successfully"));
-                writer.accept(infoLabel("Tx Hash", txSubmissionRequest.getTxHash()));
             }
 
             @Override
             public void txRejected(TxSubmissionRequest txSubmissionRequest, MsgRejectTx msgRejectTx) {
-                writer.accept(error("Transaction submission failed. " + msgRejectTx.getReasonCbor()));
             }
         });
         this.localClientProvider.start();
@@ -144,7 +141,7 @@ public class LocalNodeService {
         return result.getUtxoList();
     }
 
-    public void topUp(String receiver, Double adaAmount, Consumer<String> writer) throws CborSerializationException {
+    public boolean topUp(String receiver, Double adaAmount, Consumer<String> writer) throws CborSerializationException {
         //Find address and utxos with required balance
         BigInteger amount = adaToLovelace(adaAmount);
         String senderAddress = null;
@@ -184,7 +181,16 @@ public class LocalNodeService {
         String txHash = TransactionUtil.getTxHash(signedTransaction);
 
         //Submit Tx using LocalStateQuery mini-protocol
-        localClientProvider.getTxSubmissionClient().submitTxCallback(new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize()));
+        TxSubmissionRequest txSubmissionRequest = new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize());
+        var mono = localClientProvider.getTxSubmissionClient().submitTx(txSubmissionRequest);
+        var txResult = mono.block(Duration.ofSeconds(2));
+        if (!txResult.isAccepted()) {
+            writer.accept(error("Transaction submission failed : " + txResult.getErrorCbor()));
+            return false;
+        } else {
+            writer.accept(success("Transaction submitted successfully"));
+        }
+
         //localNodeClientFactory.shutdown();
         int count = 0;
         while (true) {
@@ -203,9 +209,12 @@ public class LocalNodeService {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
+                    break;
                 }
             }
         }
+
+        return true;
     }
 
     public Tuple<Long, Point> getTip() {
