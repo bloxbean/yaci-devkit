@@ -37,9 +37,9 @@ Blockfrost provider, your development possibilities are boundless.
 
 Yaci DevKit docker-compose has following components
 
-1. [Yaci CLI](https://github.com/bloxbean/yaci-cli)       - A CLI to create/manage a local cluster and other utilities
+1. [Yaci CLI](./applications/cli)       - A CLI to create/manage a local cluster and other utilities
 2. [Yaci Store](https://github.com/bloxbean/yaci-store)   - A lightweight indexer with H2 DB
-3. [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) - A minimal blockchain data viewer for developers
+3. [Yaci Viewer](./applications/viewer) - A minimal blockchain data viewer for developers
 4. Cardano Node
 5. Ogmios (Optional)
 6. Kupo (Optional)
@@ -65,12 +65,12 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **n2c port for remote client (socat)**   : localhost:3333
 
 # Component Versions
-- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.20-beta1
-- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.1.0-rc2-preview1
-- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.9
+- [Yaci CLI](./applications/cli)
+- [Yaci Viewer](./applications/viewer)
+- [Yaci Store](https://github.com/bloxbean/yaci-store) : v0.1.0-rc2-preview1
 - [Cardano Node](https://cardano.org/): 8.7.3
-- [Ogmios](https://ogmios.dev/): v6.0.0
-- [Kupo](https://cardanosolutions.github.io/kupo/): v2.7.2
+- [Ogmios](https://ogmios.dev/): v6.2.0
+- [Kupo](https://cardanosolutions.github.io/kupo/): v2.8.0
 
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
   (Include both amd64 and arm64 binaries)
@@ -88,6 +88,14 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 Download the latest zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
 
 ## To start the DevKit docker compose
+
+To start the DevKit containers and yaci-cli, you can use `devkit.sh` script. It takes two arguments, `start` and `stop`.
+
+```shell
+./devkit.sh start
+```
+
+Alternatively, you can only start DevKit containers using the following command.
 
 ```shell
 ./start.sh
@@ -126,6 +134,13 @@ Once the docker compose is up, start Yaci CLI using ```yaci-cli.sh```
 ```
 
 ## To stop DevKit
+
+Use `devkit.sh` script to stop the DevKit containers.
+
+```shell
+./devkit.sh stop
+```
+Alternatively, you can use ``stop.sh`` script to stop the DevKit containers.
 
 ```shell
 ./stop.sh
