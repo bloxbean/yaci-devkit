@@ -43,6 +43,9 @@ public class OgmiosService {
     @Value("${ogmios.enabled:false}")
     private boolean enableOgmios;
 
+    @Value("${kupo.enabled:false}")
+    private boolean enableKupo;
+
     @Autowired
     TemplateEngine templateEngine;
 
@@ -53,7 +56,7 @@ public class OgmiosService {
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         ogmiosLogs.clear();
         kupoLogs.clear();
-        if (!enableOgmios)
+        if (!enableOgmios && !enableKupo)
             return;
 
         if (!clusterStarted.getClusterName().equals("default")) {
@@ -67,37 +70,45 @@ public class OgmiosService {
                 throw new IllegalStateException("Cluster info not found for cluster: " + clusterStarted.getClusterName()
                         + ". Please check if the cluster is created.");
 
-            if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
-                return;
+            if (enableOgmios) {
+                if (!ogmiosPortAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
+                    return;
 
-            Process process = startOgmios(clusterStarted.getClusterName(), clusterInfo);
-            if (process != null)
-                processes.add(process);
+                Process process = startOgmios(clusterStarted.getClusterName(), clusterInfo);
+                if (process != null)
+                    processes.add(process);
+            }
 
-            Process kupoProcess = startKupo(clusterStarted.getClusterName(), clusterInfo);
-            if (kupoProcess != null)
-                processes.add(kupoProcess);
+            if (enableKupo) {
+                if (!kupoPortAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
+                    return;
+
+                Process kupoProcess = startKupo(clusterStarted.getClusterName(), clusterInfo);
+                if (kupoProcess != null)
+                    processes.add(kupoProcess);
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
     }
 
-    private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
+    private static boolean ogmiosPortAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
         boolean ogmiosPortAvailable = PortUtil.isPortAvailable(clusterInfo.getOgmiosPort());
         if (!ogmiosPortAvailable) {
             writer.accept(error("Ogmios Port " + clusterInfo.getOgmiosPort() + " is not available. Please check if the port is already in use."));
         }
 
+        return ogmiosPortAvailable;
+    }
+
+    private static boolean kupoPortAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
         boolean kupoPortAvailable = PortUtil.isPortAvailable(clusterInfo.getKupoPort());
         if (!kupoPortAvailable) {
             writer.accept(error("Kupo Port " + clusterInfo.getKupoPort() + " is not available. Please check if the port is already in use."));
         }
 
-        if (!ogmiosPortAvailable || !kupoPortAvailable)
-            return false;
-        else
-            return true;
+        return kupoPortAvailable;
     }
 
     private Process startOgmios(String cluster, ClusterInfo clusterInfo) throws IOException {
@@ -282,5 +293,13 @@ public class OgmiosService {
 
     public void setEnableOgmios(boolean enableOgmios) {
         this.enableOgmios = enableOgmios;
+    }
+
+    public boolean isEnableKupo() {
+        return enableKupo;
+    }
+
+    public void setEnableKupo(boolean enableKupo) {
+        this.enableKupo = enableKupo;
     }
 }
