@@ -280,9 +280,9 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Show available utxos at default accounts", key = "show-default-accounts")
+    @ShellMethod(value = "Show available utxos at faucet addresses", key = "show-faucet-addresses")
     @ShellMethodAvailability("localClusterCmdAvailability")
-    public void listDefaultAccounts() {
+    public void showFaucetAddresses() {
         String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();
 

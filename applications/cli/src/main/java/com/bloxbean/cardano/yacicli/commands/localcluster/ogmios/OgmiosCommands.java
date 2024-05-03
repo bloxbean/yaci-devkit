@@ -32,23 +32,45 @@ public class OgmiosCommands {
     }
 
     @ShellMethod(value = "Enable Ogmios & Kupo")
-    public void enableOgmios() {
+    public void enableKupomios() {
         ogmiosService.setEnableOgmios(true);
+        ogmiosService.setEnableKupo(true);
         writeLn(infoLabel("OK", "Ogmios/Kupo Status: Enable"));
     }
 
     @ShellMethod(value = "Disble Ogmios & Kupo")
-    public void disableOgmios() {
+    public void disableOgmiosKupo() {
         ogmiosService.setEnableOgmios(false);
+        ogmiosService.setEnableKupo(false);
         writeLn(infoLabel("OK", "Ogmios/Kupo Status: Disable"));
     }
 
-    @ShellMethod(value = "Check if Ogmios and Kupo are enabled or disabled")
+    @ShellMethod(value = "Enable Ogmios")
+    public void enableOgmios() {
+        ogmiosService.setEnableOgmios(true);
+        writeLn(infoLabel("OK", "Ogmios Status: Enable"));
+    }
+
+    @ShellMethod(value = "Disble Ogmios")
+    public void disableOgmios() {
+        ogmiosService.setEnableOgmios(false);
+        writeLn(infoLabel("OK", "Ogmios Status: Disable"));
+    }
+
+    @ShellMethod(value = "Check if Ogmios is enabled or disabled")
     public void checkOgmiosStatus() {
         if (ogmiosService.isEnableOgmios())
-            writeLn(info("Ogmios/Kupo Status: Enable"));
+            writeLn(info("Ogmios Status: Enable"));
         else
-            writeLn(info("Ogmios/Kupo Status: disable"));
+            writeLn(info("Ogmios Status: disable"));
+    }
+
+    @ShellMethod(value = "Check if Kupo is enabled or disabled")
+    public void checkKupoStatus() {
+        if (ogmiosService.isEnableKupo())
+            writeLn(info("Kupo Status: Enable"));
+        else
+            writeLn(info("Kupo Status: disable"));
     }
 
     public Availability ogmiosEnableAvailability() {

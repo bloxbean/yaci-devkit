@@ -1,18 +1,17 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.api;
 
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.ClusterUtilService;
+import com.bloxbean.cardano.yacicli.common.CommandContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,12 +28,15 @@ import java.util.zip.ZipOutputStream;
 @RequiredArgsConstructor
 @Slf4j
 public class ClusterAdminController {
+    private final static String DEFAULT_CLUSTER_NAME = "default";
+
     private final ClusterService clusterService;
     private final ClusterUtilService clusterUtilService;
+    private final ClusterCommands clusterCommands;
 
-    @GetMapping("/clusters/{clusterName}/download")
-    public ResponseEntity<InputStreamResource> downloadFiles(@PathVariable String clusterName) throws IOException {
-        Path clusterPath = clusterService.getClusterFolder(clusterName);
+    @GetMapping("/clusters/default/download")
+    public ResponseEntity<InputStreamResource> downloadFiles() throws IOException {
+        Path clusterPath = clusterService.getClusterFolder(DEFAULT_CLUSTER_NAME);
         // Specify the path to the folder you want to zip
         String folderPath = clusterPath.toAbsolutePath().toString();
         String zipFileName = "cluster.zip";
@@ -76,18 +78,26 @@ public class ClusterAdminController {
                 .body(new InputStreamResource(new FileInputStream(zipFile)));
     }
 
-    @GetMapping("/clusters/{clusterName}")
-    public ClusterInfo getClusterInfo(@PathVariable String clusterName) throws IOException {
-        return clusterService.getClusterInfo(clusterName);
+    @GetMapping("/clusters/default")
+    public ClusterInfo getClusterInfo() throws IOException {
+        return clusterService.getClusterInfo(DEFAULT_CLUSTER_NAME);
     }
 
-    @GetMapping("/clusters/{clusterName}/status")
-    public String getClusterStatus(@PathVariable String clusterName) {
-        return clusterService.isFirstRunt(clusterName)? "not_initialized" : "initialized";
+    @GetMapping("/clusters/default/status")
+    public String getClusterStatus() {
+        return clusterService.isFirstRunt(DEFAULT_CLUSTER_NAME)? "not_initialized" : "initialized";
     }
 
-    @GetMapping("/clusters/{clusterName}/kes-period")
-    public int getKesPeriod(@PathVariable String clusterName) throws IOException {
+    @PostMapping("/clusters/default/reset")
+    public String reset() {
+        CommandContext.INSTANCE.setProperty("cluster_name", DEFAULT_CLUSTER_NAME);
+        clusterCommands.resetLocalCluster();
+
+        return "done";
+    }
+
+    @GetMapping("/clusters/default/kes-period")
+    public int getKesPeriod() throws IOException {
         return clusterUtilService.getKESPeriod();
     }
 }
