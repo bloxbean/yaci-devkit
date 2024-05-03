@@ -5,4 +5,7 @@ mkdir /app/cardano-bin
 
 tar zxvf $file -C /app/cardano-bin
 
+mv /app/cardano-bin/bin/* /app/cardano-bin/
+rm -rf /app/cardano-bin/bin
+
 rm $file
