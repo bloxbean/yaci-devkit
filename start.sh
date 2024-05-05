@@ -1,4 +1,7 @@
 #!/bin/bash
+
+cd "$(dirname "$0")"
+
 CMD="docker-compose"
 if ! command -v docker-compose &> /dev/null
 then
