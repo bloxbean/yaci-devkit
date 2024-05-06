@@ -87,23 +87,33 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 
 Download the latest zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
 
+## DevKit Script
+You can find `devkit.sh` script under the `bin` folder. This script is used to manage the DevKit containers and Yaci CLI.
+
+```shell
+Options:
+  start   Start the DevKit containers and CLI.
+  stop    Stop the DevKit containers.
+  cli     Query the Cardano node in the DevKit container using cardano-cli.          
+  ssh     Establish an SSH connection to the DevKit container.
+  info    Display information about the Dev Node.
+  version Display the version of the DevKit.
+  help    Display this help message.
+
+```
+
 ## To start the DevKit docker compose
 
-To start the DevKit containers and yaci-cli, you can use `devkit.sh` script. It takes two arguments, `start` and `stop`.
+To start the DevKit containers and yaci-cli.
 
 ```shell
-./devkit.sh start
+./bin/devkit.sh start
 ```
 
-Alternatively, you can only start DevKit containers using the following command.
+**Note:** If you have some **ports** already in use, please make sure the mentioned ports in ```config/env``` file are free. 
+You can also change the ports in ```config/env``` file. Any changes to ```env``` file will be applied when you restart the docker compose.
 
-```shell
-./start.sh
-```
-**Note:** If you have some **ports** already in use, please make sure the mentioned ports in ```env``` file are free. 
-You can also change the ports in ```env``` file. Any changes to ```env``` file will be applied when you restart the docker compose.
-
-## Update env file to fund test accounts (Optional)
+## Update config/env file to fund test accounts (Optional)
 
 Update ```env``` file to include your test Cardano addresses to automatically topup Ada.
 
@@ -117,33 +127,20 @@ topup_addresses=<address1>:<ada_value>,<address2><ada_value>
 topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4elx4jh2f7xtftjrdxddr88wg6sfszu8r3gktpjtqrr00q9:20000,addr_test1qqwpl7h3g84mhr36wpetk904p7fchx2vst0z696lxk8ujsjyruqwmlsm344gfux3nsj6njyzj3ppvrqtt36cp9xyydzqzumz82:10000
 ```
 
-**Important:** After updating env file, you need to restart the docker compose using ```./stop.sh``` and ```./start.sh```
+**Important:** After updating env file, you need to restart the docker compose using ```devkit.sh stop``` and ```devkit.sh start``` options.
 
 **Note:** You can also use the ``topup`` command in Yaci CLI to fund your test addresses later.
 
 ## Enable Ogmios and Kupo Support (Optional)
-Yaci DevKit bundles both Ogmios and Kupo. However, they are not enabled by default. To activate Ogmios and Kupo support, 
-set ``ogmios_enabled`` flag in ``env`` file to true. Alternatively, you can enable Ogmios support using ``enable-ogmios`` command in Yaci CLI.
-
-## To start yaci-cli
-
-Once the docker compose is up, start Yaci CLI using ```yaci-cli.sh```
-
-```shell
-./yaci-cli.sh
-```
+Yaci DevKit bundles both Ogmios and Kupo. However, Kupo is not enabled by default. To activate both Ogmios and Kupo support, 
+set `ogmios_enabled` & `kupo_enabled` flag in `env` file to true. Alternatively, you can enable both Ogmios & Kupo support using ``enable-kupomios`` command in Yaci CLI.
 
 ## To stop DevKit
 
 Use `devkit.sh` script to stop the DevKit containers.
 
 ```shell
-./devkit.sh stop
-```
-Alternatively, you can use ``stop.sh`` script to stop the DevKit containers.
-
-```shell
-./stop.sh
+./bin/devkit.sh stop
 ```
 
 ## Yaci CLI - Few Key Commands
@@ -243,15 +240,15 @@ which is already registered in the devnet.
 
 ## Query Devnet's Cardano Node using cardano-cli
 
-`cardano-cli.sh` is a wrapper script to query the Cardano node running in the devnet. You can use this script to query the Cardano node like
+DevKit script has a wrapper script to query the Cardano node running in the devnet. You can use this script to query the Cardano node like
 you usually do with cardano-cli command line tool. You don't need to install cardano-cli in your local machine or use protocol magic number in the command.
 
 **For example:**
 
-To query protocol parameters, you can use the following command.
+To query protocol parameters, you can use `cli` option with devkit script.
 
 ```shell
-./cardano-cli.sh query protocol-parameters
+./bin/devkit.sh cli query protocol-parameters
 ```
 
 ### Videos
@@ -289,7 +286,7 @@ This is the simplest way to build all components and create Docker images. You n
 - Run the following Earthly command to build the Docker images:
 
 ```shell
-earthly --arg-file-path=version +build
+earthly --arg-file-path=config/version +build
 ```
 This will build the Yaci DevKit Docker image from `application/cli` and the Yaci Viewer Docker image from `application/viewer`.
 

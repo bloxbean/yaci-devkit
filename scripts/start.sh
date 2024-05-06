@@ -1,4 +1,10 @@
 #!/bin/bash
+
+cd "$(dirname "$0")"
+
+ENV_FILE="../config/env"
+VERSION_FILE="../config/version"
+
 CMD="docker-compose"
 if ! command -v docker-compose &> /dev/null
 then
@@ -6,7 +12,7 @@ then
     CMD="docker compose"
 fi
 
-$CMD --env-file env --env-file version up -d
+$CMD --env-file $ENV_FILE --env-file $VERSION_FILE up -d
 
 exit_status=$?
 

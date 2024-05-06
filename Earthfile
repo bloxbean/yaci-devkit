@@ -37,21 +37,20 @@ zip:
   ARG EARTHLY_GIT_SHORT_HASH
   RUN apk add --no-cache zip
   RUN mkdir -p /app/yaci-devkit-${tag}
+  RUN mkdir -p /app/yaci-devkit-${tag}/config
+  RUN mkdir -p /app/yaci-devkit-${tag}/scripts
   RUN echo > /app/yaci-devkit-${tag}/version
-  RUN echo "tag=${tag}" >> /app/yaci-devkit-${tag}/version
-  RUN echo "revision=${EARTHLY_GIT_SHORT_HASH}" >> /app/yaci-devkit-${tag}/version
-  COPY  docker-compose.yml \
-                 env \
-                 ssh.sh \
-                 devkit.sh \
-                 start.sh \
-                 stop.sh \
-                 yaci-cli.sh \
-                 cardano-cli.sh \
-                 info.sh \
-                 LICENSE \
-                 README.md \
-                    /app/yaci-devkit-${tag}/
+  RUN echo "tag=${tag}" >> /app/yaci-devkit-${tag}/config/version
+  RUN echo "revision=${EARTHLY_GIT_SHORT_HASH}" >> /app/yaci-devkit-${tag}/config/version
+  COPY  config/env /app/yaci-devkit-${tag}/config/
+
+  COPY  bin/devkit.sh /app/yaci-devkit-${tag}/bin/
+
+  COPY  LICENSE \
+        README.md \
+         /app/yaci-devkit-${tag}/
+
+  COPY  scripts/*.*  /app/yaci-devkit-${tag}/scripts/
 
   RUN cd /app && zip -r yaci-devkit-${tag}.zip .
   SAVE ARTIFACT yaci-devkit-${tag}.zip AS LOCAL build/yaci-devkit-${tag}.zip

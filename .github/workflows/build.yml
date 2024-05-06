@@ -29,4 +29,4 @@ jobs:
           TAG=$(grep "tag=" version | cut -d'=' -f2)
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
-        run: earthly +build-all-platforms --tag ${{ env.TAG }}
+        run: earthly +build-all-platforms --tag dev
