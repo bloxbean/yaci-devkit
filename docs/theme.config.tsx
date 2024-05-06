@@ -13,6 +13,11 @@ const config: DocsThemeConfig = {
   footer: {
     text: '© 2024 BloxBean project',
   },
+   useNextSeoProps() {
+        return {
+            titleTemplate: '%s – Yaci DevKit'
+        }
+   }
 }
 
 export default config
