@@ -51,8 +51,8 @@ SCRIPT_NAME="devkit.sh"
 echo "Downloading from: $REPO_URL"
 
 # Check for existing installation
-if [ -d "$INSTALL_DIR/bin" ]; then
-    echo "Existing installation detected at $INSTALL_DIR/bin"
+if [ -d "$INSTALL_DIR" ]; then
+    echo "Existing installation detected at $INSTALL_DIR"
     read -p "Do you want to delete the existing installation and proceed? (y/n): " response
     if [[ "$response" == "y" ]]; then
         echo "Removing existing installation..."
@@ -84,7 +84,7 @@ rm "$INSTALL_DIR/devkit.zip"
 
 # Move and set up new installation
 mkdir -p "$INSTALL_DIR/bin"
-mv "$INSTALL_DIR/yaci-devkit-$VERSION"/* "$INSTALL_DIR/bin"
+mv "$INSTALL_DIR/yaci-devkit-$VERSION"/* "$INSTALL_DIR/."
 rm -rf "$INSTALL_DIR/yaci-devkit-$VERSION"  # Clean up leftover directory
 
 # Create a symbolic link for easier access

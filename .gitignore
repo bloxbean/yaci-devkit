@@ -1,1 +1,3 @@
 scripts/scala/*.sc
+/docs/node_modules/
+/docs/.next
