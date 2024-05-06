@@ -14,17 +14,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 21.7.3
-          cache: pnpm
-          cache-dependency-path: "./docs/pnpm-lock.yaml"
+          cache: yarn
+          cache-dependency-path: "./docs/yarn.lock"
 
       - name: Install dependencies
         run: |
           cd docs
-          pnpm install --frozen-lockfile
+          yarn install --frozen-lockfile
       - name: Build website
         run: |
           cd docs
-          pnpm export
+          yarn export
 
       # Popular action to deploy to GitHub Pages:
       # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
