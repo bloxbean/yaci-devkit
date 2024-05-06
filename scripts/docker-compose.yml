@@ -13,7 +13,7 @@ services:
     volumes:
       - cluster-data:/clusters
     env_file:
-      - env
+      - ../config/env
     entrypoint:
       - sleep
       - infinity
@@ -23,7 +23,7 @@ services:
     ports:
       - "${HOST_VIEWER_PORT}:5173"
     env_file:
-      - env
+      - ../config/env
 
 volumes:
   cluster-data:

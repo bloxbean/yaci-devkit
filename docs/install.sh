@@ -32,6 +32,17 @@ else
     echo "Fetching specified version: $VERSION"
 fi
 
+if [[ "$VERSION" == "null" ]] || [[ -z "$VERSION" ]]; then
+    echo "Latest version not found. Please try again later or specify a version."
+    exit 1
+fi
+
+if [[ "$ARTIFACT" == "null" ]] || [[ -z "$ARTIFACT" ]]; then
+    echo "File not found for latest release"
+    exit 1
+fi
+
+
 # Configuration
 INSTALL_DIR="$HOME/.yaci-devkit"
 REPO_URL="https://github.com/bloxbean/yaci-devkit/releases/download/v$VERSION/$ARTIFACT"
