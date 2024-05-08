@@ -62,6 +62,7 @@ if [ -d "$INSTALL_DIR" ]; then
         echo "Removing existing installation..."
         rm -rf "$INSTALL_DIR"
     else
+        echo "Please manually move or delete the existing installation before proceeding: $INSTALL_DIR"
         echo "Installation aborted."
         exit 1
     fi
