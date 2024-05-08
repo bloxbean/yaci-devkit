@@ -60,6 +60,12 @@ public class ClusterService {
     @Autowired
     private ApplicationEventPublisher publisher;
 
+    @Value("${node.networkId:Testnet}")
+    private String networkId;
+
+    @Value("${node.maxKESEvolutions:60}")
+    private int maxKESEvolutions;
+
     @Value("${node.securityParam:300}")
     private int securityParam;
 
@@ -272,6 +278,8 @@ public class ClusterService {
         Path destAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json");
 
         Map<String, String> values = new HashMap<>();
+        values.put("networkId", networkId);
+        values.put("maxKESEvolutions", String.valueOf(maxKESEvolutions));
         values.put("securityParam", String.valueOf(securityParam));
         values.put("slotLength", String.valueOf(slotLength));
         values.put("slotsPerKESPeriod", String.valueOf(slotsPerKESPeriod));
