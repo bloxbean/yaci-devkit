@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.context.WebServerApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
@@ -59,8 +60,15 @@ public class ClusterService {
     @Autowired
     private ApplicationEventPublisher publisher;
 
-//    @Autowired
-//    private ReactiveWebServerApplicationContext server;
+    @Value("${node.securityParam:300}")
+    private int securityParam;
+
+    @Value("${node.slotsPerKESPeriod:129600}")
+    private long slotsPerKESPeriod;
+
+    @Value("${node.updateQuorum:1}")
+    private int updateQuorum;
+
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -264,10 +272,14 @@ public class ClusterService {
         Path destAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json");
 
         Map<String, String> values = new HashMap<>();
+        values.put("securityParam", String.valueOf(securityParam));
         values.put("slotLength", String.valueOf(slotLength));
+        values.put("slotsPerKESPeriod", String.valueOf(slotsPerKESPeriod));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("protocolMagic", String.valueOf(protocolMagic));
         values.put("epochLength", String.valueOf(epochLength));
+        values.put("updateQuorum", String.valueOf(updateQuorum));
+
 
         //Update Genesis files
         try {

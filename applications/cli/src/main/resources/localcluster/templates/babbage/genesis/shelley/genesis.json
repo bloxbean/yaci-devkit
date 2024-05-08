@@ -69,9 +69,9 @@
     "rho": 0.003,
     "tau": 0.20
   },
-  "securityParam": 12,
+  "securityParam": ${securityParam},
   "slotLength": ${slotLength},
-  "slotsPerKESPeriod": 129600,
+  "slotsPerKESPeriod": ${slotsPerKESPeriod},
   "staking": {
   "pools": {
     "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57": {
@@ -96,5 +96,5 @@
     }
   },
   "systemStart": "2022-09-15T04:09:11.577484Z",
-  "updateQuorum": 2
+  "updateQuorum": ${updateQuorum}
 }
