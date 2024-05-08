@@ -131,7 +131,7 @@ public class ClusterCommands {
                     .blockTime(blockTime)
                     .epochLength(epochLength)
                     .protocolMagic(protocolMagic)
-                    .p2pEnabled(false)
+                    .p2pEnabled(true)
                     .masterNode(true)
                     .isBlockProducer(true)
                     .era(nodeEra)

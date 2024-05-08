@@ -12,15 +12,16 @@ ConwayGenesisFile: ./genesis/shelley/genesis.conway.json
 
 SocketPath: db/node.socket
 EnableP2P: ${enableP2P}
+PeerSharing: ${peerSharing}
 
 ##### Blockfetch Protocol
 #PBftSignatureThreshold: 0.6
 PBftSignatureThreshold: 1
 
 # The maximum number of used peers during bulk sync.
-MaxConcurrencyBulkSync: 1
+MaxConcurrencyBulkSync: 5
 # The maximum number of used peers when fetching newly forged blocks.
-MaxConcurrencyDeadline: 2
+MaxConcurrencyDeadline: 10
 
 #TODO: These parameters cannot yet be used in the config file, only on the CLI:
 #DatabasePath: db/
@@ -97,9 +98,9 @@ defaultBackends:
 # The Prometheus monitoring system exports EKG metrics. Uncomment the following
 # to listen on the given port. Output is provided on
 # http://localhost:12789/metrics
-# hasPrometheus:
-#   - "127.0.0.1"
-#   - 12789
+hasPrometheus:
+   - "127.0.0.1"
+   - ${prometheusPort}
 
 # To enable the legacy 'TraceForwarder' backend, uncomment the following setting. Log
 # items are then forwarded based on an entry in 'mapBackends' to a separate

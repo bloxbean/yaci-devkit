@@ -33,4 +33,6 @@ public class ClusterInfo {
     private int yaciStorePort=8080;
     @Builder.Default
     private int socatPort=3333;
+    @Builder.Default
+    private int prometheusPort=12798;
 }

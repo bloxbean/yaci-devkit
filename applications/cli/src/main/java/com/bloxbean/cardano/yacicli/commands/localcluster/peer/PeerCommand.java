@@ -24,13 +24,13 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class PeerCommand {
-    public static final String CUSTER_NAME = "custer_name";
+    public static final String CUSTER_NAME = "cluster_name";
     private final ClusterService clusterService;
     private final ApplicationEventPublisher publisher;
     private final PeerService peerService;
     private final ClusterCommands clusterCommands;
 
-    @Value("${bp.create.enabled:false}")
+    @Value("${bp.create.enabled:true}")
     private boolean bpCreateEnable;
 
     @ShellMethod(value = "Join a existing cluster", key = "join")
