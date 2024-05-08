@@ -18,6 +18,10 @@ fi
 
 # Determine version and artifact based on user input or fetch latest
 if [ -z "$1" ]; then
+    if ! command_exists jq; then
+        echo "Error: jq is not installed. Please install jq and try again."
+        exit 1
+    fi
     # Fetch the latest release version from GitHub
     VERSION=$(curl -s "https://api.github.com/repos/bloxbean/yaci-devkit/releases/latest" | jq -r '.tag_name')
     ARTIFACT=$(curl -s "https://api.github.com/repos/bloxbean/yaci-devkit/releases/latest" | jq -r '.assets[0].name')
