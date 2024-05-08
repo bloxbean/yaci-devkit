@@ -18,6 +18,10 @@ fi
 
 # Determine version and artifact based on user input or fetch latest
 if [ -z "$1" ]; then
+    if ! command_exists jq; then
+        echo "Error: jq is not installed. Please install jq and try again."
+        exit 1
+    fi
     # Fetch the latest release version from GitHub
     VERSION=$(curl -s "https://api.github.com/repos/bloxbean/yaci-devkit/releases/latest" | jq -r '.tag_name')
     ARTIFACT=$(curl -s "https://api.github.com/repos/bloxbean/yaci-devkit/releases/latest" | jq -r '.assets[0].name')
@@ -58,6 +62,7 @@ if [ -d "$INSTALL_DIR" ]; then
         echo "Removing existing installation..."
         rm -rf "$INSTALL_DIR"
     else
+        echo "Please manually move or delete the existing installation before proceeding: $INSTALL_DIR"
         echo "Installation aborted."
         exit 1
     fi

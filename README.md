@@ -277,7 +277,7 @@ This is the simplest way to build all components and create Docker images. You n
 
 ### Pre-requisites
 - [Earthly](https://earthly.dev/get-earthly)
-- [Docker](https://www.docker.com/)d
+- [Docker](https://www.docker.com/)
 
 ### Build Docker Images using Earthly (For Local Development)
 - Clone the repository. 
@@ -292,12 +292,11 @@ This will build the Yaci DevKit Docker image from `application/cli` and the Yaci
 
 ### Run DevKit using the built images
 
-Once the images are built, you can run the DevKit using scripts like `start.sh`, `stop.sh`, `yaci-cli.sh`, etc.
+Once the images are built, you can run the DevKit using ``bin/devkit.sh`` script.
 
 ### Build Docker Images using Earthly (GitHub Action)
 
 For GitHub Actions, we have a workflow file that builds the Docker images and pushes them to DockerHub.
-The workflow file utilizes a dedicated `docker-publish` tag to build multiplatform images and push them to DockerHub.
 
 ## Build Yaci CLI and Yaci Viewer separately
 

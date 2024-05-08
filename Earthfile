@@ -55,14 +55,3 @@ zip:
   RUN cd /app && zip -r yaci-devkit-${tag}.zip .
   SAVE ARTIFACT yaci-devkit-${tag}.zip AS LOCAL build/yaci-devkit-${tag}.zip
 
-#docker-publish:
-#    WAIT
-#        BUILD +build-all-platforms
-#    END
-#    LOCALLY
-#    LET IMAGE_NAME = ""
-#    FOR image_target IN $ALL_BUILD_TARGETS
-#        SET IMAGE_NAME = ${DOCKER_IMAGE_PREFIX}-${image_target}
-#        RUN docker tag ${IMAGE_NAME}:${tag} bloxbean/${IMAGE_NAME}:${tag}
-#        RUN docker push bloxbean/${IMAGE_NAME}:${tag}
-#    END
