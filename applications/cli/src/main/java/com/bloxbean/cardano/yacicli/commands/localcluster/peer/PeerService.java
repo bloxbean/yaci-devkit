@@ -61,11 +61,20 @@ public class PeerService {
     private final int prometheusPort = 12798;
     private final BigInteger poolDeposit = adaToLovelace(500);
 
+    @org.springframework.beans.factory.annotation.Value("${is.docker:false}")
+    private boolean isDocker;
+
     @SneakyThrows
     public boolean addPeer(String adminUrl, String nodeName, int portShift, boolean isBlockProducer, boolean overwrite, boolean overwritePoolKeys) {
         String adminNode = getAdminNodeHost(adminUrl).orElse(null);
         if (adminNode == null) {
             writeLn(error("Invalid admin url. Please provide a valid url"));
+            return false;
+        }
+
+        if (isDocker && (
+                adminNode.equals("localhost") || adminNode.equals("127.0.0.1"))) {
+            writeLn(error("Admin node host cannot be localhost when running in docker mode. Please provide a valid host which is reachable from the container."));
             return false;
         }
 
