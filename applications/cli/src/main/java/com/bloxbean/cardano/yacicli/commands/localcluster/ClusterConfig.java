@@ -22,6 +22,9 @@ public class ClusterConfig {
     @Value("${local.cluster.home:#{null}}")
     private String clusterHome;
 
+    @Value("${pool.keys.home:#{null}}")
+    private String poolKeysHome;
+
     @Value("${cardano.cli.path:#{null}}")
     private String cardanoCliPath;
 
@@ -56,7 +59,10 @@ public class ClusterConfig {
     }
 
     public String getPoolKeysHome() {
-        return Path.of(YACI_CLI_HOME, "pool-keys").toAbsolutePath().toString();
+        if (poolKeysHome == null || !StringUtils.hasLength(poolKeysHome.trim()))
+            return Path.of(YACI_CLI_HOME, "pool-keys").toAbsolutePath().toString();
+        else
+            return poolKeysHome;
     }
 
     public String getOgmiosHome() {

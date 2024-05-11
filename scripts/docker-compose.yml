@@ -1,4 +1,4 @@
-version: "3.9"
+name: ${node}
 services:
   yaci-cli:
     image: bloxbean/yaci-cli:${tag}

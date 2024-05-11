@@ -2,6 +2,8 @@ yaci_store_enabled=true
 ogmios_enabled=true
 kupo_enabled=false
 
+node=node1
+
 #######################################################
 # Ports
 #######################################################

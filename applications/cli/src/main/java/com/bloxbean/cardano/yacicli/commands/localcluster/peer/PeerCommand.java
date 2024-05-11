@@ -1,5 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.peer;
 
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
@@ -24,24 +25,25 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class PeerCommand {
-    public static final String CUSTER_NAME = "custer_name";
+    public static final String CUSTER_NAME = "cluster_name";
     private final ClusterService clusterService;
     private final ApplicationEventPublisher publisher;
     private final PeerService peerService;
     private final ClusterCommands clusterCommands;
 
-    @Value("${bp.create.enabled:false}")
+    @Value("${bp.create.enabled:true}")
     private boolean bpCreateEnable;
 
     @ShellMethod(value = "Join a existing cluster", key = "join")
     public void joinCluster(
             @ShellOption(value = {"-a", "--admin-url"}, defaultValue = "http://localhost:10000", help = "Cluster Admin URL") String adminUrl,
-            @ShellOption(value = {"--port-shift"}, help = "Node Id. 0, 1, 2, 3 ...") int portShift,
-            @ShellOption(value = {"-n", "--name"}, help = "Node name") String nodeName,
+            @ShellOption(value = {"--port-shift"}, help = "Node Id. 0, 1, 2, 3 ...", defaultValue = "0") int portShift,
+            @ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Node name") String nodeName,
             @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite") boolean overwrite,
             @ShellOption(value = {"--bp"}, defaultValue = "false", help = "True if this is a block producing node, else false") boolean bp,
             @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
-            @ShellOption(value = {"--overwrite--pool-keys"}, defaultValue = "false", help = "Overwrite Pool Keys") boolean overwritePoolKeys
+            @ShellOption(value = {"--overwrite--pool-keys"}, defaultValue = "false", help = "Overwrite Pool Keys") boolean overwritePoolKeys,
+            @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era
     ) {
         try {
             //stop any cluster if running
@@ -59,6 +61,19 @@ public class PeerCommand {
             else
                 writeLn(info("Creating a new relay node ..."));
 
+            //Era check
+            Era nodeEra;
+            if (era == null || era.isEmpty())
+                nodeEra = Era.Babbage;
+            else if (era.equalsIgnoreCase("babbage"))
+                nodeEra = Era.Babbage;
+            else if (era.equalsIgnoreCase("conway"))
+                nodeEra = Era.Conway;
+            else {
+                writeLn(error("Invalid era. Valid values are babbage, conway"));
+                return;
+            }
+
             boolean success = peerService.addPeer(adminUrl, nodeName, portShift, bp, overwrite, overwritePoolKeys);
             if (success) {
                 clusterService.startClusterContext(nodeName, msg -> writeLn(msg));
@@ -67,6 +82,7 @@ public class PeerCommand {
                 //change to Local Cluster Context
                 CommandContext.INSTANCE.setCurrentMode(CommandContext.Mode.LOCAL_CLUSTER);
                 CommandContext.INSTANCE.setProperty(CUSTER_NAME, nodeName);
+                CommandContext.INSTANCE.setEra(nodeEra);
                 writeLn(success("Switched to %s", nodeName));
 
                 if (start)

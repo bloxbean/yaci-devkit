@@ -7,16 +7,18 @@
           "port": ${adminNodePort}
         }
       ],
-      "advertise": false,
       "valency": 1
     }
   ],
   "publicRoots": [
     {
       "accessPoints": [
-
+        {
+          "address": "${adminNodeHost}",
+          "port": ${adminNodePort}
+        }
       ],
-      "advertise": false
+      "advertise": true
     }
   ],
   "useLedgerAfterSlot": 5

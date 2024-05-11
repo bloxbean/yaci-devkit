@@ -75,6 +75,9 @@ public class ClusterService {
     @Value("${node.updateQuorum:1}")
     private int updateQuorum;
 
+    @Value("${node.peerSharing:true}")
+    private String peerSharing;
+
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -349,6 +352,8 @@ public class ClusterService {
 
         Map<String, String> values = new HashMap<>();
         values.put("enableP2P", String.valueOf(enableP2P));
+        values.put("peerSharing", peerSharing);
+        values.put("prometheusPort", String.valueOf(clusterInfo.getPrometheusPort()));
 
         //Update Configuration file
         try {

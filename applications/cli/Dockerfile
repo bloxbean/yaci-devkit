@@ -62,7 +62,7 @@ RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/
 
 ENV PATH="$PATH:/app/cardano-bin"
-ENV CARDANO_NODE_SOCKET_PATH=/clusters/default/node-spo1/node.sock
+ENV CARDANO_NODE_SOCKET_PATH=/clusters/nodes/default/node-spo1/node.sock
 ENV PROTOCOL_MAGIC=42
 
 WORKDIR /app

@@ -1,4 +1,25 @@
 {
-   "Producers": [
-   ]
- }
+  "localRoots": [
+    {
+      "accessPoints": [
+        {
+          "address": "127.0.0.1",
+          "port": 3001
+        }
+      ],
+      "valency": 1
+    }
+  ],
+  "publicRoots": [
+    {
+      "accessPoints": [
+        {
+          "address": "127.0.0.1",
+          "port": 3001
+        }
+      ],
+      "advertise": true
+    }
+  ],
+  "useLedgerAfterSlot": 5
+}

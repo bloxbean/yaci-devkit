@@ -55,3 +55,9 @@ zip:
   RUN cd /app && zip -r yaci-devkit-${tag}.zip .
   SAVE ARTIFACT yaci-devkit-${tag}.zip AS LOCAL build/yaci-devkit-${tag}.zip
 
+test-nodes-setup:
+  LOCALLY
+  RUN cd build/ && unzip yaci-devkit-${tag}.zip
+  RUN cp -r build/yaci-devkit-${tag} build/node1
+  RUN cp -r build/yaci-devkit-${tag} build/node2
+  RUN rm -rf build/yaci-devkit-${tag}

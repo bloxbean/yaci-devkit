@@ -16,6 +16,7 @@ import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Value;
 import com.bloxbean.cardano.client.transaction.spec.cert.PoolRegistration;
+import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
@@ -57,13 +58,23 @@ public class PeerService {
     private final TemplateEngine templateEngine;
     private final int nodePort = 3001;
     private final int submitApiPort = 8090;
+    private final int prometheusPort = 12798;
     private final BigInteger poolDeposit = adaToLovelace(500);
+
+    @org.springframework.beans.factory.annotation.Value("${is.docker:false}")
+    private boolean isDocker;
 
     @SneakyThrows
     public boolean addPeer(String adminUrl, String nodeName, int portShift, boolean isBlockProducer, boolean overwrite, boolean overwritePoolKeys) {
         String adminNode = getAdminNodeHost(adminUrl).orElse(null);
         if (adminNode == null) {
             writeLn(error("Invalid admin url. Please provide a valid url"));
+            return false;
+        }
+
+        if (isDocker && (
+                adminNode.equals("localhost") || adminNode.equals("127.0.0.1"))) {
+            writeLn(error("Admin node host cannot be localhost when running in docker mode. Please provide a valid host which is reachable from the container."));
             return false;
         }
 
@@ -93,12 +104,14 @@ public class PeerService {
 
         int peerNodePort = nodePort + portShift;
         int peerSubmitApiPort = submitApiPort + portShift;
+        int peerPrometheusPort = prometheusPort + portShift;
 
         ClusterInfo bootstrapClusterInfo = ClusterAdminClient.getClusterInfo(adminUrl);
         ClusterInfo clusterInfo = ClusterInfo
                 .builder()
                 .nodePort(peerNodePort)
                 .submitApiPort(peerSubmitApiPort)
+                .prometheusPort(peerPrometheusPort)
                 .slotLength(bootstrapClusterInfo.getSlotLength())
                 .blockTime(bootstrapClusterInfo.getBlockTime())
                 .epochLength(bootstrapClusterInfo.getEpochLength())
@@ -108,6 +121,7 @@ public class PeerService {
                 .p2pEnabled(true)
                 .isBlockProducer(isBlockProducer)
                 .adminNodeUrl(adminUrl)
+                .era(Era.Babbage) //TODO: Need to get from admin node
                 .build();
 
         boolean created = clusterService.createNodeClusterFolder(peerName, clusterInfo, overwrite, (msg) -> {

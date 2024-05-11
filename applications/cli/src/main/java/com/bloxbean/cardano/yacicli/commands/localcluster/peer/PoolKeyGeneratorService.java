@@ -130,7 +130,7 @@ public class PoolKeyGeneratorService {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", genPoolRegistrationScript,
                     poolConfig.getPledge().toString(), poolConfig.getCost().toString(), String.valueOf(poolConfig.getMargin()),
-                    "http://yacidevikit.node/metadata", poolConfig.getMetadataHash(),
+                    "http://yacidevkit.node/metadata", poolConfig.getMetadataHash(),
                     poolConfig.getRelayHost(), String.valueOf(poolConfig.getRelayPort()));
 
             builder.directory(clusterPoolKeysFolder.toFile());
