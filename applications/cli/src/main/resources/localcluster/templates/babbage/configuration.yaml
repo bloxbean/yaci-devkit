@@ -98,9 +98,9 @@ defaultBackends:
 # The Prometheus monitoring system exports EKG metrics. Uncomment the following
 # to listen on the given port. Output is provided on
 # http://localhost:12789/metrics
-hasPrometheus:
-   - "127.0.0.1"
-   - ${prometheusPort}
+#hasPrometheus:
+#   - "127.0.0.1"
+#   - ${prometheusPort}
 
 # To enable the legacy 'TraceForwarder' backend, uncomment the following setting. Log
 # items are then forwarded based on an entry in 'mapBackends' to a separate
