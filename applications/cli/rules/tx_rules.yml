@@ -1,0 +1,9 @@
+---
+name: Tx with mint/burn
+description: Find if any mint/burn
+priority: 1
+condition: "txBody.mint != null && txBody.mint.size() > 0"
+actions:
+  - "System.out.println(\"Found token minting or burning \")"
+#  - "tokens = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(txBody.mint)"
+  - "Runtime.getRuntime().exec(new String[]{\"/bin/sh\",  \"discord.sh\",  new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(txBody.mint)})"

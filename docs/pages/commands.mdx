@@ -1,0 +1,188 @@
+## Common Commands
+Yaci CLI commands are used to create and interact with the local devnet.
+
+### create-node
+To create a devnet node.
+    - **Usage:**
+    ```bash
+     create-node [options]
+     ```
+   - **Example:**
+Create a new node with the default options. 1 sec block time and overwrite the existing node if it exists.
+
+   ```bash
+    create-node -o --start
+    ```
+   - **Options:**
+     - `--overwrite or -o boolean` : Overwrite the existing node if it exists.
+     - `--start` : Start the node after creation.
+     - `--block-time or -b double` : Set the block time in seconds. Default is 1 sec.
+     - `--slot-length or -s double` : Slot Length in sec. Default is 1 sec.
+     - `--epoch-length or -e int` : Epoch Length in slots. Default is 500.
+     - `--era String` : Era (babbage, conway). Default is babbage.
+
+**Note:** There are many other node specific configuration that can be set through env file. Please refer to the [Node Configuration](./node-configuration) for more details.
+
+### reset
+
+Reset local devnet. Delete data and logs folder and restart.
+
+- **Usage:**
+```bash
+reset
+```
+
+If the devnet gets stuck or you simply want to reset the data and restart with the same configuration, simply use the command "reset".
+It will restore your devnet to its initial state, allowing you to continue your development seamlessly.
+
+### stop
+
+Stop the local devnet.
+
+- **Usage:**
+```bash
+stop
+```
+**Note:** You can stop the devnet using command "stop". This will stop the devnet and you can start it again using the "start" command.
+The devnet will start from the last block it was stopped at. Based on the `securityParam` configuration in devnet node,
+the node may get stuck if it is stopped for a long time. Please refer to the [Node Configuration](./node-configuration) to
+know how to provide a custom value for `securityParam`.
+
+### cluster
+
+To switch to `devnet` mode for an existing devnet node when Yaci CLI is not in devnet mode.
+
+- **Usage:**
+```bash
+yaci-cli:> cluster
+```
+
+### exit
+To stop the node and other running services and exit from devnet node.
+
+- **Usage:**
+```bash
+devnet:default>exit
+```
+
+Similarly, you can use the `exit` command in non-devnet mode to exit from the Yaci CLI.
+
+### topup
+
+To top up the address with the given ada amount.
+
+- **Usage:**
+```bash
+topup [--address String] [--value double]
+```
+
+- **Example:**
+To fund address with 45k ada.
+
+```bash
+topup addr_test1qrzufj3g0ua489yt235wtc3mrjrlucww2tqdnt7kt5rs09grsag6vxw5v053atks5a6whke03cf2qx3h3g2nhsmzwv3sgml3ed 45000
+```
+
+### default-addresses
+
+To show the default addresses.
+
+- **Usage:**
+```bash
+default-addresses
+```
+
+By **default**, the devnet is created with 20 default addresses at different derivation path from a test 24 words mnemonic
+and each address is funded with 10k ada.
+This is useful if you want to write your tests or tools using DevKit and you need some addresses to work with.
+So, you know that these addresses are always available in the devnet.
+
+**24 words mnemonic for the default addresses is:**
+```
+test test test test test test test test test test test test test test test test test test test test test test test sauce
+```
+
+### show-faucet-addresses
+
+To show the faucet addresses.
+
+- **Usage:**
+```bash
+show-faucet-addresses
+```
+
+The faucet addresses are the addresses that are used to fund the default addresses in the devnet and also used to top up the addresses using the `topup` command.
+
+### utxos
+
+To show the UTXOs of the given address.
+
+- **Usage:**
+```bash
+utxos [address] [--pretty-print-inline-datum]
+```
+
+Example:
+```bash
+utxos addr_test1qrzufj3g0ua489yt235wtc3mrjrlucww2tqdnt7kt5rs09grsag6vxw5v053atks5a6whke03cf2qx3h3g2nhsmzwv3sgml3ed
+```
+
+```bash
+utxos addr_test1qrzufj3g0ua489yt235wtc3mrjrlucww2tqdnt7kt5rs09grsag6vxw5v053atks5a6whke03cf2qx3h3g2nhsmzwv3sgml3ed --pretty-print-inline-datum
+```
+
+### tip
+
+To show the tip of the node.
+
+- **Usage:**
+```bash
+tip
+```
+
+### info
+
+To show the info of the node.
+
+- **Usage:**
+```bash
+info
+```
+
+## Log Commands
+
+### logs
+
+To show the logs of the node.
+
+- **Usage:**
+```bash
+logs
+```
+
+### yaci-store-logs
+
+To show the logs of the yaci-store (if enabled).
+
+- **Usage:**
+```bash
+yaci-store-logs
+```
+
+### ogmios-logs
+
+To show the logs of the ogmios (if enabled).
+
+- **Usage:**
+```bash
+ogmios-logs
+```
+
+### kupo-logs
+
+To show the logs of the kupo (if enabled).
+
+- **Usage:**
+```bash
+kupo-logs
+```

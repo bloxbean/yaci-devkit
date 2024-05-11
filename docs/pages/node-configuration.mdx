@@ -1,0 +1,43 @@
+## Node Configuration
+
+Apart from a few options like `block time`, `epoch length`, and `slot length` which are provided through Yaci CLI,
+other devnet node-related configurations can be configured through the `env` file. The configurations defined in the
+`env` file will be used during devnet node creation.
+
+For **zip** based installation, the env file is located under installation directory ``config/env``.
+
+For **curl** based installation, the env file is located under ``$HOME/.yaci-devkit/config/env``.
+
+Currently, the following configuration can be done through env file:
+
+### node.securityParam
+To set the security parameter for the node. Default value is 300. (300 blocks)
+
+To change the configuration, add to the `env` file
+
+```shell
+node.securityParam=<int value>
+```
+
+**Note:** If you want to stop your node for some time and restart it later without a reset, allowing it to continue from where
+it left off and use existing data, you may want to set `node.securityParam` to a higher value.
+Otherwise, the node may get stuck and you need to reset the node.
+
+Let's say you want to stop your node and start the node again next day to continue from where it left off,
+then you can set `node.securityParam` to a higher values like `86400` for 1 sec block time.
+
+### node.peerSharing
+
+To enable or disable peer sharing. Default value is `true`.
+
+### node.slotsPerKESPeriod
+
+To set the number of slots per KES period. Default value is `129600`.
+
+### node.maxKESEvolutions
+
+To set the maximum KES evolutions. Default value is `60`.
+
+
+**Note:** More configurations will be added in the future.
+

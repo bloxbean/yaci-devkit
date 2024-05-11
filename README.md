@@ -37,9 +37,9 @@ Blockfrost provider, your development possibilities are boundless.
 
 Yaci DevKit docker-compose has following components
 
-1. [Yaci CLI](https://github.com/bloxbean/yaci-cli)       - A CLI to create/manage a local cluster and other utilities
+1. [Yaci CLI](./applications/cli)       - A CLI to create/manage a local cluster and other utilities
 2. [Yaci Store](https://github.com/bloxbean/yaci-store)   - A lightweight indexer with H2 DB
-3. [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) - A minimal blockchain data viewer for developers
+3. [Yaci Viewer](./applications/viewer) - A minimal blockchain data viewer for developers
 4. Cardano Node
 5. Ogmios (Optional)
 6. Kupo (Optional)
@@ -65,15 +65,19 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **n2c port for remote client (socat)**   : localhost:3333
 
 # Component Versions
-- [Yaci CLI](https://github.com/bloxbean/yaci-cli)       : v0.0.20-beta1
-- [Yaci Store](https://github.com/bloxbean/yaci-store)   : v0.1.0-rc2-preview1
-- [Yaci Viewer](https://github.com/bloxbean/yaci-viewer) : v0.0.9
+- [Yaci CLI](./applications/cli)
+- [Yaci Viewer](./applications/viewer)
+- [Yaci Store](https://github.com/bloxbean/yaci-store) : v0.1.0-rc2-preview1
 - [Cardano Node](https://cardano.org/): 8.7.3
-- [Ogmios](https://ogmios.dev/): v6.0.0
-- [Kupo](https://cardanosolutions.github.io/kupo/): v2.7.2
+- [Ogmios](https://ogmios.dev/): v6.2.0
+- [Kupo](https://cardanosolutions.github.io/kupo/): v2.8.0
 
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
   (Include both amd64 and arm64 binaries)
+
+# Documentation
+
+Check the [Yaci DevKit Documentation site](https://devkit.yaci.xyz/) for more details.
 
 # How to Run
 
@@ -82,26 +86,38 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 - Docker Compose
 
 ## Get Yaci DevKit
-### Download the latest source zip from release section
 
-Download the latest source zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
+### Download the latest zip from release section
 
-### Or, Clone this Git repo
-You can also clone this repo to your local machine using the following command to use the latest Yaci DevKit.
+Download the latest zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
+
+## DevKit Script
+You can find `devkit.sh` script under the `bin` folder. This script is used to manage the DevKit containers and Yaci CLI.
 
 ```shell
-git clone https://github.com/bloxbean/yaci-devkit.git
+Options:
+  start   Start the DevKit containers and CLI.
+  stop    Stop the DevKit containers.
+  cli     Query the Cardano node in the DevKit container using cardano-cli.          
+  ssh     Establish an SSH connection to the DevKit container.
+  info    Display information about the Dev Node.
+  version Display the version of the DevKit.
+  help    Display this help message.
+
 ```
 
 ## To start the DevKit docker compose
 
-```shell
-./start.sh
-```
-**Note:** If you have some **ports** already in use, please make sure the mentioned ports in ```env``` file are free. 
-You can also change the ports in ```env``` file. Any changes to ```env``` file will be applied when you restart the docker compose.
+To start the DevKit containers and yaci-cli.
 
-## Update env file to fund test accounts (Optional)
+```shell
+./bin/devkit.sh start
+```
+
+**Note:** If you have some **ports** already in use, please make sure the mentioned ports in ```config/env``` file are free. 
+You can also change the ports in ```config/env``` file. Any changes to ```env``` file will be applied when you restart the docker compose.
+
+## Update config/env file to fund test accounts (Optional)
 
 Update ```env``` file to include your test Cardano addresses to automatically topup Ada.
 
@@ -115,26 +131,20 @@ topup_addresses=<address1>:<ada_value>,<address2><ada_value>
 topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4elx4jh2f7xtftjrdxddr88wg6sfszu8r3gktpjtqrr00q9:20000,addr_test1qqwpl7h3g84mhr36wpetk904p7fchx2vst0z696lxk8ujsjyruqwmlsm344gfux3nsj6njyzj3ppvrqtt36cp9xyydzqzumz82:10000
 ```
 
-**Important:** After updating env file, you need to restart the docker compose using ```./stop.sh``` and ```./start.sh```
+**Important:** After updating env file, you need to restart the docker compose using ```devkit.sh stop``` and ```devkit.sh start``` options.
 
 **Note:** You can also use the ``topup`` command in Yaci CLI to fund your test addresses later.
 
 ## Enable Ogmios and Kupo Support (Optional)
-Yaci DevKit bundles both Ogmios and Kupo. However, they are not enabled by default. To activate Ogmios and Kupo support, 
-set ``ogmios_enabled`` flag in ``env`` file to true. Alternatively, you can enable Ogmios support using ``enable-ogmios`` command in Yaci CLI.
-
-## To start yaci-cli
-
-Once the docker compose is up, start Yaci CLI using ```yaci-cli.sh```
-
-```shell
-./yaci-cli.sh
-```
+Yaci DevKit bundles both Ogmios and Kupo. However, Kupo is not enabled by default. To activate both Ogmios and Kupo support, 
+set `ogmios_enabled` & `kupo_enabled` flag in `env` file to true. Alternatively, you can enable both Ogmios & Kupo support using ``enable-kupomios`` command in Yaci CLI.
 
 ## To stop DevKit
 
+Use `devkit.sh` script to stop the DevKit containers.
+
 ```shell
-./stop.sh
+./bin/devkit.sh stop
 ```
 
 ## Yaci CLI - Few Key Commands
@@ -217,6 +227,12 @@ devnet:default> topup <address> <ada value>
 devnet:default> utxos <address>
 ```
 
+### To get default addresses
+
+```shell
+devnet:default> default-addresses
+```
+
 ### To check devnet and url info
 
 ```shell
@@ -234,15 +250,15 @@ which is already registered in the devnet.
 
 ## Query Devnet's Cardano Node using cardano-cli
 
-`cardano-cli.sh` is a wrapper script to query the Cardano node running in the devnet. You can use this script to query the Cardano node like
+DevKit script has a wrapper script to query the Cardano node running in the devnet. You can use this script to query the Cardano node like
 you usually do with cardano-cli command line tool. You don't need to install cardano-cli in your local machine or use protocol magic number in the command.
 
 **For example:**
 
-To query protocol parameters, you can use the following command.
+To query protocol parameters, you can use `cli` option with devkit script.
 
 ```shell
-./cardano-cli.sh query protocol-parameters
+./bin/devkit.sh cli query protocol-parameters
 ```
 
 ### Videos
@@ -258,6 +274,58 @@ To query protocol parameters, you can use the following command.
 #### 3. Test Aiken Smart Contract Using Java Offchain Code with Yaci DevKit
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/PTnSc85t0Nk/0.jpg)](https://www.youtube.com/watch?v=PTnSc85t0Nk)
+
+# Build From Source
+The Yaci DevKit comprises two main applications: Yaci CLI and Yaci Viewer. You can build these applications from source.
+
+The other components such as Yaci Store, Cardano Node, Ogmios, and Kupo are downloaded from their respective sources during the Docker build.
+
+Both Yaci CLI and Yaci Viewer are located under the applications folder.
+
+## Build using Earthly
+This is the simplest way to build all components and create Docker images. You need to have [Earthly](https://earthly.dev/) installed on your machine.
+
+### Pre-requisites
+- [Earthly](https://earthly.dev/get-earthly)
+- [Docker](https://www.docker.com/)
+
+### Build Docker Images using Earthly (For Local Development)
+- Clone the repository. 
+- Edit the **version** file to update the `tag`. For a development build, you can use **dev** as the tag. 
+- This tag will be used to tag the Docker images and also in the docker-compose.yml file. 
+- Run the following Earthly command to build the Docker images:
+
+```shell
+earthly --arg-file-path=config/version +build
+```
+This will build the Yaci DevKit Docker image from `application/cli` and the Yaci Viewer Docker image from `application/viewer`.
+
+### Run DevKit using the built images
+
+Once the images are built, you can run the DevKit using ``bin/devkit.sh`` script.
+
+### Build Docker Images using Earthly (GitHub Action)
+
+For GitHub Actions, we have a workflow file that builds the Docker images and pushes them to DockerHub.
+
+## Build Yaci CLI and Yaci Viewer separately
+
+Both Yaci CLI and Yaci Viewer can also be built separately using Java and NodeJS.
+
+### Yaci CLI
+#### Pre-requisites
+- Java 21
+- Gradle
+
+Go to `applications/cli` folder and run the following command to build Yaci CLI.
+
+```shell
+./gradlew clean build
+```
+
+### Yaci Viewer
+
+Yaci Viewer is a Sveltejs application. Check this [README](applications/viewer/README.md) for more details.
 
 
 # Any questions, ideas or issues?

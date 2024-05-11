@@ -1,0 +1,28 @@
+## Services
+
+**Yaci DevKit** has the following optional services. You may want to enable or disable them based on your application's requirements or the client library you are using.
+
+- **Yaci Store :** An indexer that provides Blockfrost-compatible API. It's useful if you're using a client library that relies on the Blockfrost API.
+- **Ogmios :** A lightweight bridge interface for cardano-node. It offers a WebSockets API that enables local clients to speak
+Ouroboros' mini-protocols via JSON/RPC.
+- **Kupo :** Kupo is fast, lightweight and configurable chain-index for the Cardano blockchain.
+
+By default, **Yaci Store** and **Ogmios** are enabled. While Yaci Store provides a Blockfrost-compatible API, it relies on Ogmios
+to support the transaction evaluation endpoint (/api/v1/utils/txs/evaluate). This is useful if you're using a client library
+that performs online script cost estimation via Blockfrost's transaction evaluation endpoint.
+
+## Configuration
+
+Based on your requirements, you should enable or disable services in the `env` file to **minimize** the **runtime memory** footprint of DevKit.
+Though, you can also enable or disable services using specific commands in yaci-cli, but it's recommended to use the `env` file for a persistent configuration.
+
+### Location of env file
+For zip based installation, the env file is located under installation directory ``config/env``.
+
+For curl based installation, the env file is located under ``$HOME/.yaci-devkit/config/env``.
+
+### Configuration options
+
+- **yaci_store_enabled** : Enable or disable Yaci Store service. Default is `true`.
+- **ogmios_enabled** : Enable or disable Ogmios service. Default is `true`.
+- **kupo_enabled** : Enable or disable Kupo service. Default is `false`.

@@ -1,0 +1,12 @@
+[
+  {
+    "name":"com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors" : true,
+    "allPublicMethods" : true,
+    "allPublicFields" : true
+  }
+]
+

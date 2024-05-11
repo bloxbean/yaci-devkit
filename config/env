@@ -1,0 +1,33 @@
+yaci_store_enabled=true
+ogmios_enabled=true
+kupo_enabled=false
+
+node=node1
+
+#######################################################
+# Ports
+#######################################################
+HOST_N2N_PORT=3001
+HOST_N2C_SOCAT_PORT=3333
+HOST_STORE_API_PORT=8080
+HOST_VIEWER_PORT=5173
+HOST_CLUSTER_API_PORT=10000
+HOST_SUBMIT_API_PORT=8090
+HOST_OGMIOS_PORT=1337
+HOST_KUPO_PORT=1442
+
+#######################################################
+# Viewer Config - DON'T CHANGE
+#######################################################
+VITE_INDEXER_BASE_URL=http://yaci-cli:8080/api/v1
+VITE_INDEXER_WS_URL=ws://localhost:${HOST_STORE_API_PORT}/ws/liveblocks
+IS_DOCKER=true
+
+#######################################################
+# Default Addreses
+# Add or remove addresses to topup ada during first run
+# Format: <address1>:<ada_amount>,<address2>:<ada_amount>,...
+#######################################################
+
+#topup_addresses=addr_test1qzlwg5c3mpr0cz5td0rvr5rvcgf02al05cqgd2wzv7pud6chpzk4elx4jh2f7xtftjrdxddr88wg6sfszu8r3gktpjtqrr00q9:2000,addr_test1qqwpl7h3g84mhr36wpetk904p7fchx2vst0z696lxk8ujsjyruqwmlsm344gfux3nsj6njyzj3ppvrqtt36cp9xyydzqzumz82:1000
+

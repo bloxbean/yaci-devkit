@@ -1,0 +1,161 @@
+## Multi Node Setup (Experimental)
+
+While the primary purpose of DevKit is to provide a simple way to get started with a single devnet node, it is possible to use
+DevKit to create a multi-node setup. The additional nodes can be mix of **block producing** nodes and **relay** nodes.
+
+A multi-node setup can be useful for various testing scenarios.
+
+The additional nodes can be on the **same machine** or on **different machines**. There are separate commands to start a block producing node or a relay node.
+
+**You need to following steps in order to setup a multi-node setup:**
+
+### 1. Setup Additional Node folders
+
+#### Additional nodes on the same machine
+
+In this case, you can copy the original `devkit` installation directory and rename it to `devkit2` or `node2` etc.
+
+Update the `config/env` file to use a different **node name** and **ports** for the additional node.
+
+```
+node=node2
+
+#######################################################
+# Ports
+#######################################################
+HOST_N2N_PORT=3002
+HOST_N2C_SOCAT_PORT=3334
+HOST_STORE_API_PORT=8081
+HOST_VIEWER_PORT=5174
+HOST_CLUSTER_API_PORT=10001
+HOST_SUBMIT_API_PORT=8091
+HOST_OGMIOS_PORT=1338
+HOST_KUPO_PORT=1443
+```
+
+#### Additional nodes on different machines
+
+Install DevKit on the additional machines using standard installation instructions.
+
+### 2. Start the main devnet node
+
+Start the first devnet node using the `start` command with the standard steps. This will also act as our **main bootstrap node** or **admin node**.
+
+```bash
+devkit start
+
+yaci-cli> create-node -o --start
+```
+
+**Note:** When we start a DevKit instance, it exposes a **cluster API endpoint** (default port **10000**) which is used to get the genesis files and other configuration
+information while starting additional nodes.
+
+You can check available cluster apis here http://localhost:10000/swagger-ui/index.html
+
+### 3. Start DevKit instance for the additional node
+
+Go to the additional node folder if it is on the same machine or login to additional machine.
+
+- Start devkit in the additional node folder
+
+```bash
+devkit start
+or,
+./bin/devkit.sh start
+```
+
+### 4. Join to the main node to download the genesis files and create the node
+
+1. Join to create a **block producing** node
+
+```bash
+yaci-cli:> join --admin-url http://<main_node_ip>:10000 --bp --overwrite --overwrite--pool-keys
+```
+
+- `--admin-url` is the cluster API endpoint of the main node. You can't use `localhost` here, you need to use the IP address of the main node.
+- `--bp` is used to create a block producing node.
+- `--overwrite` is used to overwrite the existing configuration files or node folder if it already exists.
+- `--overwrite-pool-keys` is used to overwrite the pool keys with new keys. To use the previously generated pool keys, you can skip this flag.
+
+This command will download the genesis files and other configuration files from the main node, create keys required
+for the new block producing node and create the node folder.
+
+2. Join to create a **relay** node
+
+To create a **relay** node, just skip the `--bp` flag.
+
+```bash
+yaci-cli:> join --admin-url http://<main_node_ip>:10000 --overwrite
+```
+
+- `--admin-url` is the cluster API endpoint of the main node. You can't use `localhost` here, you need to use the IP address of the main node.
+
+**Important:** Don't use `--name` flag in join command. This option will be removed in future releases. Using this flag may cause issues in the current version.
+
+### 5. Start the additional node
+
+After the join command is successful, you should be already in bp or relay node context in Yaci CLI.
+Now, you can start the additional node using the `start` command.
+
+```bash
+devnet-peer/bp:default> start
+```
+
+### 6. Register the pool for new block producing node (Only for BP nodes)
+
+If you have created a new block producing node, you need to register the pool for the new node, so that it can participate in the slot leader selection process.
+
+```bash
+devnet-peer/bp:default> register-pool
+```
+
+The above command will register the pool for the new block producing node with default options.
+
+During the registration process, you can also see pool's owner address. You can now topup the owner address with some funds
+to increase the stake amount of the pool. Topup enough ada, so that the new pool is eligible to create blocks.
+
+In the below example, we are topping up the owner address with 650,000 Ada.
+
+```bash
+devnet-peer/bp:default> topup addr_test1qr3ew7uu9eg8asdupaqrpf9t7ug4l62jcxnpy96vl68xhwmvnkyw67tk4wptp7ggdsxw7ty5pwt4s4jjp7ykx68wrzwszqdxm8 650000
+```
+
+**Note**: You can also provide additional options while registering the pool. (Optional)
+
+```
+       --ticker or -t String
+       Pool Ticker
+       [Optional, default = DEFAULT_POOL]
+
+       --metadata-hash or -m String
+       Metadata Hash
+       [Optional, default = 6bf124f217d0e5a0a8adb1dbd8540e1334280d49ab861127868339f43b3948af]
+
+       --pledge or -p BigInteger
+       Pledge. Default 10,000,000 lovelace
+       [Optional, default = 10000000]
+
+       --cpst or -c BigInteger
+       Cost in lovelace. Default 340 Ada
+       [Optional, default = 340000000]
+
+       --margin double
+       Relay Host. Default 0.02
+       [Optional, default = 0.02]
+
+       --relay-host or -r String
+       Relay Host
+       [Optional, default = 127.0.0.1]
+
+       --relay-port or -p int
+       Relay Port
+       [Optional, default = 0]
+
+       --help or -h
+       help for register-pool
+       [Optional]
+```
+
+
+
+

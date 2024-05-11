@@ -1,0 +1,13 @@
+{
+  "index": "Introduction",
+  "how_to_use": "How to use",
+  "about": {
+    "title": "About",
+    "type": "page"
+  },
+  "services": "Services",
+  "commands": "Yaci CLI Commands",
+  "node-configuration": "Node Configuration",
+  "multi-node-setup": "Multi-node setup",
+  "tutorials": "Tutorials"
+}
