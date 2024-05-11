@@ -75,6 +75,10 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
   (Include both amd64 and arm64 binaries)
 
+# Documentation
+
+Check the [Yaci DevKit Documentation site](https://devkit.yaci.xyz/) for more details.
+
 # How to Run
 
 ## Pre-requisites
