@@ -223,6 +223,12 @@ devnet:default> topup <address> <ada value>
 devnet:default> utxos <address>
 ```
 
+### To get default addresses
+
+```shell
+devnet:default> default-addresses
+```
+
 ### To check devnet and url info
 
 ```shell
