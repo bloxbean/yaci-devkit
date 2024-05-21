@@ -22,6 +22,7 @@ import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.api.model.TopupResult;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.AccountService;
+import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.google.common.io.Files;
 import lombok.RequiredArgsConstructor;
@@ -50,15 +51,16 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class PeerService {
-    public static final String NODE_FOLDER = "node-spo1";
+    public static final String NODE_FOLDER = "node";
+    public static final String TEMPLATE_FOLDER = "templates";
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
     private final PoolKeyGeneratorService poolKeyGeneratorService;
     private final AccountService accountService;
     private final TemplateEngine templateEngine;
+    private final AdvancedTemplateEngine advancedTemplateEngine;
     private final int nodePort = 3001;
     private final int submitApiPort = 8090;
-    private final int prometheusPort = 12798;
     private final BigInteger poolDeposit = adaToLovelace(500);
 
     @org.springframework.beans.factory.annotation.Value("${is.docker:false}")
@@ -104,14 +106,12 @@ public class PeerService {
 
         int peerNodePort = nodePort + portShift;
         int peerSubmitApiPort = submitApiPort + portShift;
-        int peerPrometheusPort = prometheusPort + portShift;
 
         ClusterInfo bootstrapClusterInfo = ClusterAdminClient.getClusterInfo(adminUrl);
         ClusterInfo clusterInfo = ClusterInfo
                 .builder()
                 .nodePort(peerNodePort)
                 .submitApiPort(peerSubmitApiPort)
-                .prometheusPort(peerPrometheusPort)
                 .slotLength(bootstrapClusterInfo.getSlotLength())
                 .blockTime(bootstrapClusterInfo.getBlockTime())
                 .epochLength(bootstrapClusterInfo.getEpochLength())
@@ -123,6 +123,12 @@ public class PeerService {
                 .adminNodeUrl(adminUrl)
                 .era(Era.Babbage) //TODO: Need to get from admin node
                 .build();
+
+        clusterInfo.setOgmiosPort(clusterInfo.getOgmiosPort() + portShift);
+        clusterInfo.setKupoPort(clusterInfo.getKupoPort() + portShift);
+        clusterInfo.setYaciStorePort(clusterInfo.getYaciStorePort() + portShift);
+        clusterInfo.setSocatPort(clusterInfo.getSocatPort() + portShift);
+        clusterInfo.setPrometheusPort(clusterInfo.getPrometheusPort() + portShift);
 
         boolean created = clusterService.createNodeClusterFolder(peerName, clusterInfo, overwrite, (msg) -> {
             writeLn(msg);
@@ -140,8 +146,8 @@ public class PeerService {
             return false;
         }
 
-        String sourceGenesisFolder = downloadFolder.getAbsolutePath() + File.separator + "genesis";
-        String destGenesisFolder = clusterFolder.toAbsolutePath().toString() + File.separator + "genesis";
+        String sourceGenesisFolder = downloadFolder.getAbsolutePath() + File.separator + "node" + File.separator + "genesis";
+        String destGenesisFolder = clusterFolder.toAbsolutePath().toString() + File.separator + "node" + File.separator + "genesis";
         File destGenesisFolderFile = new File(destGenesisFolder);
         if (destGenesisFolderFile.exists()) //clean dest genesis folder
             FileUtils.deleteDirectory(destGenesisFolderFile);
@@ -293,7 +299,7 @@ public class PeerService {
     }
 
     private void updateTopologyFile(Path clusterFolder, String adminHost, int adminPort) throws IOException {
-        Path topologyPeer = clusterFolder.resolve(NODE_FOLDER).resolve("topology-peer.json");
+        Path topologyPeer = clusterFolder.resolve(TEMPLATE_FOLDER).resolve("topology-peer.json");
         Map<String, String> values = new HashMap<>();
         values.put("adminNodeHost", adminHost);
         values.put("adminNodePort", String.valueOf(adminPort));
@@ -311,9 +317,14 @@ public class PeerService {
 
     private void updateRunScripts(Path clusterFolder, String nodeName, int port) throws IOException {
         Path destPath = clusterFolder.resolve(NODE_FOLDER);
+        Path templatePath = clusterFolder.resolve(TEMPLATE_FOLDER);
 
         String relayScript = clusterService.getOSSpecificScriptName(NODE_RELAY_SCRIPT);
         String bpScript = clusterService.getOSSpecificScriptName(NODE_BP_SCRIPT);
+
+        Path relayRunScriptTemplate = templatePath.resolve(relayScript);
+        Path bpRunScriptTemplate = templatePath.resolve(bpScript);
+
         Path relayRunScript = destPath.resolve(relayScript);
         Path bpRunScript = destPath.resolve(bpScript);
         int nodePort = port; //Node no = 1..3
@@ -325,12 +336,12 @@ public class PeerService {
 
         //Update relay run script
         try {
-            templateEngine.replaceValues(relayRunScript, values);
+            advancedTemplateEngine.replaceValues(relayRunScriptTemplate, relayRunScript, values);
         } catch (Exception e) {
             throw new IOException(e);
         }
         try {
-            templateEngine.replaceValues(bpRunScript, values);
+            advancedTemplateEngine.replaceValues(bpRunScriptTemplate, bpRunScript, values);
         } catch (Exception e) {
             throw new IOException(e);
         }
