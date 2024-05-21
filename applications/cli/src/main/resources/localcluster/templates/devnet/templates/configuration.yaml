@@ -5,14 +5,14 @@
 
 
 ##### Locations #####
-ByronGenesisFile: ./genesis/byron/genesis.json
-ShelleyGenesisFile: ./genesis/shelley/genesis.json
-AlonzoGenesisFile: ./genesis/shelley/genesis.alonzo.json
-ConwayGenesisFile: ./genesis/shelley/genesis.conway.json
+ByronGenesisFile: ./genesis/byron-genesis.json
+ShelleyGenesisFile: ./genesis/shelley-genesis.json
+AlonzoGenesisFile: ./genesis/alonzo-genesis.json
+ConwayGenesisFile: ./genesis/conway-genesis.json
 
 SocketPath: db/node.socket
-EnableP2P: ${enableP2P}
-PeerSharing: ${peerSharing}
+EnableP2P: {{enableP2P}}
+PeerSharing: {{peerSharing}}
 
 ##### Blockfetch Protocol
 #PBftSignatureThreshold: 0.6
@@ -57,6 +57,9 @@ TestAllegraHardForkAtEpoch: 0
 TestMaryHardForkAtEpoch: 0
 TestAlonzoHardForkAtEpoch: 0
 TestBabbageHardForkAtEpoch: 0
+{{#conway_era}}
+TestConwayHardForkAtEpoch: 0
+{{/conway_era}}
 
 ExperimentalHardForksEnabled: true
 ExperimentalProtocolsEnabled: true
@@ -100,7 +103,7 @@ defaultBackends:
 # http://localhost:12789/metrics
 #hasPrometheus:
 #   - "127.0.0.1"
-#   - ${prometheusPort}
+#   - {{prometheusPort}}
 
 # To enable the legacy 'TraceForwarder' backend, uncomment the following setting. Log
 # items are then forwarded based on an entry in 'mapBackends' to a separate
