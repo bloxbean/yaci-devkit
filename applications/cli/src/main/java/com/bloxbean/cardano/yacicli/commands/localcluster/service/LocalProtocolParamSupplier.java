@@ -25,6 +25,7 @@ import java.util.Map;
 public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
     public static final String PLUTUS_V_1 = "PlutusV1";
     public static final String PLUTUS_V_2 = "PlutusV2";
+    public static final String PLUTUS_V_3 = "PlutusV3";
     private LocalStateQueryClient localStateQueryClient;
 
     private Era era = Era.Babbage;
@@ -77,10 +78,17 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
                 = cborToCostModel(protocolParamUpdate.getCostModels().get(0), PlutusOps.getOperations(1));
         Map<String, Long> plutusV2CostModel
                 = cborToCostModel(protocolParamUpdate.getCostModels().get(1), PlutusOps.getOperations(2));
+        Map<String, Long> plutusV3CostModel = null;
+//        if (era == Era.Conway) { //TODO -- Uncomment for 8.11.0 and later
+//            plutusV3CostModel = cborToCostModel(protocolParamUpdate.getCostModels().get(2), EMPTY_LIST);
+//        }
 
         LinkedHashMap<String, Map<String, Long>> costModels = new LinkedHashMap<>();
         costModels.put("PlutusV1", plutusV1CostModel);
         costModels.put("PlutusV2", plutusV2CostModel);
+        if (plutusV3CostModel != null)
+            costModels.put("PlutusV3", plutusV3CostModel);
+
         protocolParams.setCostModels(costModels);
 
         protocolParams.setPriceMem(protocolParamUpdate.getPriceMem());

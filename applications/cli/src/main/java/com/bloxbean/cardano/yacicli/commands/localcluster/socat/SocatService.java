@@ -77,7 +77,7 @@ public class SocatService {
     private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
         boolean socatPortAvailable = PortUtil.isPortAvailable(clusterInfo.getSocatPort());
         if (!socatPortAvailable) {
-            writer.accept(error("Socat Port " + clusterInfo.getOgmiosPort() + " is not available. Please check if the port is already in use."));
+            writer.accept(error("Socat Port " + clusterInfo.getSocatPort() + " is not available. Please check if the port is already in use."));
         }
 
         if (!socatPortAvailable)

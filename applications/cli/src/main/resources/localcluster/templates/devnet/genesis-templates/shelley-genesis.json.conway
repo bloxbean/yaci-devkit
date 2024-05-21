@@ -1,6 +1,6 @@
 {
-  "activeSlotsCoeff": ${activeSlotsCoeff},
-  "epochLength": ${epochLength},
+  "activeSlotsCoeff": {{activeSlotsCoeff}},
+  "epochLength": {{epochLength}},
   "genDelegs": {
     "337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e": {
       "delegate": "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
@@ -41,10 +41,10 @@
     "00c5c4ca287f3b53948b5468e5e23b1c87fe61ce52c0d9afd65d070795038751a619d463e91eaed0a774ebdb2f8e12a01a378a153bc3627323": 10000000000,
     "00ef198fb7c35e1968308a0b75cfee54a46e13e86dd3354283300831d624165c357b5a0413906a0bfea8ba57587331f0836a186d632ed041b8": 10000000000
   },
-  "maxKESEvolutions": ${maxKESEvolutions},
+  "maxKESEvolutions": {{maxKESEvolutions}},
   "maxLovelaceSupply": 45000000000000000,
-  "networkId": "${networkId}",
-  "networkMagic": ${protocolMagic},
+  "networkId": "{{networkId}}",
+  "networkMagic": {{protocolMagic}},
   "protocolParams": {
     "a0": 0,
     "decentralisationParam": 0,
@@ -69,9 +69,9 @@
     "rho": 0.003,
     "tau": 0.20
   },
-  "securityParam": ${securityParam},
-  "slotLength": ${slotLength},
-  "slotsPerKESPeriod": ${slotsPerKESPeriod},
+  "securityParam": {{securityParam}},
+  "slotLength": {{slotLength}},
+  "slotsPerKESPeriod": {{slotsPerKESPeriod}},
   "staking": {
   "pools": {
     "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57": {
@@ -86,7 +86,7 @@
           "credential": {
             "key hash": "11a14edf73b08a0a27cb98b2c57eb37c780df18fcfcf6785ed5df84a"
           },
-          "network": "${networkId}"
+          "network": "{{networkId}}"
          },
           "vrf": "c2b62ffa92ad18ffc117ea3abeb161a68885000a466f9c71db5e4731d6630061"
       }
@@ -96,5 +96,5 @@
     }
   },
   "systemStart": "2022-09-15T04:09:11.577484Z",
-  "updateQuorum": ${updateQuorum}
+  "updateQuorum": {{updateQuorum}}
 }

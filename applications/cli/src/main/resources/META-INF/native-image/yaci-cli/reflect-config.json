@@ -7,6 +7,42 @@
     "allPublicConstructors" : true,
     "allPublicMethods" : true,
     "allPublicFields" : true
+  },
+  {
+    "name":"io.netty.channel.kqueue.KQueueDomainSocketChannel",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors" : true,
+    "allPublicMethods" : true,
+    "allPublicFields" : true
+  },
+  {
+    "name":"com.bloxbean.cardano.client.crypto.SecretKey",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setCborHex","parameterTypes":["java.lang.String"] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setType","parameterTypes":["java.lang.String"] }]
+  },
+  {
+    "name":"com.bloxbean.cardano.client.crypto.SecretKey",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setCborHex","parameterTypes":["java.lang.String"] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setType","parameterTypes":["java.lang.String"] }]
+  },
+  {
+    "name":"com.bloxbean.cardano.client.crypto.VerificationKey",
+    "allDeclaredFields":true,
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setCborHex","parameterTypes":["java.lang.String"] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setType","parameterTypes":["java.lang.String"] }]
+  },
+  {
+    "name":"java.util.TreeMap",
+    "queryAllDeclaredMethods":true,
+    "queryAllDeclaredConstructors":true,
+    "methods":[{"name":"<init>","parameterTypes":[] }]
   }
 ]
 

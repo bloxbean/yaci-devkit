@@ -1,7 +1,7 @@
 plugins {
     id 'org.springframework.boot' version '3.2.5'
     id 'io.spring.dependency-management' version '1.1.4'
-    id 'org.graalvm.buildtools.native' version '0.9.18'
+    id 'org.graalvm.buildtools.native' version '0.10.2'
 	id 'java'
 	id 'signing'
     id "com.gorylenko.gradle-git-properties" version "2.4.1"
@@ -35,8 +35,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
+    implementation 'org.springframework.boot:spring-boot-starter-mustache'
 
-	implementation('com.bloxbean.cardano:yaci:0.3.0-beta12') {
+	implementation('com.bloxbean.cardano:yaci:0.3.0-beta14') {
         exclude group: 'com.bloxbean.cardano', module: 'cardano-client-core'
     }
 	implementation 'com.bloxbean.cardano:cardano-client-lib:0.5.1'

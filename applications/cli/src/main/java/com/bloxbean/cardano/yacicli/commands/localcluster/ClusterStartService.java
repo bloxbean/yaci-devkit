@@ -60,7 +60,7 @@ public class ClusterStartService {
             if (clusterInfo.isMasterNode() && checkIfFirstRun(clusterFolder))
                 setupFirstRun(clusterInfo, clusterFolder, writer);
 
-            Process nodeProcess = startNode(clusterFolder, clusterInfo, 1, writer);
+            Process nodeProcess = startNode(clusterFolder, clusterInfo, writer);
             if (nodeProcess == null) {
                 writer.accept(error("Node process could not be started."));
                 return false;
@@ -90,6 +90,17 @@ public class ClusterStartService {
 
     private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
         boolean nodePortAvailable = PortUtil.isPortAvailable(clusterInfo.getNodePort());
+        if (!nodePortAvailable) {
+            writer.accept(info("Node Port %s is not available. Waiting for 2 seconds and try again", clusterInfo.getNodePort()));
+            //Wait for 2 seconds and try
+            try {
+                Thread.sleep(1000);
+                nodePortAvailable = PortUtil.isPortAvailable(clusterInfo.getNodePort());
+            } catch (InterruptedException e) {
+                log.error("Error waiting for port availability", e);
+            }
+        }
+
         if (!nodePortAvailable) {
             writer.accept(error("Node Port " + clusterInfo.getNodePort() + " is not available. Please check if the port is already in use."));
         }
@@ -165,11 +176,11 @@ public class ClusterStartService {
         }
     }
 
-    private Process startNode(Path clusterFolder, ClusterInfo clusterInfo, int nodeNo, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startNode(Path clusterFolder, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         String clusterFolderPath = clusterFolder.toAbsolutePath().toString();
         String startScript = null;
         if (clusterInfo.isMasterNode()) {
-            startScript = NODE_FOLDER_PREFIX + nodeNo;
+            startScript = NODE_FOLDER_PREFIX;
         } else if (clusterInfo.isBlockProducer()) {
             startScript = NODE_BP_SCRIPT;
         } else {
@@ -183,14 +194,14 @@ public class ClusterStartService {
             builder.command("sh", startScript + ".sh");
         }
 
-        File nodeStartDir = new File(clusterFolderPath, NODE_FOLDER_PREFIX + nodeNo);
+        File nodeStartDir = new File(clusterFolderPath, NODE_FOLDER_PREFIX);
         builder.directory(nodeStartDir);
         Process process = builder.start();
 
         writer.accept(success("Starting node from directory : " + nodeStartDir.getAbsolutePath()));
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
-                    logs.add(String.format("[Node: %s] ", nodeNo) + line);
+                    logs.add(String.format("[Node] ") + line);
                     //writeLn("[Node: %s] %s", nodeNo, line);
                 });
         Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
@@ -230,8 +241,8 @@ public class ClusterStartService {
     }
 
     private boolean setupFirstRun(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
-        Path byronGenesis = clusterFolder.resolve("genesis/byron/genesis.json");
-        Path shelleyGenesis = clusterFolder.resolve("genesis/shelley/genesis.json");
+        Path byronGenesis = clusterFolder.resolve("node").resolve("genesis").resolve("byron-genesis.json");
+        Path shelleyGenesis = clusterFolder.resolve("node").resolve("genesis").resolve("shelley-genesis.json");
 
         if (!Files.exists(byronGenesis)) {
             writer.accept(error("Byron genesis file is not found"));
@@ -268,7 +279,7 @@ public class ClusterStartService {
     }
 
     public boolean checkIfFirstRun(Path clusterFolder) {
-        String node1Folder = NODE_FOLDER_PREFIX + 1;
+        String node1Folder = NODE_FOLDER_PREFIX;
         Path db = clusterFolder.resolve(node1Folder).resolve("db");
         if (Files.exists(db))
             return false;

@@ -15,7 +15,7 @@ case $1 in
 esac
 
 
-version=v6.2.0
+version=v6.3.0
 file=ogmios-${version}-${SUFFIX}-linux.zip
 wget https://github.com/CardanoSolutions/ogmios/releases/download/${version}/$file
 

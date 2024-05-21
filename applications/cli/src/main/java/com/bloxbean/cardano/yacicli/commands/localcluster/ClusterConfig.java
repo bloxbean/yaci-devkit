@@ -15,7 +15,7 @@ import static com.bloxbean.cardano.yacicli.YaciCliConfig.YACI_CLI_HOME;
 @AllArgsConstructor
 public class ClusterConfig {
     public final static String CLUSTER_INFO_FILE = "cluster-info.json";
-    public final static String NODE_FOLDER_PREFIX = "node-spo";
+    public final static String NODE_FOLDER_PREFIX = "node";
     public final static String NODE_RELAY_SCRIPT = "node-relay";
     public final static String NODE_BP_SCRIPT = "node-bp";
 

@@ -1,6 +1,7 @@
 VERSION 0.8
 
 ARG --global ALL_BUILD_TARGETS="cli viewer"
+ARG --global ALL_BUILD_TARGETS_NATIVE="cli-native viewer"
 ARG --global DOCKER_IMAGE_PREFIX="yaci"
 ARG --global tag="dev"
 ARG --global REGISTRY_ORG = "bloxbean"
@@ -8,6 +9,13 @@ ARG --global REGISTRY_ORG = "bloxbean"
 build:
   LOCALLY
   FOR image_target IN $ALL_BUILD_TARGETS
+    BUILD +$image_target
+  END
+  BUILD +zip
+
+build-native:
+  LOCALLY
+  FOR image_target IN $ALL_BUILD_TARGETS_NATIVE
     BUILD +$image_target
   END
   BUILD +zip
@@ -24,6 +32,13 @@ cli:
   ARG EARTHLY_GIT_SHORT_HASH
   FROM DOCKERFILE --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
   SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-${EARTHLY_TARGET_NAME}:${tag}
+
+cli-native:
+  ARG EARTHLY_TARGET_NAME
+  ARG EARTHLY_GIT_SHORT_HASH
+  FROM DOCKERFILE -f applications/cli/Dockerfile_native --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
+  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-cli:${tag}
+
 viewer:
   ARG EARTHLY_TARGET_NAME
   FROM DOCKERFILE applications/${EARTHLY_TARGET_NAME}/.
