@@ -58,8 +58,8 @@ public class ClusterCommands {
         }
     }
 
-    @ShellMethod(value = "Enter local devnet node mode. Use `node` command. Deprecated: `cluster`", key = {"node", "cluster"})
-    public void startLocalClusterContext(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Cluster Name") String clusterName) {
+    @ShellMethod(value = "Enter local devnet node mode. Use `node` or `devnet` command.", key = {"node", "devnet"})
+    public void startLocalClusterContext(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Node Name") String clusterName) {
         try {
             if (CommandContext.INSTANCE.getCurrentMode() == CommandContext.Mode.LOCAL_CLUSTER) {
                 localClusterService.stopCluster(msg -> writeLn(msg));
