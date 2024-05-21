@@ -7,6 +7,7 @@ import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
+import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
 import com.bloxbean.cardano.yacicli.util.ZipUtil;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +40,7 @@ import static java.nio.file.attribute.PosixFilePermission.*;
 @Slf4j
 public class ClusterService {
 
-    public static final String BABBAGE_TEMPLATE_PATH = "localcluster/templates/babbage";
+    public static final String BABBAGE_TEMPLATE_PATH = "localcluster/templates/devnet";
     public static final String CLASSPATH_LOCALCLUSTER_ZIP = "classpath:localcluster.zip";
     private ClusterConfig clusterConfig;
     private ClusterStartService clusterStartService;
@@ -50,6 +51,9 @@ public class ClusterService {
 
     @Autowired
     TemplateEngine templateEngine;
+
+    @Autowired
+    AdvancedTemplateEngine templateEngineHelper;
 
     @Autowired
     ObjectMapper objectMapper;
@@ -147,17 +151,15 @@ public class ClusterService {
     public void deleteClusterDataFolder(String clusterName, Consumer<String> writer) throws IOException {
         Path clusterFolder = getClusterFolder(clusterName);
         if (Files.exists(clusterFolder)) {
-            for (int i=0; i<1; i++) {
-                String nodeName = NODE_FOLDER_PREFIX + (i+1);
-                Path dbFolder = clusterFolder.resolve(nodeName).resolve("db");
-                Path logsFolder = clusterFolder.resolve(nodeName).resolve("logs");
-                if (dbFolder.toFile().exists())
-                    FileUtils.deleteDirectory(dbFolder.toFile());
-                if (logsFolder.toFile().exists())
-                    FileUtils.deleteDirectory(logsFolder.toFile());
-                if (!dbFolder.toFile().exists())
+            String nodeName = NODE_FOLDER_PREFIX;
+            Path dbFolder = clusterFolder.resolve(nodeName).resolve("db");
+            Path logsFolder = clusterFolder.resolve(nodeName).resolve("logs");
+            if (dbFolder.toFile().exists())
+                FileUtils.deleteDirectory(dbFolder.toFile());
+            if (logsFolder.toFile().exists())
+                FileUtils.deleteDirectory(logsFolder.toFile());
+            if (!dbFolder.toFile().exists())
                 writer.accept(success("Cluster db and logs folders deleted. %s, %s", clusterName, nodeName));
-            }
 
         } else {
             writer.accept(error("Cluster folder not found : %s", clusterFolder));
@@ -171,10 +173,6 @@ public class ClusterService {
     public Path getPoolKeys(String clusterName) {
         return Path.of(clusterConfig.getPoolKeysHome(), clusterName);
     }
-
-//    public boolean createMasterNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, Consumer<String> writer) throws IOException {
-//        return createNodeClusterFolder(clusterName, clusterInfo, overwrite, writer);
-//    }
 
     public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
@@ -220,7 +218,7 @@ public class ClusterService {
 
             double activeCoeff = clusterInfo.getSlotLength() / clusterInfo.getBlockTime();
             //Update configuration
-            updatePorts(destPath, clusterInfo.getNodePort(), 1);
+            updatePorts(destPath, clusterInfo.getNodePort());
 
             //Update genesis
             updateGenesis(destPath, clusterInfo.getEra(), clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
@@ -263,22 +261,27 @@ public class ClusterService {
     }
 
     private void updateGenesis(Path clusterFolder, Era era, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
+
         Path srcShelleyGenesisFile = null;
         Path srcByronGenesisFile = null;
         Path srcAlonzoGenesisFile = null;
+        Path srcConwayGenesisFile = null;
         if (era == Era.Babbage) {
-            srcByronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
-            srcShelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
-            srcAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json");
+            srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
+            srcShelleyGenesisFile = clusterFolder.resolve("genesis-templates").resolve("shelley-genesis.json");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json");
+            srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json");
         } else if (era == Era.Conway) {
-            srcByronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
-            srcShelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json.conway");
-            srcAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json.conway");
+            srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
+            srcShelleyGenesisFile = clusterFolder.resolve("genesis-templates").resolve("shelley-genesis.json");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json.conway");
+            srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json.conway");
         }
 
-        Path destByronGenesisFile = clusterFolder.resolve("genesis").resolve("byron").resolve("genesis.json");
-        Path destShelleyGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.json");
-        Path destAlonzoGenesisFile = clusterFolder.resolve("genesis").resolve("shelley").resolve("genesis.alonzo.json");
+        Path destByronGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("byron-genesis.json");
+        Path destShelleyGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("shelley-genesis.json");
+        Path destAlonzoGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("alonzo-genesis.json");
+        Path destConwayGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("conway-genesis.json");
 
         Map<String, String> values = new HashMap<>();
         values.put("networkId", networkId);
@@ -294,9 +297,10 @@ public class ClusterService {
 
         //Update Genesis files
         try {
-            templateEngine.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
-            templateEngine.replaceValues(srcShelleyGenesisFile, destShelleyGenesisFile, values);
-            templateEngine.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, new HashMap<>());
+            templateEngineHelper.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
+            templateEngineHelper.replaceValues(srcShelleyGenesisFile, destShelleyGenesisFile, values);
+            templateEngineHelper.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, new HashMap<>());
+            templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, new HashMap<>());
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -304,11 +308,11 @@ public class ClusterService {
         writer.accept(success("Slot length updated in genesis.json"));
     }
 
-    private void updatePorts(Path destPath, int port, int nodeNo) throws IOException {
-        String nodeName = NODE_FOLDER_PREFIX + nodeNo;
+    private void updatePorts(Path destPath, int port) throws IOException {
+        String nodeName = NODE_FOLDER_PREFIX;
         String nodeScript =  getOSSpecificScriptName(nodeName);
         Path nodeRunScript = destPath.resolve(nodeName).resolve(nodeScript);
-        int nodePort = port; //Node no = 1..3
+        int nodePort = port;
 
         Map<String, String> values = new HashMap<>();
         values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
@@ -338,26 +342,26 @@ public class ClusterService {
     }
 
     private void updateConfiguration(Path clusterFolder, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException {
-        Path configurationPath = null;
+        Path configurationPath = clusterFolder.resolve("templates").resolve("configuration.yaml");
+//        if (clusterInfo.getEra() == null || clusterInfo.getEra() == Era.Babbage) {
+//            configurationPath = clusterFolder.resolve("configuration.yaml");
+//        } else if (clusterInfo.getEra() == Era.Conway) {
+//            writer.accept(success("Updating configuration.yaml for conway era"));
+//            configurationPath = clusterFolder.resolve("configuration.yaml.conway");
+//        }
 
-        if (clusterInfo.getEra() == null || clusterInfo.getEra() == Era.Babbage) {
-            configurationPath = clusterFolder.resolve("configuration.yaml");
-        } else if (clusterInfo.getEra() == Era.Conway) {
-            writer.accept(success("Updating configuration.yaml for conway era"));
-            configurationPath = clusterFolder.resolve("configuration.yaml.conway");
-        }
-
-        Path destConfigPath = clusterFolder.resolve("configuration.yaml");
+        Path destConfigPath = clusterFolder.resolve("node").resolve("configuration.yaml");
         boolean enableP2P = clusterInfo.isP2pEnabled();
 
-        Map<String, String> values = new HashMap<>();
+        Map values = new HashMap<>();
         values.put("enableP2P", String.valueOf(enableP2P));
         values.put("peerSharing", peerSharing);
         values.put("prometheusPort", String.valueOf(clusterInfo.getPrometheusPort()));
+        values.put("conway_era", clusterInfo.getEra() == Era.Conway ? Boolean.TRUE : Boolean.FALSE);
 
         //Update Configuration file
         try {
-            templateEngine.replaceValues(configurationPath, destConfigPath, values);
+            templateEngineHelper.replaceValues(configurationPath, destConfigPath, values);
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -384,7 +388,7 @@ public class ClusterService {
             throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
         }
 
-        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX + 1).resolve("node.sock").toString();
+        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX).resolve("node.sock").toString();
         clusterInfo.setSocketPath(socketPath);
 
         String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
