@@ -12,4 +12,4 @@ then
     CMD="docker compose"
 fi
 
-$CMD --env-file $ENV_FILE --env-file $VERSION_FILE exec yaci-cli java -jar yaci-cli.jar $*
+$CMD --env-file $ENV_FILE --env-file $VERSION_FILE exec yaci-cli /app/yaci-cli/yaci-cli $*
