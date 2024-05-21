@@ -139,7 +139,7 @@ public class PeerService {
             return false;
         }
 
-        String downloadUrl = adminUrl + "/local-cluster/api/admin/clusters/default/download";
+        String downloadUrl = adminUrl + "/local-cluster/api/admin/devnet/download";
         File downloadFolder = ClusterFileUtil.downloadClusterFiles(downloadUrl);
         if (downloadFolder == null) {
             writeLn(error("Error downloading cluster files from admin node"));

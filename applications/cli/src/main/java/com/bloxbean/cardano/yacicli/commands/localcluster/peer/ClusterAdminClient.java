@@ -21,7 +21,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.warn;
 public class ClusterAdminClient {
 
     public static boolean isBootstrapNodeInitialized(String adminUrl) {
-        String apiUrl = adminUrl + "/local-cluster/api/admin/clusters/default/status";
+        String apiUrl = adminUrl + "/local-cluster/api/admin/devnet/status";
         // Create a RestTemplate instance
         RestTemplate restTemplate = new RestTemplate();
 
@@ -42,7 +42,7 @@ public class ClusterAdminClient {
     }
 
     public static ClusterInfo getClusterInfo(String adminUrl) {
-        String apiUrl = adminUrl + "/local-cluster/api/admin/clusters/default";
+        String apiUrl = adminUrl + "/local-cluster/api/admin/devnet";
         // Create a RestTemplate instance
         RestTemplate restTemplate = new RestTemplate();
 
@@ -60,7 +60,7 @@ public class ClusterAdminClient {
     }
 
     public static int getKesPeriod(String adminUrl) {
-        String apiUrl = adminUrl + "/local-cluster/api/admin/clusters/default/kes-period";
+        String apiUrl = adminUrl + "/local-cluster/api/admin/devnet/kes-period";
         // Create a RestTemplate instance
         RestTemplate restTemplate = new RestTemplate();
 
