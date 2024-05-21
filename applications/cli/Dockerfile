@@ -1,18 +1,6 @@
-#FROM eclipse-temurin:21 as build
-FROM ubuntu:22.04 as build
+FROM eclipse-temurin:21 as build
 ARG APP_VERSION
 ARG COMMIT_ID
-
-ARG TARGETOS
-ARG TARGETARCH
-
-COPY docker/install-build-packages.sh .
-RUN chmod -R 755 install-build-packages.sh
-RUN ./install-build-packages.sh
-
-RUN curl -s "https://get.sdkman.io" | bash
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk version && sdk install java 23.1.3.r21-nik"
-ENV JAVA_HOME="/root/.sdkman/candidates/java/current"
 
 WORKDIR /app
 
@@ -21,7 +9,7 @@ RUN echo git.commit.id.abbrev=${COMMIT_ID} > src/main/resources/git.properties
 
 RUN cat src/main/resources/git.properties
 
-RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build
 
 FROM ubuntu:22.04
 ENV JAVA_HOME=/opt/java/openjdk
@@ -68,8 +56,7 @@ COPY docker/store-application.properties /app/store/config/application.propertie
 RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-all-${STORE_VERSION}.jar -O /app/store/yaci-store.jar
 
 WORKDIR /app/yaci-cli
-#COPY --from=build /app/build/libs/yaci-cli-${APP_VERSION}.jar /app/yaci-cli.jar
-COPY --from=build /app/build/native/nativeCompile/yaci-cli /app/yaci-cli
+COPY --from=build /app/build/libs/yaci-cli-${APP_VERSION}.jar /app/yaci-cli.jar
 
 RUN mkdir -p /app/config
 COPY docker/application.properties /app/config/
@@ -86,4 +73,4 @@ EXPOSE 8080
 EXPOSE 1337
 EXPOSE 1442
 
-ENTRYPOINT ["/app/yaci-cli"]
+ENTRYPOINT ["java", "-jar","/app/yaci-cli.jar"]
