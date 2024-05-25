@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        platform: [ "linux/amd64", "linux/arm64" ]
+        platform: ["linux/amd64", "linux/arm64"]
     steps:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
@@ -20,12 +20,10 @@ jobs:
           java-version: '21'
           distribution: 'liberica'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set CLI folder as working dir
-        working-directory: ./application/cli
-      - name: 'Get Tag from version file'
+      - name: Get Tag from version file
         run: |
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Build native image
-        run: |
-          ./gradlew --no-daemon -i -Pversion=${tag} clean build nativeCompile
+        run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
+        working-directory: ./application/cli
