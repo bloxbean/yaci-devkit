@@ -20,12 +20,6 @@ jobs:
           java-version: '21'
           distribution: 'liberica'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Example step
-        run: |
-          echo "GRAALVM_HOME: $GRAALVM_HOME"
-          echo "JAVA_HOME: $JAVA_HOME"
-          java --version
-          native-image --version
       - name: Set CLI folder as working dir
         working-directory: ./application/cli
       - name: 'Get Tag from version file'
