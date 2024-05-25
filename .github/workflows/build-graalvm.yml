@@ -34,7 +34,7 @@ jobs:
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
-        run: earthly +cli-native --tag ${{ env.TAG }}
+        run: earthly +build-native-all-platforms --tag ${{ env.TAG }}
 #      - name: Build native image
 #        run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
 #        working-directory: ./applications/cli
