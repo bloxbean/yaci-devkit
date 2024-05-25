@@ -39,8 +39,8 @@ cli-native:
   ARG EARTHLY_GIT_SHORT_HASH
   WORKDIR applications/cli
   RUN ./gradlew --no-daemon -i -Pversion=${tag} clean build nativeCompile
-  #FROM DOCKERFILE -f applications/cli/Dockerfile_native --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
-  #SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-cli:${tag}
+  FROM DOCKERFILE -f applications/cli/Dockerfile_native --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
+  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-cli-native:${tag}
 
 viewer:
   ARG EARTHLY_TARGET_NAME
