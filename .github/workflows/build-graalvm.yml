@@ -3,7 +3,9 @@ name: Clean, Build Native Image
 on:
   push:
     branches: graal_image
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   buildAndPush:
