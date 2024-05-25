@@ -26,4 +26,4 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Build native image
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
-        working-directory: ./application/cli
+        working-directory: ./applications/cli
