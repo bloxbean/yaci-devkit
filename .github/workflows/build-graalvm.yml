@@ -27,3 +27,8 @@ jobs:
       - name: Build native image
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
         working-directory: ./applications/cli
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: yaci-cli-${{ matrix.platform }}
+            path: ./applications/cli/build/native/nativeCompile/yaci-cli
