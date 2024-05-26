@@ -39,12 +39,12 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
         run: earthly --push +build-all-platforms --tag ${{ env.TAG }} --build_type=native-ci
-#      - name: Release
-#        uses: softprops/action-gh-release@v1
-#        if: startsWith(github.ref, 'refs/tags/')
-#        with:
-#          files: |
-#            build/yaci-devkit-${{env.TAG}}.zip
-#          prerelease: true
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            build/yaci-devkit-${{env.TAG}}.zip
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

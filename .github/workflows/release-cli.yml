@@ -3,7 +3,7 @@ name: Build and Release Yaci CLI Zip
 on:
   push:
     tags:
-      - 'rci*'
+      - 'ci*'
 
 jobs:
   buildAndPush:
@@ -39,17 +39,12 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
         run: earthly --push +cli-zip --tag ${{ env.TAG }}
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-            #name: yaci-cli-${{ matrix.platform }}
-            path: ./applications/cli/build/yaci-cli-*.zip
-#      - name: Release
-#        uses: softprops/action-gh-release@v1
-#        if: startsWith(github.ref, 'refs/tags/')
-#        with:
-#          files: |
-#            build/yaci-devkit-${{env.TAG}}.zip
-#          prerelease: true
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            applications/cli/build/yaci-cli-*.zip
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
