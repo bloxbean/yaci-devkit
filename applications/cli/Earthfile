@@ -42,6 +42,10 @@ cli-native-ci:
   SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
   SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
 
+java-setup:
+    FROM eclipse-temurin:21
+    SAVE ARTIFACT /opt/java/openjdk openjdk
+
 docker-build:
     FROM ubuntu:22.04
     ENV JAVA_HOME=/opt/java/openjdk
@@ -54,14 +58,12 @@ docker-build:
     ARG REGISTRY_ORG
     ARG COMMIT_ID
 
+    COPY --dir +java-setup/openjdk /opt/java/
+    ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
     COPY docker/install-packages.sh .
     RUN chmod -R 755 install-packages.sh
     RUN ./install-packages.sh
-
-    RUN curl -s "https://get.sdkman.io" | bash
-    RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk version && sdk install java 21.0.3-librca"
-    ENV JAVA_HOME="/root/.sdkman/candidates/java/current"
-    ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
     RUN groupadd -r app && useradd --no-log-init -r -g app app
 
