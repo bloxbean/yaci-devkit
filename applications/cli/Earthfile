@@ -13,7 +13,7 @@ cli-jar:
   RUN echo "Tag value is ${tag}"
   RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build
   RUN ls build/libs
-  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli-${APP_VERSION}.jar
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
 
 cli-native:
   ARG EARTHLY_TARGET_NAME
@@ -30,7 +30,7 @@ cli-native:
   RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
 
   SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
-  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli-${APP_VERSION}.jar
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
 
 cli-native-ci:
   LOCALLY
@@ -40,7 +40,7 @@ cli-native-ci:
   RUN ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
 
   SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
-  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli-${APP_VERSION}.jar
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
 
 docker-build:
     FROM ubuntu:22.04
@@ -97,13 +97,12 @@ docker-build:
 
     RUN echo "Build type: $BUILD_TYPE"
     IF [ "$BUILD_TYPE" = "native" ]
-    COPY (+cli-native/yaci-cli --APP_VERSION=${APP_VERSION}) /app/yaci-cli
+    COPY (+cli-native/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
     ELSE IF [ "$BUILD_TYPE" = "native-ci" ]
-    COPY (+cli-native-ci/yaci-cli --APP_VERSION=${APP_VERSION}) /app/yaci-cli
+    COPY (+cli-native-ci/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
     ELSE
+    COPY (+cli-jar/yaci-cli.jar --APP_VERSION=${APP_VERSION}) /app/yaci-cli.jar
     END
-
-    COPY (+cli-jar/yaci-cli-${APP_VERSION}.jar --APP_VERSION=${APP_VERSION}) /app/yaci-cli.jar
 
     RUN mkdir -p /app/config
     COPY docker/application.properties /app/config/
