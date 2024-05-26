@@ -18,7 +18,9 @@ apt-get -y upgrade
 
 # Install a new package, without unnecessary recommended packages:
 apt-get -y install --no-install-recommends wget
+apt-get -y install --no-install-recommends curl
 apt-get -y install --no-install-recommends unzip
+apt-get -y install --no-install-recommends zip
 apt-get -y install --no-install-recommends zstd
 apt-get -y install --no-install-recommends git
 apt-get -y install --reinstall ca-certificates

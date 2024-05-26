@@ -1,59 +1,28 @@
 VERSION 0.8
 
-#ARG --global ALL_BUILD_TARGETS="cli viewer"
-#ARG --global ALL_BUILD_TARGETS_NATIVE="cli-native viewer"
-#ARG --global ALL_BUILD_TARGETS_NATIVE_LOCAL="cli-native-local viewer"
 ARG --global DOCKER_IMAGE_PREFIX="yaci"
 ARG --global tag="dev"
 ARG --global local="true"
 ARG --global REGISTRY_ORG = "bloxbean"
+ARG --global build_type="native"
 
 build:
   LOCALLY
-  BUILD +cli
+  BUILD +cli-docker
   BUILD +viewer
   BUILD +zip
 
-build-native-all-platforms:
+build-all-platforms:
   LOCALLY
-  BUILD --platform=linux/amd64 --platform=linux/arm64  +cli-native-local
+  BUILD --platform=linux/amd64 --platform=linux/arm64  +cli-docker
   BUILD --platform=linux/amd64 --platform=linux/arm64  +viewer
   BUILD +zip
 
-build-native:
-  BUILD +cli-native
-  BUILD +viewer
-  BUILD +zip
-
-build-java-all-platforms:
-  LOCALLY
-  BUILD --platform=linux/amd64 --platform=linux/arm64 +cli
-  BUILD --platform=linux/amd64 --platform=linux/arm64 +viewer
-  BUILD +zip
-
-cli:
+cli-docker:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
-  FROM DOCKERFILE --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
-  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-${EARTHLY_TARGET_NAME}:${tag}
 
-cli-native-local:
-  LOCALLY
-  ARG EARTHLY_TARGET_NAME
-  ARG EARTHLY_GIT_SHORT_HASH
-  WORKDIR applications/cli
-  RUN ./gradlew --no-daemon -i -Pversion=${tag} clean build nativeCompile
-  FROM DOCKERFILE -f applications/cli/Dockerfile_native --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
-  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-cli-native:${tag}
-
-cli-native:
-  FROM eclipse-temurin:21-jdk-jammy
-  ARG EARTHLY_TARGET_NAME
-  ARG EARTHLY_GIT_SHORT_HASH
-  WORKDIR applications/cli
-  RUN ./gradlew --no-daemon -i -Pversion=${tag} clean build nativeCompile
-  FROM DOCKERFILE -f applications/cli/Dockerfile_native --build-arg  APP_VERSION=${tag} --build-arg COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} applications/cli/.
-  SAVE IMAGE --push ${REGISTRY_ORG}/${DOCKER_IMAGE_PREFIX}-cli-native:${tag}
+  BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH}
 
 viewer:
   ARG EARTHLY_TARGET_NAME
