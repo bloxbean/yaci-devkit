@@ -7,7 +7,7 @@ on:
 
 jobs:
   buildAndPush:
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
 #    strategy:
 #      matrix:
 #        platform: ["linux/amd64", "linux/arm64"]
@@ -28,11 +28,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Docker Login
         run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
-      - uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '21'
-          distribution: 'liberica'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+#      - uses: graalvm/setup-graalvm@v1
+#        with:
+#          java-version: '21'
+#          distribution: 'liberica'
+#          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get Tag from version file
         run: |
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
