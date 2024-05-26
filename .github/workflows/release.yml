@@ -11,6 +11,10 @@ jobs:
     strategy:
       matrix:
         platform: ["linux/amd64", "linux/arm64"]
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DEV_DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DEV_DOCKERHUB_TOKEN }}
+      FORCE_COLOR: 1
     steps:
       - uses: earthly/actions-setup@v1
         with:
@@ -22,6 +26,8 @@ jobs:
           image: tonistiigi/binfmt:latest
           platforms: all
       - uses: actions/checkout@v4
+      - name: Docker Login
+        run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
