@@ -3,7 +3,7 @@ VERSION 0.8
 ARG --global DOCKER_IMAGE_PREFIX="yaci"
 ARG --global tag="dev"
 ARG --global local="true"
-ARG --global REGISTRY_ORG = "bloxbean"
+ARG --global REGISTRY_ORG = "satran004"
 ARG --global build_type="native"
 
 build:
