@@ -1,4 +1,4 @@
-name: Clean, Build Native Image
+name: Build and Release Yaci CLI Zip
 
 on:
   push:
@@ -60,12 +60,6 @@ jobs:
       - uses: earthly/actions-setup@v1
         with:
           version: v0.8.0
-      - name: Set up QEMU
-        id: qemu
-        uses: docker/setup-qemu-action@v1
-        with:
-          image: tonistiigi/binfmt:latest
-          platforms: all
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
         with:

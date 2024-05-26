@@ -1,4 +1,4 @@
-name: Clean, Build Native Image
+name: Build and Release Yaci Devkit
 
 on:
   push:
