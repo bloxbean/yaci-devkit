@@ -43,7 +43,7 @@ cli-native-ci:
   SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
 
 java-setup:
-    FROM eclipse-temurin:21
+    FROM eclipse-temurin:21-jre
     SAVE ARTIFACT /opt/java/openjdk openjdk
 
 docker-build:
@@ -128,3 +128,18 @@ docker-build:
     END
 
     SAVE IMAGE --push ${REGISTRY_ORG}/yaci-cli:${APP_VERSION}
+
+zip:
+    LOCALLY
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG APP_VERSION
+
+    COPY (+cli-native-ci/yaci-cli --APP_VERSION=${APP_VERSION}) build/yaci-cli
+    FROM alpine:3.19.1
+    WORKDIR /app
+    RUN apk add --no-cache zip
+    RUN mkdir -p /app/yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}
+    COPY  build/yaci-cli  /app/yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}/
+    RUN cd /app && zip -r yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}.zip .
+    SAVE ARTIFACT yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}.zip AS LOCAL build/yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}.zip

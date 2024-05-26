@@ -1,0 +1,85 @@
+name: Clean, Build Native Image
+
+on:
+  push:
+    tags:
+      - 'ci*'
+
+jobs:
+  buildAndPush:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        platform: ["linux/amd64", "linux/arm64"]
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DEV_DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DEV_DOCKERHUB_TOKEN }}
+      FORCE_COLOR: 1
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          version: v0.8.0
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+      - uses: actions/checkout@v4
+      - name: Docker Login
+        run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Run build
+        run: earthly --push +cli-zip --tag ${{ env.TAG }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: yaci-cli-${{ matrix.platform }}
+            path: ./application/cli/build/yaci-cli-*.zip
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: |
+#            build/yaci-devkit-${{env.TAG}}.zip
+#          prerelease: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          version: v0.8.0
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+      - uses: actions/checkout@v4
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Run build
+        run: earthly --push +cli-zip --tag ${{ env.TAG }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: yaci-cli-${{ matrix.platform }}
+          path: ./application/cli/build/yaci-cli-*.zip

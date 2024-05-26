@@ -55,6 +55,14 @@ zip:
   RUN cd /app && zip -r yaci-devkit-${tag}.zip .
   SAVE ARTIFACT yaci-devkit-${tag}.zip AS LOCAL build/yaci-devkit-${tag}.zip
 
+cli-zip:
+  LOCALLY
+  ARG EARTHLY_TARGET_NAME
+  ARG EARTHLY_GIT_SHORT_HASH
+  ARG TARGETOS
+  ARG TARGETARCH
+  BUILD ./applications/cli+zip  --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH}
+
 test-nodes-setup:
   LOCALLY
   RUN cd build/ && unzip yaci-devkit-${tag}.zip
