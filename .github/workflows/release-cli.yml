@@ -47,7 +47,7 @@ jobs:
         working-directory: applications/cli
         if: runner.os == 'Linux'
         run: |
-            mv src/main/resources/native-image.properties.ci src/main/resources/native-image.properties
+            cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
