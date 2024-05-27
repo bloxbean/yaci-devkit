@@ -3,14 +3,14 @@ name: Build and Release Yaci Devkit
 on:
   push:
     tags:
-      - 'ci*'
+      - 'v*'
 
 jobs:
   buildAndPush:
     runs-on: self-hosted
     env:
-      DOCKERHUB_USERNAME: ${{ secrets.DEV_DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DEV_DOCKERHUB_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: earthly/actions-setup@v1
@@ -38,12 +38,12 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
         run: earthly --push +build-all-platforms --tag ${{ env.TAG }}
-#      - name: Release
-#        uses: softprops/action-gh-release@v1
-#        if: startsWith(github.ref, 'refs/tags/')
-#        with:
-#          files: |
-#            build/yaci-devkit-${{env.TAG}}.zip
-#          prerelease: true
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            build/yaci-devkit-${{env.TAG}}.zip
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
