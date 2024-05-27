@@ -58,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
-          path: ./application/cli/build/native/nativeCompile/*
+          path: ./applications/cli/build/native/nativeCompile/*
 #      - name: Run build
 #        run: earthly --push +cli-zip --tag ${{ env.TAG }}
 #      - name: Release
