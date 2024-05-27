@@ -3,7 +3,7 @@ name: Build and Release Yaci CLI Zip
 on:
   push:
     tags:
-      - 'native-ci*'
+      - 'ci*'
 
 jobs:
   buildAndPush:
