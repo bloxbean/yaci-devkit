@@ -48,6 +48,11 @@ jobs:
         if: runner.os == 'Linux'
         run: |
             cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
+            echo "os_prefix=ubuntu" >> $GITHUB_ENV
+      - name: MacOS specific env
+        if: runner.os == 'macOS'
+        run: |            
+            echo "os_prefix=macos" >> $GITHUB_ENV
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
@@ -57,7 +62,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
+          name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}
           path: ./applications/cli/build/native/nativeCompile/*
 #      - name: Run build
 #        run: earthly --push +cli-zip --tag ${{ env.TAG }}
