@@ -46,7 +46,7 @@ jobs:
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
       - name: Copy artifacts
         working-directory: applications/cli
-        run: mv build/yaci-cli-dist.zip build/yaci-cli-dist-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}.zip
+        run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}.zip
       - name: Run build
         run: earthly --push +cli-zip --tag ${{ env.TAG }}
       - name: Release
@@ -54,7 +54,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            ./applications/cli/build/yaci-cli-dist.zip build/yaci-cli-dist-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}.zip
+            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

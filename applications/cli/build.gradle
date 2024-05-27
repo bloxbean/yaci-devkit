@@ -101,8 +101,13 @@ gitProperties {
 }
 
 task cliZip(type: Zip) {
-    from 'build/native/nativeCompile'
+    def zipDirName = "yaci-cli-${project.version}"
+    from('build/native/nativeCompile') {
+        into(zipDirName)
+    }
     include 'yaci-cli*'
-    archiveFileName = "yaci-cli-dist.zip"
+    archiveFileName = "yaci-cli-${project.version}.zip"
     destinationDirectory = file("build")
 }
+
+cliZip.dependsOn nativeCompile
