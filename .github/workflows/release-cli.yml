@@ -46,7 +46,7 @@ jobs:
         run: ./gradlew clean build nativeCompile
       - name: Copy artifacts
         working-directory: applications/cli
-        run: mv build/native/nativeCompile/yaci-cli build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ RUNNER_OS }}-${{ RUNNER_ARCH }}
+        run: mv build/native/nativeCompile/yaci-cli build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
 #      - name: Run build
 #        run: earthly --push +cli-zip --tag ${{ env.TAG }}
       - name: Release
@@ -55,7 +55,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ RUNNER_OS }}-${{ RUNNER_ARCH }}
+            build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
