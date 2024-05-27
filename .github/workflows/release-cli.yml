@@ -43,7 +43,7 @@ jobs:
         run: chmod +x gradlew
       - name: Build with Gradle
         working-directory: applications/cli
-        run: ./gradlew clean build nativeCompile
+        run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
       - name: Copy artifacts
         working-directory: applications/cli
         run: mv build/native/nativeCompile/yaci-cli build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
