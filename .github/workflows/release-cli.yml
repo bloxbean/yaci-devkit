@@ -32,8 +32,10 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
+          native-image-musl: 'true'
           distribution: 'liberica'
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
@@ -41,20 +43,30 @@ jobs:
       - name: Grant execute permission for gradlew
         working-directory: applications/cli
         run: chmod +x gradlew
+      - name: Copy CI specific native-image properties
+        working-directory: applications/cli
+        if: runner.os == 'Linux'
+        run: |
+            mv src/main/resources/native-image.properties.ci src/main/resources/native-image.properties
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile
       - name: Copy artifacts
         working-directory: applications/cli
         run: mv build/native/nativeCompile/yaci-cli build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
+          path: ./application/cli/build/native/nativeCompile/*
 #      - name: Run build
 #        run: earthly --push +cli-zip --tag ${{ env.TAG }}
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            ./applications/cli/build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: |
+#            ./applications/cli/build/native/nativeCompile/yaci-cli-${{ env.TAG }}-${{ runner.os }}-${{ runner.arch }}
+#          prerelease: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
