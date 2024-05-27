@@ -1,6 +1,6 @@
 VERSION 0.8
 
-cli-jar:
+cli-java:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
   ARG APP_VERSION
@@ -103,8 +103,11 @@ docker-build:
     ELSE IF [ "$BUILD_TYPE" = "native-ci" ]
     COPY (+cli-native-ci/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
     ELSE
-    COPY (+cli-jar/yaci-cli.jar --APP_VERSION=${APP_VERSION}) /app/yaci-cli.jar
+    COPY (+cli-java/yaci-cli.jar --APP_VERSION=${APP_VERSION}) /app/yaci-cli.jar
     END
+
+    COPY docker/yaci-cli.sh /app/
+    RUN chmod +x /app/yaci-cli.sh
 
     RUN mkdir -p /app/config
     COPY docker/application.properties /app/config/
@@ -121,25 +124,6 @@ docker-build:
     EXPOSE 1337
     EXPOSE 1442
 
-    IF [ "$BUILD_TYPE" = "native" ]
-    ENTRYPOINT ["/app/yaci-cli"]
-    ELSE
-    ENTRYPOINT ["java", "-jar","/app/yaci-cli.jar"]
-    END
+    ENTRYPOINT ["sh", "/app/yaci-cli.sh"]
 
     SAVE IMAGE --push ${REGISTRY_ORG}/yaci-cli:${APP_VERSION}
-
-zip:
-    LOCALLY
-    ARG TARGETOS
-    ARG TARGETARCH
-    ARG APP_VERSION
-
-    COPY (+cli-native-ci/yaci-cli --APP_VERSION=${APP_VERSION}) build/yaci-cli
-    FROM alpine:3.19.1
-    WORKDIR /app
-    RUN apk add --no-cache zip
-    RUN mkdir -p /app/yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}
-    COPY  build/yaci-cli  /app/yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}/
-    RUN cd /app && zip -r yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}.zip .
-    SAVE ARTIFACT yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}.zip AS LOCAL build/yaci-cli-${APP_VERSION}-${TARGETOS}-${TARGETARCH}.zip

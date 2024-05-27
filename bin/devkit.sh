@@ -5,10 +5,6 @@ cd "$(dirname "$0")"
 SCRIPT_DIR="../scripts"
 CONFIG_DIR="../config"
 
-YACI_CLI_SCRIPT="yaci-cli.sh"
-# Uncomment to run the Java version of yaci-cli
-#YACI_CLI_SCRIPT="yaci-cli-java.sh"
-
 # This is the wrapper script for starting and stopping services and running yaci-cli.sh
 
 # Function to display help message
@@ -45,7 +41,7 @@ case $1 in
             echo "start.sh executed successfully. Running yaci-cli.sh..."
             first_arg="$1"
             shift
-            sh $SCRIPT_DIR/$YACI_CLI_SCRIPT "$@"
+            sh $SCRIPT_DIR/yaci-cli.sh "$@"
         else
             echo "start.sh failed. Not executing yaci-cli.sh."
         fi
@@ -56,7 +52,7 @@ case $1 in
         ;;
     ssh)
         echo "ssh to Devkit container..."
-        sh $SCRIPT_DIR//ssh.sh
+        sh $SCRIPT_DIR/ssh.sh
         ;;
     info)
         echo "Info of Devkit"
