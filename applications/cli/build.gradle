@@ -99,3 +99,10 @@ processResources {
 gitProperties {
     failOnNoGitDirectory = false
 }
+
+task cliZip(type: Zip) {
+    from 'build/native/nativeCompile'
+    include 'yaci-cli*'
+    archiveFileName = "yaci-cli-dist.zip"
+    destinationDirectory = file("build")
+}
