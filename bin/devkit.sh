@@ -41,7 +41,7 @@ case $1 in
             echo "start.sh executed successfully. Running yaci-cli.sh..."
             first_arg="$1"
             shift
-            sh $SCRIPT_DIR//yaci-cli.sh "$@"
+            sh $SCRIPT_DIR/yaci-cli.sh "$@"
         else
             echo "start.sh failed. Not executing yaci-cli.sh."
         fi
@@ -52,7 +52,7 @@ case $1 in
         ;;
     ssh)
         echo "ssh to Devkit container..."
-        sh $SCRIPT_DIR//ssh.sh
+        sh $SCRIPT_DIR/ssh.sh
         ;;
     info)
         echo "Info of Devkit"

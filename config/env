@@ -3,6 +3,7 @@ ogmios_enabled=true
 kupo_enabled=false
 
 node=node1
+yaci_cli_mode=native
 
 #######################################################
 # Ports

@@ -1,0 +1,129 @@
+VERSION 0.8
+
+cli-java:
+  ARG EARTHLY_TARGET_NAME
+  ARG EARTHLY_GIT_SHORT_HASH
+  ARG APP_VERSION
+
+  FROM eclipse-temurin:21
+  COPY . .
+  RUN echo git.commit.id.abbrev=${EARTHLY_GIT_SHORT_HASH} > src/main/resources/git.properties
+
+  RUN cat src/main/resources/git.properties
+  RUN echo "Tag value is ${tag}"
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build
+  RUN ls build/libs
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
+
+cli-native:
+  ARG EARTHLY_TARGET_NAME
+  ARG EARTHLY_GIT_SHORT_HASH
+  ARG APP_VERSION
+
+  FROM ghcr.io/graalvm/graalvm-community:21
+  COPY . .
+  RUN echo git.commit.id.abbrev=${EARTHLY_GIT_SHORT_HASH} > src/main/resources/git.properties
+
+  RUN cat src/main/resources/git.properties
+  RUN echo "Tag value is ${tag}"
+
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+
+  SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
+
+cli-native-ci:
+  LOCALLY
+  ARG EARTHLY_TARGET_NAME
+  ARG EARTHLY_GIT_SHORT_HASH
+  ARG APP_VERSION
+  RUN ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+
+  SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
+
+java-setup:
+    FROM eclipse-temurin:21-jre
+    SAVE ARTIFACT /opt/java/openjdk openjdk
+
+docker-build:
+    FROM ubuntu:22.04
+    ENV JAVA_HOME=/opt/java/openjdk
+    ENV STORE_VERSION=0.1.0-rc3
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG BUILD_TYPE
+    ARG APP_VERSION
+    ARG REGISTRY_ORG
+    ARG COMMIT_ID
+
+    COPY --dir +java-setup/openjdk /opt/java/
+    ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+    COPY docker/install-packages.sh .
+    RUN chmod -R 755 install-packages.sh
+    RUN ./install-packages.sh
+
+    RUN groupadd -r app && useradd --no-log-init -r -g app app
+
+    RUN mkdir "/app"
+    RUN chown app:app /app
+
+    #Commented for now
+    #USER app
+
+    WORKDIR /app
+
+    COPY docker/download-$TARGETARCH.sh .
+    RUN sh download-$TARGETARCH.sh
+
+    #Ogmios download
+    COPY docker/download-ogmios.sh .
+    RUN sh download-ogmios.sh $TARGETARCH
+
+    #Kupo download
+    COPY docker/download-kupo.sh .
+    RUN sh download-kupo.sh $TARGETARCH
+
+    #RUN apk --no-cache add curl
+
+    RUN echo "I'm building for $TARGETOS/$TARGETARCH"
+
+    RUN mkdir -p /app/store/config
+    COPY docker/store-application.properties /app/store/config/application.properties
+
+    RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-all-${STORE_VERSION}.jar -O /app/store/yaci-store.jar
+
+    RUN echo ${APP_VERSION} > /app/version
+
+    RUN echo "Build type: $BUILD_TYPE"
+    IF [ "$BUILD_TYPE" = "native" ]
+    COPY (+cli-native/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
+    ELSE IF [ "$BUILD_TYPE" = "native-ci" ]
+    COPY (+cli-native-ci/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
+    ELSE
+    COPY (+cli-java/yaci-cli.jar --APP_VERSION=${APP_VERSION}) /app/yaci-cli.jar
+    END
+
+    COPY docker/yaci-cli.sh /app/
+    RUN chmod +x /app/yaci-cli.sh
+
+    RUN mkdir -p /app/config
+    COPY docker/application.properties /app/config/
+
+    ENV PATH="$PATH:/app/cardano-bin"
+    ENV CARDANO_NODE_SOCKET_PATH=/clusters/nodes/default/node/node.sock
+    ENV PROTOCOL_MAGIC=42
+
+    WORKDIR /app
+    EXPOSE 3001
+    EXPOSE 8090
+    EXPOSE 10000
+    EXPOSE 8080
+    EXPOSE 1337
+    EXPOSE 1442
+
+    ENTRYPOINT ["sh", "/app/yaci-cli.sh"]
+
+    SAVE IMAGE --push ${REGISTRY_ORG}/yaci-cli:${APP_VERSION}
