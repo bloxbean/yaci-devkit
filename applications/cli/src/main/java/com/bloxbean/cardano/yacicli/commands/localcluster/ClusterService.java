@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
@@ -64,24 +65,8 @@ public class ClusterService {
     @Autowired
     private ApplicationEventPublisher publisher;
 
-    @Value("${node.networkId:Testnet}")
-    private String networkId;
-
-    @Value("${node.maxKESEvolutions:60}")
-    private int maxKESEvolutions;
-
-    @Value("${node.securityParam:300}")
-    private int securityParam;
-
-    @Value("${node.slotsPerKESPeriod:129600}")
-    private long slotsPerKESPeriod;
-
-    @Value("${node.updateQuorum:1}")
-    private int updateQuorum;
-
-    @Value("${node.peerSharing:true}")
-    private String peerSharing;
-
+    @Autowired
+    private GenesisConfig genesisConfig;
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -283,24 +268,17 @@ public class ClusterService {
         Path destAlonzoGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("alonzo-genesis.json");
         Path destConwayGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("conway-genesis.json");
 
-        Map<String, String> values = new HashMap<>();
-        values.put("networkId", networkId);
-        values.put("maxKESEvolutions", String.valueOf(maxKESEvolutions));
-        values.put("securityParam", String.valueOf(securityParam));
+        Map values = genesisConfig.getConfigMap();
         values.put("slotLength", String.valueOf(slotLength));
-        values.put("slotsPerKESPeriod", String.valueOf(slotsPerKESPeriod));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
-        values.put("protocolMagic", String.valueOf(protocolMagic));
         values.put("epochLength", String.valueOf(epochLength));
-        values.put("updateQuorum", String.valueOf(updateQuorum));
-
 
         //Update Genesis files
         try {
             templateEngineHelper.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
             templateEngineHelper.replaceValues(srcShelleyGenesisFile, destShelleyGenesisFile, values);
-            templateEngineHelper.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, new HashMap<>());
-            templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, new HashMap<>());
+            templateEngineHelper.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, values);
+            templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, values);
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -355,7 +333,7 @@ public class ClusterService {
 
         Map values = new HashMap<>();
         values.put("enableP2P", String.valueOf(enableP2P));
-        values.put("peerSharing", peerSharing);
+        values.put("peerSharing", genesisConfig.isPeerSharing());
         values.put("prometheusPort", String.valueOf(clusterInfo.getPrometheusPort()));
         values.put("conway_era", clusterInfo.getEra() == Era.Conway ? Boolean.TRUE : Boolean.FALSE);
 

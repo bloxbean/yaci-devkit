@@ -1,5 +1,5 @@
 {
-    "collateralPercentage": 150,
+    "collateralPercentage": {{collateralPercentage}},
   "costModels": {
     "PlutusV1": [
       205665,
@@ -348,18 +348,18 @@
     ]
   },
     "executionPrices": {
-        "prMem": 5.77e-2,
-        "prSteps": 7.21e-5
+        "prMem": {{prMem}},
+        "prSteps": {{prSteps}}
     },
-    "lovelacePerUTxOWord": 34482,
+    "lovelacePerUTxOWord": {{lovelacePerUTxOWord}},
     "maxBlockExUnits": {
-        "exUnitsMem": 62000000,
-        "exUnitsSteps": 20000000000
+        "exUnitsMem": {{maxBlockExUnitsMem}},
+        "exUnitsSteps": {{maxBlockExUnitsSteps}}
     },
-    "maxCollateralInputs": 3,
+    "maxCollateralInputs": {{maxCollateralInputs}},
     "maxTxExUnits": {
-        "exUnitsMem": 14000000,
-        "exUnitsSteps": 10000000000
+        "exUnitsMem": {{maxTxExUnitsMem}},
+        "exUnitsSteps": {{maxTxExUnitsSteps}}
     },
-    "maxValueSize": 5000
+    "maxValueSize": {{maxValueSize}}
 }
