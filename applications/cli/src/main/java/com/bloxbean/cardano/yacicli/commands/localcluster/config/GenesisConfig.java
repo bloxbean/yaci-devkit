@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,6 +158,75 @@ public class GenesisConfig {
 
         return map;
     }
+
+    public GenesisConfig copy() {
+        var genesisConfig = new GenesisConfig();
+        genesisConfig.setNetworkId(networkId);
+        genesisConfig.setProtocolMagic(protocolMagic);
+        genesisConfig.setMaxKESEvolutions(maxKESEvolutions);
+        genesisConfig.setSecurityParam(securityParam);
+        genesisConfig.setSlotsPerKESPeriod(slotsPerKESPeriod);
+        genesisConfig.setUpdateQuorum(updateQuorum);
+        genesisConfig.setPeerSharing(peerSharing);
+        genesisConfig.setMaxLovelaceSupply(maxLovelaceSupply);
+        genesisConfig.setPoolPledgeInfluence(poolPledgeInfluence);
+        genesisConfig.setDecentralisationParam(decentralisationParam);
+        genesisConfig.setEMax(eMax);
+        genesisConfig.setKeyDeposit(keyDeposit);
+        genesisConfig.setMaxBlockBodySize(maxBlockBodySize);
+        genesisConfig.setMaxBlockHeaderSize(maxBlockHeaderSize);
+        genesisConfig.setMaxTxSize(maxTxSize);
+        genesisConfig.setMinFeeA(minFeeA);
+        genesisConfig.setMinFeeB(minFeeB);
+        genesisConfig.setMinPoolCost(minPoolCost);
+        genesisConfig.setMinUTxOValue(minUTxOValue);
+        genesisConfig.setNOpt(nOpt);
+        genesisConfig.setPoolDeposit(poolDeposit);
+        genesisConfig.setProtocolMajorVer(protocolMajorVer);
+        genesisConfig.setProtocolMinorVer(protocolMinorVer);
+        genesisConfig.setMonetaryExpansionRate(monetaryExpansionRate);
+        genesisConfig.setTreasuryGrowthRate(treasuryGrowthRate);
+        genesisConfig.setPools(new ArrayList(pools));
+        genesisConfig.setDefaultDelegators(new ArrayList<>(defaultDelegators));
+
+        genesisConfig.setCollateralPercentage(collateralPercentage);
+        genesisConfig.setPrMem(prMem);
+        genesisConfig.setPrSteps(prSteps);
+        genesisConfig.setLovelacePerUTxOWord(lovelacePerUTxOWord);
+        genesisConfig.setMaxBlockExUnitsMem(maxBlockExUnitsMem);
+        genesisConfig.setMaxBlockExUnitsSteps(maxBlockExUnitsSteps);
+        genesisConfig.setMaxCollateralInputs(maxCollateralInputs);
+        genesisConfig.setMaxTxExUnitsMem(maxTxExUnitsMem);
+        genesisConfig.setMaxTxExUnitsSteps(maxTxExUnitsSteps);
+        genesisConfig.setMaxValueSize(maxValueSize);
+
+        genesisConfig.setPvtcommitteeNormal(pvtcommitteeNormal);
+        genesisConfig.setPvtCommitteeNoConfidence(pvtCommitteeNoConfidence);
+        genesisConfig.setPvtHardForkInitiation(pvtHardForkInitiation);
+        genesisConfig.setPvtMotionNoConfidence(pvtMotionNoConfidence);
+        genesisConfig.setPvtPPSecurityGroup(pvtPPSecurityGroup);
+
+        genesisConfig.setDvtMotionNoConfidence(dvtMotionNoConfidence);
+        genesisConfig.setDvtCommitteeNormal(dvtCommitteeNormal);
+        genesisConfig.setDvtCommitteeNoConfidence(dvtCommitteeNoConfidence);
+        genesisConfig.setDvtUpdateToConstitution(dvtUpdateToConstitution);
+        genesisConfig.setDvtHardForkInitiation(dvtHardForkInitiation);
+        genesisConfig.setDvtPPNetworkGroup(dvtPPNetworkGroup);
+        genesisConfig.setDvtPPEconomicGroup(dvtPPEconomicGroup);
+        genesisConfig.setDvtPPTechnicalGroup(dvtPPTechnicalGroup);
+        genesisConfig.setDvtPPGovGroup(dvtPPGovGroup);
+        genesisConfig.setDvtTreasuryWithdrawal(dvtTreasuryWithdrawal);
+
+        genesisConfig.setCommitteeMinSize(committeeMinSize);
+        genesisConfig.setCommitteeMaxTermLength(committeeMaxTermLength);
+        genesisConfig.setGovActionLifetime(govActionLifetime);
+        genesisConfig.setGovActionDeposit(govActionDeposit);
+        genesisConfig.setDRepDeposit(dRepDeposit);
+        genesisConfig.setDRepActivity(dRepActivity);
+
+        return genesisConfig;
+    }
+
 }
 
 @Data

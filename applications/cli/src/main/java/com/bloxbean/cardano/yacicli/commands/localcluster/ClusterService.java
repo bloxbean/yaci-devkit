@@ -5,6 +5,7 @@ import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.commands.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
@@ -206,7 +207,7 @@ public class ClusterService {
             updatePorts(destPath, clusterInfo.getNodePort());
 
             //Update genesis
-            updateGenesis(destPath, clusterInfo.getEra(), clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
+            updateGenesis(destPath, clusterInfo, clusterInfo.getEra(), clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
 
             //Update P2P configuration
             updateConfiguration(destPath, clusterInfo, writer);
@@ -245,7 +246,7 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
-    private void updateGenesis(Path clusterFolder, Era era, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
+    private void updateGenesis(Path clusterFolder, ClusterInfo clusterInfo, Era era, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
 
         Path srcShelleyGenesisFile = null;
         Path srcByronGenesisFile = null;
@@ -268,7 +269,11 @@ public class ClusterService {
         Path destAlonzoGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("alonzo-genesis.json");
         Path destConwayGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("conway-genesis.json");
 
-        Map values = genesisConfig.getConfigMap();
+        GenesisConfig genesisConfigCopy = genesisConfig.copy();
+        if (clusterInfo.getGenesisProfile() != null)
+            genesisConfigCopy = GenesisProfile.applyGenesisProfile(clusterInfo.getGenesisProfile(), genesisConfigCopy);
+
+        Map values = genesisConfigCopy.getConfigMap();
         values.put("slotLength", String.valueOf(slotLength));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 
-import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands.CLUSTER_NAME;
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.CLUSTER_NAME;
 
 @Component
 public class LocalClientProviderHelper {
