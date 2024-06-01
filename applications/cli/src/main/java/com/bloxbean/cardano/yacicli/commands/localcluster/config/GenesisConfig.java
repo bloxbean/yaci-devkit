@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@ConfigurationProperties(prefix = "node", ignoreUnknownFields = true)
+@ConfigurationProperties(ignoreUnknownFields = true)
 @Data
 public class GenesisConfig {
     private String networkId = "Testnet";
@@ -241,8 +241,6 @@ class Pool {
     String rewardAccountHash;
     String rewardAccountType;
     String vrf;
-
-    List<Delegator> delegators;
 }
 
 record Delegator(String stakeKeyHash, String poolHash) {}
