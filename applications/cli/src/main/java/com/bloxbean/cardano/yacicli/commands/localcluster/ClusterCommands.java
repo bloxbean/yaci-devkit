@@ -5,6 +5,7 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
@@ -43,6 +44,7 @@ public class ClusterCommands {
     private final ShellHelper shellHelper;
     private final ApplicationEventPublisher publisher;
     private final ClusterPortInfoHelper clusterUrlPrinter;
+    private final GenesisConfig genesisConfig;
 
     @ShellMethod(value = "List devnet nodes. Use `list-nodes`. Deprecated: `list-clusters`", key = {"list-nodes", "list-clusters"})
     public void listLocalClusters() {
@@ -116,7 +118,7 @@ public class ClusterCommands {
                 return;
             }
 
-            long protocolMagic = 42; //always 42 for now.
+            long protocolMagic = genesisConfig.getProtocolMagic();
 
             //stop any cluster if running
             localClusterService.stopCluster(msg -> writeLn(msg));

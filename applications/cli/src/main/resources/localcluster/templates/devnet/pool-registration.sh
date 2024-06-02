@@ -14,7 +14,7 @@ ${BIN_FOLDER}/cardano-cli stake-pool registration-certificate \
 --pool-margin $3 \
 --pool-reward-account-verification-key-file stake.vkey \
 --pool-owner-stake-verification-key-file stake.vkey \
---testnet-magic 42 \
+--testnet-magic ${protocolMagic} \
 --metadata-url $4 \
 --metadata-hash $5 \
 --pool-relay-ipv4 $6 \

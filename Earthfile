@@ -43,6 +43,7 @@ zip:
   RUN echo "tag=${tag}" >> /app/yaci-devkit-${tag}/config/version
   RUN echo "revision=${EARTHLY_GIT_SHORT_HASH}" >> /app/yaci-devkit-${tag}/config/version
   COPY  config/env /app/yaci-devkit-${tag}/config/
+  COPY  config/node.properties /app/yaci-devkit-${tag}/config/
 
   COPY  bin/devkit.sh /app/yaci-devkit-${tag}/bin/
 

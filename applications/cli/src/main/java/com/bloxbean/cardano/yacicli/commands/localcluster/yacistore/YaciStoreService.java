@@ -65,7 +65,7 @@ public class YaciStoreService {
                 return;
 
             Era era = clusterInfo.getEra();
-            Process process = startStoreApp(clusterStarted.getClusterName(), era);
+            Process process = startStoreApp(clusterInfo, era);
             if (process != null)
                 processes.add(process);
 //            Process viewerProcess = startViewerApp(clusterStarted.getClusterName());
@@ -87,7 +87,7 @@ public class YaciStoreService {
             return true;
     }
 
-    private Process startStoreApp(String cluster, Era era) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private Process startStoreApp(ClusterInfo clusterInfo, Era era) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
@@ -98,9 +98,9 @@ public class YaciStoreService {
         }
 
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         } else {
-            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         }
 
         Process process = builder.start();

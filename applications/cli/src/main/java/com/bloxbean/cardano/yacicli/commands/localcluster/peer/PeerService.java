@@ -162,7 +162,7 @@ public class PeerService {
         downloadFolder.delete();
 
         updateRunScripts(clusterFolder, nodeName, peerNodePort);
-        updatePoolGenScript(clusterFolder);
+        updatePoolGenScript(clusterFolder, clusterInfo);
 
         //Generate pool keys
         if (isBlockProducer) {
@@ -347,9 +347,10 @@ public class PeerService {
         }
     }
 
-    private void updatePoolGenScript(Path destPath) throws IOException {
+    private void updatePoolGenScript(Path destPath, ClusterInfo clusterInfo) throws IOException {
         Map<String, String> values = new HashMap<>();
         values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
+        values.put("protocolMagic", String.valueOf(clusterInfo.getProtocolMagic()));
 
         //Update submit api script
         Path genPoolKeyScript = destPath.resolve("gen-pool-keys.sh");
