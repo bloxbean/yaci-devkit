@@ -38,6 +38,7 @@ public class DefaultAddressService {
             var defaultAddress = new DefaultAddress();
             defaultAddress.setDerivationPath(derivationPath);
             defaultAddress.setAddress(account.baseAddress());
+            defaultAddress.setAddressHex(HexUtil.encodeHexString(new Address(account.baseAddress()).getBytes()));
             defaultAddress.setStakeAddress(account.stakeAddress());
             defaultAddress.setPaymentKey(Bech32.encode(account.privateKeyBytes(), ED_25519_E_SK));
             defaultAddress.setStakingKey(Bech32.encode(account.stakeHdKeyPair().getPrivateKey().getKeyData(), ED_25519_E_SK));
