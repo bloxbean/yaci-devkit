@@ -4,7 +4,7 @@ import com.bloxbean.cardano.client.common.cbor.CborSerializationUtil;
 import com.bloxbean.cardano.client.crypto.SecretKey;
 import com.bloxbean.cardano.client.transaction.spec.cert.PoolRegistration;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
-import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -27,11 +28,11 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class PoolKeyGeneratorService {
-    private final ClusterService clusterService;
+    private final ClusterConfig clusterConfig;
 
     @SneakyThrows
-    public void generatePoolKeys(String adminUrl, String nodeName, boolean overwrite, Consumer<String> writer) {
-        Path clusterPoolKeysFolder = clusterService.getPoolKeys(nodeName);
+    public void generatePoolKeys(String nodeName, boolean overwrite, Consumer<String> writer) {
+        Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
 
         if (clusterPoolKeysFolder.toFile().exists() && !overwrite) {
             writer.accept(warn("Found existing pool keys for this node. Existing keys will be used." +
@@ -44,7 +45,7 @@ public class PoolKeyGeneratorService {
         }
 
         try {
-            String genKeyFile = clusterService.getClusterFolder(nodeName).resolve("gen-pool-keys.sh").toFile()
+            String genKeyFile = clusterConfig.getClusterFolder(nodeName).resolve("gen-pool-keys.sh").toFile()
                     .getAbsolutePath();
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", genKeyFile);
@@ -75,7 +76,7 @@ public class PoolKeyGeneratorService {
 
     @SneakyThrows
     public Optional<String> getDefaultPoolOwnerPaymentAddress(String nodeName) {
-        Path clusterPoolKeysFolder = clusterService.getPoolKeys(nodeName);
+        Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
         Path paymentAddrFile = clusterPoolKeysFolder.resolve("payment.addr");
         if (!paymentAddrFile.toFile().exists()) {
             return Optional.empty();
@@ -91,15 +92,19 @@ public class PoolKeyGeneratorService {
 
     @SneakyThrows
     public void generateOperationalCert(String adminUrl, String nodeName, Consumer<String> writer) {
-        Path clusterPoolKeysFolder = clusterService.getPoolKeys(nodeName);
         int kesPeriod = ClusterAdminClient.getKesPeriod(adminUrl);
+        generateOperationalCert(nodeName, kesPeriod, writer);
+    }
+
+    public void generateOperationalCert(String nodeName, int kesPeriod, Consumer<String> writer) throws IOException {
+        Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
 
         if (!clusterPoolKeysFolder.toFile().exists()) {
             Files.createDirectories(clusterPoolKeysFolder);
         }
 
         try {
-            String genCertFile = clusterService.getClusterFolder(nodeName).resolve("gen-pool-cert.sh").toFile()
+            String genCertFile = clusterConfig.getClusterFolder(nodeName).resolve("gen-pool-cert.sh").toFile()
                     .getAbsolutePath();
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", genCertFile, String.valueOf(kesPeriod));
@@ -122,10 +127,10 @@ public class PoolKeyGeneratorService {
 
     @SneakyThrows
     public void registerPool(String nodeName, PoolConfig poolConfig, Consumer<String> writer) {
-        Path clusterPoolKeysFolder = clusterService.getPoolKeys(nodeName);
+        Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
 
         try {
-            String genPoolRegistrationScript = clusterService.getClusterFolder(nodeName).resolve("pool-registration.sh").toFile()
+            String genPoolRegistrationScript = clusterConfig.getClusterFolder(nodeName).resolve("pool-registration.sh").toFile()
                     .getAbsolutePath();
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", genPoolRegistrationScript,
@@ -158,7 +163,7 @@ public class PoolKeyGeneratorService {
 
     @SneakyThrows
     public Optional<SecretKey> getSecretKey(String nodeName, String keyFileName) {
-        Path clusterPoolKeysFolder = clusterService.getPoolKeys(nodeName);
+        Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
         Path paymentSkeyFile = clusterPoolKeysFolder.resolve(keyFileName);
         if (!paymentSkeyFile.toFile().exists()) {
             return Optional.empty();
@@ -174,7 +179,7 @@ public class PoolKeyGeneratorService {
     }
 
     public Optional<PoolRegistration> getPoolRegistrationCert(String nodeName, Consumer<String> writer) {
-        Path clusterPoolKeysFolder = clusterService.getPoolKeys(nodeName);
+        Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
         Path poolRegistrationCertFile = clusterPoolKeysFolder.resolve("pool-registration.cert");
         if (!poolRegistrationCertFile.toFile().exists()) {
             writer.accept(error("Pool registration cert file not found"));

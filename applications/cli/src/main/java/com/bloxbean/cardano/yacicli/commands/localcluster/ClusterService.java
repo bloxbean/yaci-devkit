@@ -5,6 +5,7 @@ import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.commands.localcluster.privnet.PrivNetService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
@@ -16,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.context.WebServerApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
@@ -68,6 +68,9 @@ public class ClusterService {
 
     @Autowired
     private GenesisConfig genesisConfig;
+
+    @Autowired
+    private PrivNetService privNetService;
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -156,11 +159,7 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public Path getPoolKeys(String clusterName) {
-        return Path.of(clusterConfig.getPoolKeysHome(), clusterName);
-    }
-
-    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, Consumer<String> writer) throws IOException {
+    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, boolean generateNewGenesisKeys, int nGenesisKeys, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -207,7 +206,17 @@ public class ClusterService {
             updatePorts(destPath, clusterInfo.getNodePort());
 
             //Update genesis
-            updateGenesis(destPath, clusterInfo, clusterInfo.getEra(), clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
+            updateGenesis(destPath,
+                    clusterName,
+                    clusterInfo,
+                    clusterInfo.getEra(),
+                    clusterInfo.getSlotLength(),
+                    activeCoeff,
+                    clusterInfo.getEpochLength(),
+                    clusterInfo.getProtocolMagic(),
+                    generateNewGenesisKeys,
+                    nGenesisKeys,
+                    writer);
 
             //Update P2P configuration
             updateConfiguration(destPath, clusterInfo, writer);
@@ -246,8 +255,9 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
-    private void updateGenesis(Path clusterFolder, ClusterInfo clusterInfo, Era era, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
-
+    private void updateGenesis(Path clusterFolder, String clusterName, ClusterInfo clusterInfo, Era era, double slotLength,
+                               double activeSlotsCoeff, int epochLength, long protocolMagic,
+                               boolean generateNewGenesisKeys, int nGenesisKeys, Consumer<String> writer) throws IOException {
         Path srcShelleyGenesisFile = null;
         Path srcByronGenesisFile = null;
         Path srcAlonzoGenesisFile = null;
@@ -272,6 +282,11 @@ public class ClusterService {
         GenesisConfig genesisConfigCopy = genesisConfig.copy();
         if (clusterInfo.getGenesisProfile() != null)
             genesisConfigCopy = GenesisProfile.applyGenesisProfile(clusterInfo.getGenesisProfile(), genesisConfigCopy);
+
+        //override genesis keys if new keys are generated
+        if (generateNewGenesisKeys) {
+            privNetService.setupNewKeysAndDefaultPool(clusterFolder, clusterName, clusterInfo, genesisConfigCopy, activeSlotsCoeff, nGenesisKeys, writer);
+        }
 
         Map values = genesisConfigCopy.getConfigMap();
         values.put("slotLength", String.valueOf(slotLength));

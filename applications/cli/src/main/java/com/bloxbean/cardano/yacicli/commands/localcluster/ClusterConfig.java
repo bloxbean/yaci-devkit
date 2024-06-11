@@ -79,4 +79,12 @@ public class ClusterConfig {
         else
             return Path.of(kupoFolder).toAbsolutePath().toString();
     }
+
+    public Path getClusterFolder(String clusterName) {
+        return Path.of(getClusterHome(), clusterName);
+    }
+
+    public Path getPoolKeysFolder(String clusterName) {
+        return Path.of(getPoolKeysHome(), clusterName);
+    }
 }

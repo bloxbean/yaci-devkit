@@ -130,7 +130,7 @@ public class PeerService {
         clusterInfo.setSocatPort(clusterInfo.getSocatPort() + portShift);
         clusterInfo.setPrometheusPort(clusterInfo.getPrometheusPort() + portShift);
 
-        boolean created = clusterService.createNodeClusterFolder(peerName, clusterInfo, overwrite, (msg) -> {
+        boolean created = clusterService.createNodeClusterFolder(peerName, clusterInfo, overwrite, false, 1, (msg) -> {
             writeLn(msg);
         });
 
@@ -166,7 +166,7 @@ public class PeerService {
 
         //Generate pool keys
         if (isBlockProducer) {
-            poolKeyGeneratorService.generatePoolKeys(adminUrl, nodeName, overwritePoolKeys, (msg) -> {
+            poolKeyGeneratorService.generatePoolKeys(nodeName, overwritePoolKeys, (msg) -> {
                 writeLn(msg);
             });
 

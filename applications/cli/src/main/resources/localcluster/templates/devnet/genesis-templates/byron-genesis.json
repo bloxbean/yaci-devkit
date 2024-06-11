@@ -1,34 +1,26 @@
 {
   "bootStakeholders": {
-    "4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c": 1,
-    "ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33": 1,
-    "fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4": 1
+    {{#heavyDelegations}}
+     "{{bootStakeDelegator}}": 1{{^last}},{{/last}}
+    {{/heavyDelegations}}
   },
-  "heavyDelegation": {
-    "4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c": {
-      "omega": 0,
-      "issuerPk": "+AkxDu8deptOlFXf1QMC0ys/w0y7mjqHRCqybUequeotqUVCz1h1HSOCNK5eBPE5svg2tHyQJKQzToAfCiSDOg==",
-      "delegatePk": "OBjvlmcUFmFHcRV27X2eRjBjAexq/Q0KiYDwkeEYbtJwT0xPnjn1+NE8oI4ePOA/M4mtHbtuYf40wLdvJVRCnw==",
-      "cert": "44327b2748c561d6bfed3d3f62dde3745d89b768a24dfa5977908433afb53611bdd841f70b33554ad57aef804448f9a09132c55ab08add5aa3b7dab150c2ae0b"
+    "heavyDelegation": {
+        {{#heavyDelegations}}
+        "{{bootStakeDelegator}}": {
+        "omega": {{{omega}}},
+        "issuerPk": "{{{issuerPk}}}",
+        "delegatePk": "{{{delegatePk}}}",
+        "cert": "{{cert}}"
+        }{{^last}},{{/last}}
+        {{/heavyDelegations}}
     },
-    "ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33": {
-      "omega": 0,
-      "issuerPk": "EQEJb8IW6YTdsBnksNkbRi086JA0K2ek20CZgxsMDaSUkatLQY7+guZsyX9/xv1Rx/dy2mrnZSBAxo53wZecOA==",
-      "delegatePk": "QeBvAkkrR0T5YoeqGa0u7wCio5D9dRIT0BoPRXfDVO0skNlO4TmJHTVJnCs2hWDtwaznWygJAx1AFk4tBvhu1A==",
-      "cert": "7525bb530324039c1c5faa2088a95272c7195ff49a97f014a60d944b1c2212b11e1867c1fb69895609f8b976926bb8309489258b3be0b819b36f9c0a0c403d02"
-    },
-    "fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4": {
-      "omega": 0,
-      "issuerPk": "h745CvlXG8yPF2y8MU/bSbMekN61YN+V+htnswdPvAIhIwi3XH9ZIxsdR6DCYq+maOfwzUvys5Z9WEholH3/EQ==",
-      "delegatePk": "5p4ntkX2uDoCsi/s136jaswzPLJr7qcaTaguGokToHuwdxRV+6LGuwvmWHs5kdQg518v+0ZCji1QLo8X4ApezA==",
-      "cert": "abf663bac9650ee8547a98c33a4dca528493025f130556e9037c56885e2edbbe2d445b3714363b05f48d0bb6892cdae0ca27568f2aa7f1295cf11c5316da7b05"
-    }
-  },
   "startTime": 1663259458,
   "nonAvvmBalances": {
-    "2657WMsDfac6EtPTiPEptLHDYUVYD5DtRpTmVWb6X95beFrKXqPULmyvCwmCxZEGN": "3340000000",
-    "2657WMsDfac6PDUZWRH4fh4j6ARZaH3x7SaaQ48d8SkGcNxmpoxPthQSiEahDTzAB": "3340000000",
-    "2657WMsDfac6if177KSAP7hosuDveRHN3ZsyP2EQNgTaQ5tqFTnmw1EMZcGreMHva": "3340000000"
+
+    {{#nonAvvmBalances}}
+      "{{address}}": "{{balance}}"{{^last}},
+      {{/last}}
+    {{/nonAvvmBalances}}
   },
   "blockVersionData": {
     "scriptVersion": 0,

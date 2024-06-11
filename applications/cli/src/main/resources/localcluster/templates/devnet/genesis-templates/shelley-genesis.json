@@ -2,26 +2,22 @@
   "activeSlotsCoeff": {{activeSlotsCoeff}},
   "epochLength": {{epochLength}},
   "genDelegs": {
-    "337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e": {
-      "delegate": "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
-      "vrf": "7053e3ecd2b19db13e5338aa75fb518fc08b6c218f56ad65760d3eb074be95d4"
-    },
-    "b5c3fed76c54bfdcda7993e4171eff2fb853f8ab920ab80047278a91": {
-      "delegate": "fcb677a90948d1d5b358912f54f6baaf762ecf5cd6579c93bcb49cef",
-      "vrf": "c7715f726e8e4f7745ccc646f4350758460de71de5694b244a47761fb106ec6e"
-    },
-    "e34a75849b978bb20c366f531f978b3111b91aae0e469108dca8e433": {
-      "delegate": "81babf3c139646f0f0268abed36d2a54757492a3a68cda2438a37f7e",
-      "vrf": "ca336185cd781a6543b6c1e62ee1eee53e237d5d1fb065f08412d40d61b6ca06"
-    }
+    {{#genesisDelegs}}
+     "{{delegator}}": {
+      "delegate": "{{delegate}}",
+      "vrf": "{{{vrf}}}"
+     }{{^last}},
+     {{/last}}
+    {{/genesisDelegs}}
   },
   "initialFunds": {
-    {{#initialFunds}}
-    "{{key}}": {{value}}{{^last}},
-    {{/last}}
-    {{/initialFunds}}
-
-},
+  {{^mainnet}}
+      {{#initialFunds}}
+      "{{key}}": {{value}}{{^last}},
+      {{/last}}
+      {{/initialFunds}}
+  {{/mainnet}}
+  },
   "maxKESEvolutions": {{maxKESEvolutions}},
   "maxLovelaceSupply": {{maxLovelaceSupply}},
   "networkId": "{{networkId}}",
@@ -55,29 +51,33 @@
   "slotsPerKESPeriod": {{slotsPerKESPeriod}},
   "staking": {
   "pools": {
-    {{#pools}}
-      "{{poolHash}}": {
-          "cost": {{cost}},
-          "margin": {{margin}},
-          "metadata": null,
-          "owners": [],
-          "pledge": 0,
-          "publicKey": "{{publicKey}}",
-          "relays": [],
-          "rewardAccount": {
-            "credential": {
-              "{{rewardAccountType}}": "{{rewardAccountHash}}"
-            },
-            "network": "{{networkId}}"
-           },
-            "vrf": "{{vrf}}"
-        }
-      {{/pools}}
+    {{^mainnet}}
+        {{#pools}}
+          "{{poolHash}}": {
+              "cost": {{cost}},
+              "margin": {{margin}},
+              "metadata": null,
+              "owners": [],
+              "pledge": 0,
+              "publicKey": "{{publicKey}}",
+              "relays": [],
+              "rewardAccount": {
+                "credential": {
+                  "{{rewardAccountType}}": "{{rewardAccountHash}}"
+                },
+                "network": "{{networkId}}"
+               },
+                "vrf": "{{vrf}}"
+            }{{^last}},{{/last}}
+          {{/pools}}
+    {{/mainnet}}
     },
     "stake": {
-          {{#defaultDelegators}}
-          "{{stakeKeyHash}}": "{{poolHash}}"
-          {{/defaultDelegators}}
+    {{^mainnet}}
+              {{#defaultDelegators}}
+              "{{stakeKeyHash}}": "{{#poolHash}}{{poolHash}}{{/poolHash}}{{^poolHash}}{{pools.0.poolHash}}{{/poolHash}}"{{^last}},{{/last}}
+              {{/defaultDelegators}}
+    {{/mainnet}}
     }
   },
   "systemStart": "2022-09-15T04:09:11.577484Z",

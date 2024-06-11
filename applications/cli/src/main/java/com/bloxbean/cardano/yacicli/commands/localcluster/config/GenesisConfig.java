@@ -1,5 +1,7 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster.config;
 
+import com.bloxbean.cardano.client.address.Address;
+import com.bloxbean.cardano.client.util.HexUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -49,7 +51,7 @@ public class GenesisConfig {
                     .publicKey("7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57")
                     .vrf("c2b62ffa92ad18ffc117ea3abeb161a68885000a466f9c71db5e4731d6630061")
                     .build());
-    private List<Delegator> defaultDelegators = List.of(new Delegator("295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062", "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57"));
+    private List<Delegator> defaultDelegators = List.of(new Delegator("295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062", "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57", true));
 
     //Alonzo
     private int collateralPercentage = 150;
@@ -94,6 +96,51 @@ public class GenesisConfig {
     private Map<String, BigInteger> initialFunds = new LinkedHashMap<>();
     private List<MapItem<String, BigInteger>> initialFundsList = new ArrayList<>();
 
+    private List<InitialAddress> initialAddresses = new ArrayList<>();
+
+    //Byron Genesis
+    private List<String> bootStakeHolders = List.of(
+            "4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c"
+//            "ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33",
+//            "fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4"
+    );
+
+    private List<HeavyDelegation> heavyDelegations = List.of(
+            new HeavyDelegation("4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c",
+                    0,
+                    "+AkxDu8deptOlFXf1QMC0ys/w0y7mjqHRCqybUequeotqUVCz1h1HSOCNK5eBPE5svg2tHyQJKQzToAfCiSDOg==",
+                    "OBjvlmcUFmFHcRV27X2eRjBjAexq/Q0KiYDwkeEYbtJwT0xPnjn1+NE8oI4ePOA/M4mtHbtuYf40wLdvJVRCnw==",
+                    "44327b2748c561d6bfed3d3f62dde3745d89b768a24dfa5977908433afb53611bdd841f70b33554ad57aef804448f9a09132c55ab08add5aa3b7dab150c2ae0b", true)
+//            new HeavyDelegation("ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33",
+//                    0,
+//                    "EQEJb8IW6YTdsBnksNkbRi086JA0K2ek20CZgxsMDaSUkatLQY7+guZsyX9/xv1Rx/dy2mrnZSBAxo53wZecOA==",
+//                    "QeBvAkkrR0T5YoeqGa0u7wCio5D9dRIT0BoPRXfDVO0skNlO4TmJHTVJnCs2hWDtwaznWygJAx1AFk4tBvhu1A==",
+//                    "7525bb530324039c1c5faa2088a95272c7195ff49a97f014a60d944b1c2212b11e1867c1fb69895609f8b976926bb8309489258b3be0b819b36f9c0a0c403d02", false),
+//            new HeavyDelegation("fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4",
+//                    0,
+//                    "h745CvlXG8yPF2y8MU/bSbMekN61YN+V+htnswdPvAIhIwi3XH9ZIxsdR6DCYq+maOfwzUvys5Z9WEholH3/EQ==",
+//                    "5p4ntkX2uDoCsi/s136jaswzPLJr7qcaTaguGokToHuwdxRV+6LGuwvmWHs5kdQg518v+0ZCji1QLo8X4ApezA==",
+//                    "abf663bac9650ee8547a98c33a4dca528493025f130556e9037c56885e2edbbe2d445b3714363b05f48d0bb6892cdae0ca27568f2aa7f1295cf11c5316da7b05", true)
+    );
+
+    private List<GenesisDeleg> genesisDelegs = List.of(
+            new GenesisDeleg("337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e",
+                    "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
+                    "7053e3ecd2b19db13e5338aa75fb518fc08b6c218f56ad65760d3eb074be95d4", true)
+//            new GenesisDeleg("b5c3fed76c54bfdcda7993e4171eff2fb853f8ab920ab80047278a91",
+//                    "fcb677a90948d1d5b358912f54f6baaf762ecf5cd6579c93bcb49cef",
+//                    "c7715f726e8e4f7745ccc646f4350758460de71de5694b244a47761fb106ec6e", false),
+//            new GenesisDeleg("e34a75849b978bb20c366f531f978b3111b91aae0e469108dca8e433",
+//                    "81babf3c139646f0f0268abed36d2a54757492a3a68cda2438a37f7e",
+//                    "ca336185cd781a6543b6c1e62ee1eee53e237d5d1fb065f08412d40d61b6ca06", true)
+    );
+
+    private List<NonAvvmBalances> nonAvvmBalances = List.of(
+            new NonAvvmBalances("2657WMsDfac6EtPTiPEptLHDYUVYD5DtRpTmVWb6X95beFrKXqPULmyvCwmCxZEGN", "3340000000", true)
+//            new NonAvvmBalances("2657WMsDfac6PDUZWRH4fh4j6ARZaH3x7SaaQ48d8SkGcNxmpoxPthQSiEahDTzAB", "3340000000", false),
+//            new NonAvvmBalances("2657WMsDfac6if177KSAP7hosuDveRHN3ZsyP2EQNgTaQ5tqFTnmw1EMZcGreMHva", "3340000000", true)
+    );
+
     @PostConstruct
     public void postInit() {
         if (faucets.size() == 0 && !disableFaucet) {
@@ -105,7 +152,7 @@ public class GenesisConfig {
             );
         }
 
-        if (initialFunds.size() == 0) {
+        if (initialFunds.size() == 0 && initialAddresses.size() == 0) {
             initialFunds.put( "00c8c47610a36034aac6fc58848bdae5c278d994ff502c05455e3b3ee8f8ed3a0eea0ef835ffa7bbfcde55f7fe9d2cc5d55ea62cecb42bab3c", BigInteger.valueOf(10000000000L));
             initialFunds.put( "004048ff89ca4f88e66598e620aa0c7128c2145d9a181ae9a4a81ca8e3e849af38840c5562dd382be37c9e76545c8191f9d8f6df1d20cfcee0", BigInteger.valueOf(10000000000L));
             initialFunds.put( "00ca6e1b1f320d543a24adeabc0aa4627635c7349b639f86f74bdfdd78d31b28c9619a58b3792a7394ab85deb36889c4d7b0632c8167b855d2", BigInteger.valueOf(10000000000L));
@@ -131,12 +178,60 @@ public class GenesisConfig {
         if (faucets.size() > 0 && !disableFaucet)
             initialFunds.putAll(faucets);
 
+//        if (initialFunds.size() > 0) {
+//            initialFunds = initialFunds.entrySet()
+//                    .stream()
+//                    .collect(Collectors.toMap(
+//                            entry -> transformAddrToHex(entry.getKey()), // Transform the key
+//                            Map.Entry::getValue // Keep the value as is
+//                    ));
+//        }
+
+        initialAddresses.stream()
+                .forEach(initialAddress -> {
+                    var address = new Address(initialAddress.address);
+                    initialFunds.put(HexUtil.encodeHexString(address.getBytes()), initialAddress.balance());
+                });
+
         initialFundsList = createListWithLastFlag(initialFunds);
+
+        if (initialAddresses == null || initialAddresses.size() == 0) {
+            if (defaultDelegators != null && defaultDelegators.size() > 0) {
+                defaultDelegators.get(defaultDelegators.size() - 1).setLast(true);
+            }
+        } else {
+            defaultDelegators = new ArrayList<>();
+            initialAddresses.forEach(initialAddress -> {
+                if (!initialAddress.staked)
+                    return;
+
+                Address address = new Address(initialAddress.address);
+                var stakeKeyHash = address.getDelegationCredentialHash()
+                        .map(HexUtil::encodeHexString)
+                                .orElse(null);
+                defaultDelegators.add(new Delegator(stakeKeyHash, null, false));
+            });
+
+            defaultDelegators.getLast().setLast(true);
+        }
+    }
+
+    private String transformAddrToHex(String key) {
+        if (key == null)
+            return null;
+        if (key.startsWith("addr")) {
+            var address = new Address(key);
+            return HexUtil.encodeHexString(address.getBytes());
+        } else
+            return key;
     }
 
     public Map getConfigMap() {
         Map map = new HashMap();
         map.put("networkId", networkId);
+        if ("Mainnet".equals(networkId)) {
+            map.put("mainnet", true);
+        }
         map.put("protocolMagic", protocolMagic);
         map.put("maxKESEvolutions", maxKESEvolutions);
         map.put("securityParam", securityParam);
@@ -161,7 +256,13 @@ public class GenesisConfig {
         map.put("protocolMinorVer", protocolMinorVer);
         map.put("monetaryExpansionRate", monetaryExpansionRate);
         map.put("treasuryGrowthRate", treasuryGrowthRate);
+
+        if (pools != null && pools.size() > 0)
+            pools.getLast().setLast(true);
         map.put("pools", pools);
+
+        if (defaultDelegators != null && defaultDelegators.size() >0)
+            defaultDelegators.getLast().setLast(true);
         map.put("defaultDelegators", defaultDelegators);
 
         map.put("collateralPercentage", collateralPercentage);
@@ -201,6 +302,10 @@ public class GenesisConfig {
         map.put("dRepActivity", dRepActivity);
 
         map.put("initialFunds", initialFundsList);
+
+        map.put("heavyDelegations", heavyDelegations);
+        map.put("genesisDelegs", genesisDelegs);
+        map.put("nonAvvmBalances", nonAvvmBalances);
 
         return map;
     }
@@ -274,6 +379,10 @@ public class GenesisConfig {
         genesisConfig.setInitialFunds(initialFunds);
         genesisConfig.setInitialFundsList(initialFundsList);
 
+        genesisConfig.setHeavyDelegations(new ArrayList<>(heavyDelegations));
+        genesisConfig.setGenesisDelegs(new ArrayList<>(genesisDelegs));
+        genesisConfig.setNonAvvmBalances(new ArrayList<>(nonAvvmBalances));
+
         return genesisConfig;
     }
 
@@ -290,21 +399,35 @@ public class GenesisConfig {
         return faucetList;
     }
 
-}
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Pool {
+        String poolHash;
+        BigInteger cost;
+        BigDecimal margin;
+        String publicKey;
+        String rewardAccountHash;
+        String rewardAccountType;
+        String vrf;
+        boolean last;
+    }
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-class Pool {
-    String poolHash;
-    BigInteger cost;
-    BigDecimal margin;
-    String publicKey;
-    String rewardAccountHash;
-    String rewardAccountType;
-    String vrf;
-}
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Delegator {
+        String stakeKeyHash;
+        String poolHash;
+        boolean last;
+    }
 
-record Delegator(String stakeKeyHash, String poolHash) {}
-record MapItem<K, V>(K key, V value, boolean last) {}
+    public record MapItem<K, V>(K key, V value, boolean last) {}
+    public record HeavyDelegation(String bootStakeDelegator, int omega, String issuerPk, String delegatePk, String cert, boolean last) {}
+    public record GenesisDeleg(String delegator, String delegate, String vrf, boolean last) {}
+    public record NonAvvmBalances(String address, String balance, boolean last) {}
+
+    public record InitialAddress(String address, BigInteger balance, boolean staked, boolean last) {}
+}
