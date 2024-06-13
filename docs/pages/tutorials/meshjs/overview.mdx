@@ -1,3 +1,70 @@
-https://meshjs.dev/
+# Building transactions with Mesh SDK and submit to Yaci Devnet's Cardano Node
 
-//TODO
+This example demonstrates how to build a transaction with the Mesh SDK and submit it to the Yaci Devnet's Cardano Node. The [Mesh SDK](https://meshjs.dev/) is a JavaScript library that provides a set of tools to interact with the Cardano blockchain.
+
+### Yaci Provider to query and submit with Yaci instance
+
+Providers are services provided to help you interact with the blockchain. In this case, we are using the Yaci provider to interact with the Yaci instance. It is used to query and submit transactions to the Yaci instance.
+
+First, we import `YaciProvider` from `@meshsdk/core` [[source]](https://github.com/MeshJS/examples/blob/main/mesh/common/get-yaci-provider.ts):
+
+```js
+import { YaciProvider } from "@meshsdk/core";
+
+export function getYaciProvider() {
+  return new YaciProvider("http://localhost:8080/api/v1");
+}
+```
+
+### A wallet for signing transactions
+
+Next, a wallet is used to sign transactions. We import `MeshWallet` from `@meshsdk/core` and create a wallet with `YaciProvider` [[source]](https://github.com/MeshJS/examples/blob/main/mesh/common/get-wallet-yaci.ts):
+
+```js
+import { MeshWallet } from "@meshsdk/core";
+import { getYaciProvider } from "./get-yaci-provider";
+
+export function getWalletForYaci() {
+  const blockchainProvider = getYaciProvider();
+
+  return new MeshWallet({
+    networkId: 0,
+    fetcher: blockchainProvider,
+    submitter: blockchainProvider,
+    key: {
+      type: "mnemonic",
+      words: [
+        "your",
+        "mnemonic",
+        ...
+        "here",
+      ],
+    },
+  });
+}
+```
+
+### Create a transaction to send lovelace
+
+Finally, we create a transaction to send lovelace to a recipient [[source]](https://github.com/MeshJS/examples/blob/main/mesh/yaci-send-lovelace.ts):
+
+```js
+import { Transaction, UTxO } from "@meshsdk/core";
+import { getWalletForYaci } from "./common/get-wallet-yaci";
+import { getYaciProvider } from "./common/get-yaci-provider";
+
+const wallet = getWalletForYaci();
+
+const recipient =
+  "addr_test1qqm87edtdxc7vu2u34dpf9jzzny4qhk3wqezv6ejpx3vgrwt46dz4zq7vqll88fkaxrm4nac0m5cq50jytzlu0hax5xqwlraql";
+
+const tx = new Transaction({ initiator: wallet }).sendLovelace(
+  recipient,
+  "25000000"
+);
+const unsignedTx = await tx.build();
+const signedTx = await wallet.signTx(unsignedTx);
+const txHash = await wallet.submitTx(signedTx);
+
+console.log("txHash", txHash);
+```
