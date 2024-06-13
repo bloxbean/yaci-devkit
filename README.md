@@ -30,7 +30,7 @@ Manage the entire process using simple commands such as "**start**," "**stop**,"
 environment.
 
 Yaci DevKit's chain indexer exposes required Blockfrost compatible API endpoints, enabling seamless integration with  client SDKs like 
-**Cardano Client Lib (Java)** or **Lucid JS**. With the ability to effortlessly build and submit transactions to the Devnet through the
+**Cardano Client Lib (Java)** or [**Mesh SDK**](https://meshjs.dev/). With the ability to effortlessly build and submit transactions to the Devnet through the
 Blockfrost provider, your development possibilities are boundless.
 
 # Components
@@ -44,7 +44,7 @@ Yaci DevKit docker-compose has following components
 5. Ogmios (Optional)
 6. Kupo (Optional)
 
-Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g., a Java app, Lucid JS app) to post transactions to your local cluster.
+Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g., a Java app, MeshJS app) to post transactions to your local cluster.
 
 # Urls
 
@@ -53,7 +53,7 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 **Yaci Store Swagger UI**         : http://localhost:8080/swagger-ui.html  (Browser)
 
 **Yaci Store Api URL**            : http://localhost:8080/api/v1/  
-<em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend or Javascript app with Lucid JS + Blockfrost provider as it exposes required BF compatible minimum apis for tx building and submission)</em>
+<em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend or [Javascript app with MeshJS + Blockfrost provider](https://github.com/MeshJS/examples/blob/main/mesh/yaci-send-lovelace.ts) as it exposes required BF compatible minimum apis for tx building and submission)</em>
 
 **Ogmios Url (Optional)**         : ws://localhost:1337
 
