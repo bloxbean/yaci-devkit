@@ -5,7 +5,9 @@ import com.bloxbean.cardano.client.crypto.SecretKey;
 import com.bloxbean.cardano.client.transaction.spec.cert.PoolRegistration;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -29,6 +33,25 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class PoolKeyGeneratorService {
     private final ClusterConfig clusterConfig;
+    private final TemplateEngine templateEngine;
+
+    public void updatePoolGenScript(Path destPath, ClusterInfo clusterInfo) throws IOException {
+        Map<String, String> values = new HashMap<>();
+        values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
+        values.put("protocolMagic", String.valueOf(clusterInfo.getProtocolMagic()));
+
+        //Update submit api script
+        Path genPoolKeyScript = destPath.resolve("gen-pool-keys.sh");
+        Path genPoolCertScript = destPath.resolve("gen-pool-cert.sh");
+        Path poolRegistrationScript = destPath.resolve("pool-registration.sh");
+        try {
+            templateEngine.replaceValues(genPoolKeyScript, values);
+            templateEngine.replaceValues(genPoolCertScript, values);
+            templateEngine.replaceValues(poolRegistrationScript, values);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
 
     @SneakyThrows
     public void generatePoolKeys(String nodeName, boolean overwrite, Consumer<String> writer) {
@@ -183,7 +206,7 @@ public class PoolKeyGeneratorService {
         Path poolRegistrationCertFile = clusterPoolKeysFolder.resolve("pool-registration.cert");
         if (!poolRegistrationCertFile.toFile().exists()) {
             writer.accept(error("Pool registration cert file not found"));
-            return null;
+            return Optional.empty();
         }
 
         ObjectMapper objectMapper = new ObjectMapper();

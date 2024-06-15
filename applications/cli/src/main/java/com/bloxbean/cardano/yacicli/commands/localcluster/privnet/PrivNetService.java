@@ -6,6 +6,7 @@ import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.peer.PoolConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.peer.PoolKeyGeneratorService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -47,21 +49,26 @@ public class PrivNetService {
     @Autowired
     private PoolKeyGeneratorService poolKeyGeneratorService;
 
-    public void setupNewKeysAndDefaultPool(Path clusterPath, String clusterName, ClusterInfo clusterInfo, GenesisConfig genesisConfig, Double activeCoeff, int nGenesisKeys, Consumer<String> writer) throws IOException {
-        updateGenesisScript(clusterPath, clusterInfo, clusterInfo.getSlotLength(), activeCoeff,
-                clusterInfo.getEpochLength(), nGenesisKeys, writer);
-        runGenesisScript(clusterPath, writer);
+    public void setupNewKeysAndDefaultPool(Path clusterPath, String clusterName, ClusterInfo clusterInfo, GenesisConfig genesisConfig, Double activeCoeff, Consumer<String> writer) throws IOException {
+        updateGenesisScript(clusterPath, clusterName, clusterInfo, clusterInfo.getSlotLength(), activeCoeff,
+                clusterInfo.getEpochLength(), writer);
+        runGenesisScript(clusterPath, clusterName, true, writer);
         writer.accept(success("New genesis keys generated successfully"));
 
-        updateByronAndShelleyDelegationKeys(clusterPath, clusterInfo, writer);
+        updateByronAndShelleyDelegationKeys(clusterPath, clusterName, clusterInfo, writer);
 
-        updateDelegationDetailsInDefaultGenesisFiles(clusterPath, clusterInfo, genesisConfig, writer);
-        generateDefaultPoolKeys(clusterPath, clusterName, genesisConfig, true);
+        updateDelegationDetailsInDefaultGenesisFiles(clusterPath, clusterName, clusterInfo, genesisConfig, writer);
+
+        if (!"Mainnet".equals(genesisConfig.getNetworkId())) {
+            poolKeyGeneratorService.updatePoolGenScript(clusterPath, clusterInfo);
+            generateDefaultPoolKeys(clusterPath, clusterName, genesisConfig, true);
+        }
+
         writer.accept(success("Genesis keys updated in default genesis files"));
     }
 
-    private void updateGenesisScript(Path destPath, ClusterInfo clusterInfo, double slotLength, double activeSlotsCoeff,
-                                     int epochLength, int nGenesisKeys, Consumer<String> writer) throws IOException {
+    private void updateGenesisScript(Path destPath, String clusterName, ClusterInfo clusterInfo, double slotLength, double activeSlotsCoeff,
+                                     int epochLength, Consumer<String> writer) throws IOException {
         Path genCreateScriptTemplate = destPath.resolve("genesis-scripts").resolve("genesis-create-template.sh");
         Path genCreateScript = destPath.resolve("genesis-scripts").resolve("genesis-create.sh");
 
@@ -75,7 +82,7 @@ public class PrivNetService {
         values.put("slotLength", String.valueOf((int) slotLength));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
-        values.put("nkeys", String.valueOf(nGenesisKeys));
+        values.put("genesisKeysHome", clusterConfig.getGenesisKeysFolder(clusterName));
 
         try {
             templateEngineHelper.replaceValues(genCreateScriptTemplate, genCreateScript, values);
@@ -84,13 +91,27 @@ public class PrivNetService {
         }
     }
 
-    public void runGenesisScript(Path clusterPah, Consumer<String> writer) {
+    public void runGenesisScript(Path clusterPah, String clusterName, boolean overwrite, Consumer<String> writer) {
         try {
             Path genCreateScript = clusterPah.resolve("genesis-scripts").resolve("genesis-create.sh");
 
             if (!genCreateScript.toFile().exists()) {
                 writer.accept(error("Genesis script file not found : %s", genCreateScript.toFile().getAbsolutePath()));
                 return;
+            }
+
+            Path clusterGenesisKeysFolder = clusterConfig.getGenesisKeysFolder(clusterName);
+
+            if (clusterGenesisKeysFolder.toFile().exists() && !overwrite) {
+                writer.accept(warn("Found existing genesis keys for this node. Existing keys will be used." +
+                        "Please use --overwrite-genesis-keys option to overwrite genesis keys"));
+                return;
+            }
+
+            FileUtils.deleteDirectory(clusterGenesisKeysFolder.toFile());
+
+            if (!clusterGenesisKeysFolder.toFile().exists()) {
+                Files.createDirectories(clusterGenesisKeysFolder);
             }
 
             String genCreateScriptFile = genCreateScript.toFile().getAbsolutePath();
@@ -119,8 +140,8 @@ public class PrivNetService {
         }
     }
 
-    private void updateByronAndShelleyDelegationKeys(Path destPath, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException {
-        Path genesisSetupFilesFolder = destPath.resolve("genesis-scripts").resolve("genesis-setup-files");
+    private void updateByronAndShelleyDelegationKeys(Path destPath, String clusterName, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException {
+        Path genesisSetupFilesFolder = clusterConfig.getGenesisKeysFolder(clusterName);
         Path delegateKeysPath = genesisSetupFilesFolder.resolve("delegate-keys");
 
         //byron.000.cert.json
@@ -148,30 +169,31 @@ public class PrivNetService {
         //Destination file
         Path destByronDelegateKey = destPath.resolve("node").resolve("pool-keys").resolve("byron-delegate.key");
         Path destByronCert = destPath.resolve("node").resolve("pool-keys").resolve("byron-delegation.cert");
-//        Path destKes = destPath.resolve("node").resolve("pool-keys").resolve("kes.skey");
-//        Path destOpcert = destPath.resolve("node").resolve("pool-keys").resolve("opcert.cert");
-//        Path destVrf = destPath.resolve("node").resolve("pool-keys").resolve("vrf.skey");
+
+        Path destKes = destPath.resolve("node").resolve("pool-keys").resolve("kes.skey");
+        Path destOpcert = destPath.resolve("node").resolve("pool-keys").resolve("opcert.cert");
+        Path destVrf = destPath.resolve("node").resolve("pool-keys").resolve("vrf.skey");
 
         FileUtils.copyFile(byronKeyFile.toFile(), destByronDelegateKey.toFile());
         FileUtils.copyFile(byronCertFile.toFile(), destByronCert.toFile());
 
-//        FileUtils.copyFile(shelleyKesSkeyFile.toFile(), destKes.toFile());
-//        FileUtils.copyFile(shelleyOpCertFile.toFile(), destOpcert.toFile());
-//        FileUtils.copyFile(shelleyVrfSkeyFile.toFile(), destVrf.toFile());
+        if ("Mainnet".equals(genesisConfig.getNetworkId())) { //copy only for mainnet
+            FileUtils.copyFile(shelleyKesSkeyFile.toFile(), destKes.toFile());
+            FileUtils.copyFile(shelleyOpCertFile.toFile(), destOpcert.toFile());
+            FileUtils.copyFile(shelleyVrfSkeyFile.toFile(), destVrf.toFile());
+        }
 
         writer.accept(success("Byron and Shelley delegation keys copied"));
     }
 
-    public void updateDelegationDetailsInDefaultGenesisFiles(Path destPath, ClusterInfo clusterInfo, GenesisConfig genesisConfig, Consumer<String> writer) throws IOException {
-        Path genesisSetupFilesFolder = destPath.resolve("genesis-scripts").resolve("genesis-setup-files");
+    public void updateDelegationDetailsInDefaultGenesisFiles(Path destPath, String clusterName, ClusterInfo clusterInfo, GenesisConfig genesisConfig, Consumer<String> writer) throws IOException {
+        Path genesisSetupFilesFolder = clusterConfig.getGenesisKeysFolder(clusterName);
         Path newByronGenesisFile = genesisSetupFilesFolder.resolve("byron-genesis.json");
         Path newShelleyGenesisFile = genesisSetupFilesFolder.resolve("shelley-genesis.json");
 
         var byronHeavyDelegations = GenesisUtil.getHeavyDelegations(newByronGenesisFile);
         var nonAvvmBalances = GenesisUtil.getNonAvvmBalances(newByronGenesisFile);
         var shelleyGenesisDelegs = GenesisUtil.getGenesisDelegs(newShelleyGenesisFile);
-
-        nonAvvmBalances = nonAvvmBalances.stream().map(balance -> new GenesisConfig.NonAvvmBalances(balance.address(), adaToLovelace(5000).toString(), balance.last())).collect(Collectors.toList());
 
         genesisConfig.setGenesisDelegs(shelleyGenesisDelegs);
         genesisConfig.setHeavyDelegations(byronHeavyDelegations);
@@ -190,9 +212,23 @@ public class PrivNetService {
             writeLn(msg);
         });
 
+        //dummy values
+        PoolConfig poolConfig = PoolConfig.builder()
+                .ticker("DEFAULT_POOL")
+                .metadataHash("6bf124f217d0e5a0a8adb1dbd8540e1334280d49ab861127868339f43b3948af") //dummy
+                .pledge(adaToLovelace(10000000))
+                .cost(adaToLovelace(340))
+                .margin(0.02)
+                .relayHost("127.0.0.1")
+                .relayPort(3001)
+                .build();
+        poolKeyGeneratorService.registerPool(clusterName, poolConfig, (msg) -> {
+            writeLn(msg);
+        });
+
         var poolRegCert = poolKeyGeneratorService.getPoolRegistrationCert("default", (msg) -> {
             writeLn(msg);
-        }).orElse(null);
+        }).orElseThrow(() -> new RuntimeException("Pool registration certificate not found"));
 
         if (poolRegCert == null) {
             writeLn(error("Pool registration certificate not found"));
@@ -247,4 +283,42 @@ public class PrivNetService {
         genesisConfig.setDefaultDelegators(delegators);
     }
 
+    public void copyKeys(Path destPath, String clusterName, ClusterInfo clusterInfo, Consumer<String> writer) {
+        Path genesisSetupFilesFolder = clusterConfig.getGenesisKeysFolder(clusterName);
+
+        Path utxoKeysPath = genesisSetupFilesFolder.resolve("utxo-keys");
+        Path delegateKeysPath = genesisSetupFilesFolder.resolve("delegate-keys");
+        Path genesisKeysPath = genesisSetupFilesFolder.resolve("genesis-keys");
+
+        Path destUtxoKeysPath = destPath.resolve("utxo-keys");
+        Path destGenesisKeys = destPath.resolve("genesis-keys");
+        Path destDelegateKeys = destPath.resolve("delegate-keys");
+
+        try {
+            FileUtils.forceMkdir(destUtxoKeysPath.toFile());
+
+            for (int i=0; i < genesisConfig.getNGenesisUtxoKeys(); i++) {
+                Path srcUtxoSkey = utxoKeysPath.resolve("shelley.00" + i +".skey");
+                Path srcUtxoVkey = utxoKeysPath.resolve("shelley.00" + i + ".vkey");
+
+                Path destUtxoSkey = destUtxoKeysPath.resolve("utxo" + (i + 1) + ".skey");
+                Path destUtxoVkey = destUtxoKeysPath.resolve("utxo" + (i + 1) + ".vkey");
+
+                FileUtils.copyFile(srcUtxoSkey.toFile(), destUtxoSkey.toFile());
+                FileUtils.copyFile(srcUtxoVkey.toFile(), destUtxoVkey.toFile());
+            }
+
+            writer.accept(success("Faucet UTXO keys copied"));
+
+            FileUtils.copyDirectory(delegateKeysPath.toFile(), destDelegateKeys.toFile());
+            writer.accept(success("Delegate keys copied"));
+
+            FileUtils.copyDirectory(genesisKeysPath.toFile(), destGenesisKeys.toFile());
+            writer.accept(success("Genesis keys copied"));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            writer.accept(error("Error copying utxo keys"));
+        }
+    }
 }
