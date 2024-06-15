@@ -1,7 +1,8 @@
 {{BIN_FOLDER}}/cardano-cli genesis create-cardano \
-  --genesis-dir genesis-setup-files \
-  --gen-genesis-keys {{nkeys}} \
-  --supply 30000000000000000 \
+  --genesis-dir {{genesisKeysHome}} \
+  --gen-genesis-keys {{nGenesisKeys}} \
+  --gen-utxo-keys {{nGenesisUtxoKeys}} \
+  --supply {{genesisUtxoSupply}} \
   --testnet-magic {{protocolMagic}} \
   --slot-coefficient {{activeSlotsCoeff}} \
   --byron-template ../genesis-templates/spec/byron.json \

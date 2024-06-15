@@ -21,6 +21,11 @@ public class GenesisConfig {
     private int updateQuorum = 1;
     private boolean peerSharing = true;
 
+    private String genesisUtxoSupply = "30000000000000000"; //In byron genesis
+    private int nGenesisKeys = 3; //For new priv network
+    private int nGenesisUtxoKeys = 3; //For new priv network
+
+
     //Shelley Genesis
     private String maxLovelaceSupply = "45000000000000000";
     private float poolPledgeInfluence = 0;
@@ -91,6 +96,8 @@ public class GenesisConfig {
     private int dRepActivity = 20;
 
     private boolean disableFaucet = false;
+    private boolean disableShelleyInitialFunds = false;
+
     //Default faucet address
     private Map<String, BigInteger> faucets= new LinkedHashMap<>();
     private Map<String, BigInteger> initialFunds = new LinkedHashMap<>();
@@ -152,7 +159,7 @@ public class GenesisConfig {
             );
         }
 
-        if (initialFunds.size() == 0 && initialAddresses.size() == 0) {
+        if (initialFunds.size() == 0 && initialAddresses.size() == 0 && !disableShelleyInitialFunds) {
             initialFunds.put( "00c8c47610a36034aac6fc58848bdae5c278d994ff502c05455e3b3ee8f8ed3a0eea0ef835ffa7bbfcde55f7fe9d2cc5d55ea62cecb42bab3c", BigInteger.valueOf(10000000000L));
             initialFunds.put( "004048ff89ca4f88e66598e620aa0c7128c2145d9a181ae9a4a81ca8e3e849af38840c5562dd382be37c9e76545c8191f9d8f6df1d20cfcee0", BigInteger.valueOf(10000000000L));
             initialFunds.put( "00ca6e1b1f320d543a24adeabc0aa4627635c7349b639f86f74bdfdd78d31b28c9619a58b3792a7394ab85deb36889c4d7b0632c8167b855d2", BigInteger.valueOf(10000000000L));
@@ -238,6 +245,9 @@ public class GenesisConfig {
         map.put("slotsPerKESPeriod", slotsPerKESPeriod);
         map.put("updateQuorum", updateQuorum);
         map.put("peerSharing", peerSharing);
+        map.put("genesisUtxoSupply", genesisUtxoSupply);
+        map.put("nGenesisKeys", nGenesisKeys);
+        map.put("nGenesisUtxoKeys", nGenesisUtxoKeys);
         map.put("maxLovelaceSupply", maxLovelaceSupply);
         map.put("poolPledgeInfluence", poolPledgeInfluence);
         map.put("decentralisationParam", decentralisationParam);
@@ -319,6 +329,9 @@ public class GenesisConfig {
         genesisConfig.setSlotsPerKESPeriod(slotsPerKESPeriod);
         genesisConfig.setUpdateQuorum(updateQuorum);
         genesisConfig.setPeerSharing(peerSharing);
+        genesisConfig.setGenesisUtxoSupply(genesisUtxoSupply);
+        genesisConfig.setNGenesisKeys(nGenesisKeys);
+        genesisConfig.setNGenesisUtxoKeys(nGenesisUtxoKeys);
         genesisConfig.setMaxLovelaceSupply(maxLovelaceSupply);
         genesisConfig.setPoolPledgeInfluence(poolPledgeInfluence);
         genesisConfig.setDecentralisationParam(decentralisationParam);

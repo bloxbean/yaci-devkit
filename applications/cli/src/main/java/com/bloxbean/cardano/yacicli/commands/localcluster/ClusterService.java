@@ -14,6 +14,7 @@ import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
 import com.bloxbean.cardano.yacicli.util.ZipUtil;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -159,7 +160,7 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, boolean generateNewGenesisKeys, int nGenesisKeys, Consumer<String> writer) throws IOException {
+    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, boolean generateNewGenesisKeys, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -215,13 +216,14 @@ public class ClusterService {
                     clusterInfo.getEpochLength(),
                     clusterInfo.getProtocolMagic(),
                     generateNewGenesisKeys,
-                    nGenesisKeys,
                     writer);
 
             //Update P2P configuration
             updateConfiguration(destPath, clusterInfo, writer);
 
             updateSubmitApiFiles(destPath, clusterInfo.getProtocolMagic(), clusterInfo.getSubmitApiPort());
+
+            copyKeys(destPath, clusterName, clusterInfo, generateNewGenesisKeys, writer);
 
             //Update node config
             saveClusterInfo(destPath, clusterInfo);
@@ -234,6 +236,19 @@ public class ClusterService {
             return true;
         }
 
+    }
+
+    @SneakyThrows
+    private void copyKeys(Path destPath, String clusterName, ClusterInfo clusterInfo, boolean generateNewGenesisKeys, Consumer<String> writer) {
+        if(generateNewGenesisKeys) {
+            privNetService.copyKeys(destPath, clusterName, clusterInfo, writer);
+        } else {
+            Path utxoKeysFolder = destPath.resolve("default-keys").resolve("utxo-keys");
+            Path destUtxoKeysFolder = destPath.resolve("utxo-keys");
+            FileUtils.copyDirectory(utxoKeysFolder.toFile(), destUtxoKeysFolder.toFile());
+
+            writer.accept(success("Copied default keys"));
+        }
     }
 
     private boolean checkCardanoNodeBin(Consumer<String> writer) throws IOException {
@@ -257,7 +272,7 @@ public class ClusterService {
 
     private void updateGenesis(Path clusterFolder, String clusterName, ClusterInfo clusterInfo, Era era, double slotLength,
                                double activeSlotsCoeff, int epochLength, long protocolMagic,
-                               boolean generateNewGenesisKeys, int nGenesisKeys, Consumer<String> writer) throws IOException {
+                               boolean generateNewGenesisKeys, Consumer<String> writer) throws IOException {
         Path srcShelleyGenesisFile = null;
         Path srcByronGenesisFile = null;
         Path srcAlonzoGenesisFile = null;
@@ -285,7 +300,7 @@ public class ClusterService {
 
         //override genesis keys if new keys are generated
         if (generateNewGenesisKeys) {
-            privNetService.setupNewKeysAndDefaultPool(clusterFolder, clusterName, clusterInfo, genesisConfigCopy, activeSlotsCoeff, nGenesisKeys, writer);
+            privNetService.setupNewKeysAndDefaultPool(clusterFolder, clusterName, clusterInfo, genesisConfigCopy, activeSlotsCoeff, writer);
         }
 
         Map values = genesisConfigCopy.getConfigMap();
@@ -351,7 +366,7 @@ public class ClusterService {
         Path destConfigPath = clusterFolder.resolve("node").resolve("configuration.yaml");
         boolean enableP2P = clusterInfo.isP2pEnabled();
 
-        Map values = new HashMap<>();
+        Map values = genesisConfig.getConfigMap();
         values.put("enableP2P", String.valueOf(enableP2P));
         values.put("peerSharing", genesisConfig.isPeerSharing());
         values.put("prometheusPort", String.valueOf(clusterInfo.getPrometheusPort()));
