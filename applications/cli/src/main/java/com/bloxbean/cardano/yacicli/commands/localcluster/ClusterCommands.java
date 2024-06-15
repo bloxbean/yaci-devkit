@@ -87,8 +87,7 @@ public class ClusterCommands {
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
                               @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era,
                               @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL, help = "Use a pre-defined genesis profile (Options: zero_fee)") GenesisProfile genesisProfile,
-                              @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys,
-                              @ShellOption(value = {"--no-genesis-keys"}, defaultValue = "1", help = "No of genesis keys to generate") int nGenesisKeys
+                              @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys
     ) {
 
         try {
@@ -140,7 +139,7 @@ public class ClusterCommands {
                     .genesisProfile(genesisProfile)
                     .build();
 
-            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, nGenesisKeys, (msg) -> writeLn(msg));
+            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);
