@@ -43,7 +43,7 @@ RequiresNetworkMagic: RequiresMagic
 
 # This protocol version number gets used by block producing nodes as part
 # of the system for agreeing on and synchronising protocol updates.
-LastKnownBlockVersion-Major: 2
+LastKnownBlockVersion-Major: {{#mainnet}}2{{/mainnet}}{{^mainnet}}2{{/mainnet}}
 LastKnownBlockVersion-Minor: 0
 LastKnownBlockVersion-Alt: 0
 
@@ -52,6 +52,7 @@ LastKnownBlockVersion-Alt: 0
 ApplicationName: cardano-sl
 ApplicationVersion: 1
 
+{{^mainnet}}
 TestShelleyHardForkAtEpoch: 0
 TestAllegraHardForkAtEpoch: 0
 TestMaryHardForkAtEpoch: 0
@@ -60,6 +61,7 @@ TestBabbageHardForkAtEpoch: 0
 {{#conway_era}}
 TestConwayHardForkAtEpoch: 0
 {{/conway_era}}
+{{/mainnet}}
 
 ExperimentalHardForksEnabled: true
 ExperimentalProtocolsEnabled: true

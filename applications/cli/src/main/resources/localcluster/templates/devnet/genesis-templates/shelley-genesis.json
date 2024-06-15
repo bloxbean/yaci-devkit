@@ -24,7 +24,7 @@
   "networkMagic": {{protocolMagic}},
   "protocolParams": {
     "a0": {{poolPledgeInfluence}},
-    "decentralisationParam": {{decentralisationParam}},
+    "decentralisationParam": {{#mainnet}}1{{/mainnet}}{{^mainnet}}{{decentralisationParam}}{{/mainnet}},
     "eMax": {{eMax}},
     "extraEntropy": {
       "tag": "NeutralNonce"
