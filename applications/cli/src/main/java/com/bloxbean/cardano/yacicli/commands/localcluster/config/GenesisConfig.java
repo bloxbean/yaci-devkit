@@ -41,7 +41,7 @@ public class GenesisConfig {
     private BigInteger minUTxOValue = BigInteger.valueOf(1000000);
     private int nOpt = 100;
     private BigInteger poolDeposit = BigInteger.valueOf(500000000);
-    private int protocolMajorVer = 8;
+    private int protocolMajorVer = 10;
     private int protocolMinorVer = 0;
     private float monetaryExpansionRate = 0.003f;
     private float treasuryGrowthRate = 0.20f;
