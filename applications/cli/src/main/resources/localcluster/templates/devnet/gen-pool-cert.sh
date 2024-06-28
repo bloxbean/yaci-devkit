@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 #Generate Cold Keys and a Cold_counter:
 echo "\nGenerating pool certificate"
 ${BIN_FOLDER}/cardano-cli node issue-op-cert \

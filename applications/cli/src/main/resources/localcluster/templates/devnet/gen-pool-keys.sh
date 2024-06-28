@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 #Generate Pool owner payment and Stake Keys
 echo "\nGenerating payment and stake keys for pool"
 ${BIN_FOLDER}/cardano-cli address key-gen \

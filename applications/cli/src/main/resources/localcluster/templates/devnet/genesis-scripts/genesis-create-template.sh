@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 {{BIN_FOLDER}}/cardano-cli genesis create-cardano \
   --genesis-dir {{genesisKeysHome}} \
   --gen-genesis-keys {{nGenesisKeys}} \

@@ -39,6 +39,9 @@ public class SocatService {
     @Value("${socat.enabled:true}")
     private boolean enableSocat;
 
+    @Value("${is.docker:false}")
+    private boolean isDocker;
+
     @Autowired
     TemplateEngine templateEngine;
 
@@ -49,6 +52,10 @@ public class SocatService {
         socatLogs.clear();
         if (!enableSocat)
             return;
+
+        if (!isDocker) {
+            return;
+        }
 
         if (!clusterStarted.getClusterName().equals("default")) {
             writeLn("Socat is only supported for 'default' cluster");

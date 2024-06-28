@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 ${KUPO_BIN} \
   --ogmios-host 0.0.0.0 \
   --ogmios-port ${OGMIOS_PORT} \

@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 #Generate pool registration certificate
 #Parameters:
 # $1 pledege: The amount of ADA that will be pledged to the pool
