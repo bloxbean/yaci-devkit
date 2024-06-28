@@ -24,7 +24,7 @@
   "govActionDeposit": {{govActionDeposit}},
   "dRepDeposit": {{dRepDeposit}},
   "dRepActivity": {{dRepActivity}},
-  "minFeeRefScriptCostPerByte": 44,
+  "minFeeRefScriptCostPerByte": {{minFeeRefScriptCostPerByte}},
   "plutusV3CostModel": [
     205665,
     812,
@@ -262,13 +262,18 @@
   ],
   "constitution": {
     "anchor": {
-      "url": "https://devkit.yaci.xyz/constitution.txt",
-      "dataHash": "f89cc2469ce31c3dfda2f3e0b56c5c8b4ee4f0e5f66c30a3f12a95298b01179e"
-    }
+        "url": "{{constitutionUrl}}",
+        "dataHash": "{{constitutionDataHash}}"
+    }{{#constitutionScript}},
+    "script": "{{.}}"
+    {{/constitutionScript}}
   },
   "committee": {
     "members": {
+      {{#ccMembers}}
+            "{{hash}}": {{term}}{{^last}},{{/last}}
+      {{/ccMembers}}
     },
-    "threshold": 0
+    "threshold": {{ccThreshold}}
   }
 }

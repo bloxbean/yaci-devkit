@@ -94,6 +94,14 @@ public class GenesisConfig {
     private BigInteger govActionDeposit = BigInteger.valueOf(1000000000);
     private BigInteger dRepDeposit = BigInteger.valueOf(2000000);
     private int dRepActivity = 20;
+    private BigDecimal minFeeRefScriptCostPerByte = BigDecimal.valueOf(44);
+
+    private String constitutionUrl = "https://devkit.yaci.xyz/constitution.json";
+    private String constitutionDataHash = "f89cc2469ce31c3dfda2f3e0b56c5c8b4ee4f0e5f66c30a3f12a95298b01179e";
+    private String constitutionScript;
+
+    private List<CCMember> ccMembers = new ArrayList<>();
+    private float ccThreshold = 0f;
 
     private boolean disableFaucet = false;
     private boolean disableShelleyInitialFunds = false;
@@ -310,6 +318,16 @@ public class GenesisConfig {
         map.put("govActionDeposit", govActionDeposit);
         map.put("dRepDeposit", dRepDeposit);
         map.put("dRepActivity", dRepActivity);
+        map.put("minFeeRefScriptCostPerByte", minFeeRefScriptCostPerByte);
+        map.put("constitutionUrl", constitutionUrl);
+        map.put("constitutionDataHash", constitutionDataHash);
+        if (constitutionScript != null)
+            map.put("constitutionScript", constitutionScript);
+
+        if (ccMembers != null && ccMembers.size() > 0)
+            ccMembers.getLast().setLast(true);
+        map.put("ccMembers", ccMembers);
+        map.put("ccThreshold", ccThreshold);
 
         map.put("initialFunds", initialFundsList);
 
@@ -387,6 +405,12 @@ public class GenesisConfig {
         genesisConfig.setGovActionDeposit(govActionDeposit);
         genesisConfig.setDRepDeposit(dRepDeposit);
         genesisConfig.setDRepActivity(dRepActivity);
+        genesisConfig.setMinFeeRefScriptCostPerByte(minFeeRefScriptCostPerByte);
+        genesisConfig.setConstitutionUrl(constitutionUrl);
+        genesisConfig.setConstitutionDataHash(constitutionDataHash);
+        genesisConfig.setConstitutionScript(constitutionScript);
+        genesisConfig.setCcMembers(ccMembers);
+        genesisConfig.setCcThreshold(ccThreshold);
 
         genesisConfig.setFaucets(faucets);
         genesisConfig.setInitialFunds(initialFunds);
@@ -443,4 +467,14 @@ public class GenesisConfig {
     public record NonAvvmBalances(String address, String balance, boolean last) {}
 
     public record InitialAddress(String address, BigInteger balance, boolean staked, boolean last) {}
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class CCMember {
+        String hash;
+        int term;
+        boolean last;
+    }
 }
