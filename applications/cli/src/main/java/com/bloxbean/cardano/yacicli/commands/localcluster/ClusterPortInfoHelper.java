@@ -1,13 +1,18 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
+import com.bloxbean.cardano.yacicli.commands.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
+@RequiredArgsConstructor
 public class ClusterPortInfoHelper {
+    private final ApplicationConfig applicationConfig;
+
     @Value("${ogmios.enabled:false}")
     private boolean enableOgmios;
 
@@ -19,6 +24,7 @@ public class ClusterPortInfoHelper {
         if (isDocker) {
             writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details (Container) ######"));
         } else {
+            writeLn(successLabel("Admin Port", String.valueOf(applicationConfig.getAdminPort())));
             writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details ######"));
         }
         writeLn(successLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
