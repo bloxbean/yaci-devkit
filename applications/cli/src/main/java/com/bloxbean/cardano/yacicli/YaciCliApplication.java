@@ -1,12 +1,14 @@
 package com.bloxbean.cardano.yacicli;
 
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.shell.jline.NonInteractiveShellRunner;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SpringBootApplication
+@EnableConfigurationProperties(GenesisConfig.class)
 @Slf4j
 public class YaciCliApplication {
 

@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 #Generate Pool owner payment and Stake Keys
 echo "\nGenerating payment and stake keys for pool"
 ${BIN_FOLDER}/cardano-cli address key-gen \
@@ -12,12 +16,12 @@ ${BIN_FOLDER}/cardano-cli address build \
 --payment-verification-key-file payment.vkey \
 --stake-verification-key-file stake.vkey \
 --out-file payment.addr \
---testnet-magic 42
+--testnet-magic ${protocolMagic}
 
 ${BIN_FOLDER}/cardano-cli stake-address build \
 --stake-verification-key-file stake.vkey \
 --out-file stake.addr \
---testnet-magic 42
+--testnet-magic ${protocolMagic}
 
 echo "Pool owner payment address: " $(cat payment.addr)
 echo "Pool owner stake address: " $(cat stake.addr)

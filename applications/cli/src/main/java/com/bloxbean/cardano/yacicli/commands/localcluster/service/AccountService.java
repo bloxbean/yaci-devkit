@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +43,29 @@ public class AccountService {
             // if (log.isDebugEnabled())
             log.error("Error", e);
             writer.accept(error("Topup error : " + e.getMessage()));
+            return false;
+        } finally {
+            rootLogService.setLogLevel(orgLevel);
+            if (localNodeService != null)
+                localNodeService.shutdown();
+        }
+    }
+
+    public boolean mint(String clusterName, Era era, String assetName, BigInteger quantity, String receiver,
+                        Consumer<String> writer) {
+        Level orgLevel = rootLogService.getLogLevel();
+        if (!rootLogService.isDebugLevel())
+            rootLogService.setLogLevel(Level.OFF);
+
+        LocalNodeService localNodeService = null;
+        try {
+            Path clusterFolder = clusterService.getClusterFolder(clusterName);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
+
+            return localNodeService.mint(assetName, quantity, receiver, msg -> writeLn(msg));
+        } catch (Exception e) {
+            log.error("Error", e);
+            writer.accept(error("Mint error : " + e.getMessage()));
             return false;
         } finally {
             rootLogService.setLogLevel(orgLevel);

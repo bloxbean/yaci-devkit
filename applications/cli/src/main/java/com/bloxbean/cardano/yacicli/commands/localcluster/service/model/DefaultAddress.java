@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public class DefaultAddress {
     private DerivationPath derivationPath;
     private String address;
+    private String addressHex;
     private String stakeAddress;
     private String paymentKey;
     private String stakingKey;

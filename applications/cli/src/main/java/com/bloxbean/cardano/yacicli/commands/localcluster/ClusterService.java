@@ -2,8 +2,11 @@ package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.commands.localcluster.privnet.PrivNetService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
@@ -11,10 +14,10 @@ import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
 import com.bloxbean.cardano.yacicli.util.ZipUtil;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.context.WebServerApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
@@ -64,24 +67,11 @@ public class ClusterService {
     @Autowired
     private ApplicationEventPublisher publisher;
 
-    @Value("${node.networkId:Testnet}")
-    private String networkId;
+    @Autowired
+    private GenesisConfig genesisConfig;
 
-    @Value("${node.maxKESEvolutions:60}")
-    private int maxKESEvolutions;
-
-    @Value("${node.securityParam:300}")
-    private int securityParam;
-
-    @Value("${node.slotsPerKESPeriod:129600}")
-    private long slotsPerKESPeriod;
-
-    @Value("${node.updateQuorum:1}")
-    private int updateQuorum;
-
-    @Value("${node.peerSharing:true}")
-    private String peerSharing;
-
+    @Autowired
+    private PrivNetService privNetService;
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -170,11 +160,7 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public Path getPoolKeys(String clusterName) {
-        return Path.of(clusterConfig.getPoolKeysHome(), clusterName);
-    }
-
-    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, Consumer<String> writer) throws IOException {
+    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, boolean generateNewGenesisKeys, Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -221,12 +207,23 @@ public class ClusterService {
             updatePorts(destPath, clusterInfo.getNodePort());
 
             //Update genesis
-            updateGenesis(destPath, clusterInfo.getEra(), clusterInfo.getSlotLength(), activeCoeff, clusterInfo.getEpochLength(), clusterInfo.getProtocolMagic(), writer);
+            updateGenesis(destPath,
+                    clusterName,
+                    clusterInfo,
+                    clusterInfo.getEra(),
+                    clusterInfo.getSlotLength(),
+                    activeCoeff,
+                    clusterInfo.getEpochLength(),
+                    clusterInfo.getProtocolMagic(),
+                    generateNewGenesisKeys,
+                    writer);
 
             //Update P2P configuration
             updateConfiguration(destPath, clusterInfo, writer);
 
             updateSubmitApiFiles(destPath, clusterInfo.getProtocolMagic(), clusterInfo.getSubmitApiPort());
+
+            copyKeys(destPath, clusterName, clusterInfo, generateNewGenesisKeys, writer);
 
             //Update node config
             saveClusterInfo(destPath, clusterInfo);
@@ -239,6 +236,19 @@ public class ClusterService {
             return true;
         }
 
+    }
+
+    @SneakyThrows
+    private void copyKeys(Path destPath, String clusterName, ClusterInfo clusterInfo, boolean generateNewGenesisKeys, Consumer<String> writer) {
+        if(generateNewGenesisKeys) {
+            privNetService.copyKeys(destPath, clusterName, clusterInfo, writer);
+        } else {
+            Path utxoKeysFolder = destPath.resolve("default-keys").resolve("utxo-keys");
+            Path destUtxoKeysFolder = destPath.resolve("utxo-keys");
+            FileUtils.copyDirectory(utxoKeysFolder.toFile(), destUtxoKeysFolder.toFile());
+
+            writer.accept(success("Copied default keys"));
+        }
     }
 
     private boolean checkCardanoNodeBin(Consumer<String> writer) throws IOException {
@@ -260,8 +270,9 @@ public class ClusterService {
 //        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
-    private void updateGenesis(Path clusterFolder, Era era, double slotLength, double activeSlotsCoeff, int epochLength, long protocolMagic, Consumer<String> writer) throws IOException {
-
+    private void updateGenesis(Path clusterFolder, String clusterName, ClusterInfo clusterInfo, Era era, double slotLength,
+                               double activeSlotsCoeff, int epochLength, long protocolMagic,
+                               boolean generateNewGenesisKeys, Consumer<String> writer) throws IOException {
         Path srcShelleyGenesisFile = null;
         Path srcByronGenesisFile = null;
         Path srcAlonzoGenesisFile = null;
@@ -274,8 +285,8 @@ public class ClusterService {
         } else if (era == Era.Conway) {
             srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
             srcShelleyGenesisFile = clusterFolder.resolve("genesis-templates").resolve("shelley-genesis.json");
-            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json.conway");
-            srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json.conway");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json");
+            srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json");
         }
 
         Path destByronGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("byron-genesis.json");
@@ -283,24 +294,32 @@ public class ClusterService {
         Path destAlonzoGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("alonzo-genesis.json");
         Path destConwayGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("conway-genesis.json");
 
-        Map<String, String> values = new HashMap<>();
-        values.put("networkId", networkId);
-        values.put("maxKESEvolutions", String.valueOf(maxKESEvolutions));
-        values.put("securityParam", String.valueOf(securityParam));
-        values.put("slotLength", String.valueOf(slotLength));
-        values.put("slotsPerKESPeriod", String.valueOf(slotsPerKESPeriod));
-        values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
-        values.put("protocolMagic", String.valueOf(protocolMagic));
-        values.put("epochLength", String.valueOf(epochLength));
-        values.put("updateQuorum", String.valueOf(updateQuorum));
+        GenesisConfig genesisConfigCopy = genesisConfig.copy();
+        if (clusterInfo.getGenesisProfile() != null)
+            genesisConfigCopy = GenesisProfile.applyGenesisProfile(clusterInfo.getGenesisProfile(), genesisConfigCopy);
 
+        //override genesis keys if new keys are generated
+        if (generateNewGenesisKeys) {
+            privNetService.setupNewKeysAndDefaultPool(clusterFolder, clusterName, clusterInfo, genesisConfigCopy, activeSlotsCoeff, writer);
+        }
+
+        Map values = genesisConfigCopy.getConfigMap();
+        values.put("slotLength", String.valueOf(slotLength));
+        values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
+        values.put("epochLength", String.valueOf(epochLength));
+
+        //Check if protocol version should be minimun 10 and it's conway era
+        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 10) {
+            values.put("protocolMajorVer", 10);
+            values.put("protocolMinorVer", 0);
+        }
 
         //Update Genesis files
         try {
             templateEngineHelper.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
             templateEngineHelper.replaceValues(srcShelleyGenesisFile, destShelleyGenesisFile, values);
-            templateEngineHelper.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, new HashMap<>());
-            templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, new HashMap<>());
+            templateEngineHelper.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, values);
+            templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, values);
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -353,9 +372,9 @@ public class ClusterService {
         Path destConfigPath = clusterFolder.resolve("node").resolve("configuration.yaml");
         boolean enableP2P = clusterInfo.isP2pEnabled();
 
-        Map values = new HashMap<>();
+        Map values = genesisConfig.getConfigMap();
         values.put("enableP2P", String.valueOf(enableP2P));
-        values.put("peerSharing", peerSharing);
+        values.put("peerSharing", genesisConfig.isPeerSharing());
         values.put("prometheusPort", String.valueOf(clusterInfo.getPrometheusPort()));
         values.put("conway_era", clusterInfo.getEra() == Era.Conway ? Boolean.TRUE : Boolean.FALSE);
 

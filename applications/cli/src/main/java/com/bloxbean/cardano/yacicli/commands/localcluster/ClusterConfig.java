@@ -14,6 +14,7 @@ import static com.bloxbean.cardano.yacicli.YaciCliConfig.YACI_CLI_HOME;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClusterConfig {
+    public static final String CLUSTER_NAME = "cluster_name";
     public final static String CLUSTER_INFO_FILE = "cluster-info.json";
     public final static String NODE_FOLDER_PREFIX = "node";
     public final static String NODE_RELAY_SCRIPT = "node-relay";
@@ -24,6 +25,9 @@ public class ClusterConfig {
 
     @Value("${pool.keys.home:#{null}}")
     private String poolKeysHome;
+
+    @Value("${genesis.keys.home:#{null}}")
+    private String genesisKeysHome;
 
     @Value("${cardano.cli.path:#{null}}")
     private String cardanoCliPath;
@@ -65,6 +69,13 @@ public class ClusterConfig {
             return poolKeysHome;
     }
 
+    public String getGenesisKeysHome() {
+        if (genesisKeysHome == null || !StringUtils.hasLength(genesisKeysHome.trim()))
+            return Path.of(YACI_CLI_HOME, "genesis-keys").toAbsolutePath().toString();
+        else
+            return genesisKeysHome;
+    }
+
     public String getOgmiosHome() {
         if (ogmiosFolder == null || !StringUtils.hasLength(ogmiosFolder.trim()))
             return Path.of(YACI_CLI_HOME, "bin", "ogmios").toAbsolutePath().toString();
@@ -77,5 +88,17 @@ public class ClusterConfig {
             return Path.of(YACI_CLI_HOME, "bin", "kupo").toAbsolutePath().toString();
         else
             return Path.of(kupoFolder).toAbsolutePath().toString();
+    }
+
+    public Path getClusterFolder(String clusterName) {
+        return Path.of(getClusterHome(), clusterName);
+    }
+
+    public Path getPoolKeysFolder(String clusterName) {
+        return Path.of(getPoolKeysHome(), clusterName);
+    }
+
+    public Path getGenesisKeysFolder(String clusterName) {
+        return Path.of(getGenesisKeysHome(), clusterName);
     }
 }

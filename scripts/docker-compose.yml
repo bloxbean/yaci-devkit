@@ -12,8 +12,10 @@ services:
       - "${HOST_KUPO_PORT}:1442"
     volumes:
       - cluster-data:/clusters
+      - ../config/node.properties:/app/config/node.properties
     env_file:
       - ../config/env
+      - ../config/node.properties
     entrypoint:
       - sleep
       - infinity

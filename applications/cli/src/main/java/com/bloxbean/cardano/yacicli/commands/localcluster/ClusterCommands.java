@@ -1,17 +1,16 @@
 package com.bloxbean.cardano.yacicli.commands.localcluster;
 
 import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.client.plutus.spec.PlutusData;
-import com.bloxbean.cardano.client.plutus.spec.serializers.PlutusDataJsonConverter;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
-import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
+import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.commands.localcluster.events.FirstRunDone;
+import com.bloxbean.cardano.yacicli.commands.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
@@ -29,8 +28,8 @@ import org.springframework.shell.standard.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.CLUSTER_NAME;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @ShellComponent
@@ -38,7 +37,6 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ClusterCommands {
-    public static final String CLUSTER_NAME = "cluster_name";
     private final ClusterService localClusterService;
     private final RootLogService rootLogService;
     private final ClusterUtilService clusterUtilService;
@@ -46,6 +44,7 @@ public class ClusterCommands {
     private final ShellHelper shellHelper;
     private final ApplicationEventPublisher publisher;
     private final ClusterPortInfoHelper clusterUrlPrinter;
+    private final GenesisConfig genesisConfig;
 
     @ShellMethod(value = "List devnet nodes. Use `list-nodes`. Deprecated: `list-clusters`", key = {"list-nodes", "list-clusters"})
     public void listLocalClusters() {
@@ -86,7 +85,9 @@ public class ClusterCommands {
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
-                              @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era
+                              @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era,
+                              @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL, help = "Use a pre-defined genesis profile (Options: zero_fee)") GenesisProfile genesisProfile,
+                              @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys
     ) {
 
         try {
@@ -118,7 +119,7 @@ public class ClusterCommands {
                 return;
             }
 
-            long protocolMagic = 42; //always 42 for now.
+            long protocolMagic = genesisConfig.getProtocolMagic();
 
             //stop any cluster if running
             localClusterService.stopCluster(msg -> writeLn(msg));
@@ -135,9 +136,10 @@ public class ClusterCommands {
                     .masterNode(true)
                     .isBlockProducer(true)
                     .era(nodeEra)
+                    .genesisProfile(genesisProfile)
                     .build();
 
-            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, (msg) -> writeLn(msg));
+            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);
@@ -295,57 +297,6 @@ public class ClusterCommands {
                 writeLn(utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
             });
             writeLn("");
-        });
-    }
-
-    @ShellMethod(value = "Topup account", key = "topup")
-    @ShellMethodAvailability("localClusterCmdAvailability")
-    public void topUp(@ShellOption(value = {"-a", "--address"}, help = "Receiver address") String address,
-                      @ShellOption(value = {"-v", "--value"}, help = "Ada value") double adaValue) {
-        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
-        Era era = CommandContext.INSTANCE.getEra();
-
-        boolean topupStatus = accountService.topup(clusterName, era, address, adaValue, msg -> writeLn(msg));
-        if (!topupStatus)
-            return;
-
-        boolean status = clusterUtilService.waitForNextBlocks(1, msg -> writeLn(msg));
-
-        if (status) {
-            writeLn(info("Available utxos") + "\n");
-            getUtxos(address, false);
-        }
-    }
-
-    @ShellMethod(value = "Get utxos at an address", key = "utxos")
-    @ShellMethodAvailability("localClusterCmdAvailability")
-    public void getUtxos(@ShellOption(value = {"-a", "--address"}, help = "Address") String address,
-                         @ShellOption(value = {"--pretty-print-inline-datum"}, defaultValue = "false") boolean prettyPrintInlineDatum) {
-        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
-        Era era = CommandContext.INSTANCE.getEra();
-
-        List<Utxo> utxos = accountService.getUtxos(clusterName, era, address, msg -> writeLn(msg));
-
-        AtomicInteger index = new AtomicInteger(0);
-        utxos.forEach(utxo -> {
-            writeLn(index.incrementAndGet() + ". " + utxo.getTxHash() + "#" + utxo.getOutputIndex() + " : " + utxo.getAmount());
-            if (utxo.getInlineDatum() != null) {
-                if (prettyPrintInlineDatum) {
-                    try {
-                        writeLn("InlineDatum : \n" +
-                                PlutusDataJsonConverter.toJson(PlutusData.deserialize(HexUtil.decodeHexString(utxo.getInlineDatum()))));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                } else
-                    writeLn("InlineDatum: " + utxo.getInlineDatum());
-            }
-            if (utxo.getDataHash() != null)
-                writeLn("DatumHash: " + utxo.getDataHash());
-
-            if (utxo.getReferenceScriptHash() != null)
-                writeLn("ReferenceScriptHash: " + utxo.getReferenceScriptHash());
-            writeLn("--------------------------------------------------------------------------------------");
         });
     }
 

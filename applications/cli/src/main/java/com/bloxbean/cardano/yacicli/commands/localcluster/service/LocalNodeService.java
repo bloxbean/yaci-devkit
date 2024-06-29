@@ -8,6 +8,7 @@ import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.cip.cip20.MessageMetadata;
 import com.bloxbean.cardano.client.common.model.Networks;
+import com.bloxbean.cardano.client.crypto.KeyGenUtil;
 import com.bloxbean.cardano.client.crypto.SecretKey;
 import com.bloxbean.cardano.client.crypto.VerificationKey;
 import com.bloxbean.cardano.client.crypto.bip32.key.HdPublicKey;
@@ -17,8 +18,13 @@ import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
+import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.plutus.spec.PlutusData;
+import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.Tx;
+import com.bloxbean.cardano.client.transaction.spec.Asset;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
+import com.bloxbean.cardano.client.transaction.spec.script.ScriptPubkey;
 import com.bloxbean.cardano.client.transaction.util.TransactionUtil;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
@@ -191,28 +197,7 @@ public class LocalNodeService {
             writer.accept(success("Transaction submitted successfully"));
         }
 
-        //localNodeClientFactory.shutdown();
-        int count = 0;
-        while (true) {
-            count++;
-            if (count > 10)
-                break;
-            boolean found = utxoSupplier.getAll(receiver)
-                    .stream()
-                    .filter(utxo -> utxo.getTxHash().equals(txHash))
-                    .findAny()
-                    .isPresent();
-            if (found) {
-                writer.accept(infoLabel("Txn# : ", txHash));
-                break;
-            } else {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    break;
-                }
-            }
-        }
+        waitForTx(receiver, txHash, writer);
 
         return true;
     }
@@ -225,6 +210,81 @@ public class LocalNodeService {
         ChainPointQueryResult chainPointQueryResult = chainPointMono.block(Duration.ofSeconds(5));
 
         return new Tuple<>(result.getBlockHeight(), chainPointQueryResult.getChainPoint());
+    }
+
+    public boolean mint(String assetName, BigInteger quntity, String receiver, Consumer<String> writer) throws CborSerializationException {
+        String senderAddress = null;
+        SecretKey senderSkey = null;
+
+        int i = 0;
+        for (Map.Entry<String, List<Utxo>> entry : getFundsAtGenesisKeys().entrySet()) {
+            String address = entry.getKey();
+            Optional<Amount> amountOptional = entry.getValue().stream()
+                    .flatMap(utxo -> utxo.getAmount().stream())
+                    .filter(amt -> LOVELACE.equals(amt.getUnit()) && amt.getQuantity().compareTo(quntity) == 1)
+                    .findAny();
+            if (amountOptional.isPresent()) {
+                senderAddress = address;
+                senderSkey = utxoKeys.get(i)._2;
+                break;
+            }
+
+            i++;
+        }
+
+        var verificationKey = KeyGenUtil.getPublicKeyFromPrivateKey(senderSkey);
+        var scriptPubkey = ScriptPubkey.create(verificationKey);
+
+        var transactionProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.BABBAGE);
+
+        Tx tx = new Tx()
+                .mintAssets(scriptPubkey, Asset.builder()
+                        .name(assetName)
+                        .value(quntity)
+                        .build(), receiver)
+                .payToAddress(senderAddress, Amount.ada(1))
+                .from(senderAddress);
+
+        var result = new QuickTxBuilder(utxoSupplier, protocolParamsSupplier, transactionProcessor)
+                .compose(tx)
+                .withSigner(SignerProviders.signerFrom(senderSkey))
+                .complete();
+
+        if (!result.isSuccessful()) {
+            writer.accept(error("Transaction submission failed : " + result.getResponse()));
+            return false;
+        } else {
+            writer.accept(success("Transaction submitted successfully"));
+            writer.accept(info("Txn# : " + result.getValue()));
+            return waitForTx(receiver, result.getValue(), writer);
+        }
+    }
+
+    private boolean waitForTx(String receiver, String txHash, Consumer<String> writer) {
+        int count = 0;
+        while (true) {
+            writer.accept("Waiting for tx to be included in block...");
+            count++;
+            if (count > 10)
+                break;
+            boolean found = utxoSupplier.getAll(receiver)
+                    .stream()
+                    .filter(utxo -> utxo.getTxHash().equals(txHash))
+                    .findAny()
+                    .isPresent();
+            if (found) {
+                writer.accept(infoLabel("Txn# : ", txHash));
+                return true;
+            } else {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        }
+
+        return false;
     }
 
     public void shutdown() {

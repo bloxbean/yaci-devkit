@@ -121,7 +121,7 @@ public class PeerService {
                 .p2pEnabled(true)
                 .isBlockProducer(isBlockProducer)
                 .adminNodeUrl(adminUrl)
-                .era(Era.Babbage) //TODO: Need to get from admin node
+                .era(bootstrapClusterInfo.getEra())
                 .build();
 
         clusterInfo.setOgmiosPort(clusterInfo.getOgmiosPort() + portShift);
@@ -130,7 +130,7 @@ public class PeerService {
         clusterInfo.setSocatPort(clusterInfo.getSocatPort() + portShift);
         clusterInfo.setPrometheusPort(clusterInfo.getPrometheusPort() + portShift);
 
-        boolean created = clusterService.createNodeClusterFolder(peerName, clusterInfo, overwrite, (msg) -> {
+        boolean created = clusterService.createNodeClusterFolder(peerName, clusterInfo, overwrite, false, (msg) -> {
             writeLn(msg);
         });
 
@@ -162,11 +162,11 @@ public class PeerService {
         downloadFolder.delete();
 
         updateRunScripts(clusterFolder, nodeName, peerNodePort);
-        updatePoolGenScript(clusterFolder);
+        poolKeyGeneratorService.updatePoolGenScript(clusterFolder, clusterInfo);
 
         //Generate pool keys
         if (isBlockProducer) {
-            poolKeyGeneratorService.generatePoolKeys(adminUrl, nodeName, overwritePoolKeys, (msg) -> {
+            poolKeyGeneratorService.generatePoolKeys(nodeName, overwritePoolKeys, (msg) -> {
                 writeLn(msg);
             });
 
@@ -342,23 +342,6 @@ public class PeerService {
         }
         try {
             advancedTemplateEngine.replaceValues(bpRunScriptTemplate, bpRunScript, values);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
-
-    private void updatePoolGenScript(Path destPath) throws IOException {
-        Map<String, String> values = new HashMap<>();
-        values.put("BIN_FOLDER", clusterConfig.getCLIBinFolder());
-
-        //Update submit api script
-        Path genPoolKeyScript = destPath.resolve("gen-pool-keys.sh");
-        Path genPoolCertScript = destPath.resolve("gen-pool-cert.sh");
-        Path poolRegistrationScript = destPath.resolve("pool-registration.sh");
-        try {
-            templateEngine.replaceValues(genPoolKeyScript, values);
-            templateEngine.replaceValues(genPoolCertScript, values);
-            templateEngine.replaceValues(poolRegistrationScript, values);
         } catch (Exception e) {
             throw new IOException(e);
         }

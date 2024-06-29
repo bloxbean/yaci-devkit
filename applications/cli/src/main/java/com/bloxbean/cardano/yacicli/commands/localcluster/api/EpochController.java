@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterCommands.CLUSTER_NAME;
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.CLUSTER_NAME;
 
 @RestController
 @RequestMapping(path = "/local-cluster/api/epochs")

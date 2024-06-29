@@ -11,6 +11,8 @@ import org.springframework.shell.jline.PromptProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import static com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig.CLUSTER_NAME;
+
 @Component
 @RequiredArgsConstructor
 public class YaciCliPromptProvider implements PromptProvider {
@@ -22,7 +24,7 @@ public class YaciCliPromptProvider implements PromptProvider {
             return new AttributedString("yaci-cli:>",
                     AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN).bold());
         } else {
-            String clusterName = CommandContext.INSTANCE.getProperty(ClusterCommands.CLUSTER_NAME);
+            String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
             if (clusterName == null)
                 clusterName = "";
 
