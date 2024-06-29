@@ -1,0 +1,11 @@
+[
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.AddressesApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.EpochApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.TransactionApi"]
+  }
+]
