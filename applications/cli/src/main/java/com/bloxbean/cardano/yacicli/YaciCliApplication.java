@@ -1,7 +1,7 @@
 package com.bloxbean.cardano.yacicli;
 
-import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
-import com.bloxbean.cardano.yacicli.commands.localcluster.config.GenesisConfig;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;

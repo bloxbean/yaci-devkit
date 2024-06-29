@@ -1,6 +1,6 @@
 [
   {
-    "name":"com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo",
+    "name":"com.bloxbean.cardano.yacicli.localcluster.ClusterInfo",
     "allDeclaredFields":true,
     "allDeclaredMethods":true,
     "allDeclaredConstructors":true,

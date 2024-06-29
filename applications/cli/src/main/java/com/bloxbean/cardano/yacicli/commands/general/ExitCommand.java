@@ -1,6 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.general;
 
-import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
