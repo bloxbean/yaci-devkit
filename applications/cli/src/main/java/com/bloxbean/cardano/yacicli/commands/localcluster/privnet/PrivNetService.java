@@ -10,7 +10,7 @@ import com.bloxbean.cardano.yacicli.commands.localcluster.peer.PoolConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.peer.PoolKeyGeneratorService;
 import com.bloxbean.cardano.yacicli.commands.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
-import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +23,6 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -52,8 +50,10 @@ public class PrivNetService {
     public void setupNewKeysAndDefaultPool(Path clusterPath, String clusterName, ClusterInfo clusterInfo, GenesisConfig genesisConfig, Double activeCoeff, Consumer<String> writer) throws IOException {
         updateGenesisScript(clusterPath, clusterName, clusterInfo, clusterInfo.getSlotLength(), activeCoeff,
                 clusterInfo.getEpochLength(), writer);
-        runGenesisScript(clusterPath, clusterName, true, writer);
-        writer.accept(success("New genesis keys generated successfully"));
+        boolean status = runGenesisScript(clusterPath, clusterName, true, writer);
+        if (status) {
+            writer.accept(success("New genesis keys generated successfully"));
+        }
 
         updateByronAndShelleyDelegationKeys(clusterPath, clusterName, clusterInfo, writer);
 
@@ -91,13 +91,13 @@ public class PrivNetService {
         }
     }
 
-    public void runGenesisScript(Path clusterPah, String clusterName, boolean overwrite, Consumer<String> writer) {
+    public boolean runGenesisScript(Path clusterPah, String clusterName, boolean overwrite, Consumer<String> writer) {
         try {
             Path genCreateScript = clusterPah.resolve("genesis-scripts").resolve("genesis-create.sh");
 
             if (!genCreateScript.toFile().exists()) {
                 writer.accept(error("Genesis script file not found : %s", genCreateScript.toFile().getAbsolutePath()));
-                return;
+                return false;
             }
 
             Path clusterGenesisKeysFolder = clusterConfig.getGenesisKeysFolder(clusterName);
@@ -105,7 +105,7 @@ public class PrivNetService {
             if (clusterGenesisKeysFolder.toFile().exists() && !overwrite) {
                 writer.accept(warn("Found existing genesis keys for this node. Existing keys will be used." +
                         "Please use --overwrite-genesis-keys option to overwrite genesis keys"));
-                return;
+                return true;
             }
 
             FileUtils.deleteDirectory(clusterGenesisKeysFolder.toFile());
@@ -120,24 +120,47 @@ public class PrivNetService {
             builder.command("sh", genCreateScriptFile);
 
             builder.directory(genCreateScript.getParent().toFile());
-            Process process = builder.start();
 
-            ProcessStream processStream =
-                    new ProcessStream(process.getInputStream(), line -> {
-                        if (line != null && !line.isEmpty())
-                            writer.accept(successLabel("Genesis Keys", line));
-                    });
-
-            ProcessStream errorProcessStream =
-                    new ProcessStream(process.getErrorStream(), line -> {
-                        if (line != null && !line.isEmpty())
-                            writer.accept(error("Genesis Keys", line));
-                    });
-            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream, errorProcessStream);
-            future.get();
+            return ProcessUtil.executeAndFinish(builder, "Genesis Keys", writer);
+//            String genCreateScriptFile = genCreateScript.toFile().getAbsolutePath();
+//
+//            ProcessBuilder builder = new ProcessBuilder();
+//            builder.command("sh", genCreateScriptFile);
+//
+//            builder.directory(genCreateScript.getParent().toFile());
+//            Process process = builder.start();
+//
+//            ExecutorService executor = Executors.newSingleThreadExecutor();
+//            ProcessStream processStream =
+//                    new ProcessStream(process.getInputStream(), line -> {
+//                        if (line != null && !line.isEmpty())
+//                            writer.accept(successLabel("Genesis Keys", line));
+//                    });
+//
+//            ProcessStream errorProcessStream =
+//                    new ProcessStream(process.getErrorStream(), line -> {
+//                        if (line != null && !line.isEmpty())
+//                            writer.accept(error("Genesis Keys %s", line));
+//                    });
+//
+//            Future<?> inputFuture = executor.submit(processStream);
+//            Future<?> errorFuture = executor.submit(errorProcessStream);
+//
+//            inputFuture.get();
+//            errorFuture.get();
+//
+//            // Wait for process to complete
+//            int exitCode = process.waitFor();
+//            System.out.println("Process exited with code: " + exitCode);
+////            Future<?> future = executor.submit(processStream, errorProcessStream);
+////            future.get();
+//
+//            executor.shutdown();
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
+
+        return false;
     }
 
     private void updateByronAndShelleyDelegationKeys(Path destPath, String clusterName, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException {

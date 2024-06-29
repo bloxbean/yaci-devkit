@@ -285,8 +285,8 @@ public class ClusterService {
         } else if (era == Era.Conway) {
             srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
             srcShelleyGenesisFile = clusterFolder.resolve("genesis-templates").resolve("shelley-genesis.json");
-            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json.conway");
-            srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json.conway");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json");
+            srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json");
         }
 
         Path destByronGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("byron-genesis.json");
@@ -307,6 +307,12 @@ public class ClusterService {
         values.put("slotLength", String.valueOf(slotLength));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
+
+        //Check if protocol version should be minimun 10 and it's conway era
+        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 10) {
+            values.put("protocolMajorVer", 10);
+            values.put("protocolMinorVer", 0);
+        }
 
         //Update Genesis files
         try {

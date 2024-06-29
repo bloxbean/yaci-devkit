@@ -121,7 +121,7 @@ public class PeerService {
                 .p2pEnabled(true)
                 .isBlockProducer(isBlockProducer)
                 .adminNodeUrl(adminUrl)
-                .era(Era.Babbage) //TODO: Need to get from admin node
+                .era(bootstrapClusterInfo.getEra())
                 .build();
 
         clusterInfo.setOgmiosPort(clusterInfo.getOgmiosPort() + portShift);

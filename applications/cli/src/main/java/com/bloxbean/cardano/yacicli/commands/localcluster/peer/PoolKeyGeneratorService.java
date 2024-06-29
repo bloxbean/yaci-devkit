@@ -6,7 +6,7 @@ import com.bloxbean.cardano.client.transaction.spec.cert.PoolRegistration;
 import com.bloxbean.cardano.yaci.core.util.HexUtil;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.commands.localcluster.ClusterInfo;
-import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,8 +22,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
@@ -54,13 +52,13 @@ public class PoolKeyGeneratorService {
     }
 
     @SneakyThrows
-    public void generatePoolKeys(String nodeName, boolean overwrite, Consumer<String> writer) {
+    public boolean generatePoolKeys(String nodeName, boolean overwrite, Consumer<String> writer) {
         Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
 
         if (clusterPoolKeysFolder.toFile().exists() && !overwrite) {
             writer.accept(warn("Found existing pool keys for this node. Existing keys will be used." +
                     "Please use --overwrite-pool-keys option to overwrite pool keys"));
-            return;
+            return true;
         }
 
         if (!clusterPoolKeysFolder.toFile().exists()) {
@@ -70,23 +68,30 @@ public class PoolKeyGeneratorService {
         try {
             String genKeyFile = clusterConfig.getClusterFolder(nodeName).resolve("gen-pool-keys.sh").toFile()
                     .getAbsolutePath();
+
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", genKeyFile);
-
             builder.directory(clusterPoolKeysFolder.toFile());
-            Process process = builder.start();
 
-            ProcessStream processStream =
-                    new ProcessStream(process.getInputStream(), line -> {
-                        if (line != null && !line.isEmpty())
-                            writer.accept(successLabel("Pool Keys", line));
-                    });
-            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
-            future.get();
+            return ProcessUtil.executeAndFinish(builder, "Pool Keys", writer);
+//            ProcessBuilder builder = new ProcessBuilder();
+//            builder.command("sh", genKeyFile);
+//
+//            builder.directory(clusterPoolKeysFolder.toFile());
+//            Process process = builder.start();
+//
+//            ProcessStream processStream =
+//                    new ProcessStream(process.getInputStream(), line -> {
+//                        if (line != null && !line.isEmpty())
+//                            writer.accept(successLabel("Pool Keys", line));
+//                    });
+//            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
+//            future.get();
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
 
+        return false;
 
         //Generate Cold Keys and a Cold Counter
 
@@ -119,7 +124,7 @@ public class PoolKeyGeneratorService {
         generateOperationalCert(nodeName, kesPeriod, writer);
     }
 
-    public void generateOperationalCert(String nodeName, int kesPeriod, Consumer<String> writer) throws IOException {
+    public boolean generateOperationalCert(String nodeName, int kesPeriod, Consumer<String> writer) throws IOException {
         Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
 
         if (!clusterPoolKeysFolder.toFile().exists()) {
@@ -127,29 +132,34 @@ public class PoolKeyGeneratorService {
         }
 
         try {
-            String genCertFile = clusterConfig.getClusterFolder(nodeName).resolve("gen-pool-cert.sh").toFile()
-                    .getAbsolutePath();
+            Path genPoolCertPath = clusterConfig.getClusterFolder(nodeName).resolve("gen-pool-cert.sh");
+            String genCertFile = genPoolCertPath.toFile().getAbsolutePath();
+
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("sh", genCertFile, String.valueOf(kesPeriod));
 
             builder.directory(clusterPoolKeysFolder.toFile());
-            Process process = builder.start();
 
-            ProcessStream processStream =
-                    new ProcessStream(process.getInputStream(), line -> {
-//                    //TODO -- Add logs
-                        if (line != null && !line.isEmpty())
-                            writer.accept(info(line));
-                    });
-            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
-            future.get();
+            return ProcessUtil.executeAndFinish(builder, "Operational Certificate", writer);
+//            Process process = builder.start();
+//
+//            ProcessStream processStream =
+//                    new ProcessStream(process.getInputStream(), line -> {
+////                    //TODO -- Add logs
+//                        if (line != null && !line.isEmpty())
+//                            writer.accept(info(line));
+//                    });
+//            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
+//            future.get();
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
+
+        return false;
     }
 
     @SneakyThrows
-    public void registerPool(String nodeName, PoolConfig poolConfig, Consumer<String> writer) {
+    public boolean registerPool(String nodeName, PoolConfig poolConfig, Consumer<String> writer) {
         Path clusterPoolKeysFolder = clusterConfig.getPoolKeysFolder(nodeName);
 
         try {
@@ -162,26 +172,29 @@ public class PoolKeyGeneratorService {
                     poolConfig.getRelayHost(), String.valueOf(poolConfig.getRelayPort()));
 
             builder.directory(clusterPoolKeysFolder.toFile());
-            Process process = builder.start();
 
             writer.accept("Running script : " + builder.command());
 
-            ProcessStream processStream =
-                    new ProcessStream(process.getInputStream(), line -> {
-//                    //TODO -- Add logs
-                        if (line != null && !line.isEmpty())
-                            writer.accept(successLabel("Pool Registration", line));
-                    });
-            ProcessStream errorProcessStream =
-                    new ProcessStream(process.getErrorStream(), line -> {
-//                    //TODO -- Add logs
-                        writer.accept(error(line));
-                    });
-            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream, errorProcessStream);
-            future.get();
+            return ProcessUtil.executeAndFinish(builder, "Pool Registration", writer);
+
+//            ProcessStream processStream =
+//                    new ProcessStream(process.getInputStream(), line -> {
+////                    //TODO -- Add logs
+//                        if (line != null && !line.isEmpty())
+//                            writer.accept(successLabel("Pool Registration", line));
+//                    });
+//            ProcessStream errorProcessStream =
+//                    new ProcessStream(process.getErrorStream(), line -> {
+////                    //TODO -- Add logs
+//                        writer.accept(error(line));
+//                    });
+//            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream, errorProcessStream);
+//            future.get();
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
+
+        return false;
     }
 
     @SneakyThrows
