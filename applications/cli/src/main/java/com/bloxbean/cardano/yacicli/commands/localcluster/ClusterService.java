@@ -308,6 +308,12 @@ public class ClusterService {
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
 
+        //Check if protocol version should be minimun 10 and it's conway era
+        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 10) {
+            values.put("protocolMajorVer", 10);
+            values.put("protocolMinorVer", 0);
+        }
+
         //Update Genesis files
         try {
             templateEngineHelper.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
