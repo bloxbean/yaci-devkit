@@ -45,6 +45,8 @@ dependencies {
     implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.5.1'
     //implementation 'com.bloxbean.cardano:cardano-client-supplier-local:0.5.1'
 
+    implementation 'org.apache.commons:commons-compress:1.23.0'
+
 	implementation 'org.jeasy:easy-rules-core:4.1.0'
 	implementation 'org.jeasy:easy-rules-mvel:4.1.0'
 
@@ -102,9 +104,17 @@ gitProperties {
 
 task cliZip(type: Zip) {
     def zipDirName = "yaci-cli-${project.version}"
+    def configDir = zipDirName + "/config"
+
     from('build/native/nativeCompile') {
         into(zipDirName)
     }
+
+    from('config') {
+        into(configDir)
+        include '**/*.properties'
+    }
+
     include 'yaci-cli*'
     archiveFileName = "yaci-cli-${project.version}.zip"
     destinationDirectory = file("build")

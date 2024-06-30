@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 public class ProcessStream implements Runnable {
     private InputStream inputStream;
     private Consumer<String> consumer;
+    private boolean stop;
 
     public ProcessStream(InputStream inputStream, Consumer<String> consumer) {
         this.inputStream = inputStream;
@@ -17,6 +18,15 @@ public class ProcessStream implements Runnable {
     @Override
     public void run() {
         new BufferedReader(new InputStreamReader(inputStream)).lines()
-                .forEach(consumer);
+                .forEach(line -> {
+                    if(stop)
+                        return;
+
+                    consumer.accept(line);
+                });
+    }
+
+    public void stop() {
+        stop = true;
     }
 }

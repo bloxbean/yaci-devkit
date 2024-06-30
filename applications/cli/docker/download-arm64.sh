@@ -1,5 +1,5 @@
-file=cardano-8_9_2-aarch64-static-musl-ghc_964.tar.zst
-dir=cardano-8_9_2-aarch64-static-musl-ghc_964
+file=cardano-8_12_1-aarch64-static-musl-ghc_965.tar.zst
+dir=cardano-8_12_1-aarch64-static-musl-ghc_965
 wget https://github.com/armada-alliance/cardano-node-binaries/raw/main/static-binaries/$file?raw=true -O - | tar -I zstd -xv
 
 #unzip $file

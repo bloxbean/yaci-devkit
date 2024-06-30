@@ -1,17 +1,23 @@
 package com.bloxbean.cardano.yacicli.util;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import com.bloxbean.cardano.yacicli.commands.common.ExecutorHelper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.Queue;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.successLabel;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
+@Component
+@RequiredArgsConstructor
 public class ProcessUtil {
+    private final ExecutorHelper executorHelper;
 
-    public static boolean executeAndFinish(ProcessBuilder processBuilder, String scriptPurpose, Consumer<String> writer) {
-        ExecutorService executor = Executors.newCachedThreadPool();
+    public boolean executeAndFinish(ProcessBuilder processBuilder, String scriptPurpose, Consumer<String> writer) {
         try {
             Process process = processBuilder.start();
 
@@ -27,8 +33,8 @@ public class ProcessUtil {
                             writer.accept(error(scriptPurpose + " %s", line));
                     });
 
-            Future<?> inputFuture = executor.submit(processStream);
-            Future<?> errorFuture = executor.submit(errorProcessStream);
+            Future<?> inputFuture = executorHelper.getExecutor().submit(processStream);
+            Future<?> errorFuture = executorHelper.getExecutor().submit(errorProcessStream);
 
             inputFuture.get();
             errorFuture.get();
@@ -42,11 +48,36 @@ public class ProcessUtil {
                 return false;
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            executor.shutdown();
         }
 
         return false;
+    }
+
+    public Process startLongRunningProcess(String processName, ProcessBuilder builder, Queue<String> logs, Consumer<String> writer)
+            throws IOException, InterruptedException {
+        Process process = builder.start();
+        ProcessStream processStream =
+                new ProcessStream(process.getInputStream(), line -> {
+                    logs.add(String.format("[%s] " + line, processName));
+                });
+
+        ProcessStream errorStream =
+                new ProcessStream(process.getErrorStream(), line -> {
+                    writeLn(error(line));
+                });
+
+        executorHelper.getExecutor().submit(processStream);
+        executorHelper.getExecutor().submit(errorStream);
+
+        process.waitFor(1, TimeUnit.SECONDS);
+        if (!process.isAlive()) {
+            writer.accept(error("%s process could not be started.", processName));
+            return null;
+        }
+
+        //stop consuming error stream
+        errorStream.stop();
+        return process;
     }
 
 }

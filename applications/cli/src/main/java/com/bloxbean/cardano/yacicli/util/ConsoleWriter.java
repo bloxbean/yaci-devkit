@@ -10,6 +10,13 @@ public class ConsoleWriter {
             System.out.println(str);
     }
 
+    public static void write(String str, Object...args) {
+        if (args.length != 0)
+            System.out.print(String.format(str, args));
+        else
+            System.out.print(str);
+    }
+
     public static String success(String str, Object...args) {
         String PREFIX = AnsiColors.BLUE + "[Success] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)

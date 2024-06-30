@@ -1,5 +1,5 @@
-file=cardano-node-8.9.2-linux.tar.gz
-wget https://github.com/IntersectMBO/cardano-node/releases/download/8.9.2/cardano-node-8.9.2-linux.tar.gz
+file=cardano-node-8.12.2-linux.tar.gz
+wget https://github.com/IntersectMBO/cardano-node/releases/download/8.12.2/cardano-node-8.12.2-linux.tar.gz
 
 mkdir /app/cardano-bin
 
