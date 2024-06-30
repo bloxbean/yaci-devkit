@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import static com.bloxbean.cardano.yacicli.YaciCliConfig.YACI_CLI_HOME;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.writeLn;
 
 @Component
 @NoArgsConstructor
@@ -19,6 +22,9 @@ public class ClusterConfig {
     public final static String NODE_FOLDER_PREFIX = "node";
     public final static String NODE_RELAY_SCRIPT = "node-relay";
     public final static String NODE_BP_SCRIPT = "node-bp";
+
+    @Value("${yaci.cli.home:#{null}}")
+    private String yaciCliHome;
 
     @Value("${local.cluster.home:#{null}}")
     private String clusterHome;
@@ -41,51 +47,64 @@ public class ClusterConfig {
     @Value("${kupo.folder:#{null}}")
     private String kupoFolder;
 
+    public String getYaciCliHome() {
+        if (yaciCliHome == null)
+            yaciCliHome = System.getProperty("user.home") + File.separator + ".yaci-cli";
+
+        Path yaciCliPath = Paths.get(yaciCliHome);
+        if (!yaciCliPath.isAbsolute()) {
+            writeLn(error("Yaci-cli home path must be absolute path. Please provide absolute path for yaci-cli home."));
+            System.exit(1);
+        }
+
+        return yaciCliHome;
+    }
+
     public String getClusterHome() {
         if (clusterHome == null || !StringUtils.hasLength(clusterHome.trim()))
-            return Path.of(YACI_CLI_HOME, "local-clusters").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "local-clusters").toAbsolutePath().toString();
 
         return clusterHome;
     }
 
     public String getCLIBinFolder() {
         if (cardanoCliPath == null || !StringUtils.hasLength(cardanoCliPath.trim()))
-            return Path.of(YACI_CLI_HOME, "bin").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "bin").toAbsolutePath().toString();
         else
             return Path.of(cardanoCliPath).toAbsolutePath().toString();
     }
 
     public String getYaciStoreBinPath() {
         if (yaciStoreBinFolder == null || !StringUtils.hasLength(yaciStoreBinFolder.trim()))
-            return Path.of(YACI_CLI_HOME, "bin").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "bin").toAbsolutePath().toString();
         else
             return Path.of(yaciStoreBinFolder).toAbsolutePath().toString();
     }
 
     public String getPoolKeysHome() {
         if (poolKeysHome == null || !StringUtils.hasLength(poolKeysHome.trim()))
-            return Path.of(YACI_CLI_HOME, "pool-keys").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "pool-keys").toAbsolutePath().toString();
         else
             return poolKeysHome;
     }
 
     public String getGenesisKeysHome() {
         if (genesisKeysHome == null || !StringUtils.hasLength(genesisKeysHome.trim()))
-            return Path.of(YACI_CLI_HOME, "genesis-keys").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "genesis-keys").toAbsolutePath().toString();
         else
             return genesisKeysHome;
     }
 
     public String getOgmiosHome() {
         if (ogmiosFolder == null || !StringUtils.hasLength(ogmiosFolder.trim()))
-            return Path.of(YACI_CLI_HOME, "bin", "ogmios").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "bin", "ogmios").toAbsolutePath().toString();
         else
             return Path.of(ogmiosFolder).toAbsolutePath().toString();
     }
 
     public String getKupoHome() {
         if (kupoFolder == null || !StringUtils.hasLength(kupoFolder.trim()))
-            return Path.of(YACI_CLI_HOME, "bin", "kupo").toAbsolutePath().toString();
+            return Path.of(getYaciCliHome(), "bin", "kupo").toAbsolutePath().toString();
         else
             return Path.of(kupoFolder).toAbsolutePath().toString();
     }

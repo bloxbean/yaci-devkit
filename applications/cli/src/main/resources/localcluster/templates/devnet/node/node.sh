@@ -1,3 +1,7 @@
+#!/bin/bash
+
+set -e
+
 ${BIN_FOLDER}/cardano-node run \
 --config configuration.yaml \
 --topology topology.json \

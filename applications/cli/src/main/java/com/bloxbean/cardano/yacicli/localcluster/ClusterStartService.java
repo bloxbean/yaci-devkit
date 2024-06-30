@@ -2,7 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
-import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.LongNode;
@@ -34,6 +34,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 public class ClusterStartService {
     private final ClusterConfig clusterConfig;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
+    private final ProcessUtil processUtil;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private AtomicBoolean showLog = new AtomicBoolean(true);
@@ -195,19 +196,21 @@ public class ClusterStartService {
 
         File nodeStartDir = new File(clusterFolderPath, ClusterConfig.NODE_FOLDER_PREFIX);
         builder.directory(nodeStartDir);
-        Process process = builder.start();
 
         writer.accept(success("Starting node from directory : " + nodeStartDir.getAbsolutePath()));
-        ProcessStream processStream =
-                new ProcessStream(process.getInputStream(), line -> {
-                    logs.add(String.format("[Node] ") + line);
-                    //writeLn("[Node: %s] %s", nodeNo, line);
-                });
-        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
+        Process process = processUtil.startLongRunningProcess("Node", builder, logs, writer);
+        if (process == null) return null;
+
+        Path nodeSocketPath = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock");
+        int counter = 0;
+        while (!Files.exists(nodeSocketPath) && counter < 10) { //wait 5 sec max
+            Thread.sleep(500);
+            if (counter > 4)
+                writeLn(info("Waiting for node socket file to be created ..."));
+            counter++;
+        }
+
         return process;
-//        int exitCode = process.waitFor();
-//        assert exitCode == 0;
-//        future.get(10, TimeUnit.SECONDS);
     }
 
     private Process startSubmitApi(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
@@ -228,14 +231,11 @@ public class ClusterStartService {
 
         File submitApiStartDir = new File(clusterFolderPath);
         builder.directory(submitApiStartDir);
-        Process process = builder.start();
+
+        Process process = processUtil.startLongRunningProcess("SubmitApi", builder, submitApiLogs, writer);
+        if (process == null) return null;
 
         writer.accept(success("Started submit api : http://localhost:" + clusterPortInfoHelper.getSubmitApiPort(clusterInfo)));
-        ProcessStream processStream =
-                new ProcessStream(process.getInputStream(), line -> {
-                    submitApiLogs.add("[SubmitApi] " + line);
-                });
-        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
         return process;
     }
 

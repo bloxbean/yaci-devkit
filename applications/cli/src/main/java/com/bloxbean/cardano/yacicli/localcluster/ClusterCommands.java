@@ -21,6 +21,7 @@ import com.bloxbean.cardano.yacicli.output.DefaultOutputFormatter;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.*;
@@ -44,6 +45,21 @@ public class ClusterCommands {
     private final ApplicationEventPublisher publisher;
     private final ClusterPortInfoHelper clusterUrlPrinter;
     private final GenesisConfig genesisConfig;
+
+    @Value("${ogmios.port:1337}")
+    private int ogmiosPort;
+
+    @Value("${kupo.port:1442}")
+    private int kupoPort;
+
+    @Value("${yaci.store.port:8080}")
+    private int yaciStorePort;
+
+    @Value("${socat.port:3333}")
+    private int socatPort;
+
+    @Value("${prometheus.port:12798}")
+    private int prometheusPort;
 
     @ShellMethod(value = "List devnet nodes. Use `list-nodes`. Deprecated: `list-clusters`", key = {"list-nodes", "list-clusters"})
     public void listLocalClusters() {
@@ -136,6 +152,11 @@ public class ClusterCommands {
                     .isBlockProducer(true)
                     .era(nodeEra)
                     .genesisProfile(genesisProfile)
+                    .ogmiosPort(ogmiosPort)
+                    .kupoPort(kupoPort)
+                    .yaciStorePort(yaciStorePort)
+                    .socatPort(socatPort)
+                    .prometheusPort(prometheusPort)
                     .build();
 
             boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, (msg) -> writeLn(msg));

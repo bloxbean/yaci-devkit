@@ -22,6 +22,10 @@ public class LocalClientProviderHelper {
         long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
         String socketPath = localClusterService.getClusterInfo(clusterName).getSocketPath();
 
+        if (!Path.of(socketPath).toFile().exists()) {
+            throw new Exception("Node Socket file is not available yet: " + socketPath);
+        }
+
         LocalClientProvider localClientProvider = new LocalClientProvider(socketPath, protocolMagic);
         return localClientProvider;
     }

@@ -32,6 +32,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 public class PoolKeyGeneratorService {
     private final ClusterConfig clusterConfig;
     private final TemplateEngine templateEngine;
+    private final ProcessUtil processUtil;
 
     public void updatePoolGenScript(Path destPath, ClusterInfo clusterInfo) throws IOException {
         Map<String, String> values = new HashMap<>();
@@ -73,20 +74,7 @@ public class PoolKeyGeneratorService {
             builder.command("sh", genKeyFile);
             builder.directory(clusterPoolKeysFolder.toFile());
 
-            return ProcessUtil.executeAndFinish(builder, "Pool Keys", writer);
-//            ProcessBuilder builder = new ProcessBuilder();
-//            builder.command("sh", genKeyFile);
-//
-//            builder.directory(clusterPoolKeysFolder.toFile());
-//            Process process = builder.start();
-//
-//            ProcessStream processStream =
-//                    new ProcessStream(process.getInputStream(), line -> {
-//                        if (line != null && !line.isEmpty())
-//                            writer.accept(successLabel("Pool Keys", line));
-//                    });
-//            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
-//            future.get();
+            return processUtil.executeAndFinish(builder, "Pool Keys", writer);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
@@ -140,17 +128,7 @@ public class PoolKeyGeneratorService {
 
             builder.directory(clusterPoolKeysFolder.toFile());
 
-            return ProcessUtil.executeAndFinish(builder, "Operational Certificate", writer);
-//            Process process = builder.start();
-//
-//            ProcessStream processStream =
-//                    new ProcessStream(process.getInputStream(), line -> {
-////                    //TODO -- Add logs
-//                        if (line != null && !line.isEmpty())
-//                            writer.accept(info(line));
-//                    });
-//            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
-//            future.get();
+            return processUtil.executeAndFinish(builder, "Operational Certificate", writer);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
@@ -175,21 +153,7 @@ public class PoolKeyGeneratorService {
 
             writer.accept("Running script : " + builder.command());
 
-            return ProcessUtil.executeAndFinish(builder, "Pool Registration", writer);
-
-//            ProcessStream processStream =
-//                    new ProcessStream(process.getInputStream(), line -> {
-////                    //TODO -- Add logs
-//                        if (line != null && !line.isEmpty())
-//                            writer.accept(successLabel("Pool Registration", line));
-//                    });
-//            ProcessStream errorProcessStream =
-//                    new ProcessStream(process.getErrorStream(), line -> {
-////                    //TODO -- Add logs
-//                        writer.accept(error(line));
-//                    });
-//            Future<?> future = Executors.newSingleThreadExecutor().submit(processStream, errorProcessStream);
-//            future.get();
+            return processUtil.executeAndFinish(builder, "Pool Registration", writer);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }

@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
@@ -72,6 +73,9 @@ public class ClusterService {
 
     @Autowired
     private PrivNetService privNetService;
+
+    @Autowired
+    private ApplicationConfig applicationConfig;
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -262,12 +266,12 @@ public class ClusterService {
             return true;
 
         writer.accept(error("cardno-node binary is not found in %s", clusterConfig.getCLIBinFolder()));
-        writer.accept(error("Please download and copy cardano-node, cardano-cli, cardano-submit-api executables (1.35.3 or later) to %s and try again (Set execute permission if required)", clusterConfig.getCLIBinFolder()));
+        if (!applicationConfig.isDocker()) {
+            writer.accept(info("Use 'download -c node' command to download cardano-node"));
+        }
+        writer.accept(error("You can also manually download and copy cardano-node, cardano-cli, cardano-submit-api " +
+                "executables to %s and try again (Set execute permission if required)", clusterConfig.getCLIBinFolder()));
         return false;
-        //Download
-
-//        URL url = new URL("https://hydra.iohk.io/build/17428186/download/1/cardano-node-1.35.3-macos.tar.gz");
-//        FileUtils.copyURLToFile(url, Path.of(clusterConfig.getCLIBinFolder()).toFile());
     }
 
     private void updateGenesis(Path clusterFolder, String clusterName, ClusterInfo clusterInfo, Era era, double slotLength,

@@ -7,7 +7,7 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
-import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +33,7 @@ public class SocatService {
     private final static String SOCAT_SCRIPT = "socat.sh";
     private final ClusterService clusterService;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
+    private final ProcessUtil processUtil;
 
     private List<Process> processes = new ArrayList<>();
 
@@ -104,14 +105,14 @@ public class SocatService {
 
         File socatStartDir = new File(clusterFolderPath);
         builder.directory(socatStartDir);
-        Process process = builder.start();
+
+        var process = processUtil.startLongRunningProcess("socat", builder, socatLogs, s -> writeLn(s));
+        if (process == null) {
+            writeLn(error("Socat process could not be started."));
+            return null;
+        }
 
         writeLn(success("Started n2c through socat : localhost:" + clusterPortInfoHelper.getN2cSocatPort(clusterInfo)));
-        ProcessStream processStream =
-                new ProcessStream(process.getInputStream(), line -> {
-                    socatLogs.add("[socat] " + line);
-                });
-        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
         return process;
     }
 

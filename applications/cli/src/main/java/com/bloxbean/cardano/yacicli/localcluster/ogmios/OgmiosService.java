@@ -9,7 +9,7 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
-import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +47,10 @@ public class OgmiosService {
     private boolean enableKupo;
 
     @Autowired
-    TemplateEngine templateEngine;
+    private TemplateEngine templateEngine;
+
+    @Autowired
+    private ProcessUtil processUtil;
 
     private Queue<String> ogmiosLogs = EvictingQueue.create(300);
     private Queue<String> kupoLogs = EvictingQueue.create(300);
@@ -111,7 +114,7 @@ public class OgmiosService {
         return kupoPortAvailable;
     }
 
-    private Process startOgmios(String cluster, ClusterInfo clusterInfo) throws IOException {
+    private Process startOgmios(String cluster, ClusterInfo clusterInfo) throws IOException, InterruptedException {
         Path clusterFolder = clusterService.getClusterFolder(cluster);
         Objects.requireNonNull(clusterFolder, "Cluster folder not found for cluster: " + cluster);
 
@@ -130,20 +133,21 @@ public class OgmiosService {
         ProcessBuilder builder = new ProcessBuilder();
         builder.command("sh", "ogmios.sh");
 
-        File submitApiStartDir = new File(clusterFolderPath);
-        builder.directory(submitApiStartDir);
-        Process process = builder.start();
+        File ogmiosStartFolder = new File(clusterFolderPath);
+        builder.directory(ogmiosStartFolder);
+
+        Process process = processUtil.startLongRunningProcess("ogmios", builder, ogmiosLogs, s -> writeLn(s));
+
+        if (process == null) {
+            writeLn(error("Ogmios process could not be started."));
+            return null;
+        }
 
         writeLn(success("Started ogmios : http://localhost:" + clusterPortInfoHelper.getOgmiosPort(clusterInfo)));
-        ProcessStream processStream =
-                new ProcessStream(process.getInputStream(), line -> {
-                    ogmiosLogs.add("[ogmios] " + line);
-                });
-        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
         return process;
     }
 
-    private Process startKupo(String cluster, ClusterInfo clusterInfo) throws IOException {
+    private Process startKupo(String cluster, ClusterInfo clusterInfo) throws IOException, InterruptedException {
         Path clusterFolder = clusterService.getClusterFolder(cluster);
         Objects.requireNonNull(clusterFolder, "Cluster folder not found for cluster: " + cluster);
 
@@ -164,14 +168,15 @@ public class OgmiosService {
 
         File submitApiStartDir = new File(clusterFolderPath);
         builder.directory(submitApiStartDir);
-        Process process = builder.start();
+
+        Process process = processUtil.startLongRunningProcess("kupo", builder, kupoLogs, s -> writeLn(s));
+
+        if (process == null) {
+            writeLn(error("Kupo process could not be started."));
+            return null;
+        }
 
         writeLn(success("Started kupo : http://localhost:" + clusterPortInfoHelper.getKupoPort(clusterInfo)));
-        ProcessStream processStream =
-                new ProcessStream(process.getInputStream(), line -> {
-                    ogmiosLogs.add("[kupo] " + line);
-                });
-        Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
         return process;
     }
 

@@ -47,6 +47,9 @@ public class PrivNetService {
     @Autowired
     private PoolKeyGeneratorService poolKeyGeneratorService;
 
+    @Autowired
+    private ProcessUtil processUtil;
+
     public void setupNewKeysAndDefaultPool(Path clusterPath, String clusterName, ClusterInfo clusterInfo, GenesisConfig genesisConfig, Double activeCoeff, Consumer<String> writer) throws IOException {
         updateGenesisScript(clusterPath, clusterName, clusterInfo, clusterInfo.getSlotLength(), activeCoeff,
                 clusterInfo.getEpochLength(), writer);
@@ -121,41 +124,7 @@ public class PrivNetService {
 
             builder.directory(genCreateScript.getParent().toFile());
 
-            return ProcessUtil.executeAndFinish(builder, "Genesis Keys", writer);
-//            String genCreateScriptFile = genCreateScript.toFile().getAbsolutePath();
-//
-//            ProcessBuilder builder = new ProcessBuilder();
-//            builder.command("sh", genCreateScriptFile);
-//
-//            builder.directory(genCreateScript.getParent().toFile());
-//            Process process = builder.start();
-//
-//            ExecutorService executor = Executors.newSingleThreadExecutor();
-//            ProcessStream processStream =
-//                    new ProcessStream(process.getInputStream(), line -> {
-//                        if (line != null && !line.isEmpty())
-//                            writer.accept(successLabel("Genesis Keys", line));
-//                    });
-//
-//            ProcessStream errorProcessStream =
-//                    new ProcessStream(process.getErrorStream(), line -> {
-//                        if (line != null && !line.isEmpty())
-//                            writer.accept(error("Genesis Keys %s", line));
-//                    });
-//
-//            Future<?> inputFuture = executor.submit(processStream);
-//            Future<?> errorFuture = executor.submit(errorProcessStream);
-//
-//            inputFuture.get();
-//            errorFuture.get();
-//
-//            // Wait for process to complete
-//            int exitCode = process.waitFor();
-//            System.out.println("Process exited with code: " + exitCode);
-////            Future<?> future = executor.submit(processStream, errorProcessStream);
-////            future.get();
-//
-//            executor.shutdown();
+            return processUtil.executeAndFinish(builder, "Genesis Keys", writer);
         } catch (Exception e) {
             log.info(e.getMessage(), e);
         }
