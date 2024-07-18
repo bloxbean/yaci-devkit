@@ -43,7 +43,7 @@ RequiresNetworkMagic: RequiresMagic
 
 # This protocol version number gets used by block producing nodes as part
 # of the system for agreeing on and synchronising protocol updates.
-LastKnownBlockVersion-Major: {{#mainnet}}2{{/mainnet}}{{^mainnet}}2{{/mainnet}}
+LastKnownBlockVersion-Major: {{#mainnet}}0{{/mainnet}}{{^mainnet}}2{{/mainnet}}
 LastKnownBlockVersion-Minor: 0
 LastKnownBlockVersion-Alt: 0
 
