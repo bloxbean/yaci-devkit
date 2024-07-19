@@ -1,0 +1,117 @@
+###
+GET {{base_url}}/api/v1/blocks
+
+> {%
+    client.test("Get recent blocks returns last 10 blocks", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Block number is not null", function() {
+        client.assert(response.body.blocks.length >= 1, "No blocks found in the response" + response.body)
+        client.assert(response.body.blocks[0].number !== null, "Block number is null")
+    });
+%}
+
+###
+GET {{base_url}}/api/v1/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/utxos?count=10&page=0&order=asc
+
+> {%
+    client.test("Get utxos for default address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.length > 0, "No utxo found for default address" + response.body)
+    });
+%}
+
+###
+### Topup address
+POST {{admin_url}}//local-cluster/api/addresses/topup
+Content-Type: application/json
+
+{
+  "address": "addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex",
+  "adaAmount": 3000
+}
+
+> {%
+    client.test("Topup address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.status === true, "Topup failed" + response.body)
+        client.assert(response.body.adaAmount === 3000, "Incorrect ada amount " + response.body.adaAmount)
+    });
+%}
+
+###
+### Get utxos for topup address
+GET {{base_url}}/api/v1/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/utxos?count=10&page=0&order=asc
+
+> {%
+    client.test("Get utxos for topup address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.length > 1, "New utxos not found for topup address" + response.body)
+    });
+%}
+
+###
+### Get balance of topup address
+GET {{base_url}}/api/v1/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/balance?address=addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex
+
+> {%
+    client.test("Get balance of topup address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.amounts.length > 0, "Incorrect amounts array length :" + response.body.amounts.length)
+        client.assert(response.body.amounts[0].quantity >= 13000000000, "Incorrect balance " + response.body.amounts[0].quantity)
+    });
+%}
+
+###
+### Get balance of default stake address
+GET {{base_url}}/api/v1/accounts/stake_test1uruw6wswag80sd0l57alehj47llf6tx96402vt8vks46k0q0e2ne6
+
+> {%
+    client.test("Get balance of default stake address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.controlled_amount >= 13000000000, "Incorrect balance " + response.body.controlled_amount)
+
+    });
+%}
+
+
+###
+### Get epoch params
+GET {{base_url}}/api/v1/epochs/latest/parameters
+
+> {%
+    client.test("Get epoch parameters", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.min_fee_a === 44, "Min Fin A is not 44. Actual value: " + response.body.min_fee_a)
+        client.assert(response.body.min_fee_b === 155381, "Min Fin A is not 44. Actual value: " + response.body.min_fee_b)
+        client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
+        client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
+        client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
+    });
+%}
+
+###
+### Get epoch params
+GET {{base_url}}/api/v1/epochs/1/parameters
+
+> {%
+    client.test("Get epoch parameters by epoch", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.min_fee_a === 44, "Min Fin A is not 44. Actual value: " + response.body.min_fee_a)
+        client.assert(response.body.min_fee_b === 155381, "Min Fin A is not 44. Actual value: " + response.body.min_fee_b)
+        client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
+        client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
+        client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
+    });
+%}
+
+###
+### Get epochs
+GET {{base_url}}/api/v1/epochs/latest
+
+> {%
+    client.test("Get epochs", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.epoch >= 1, "Epoch no not found")
+    });
+%}
