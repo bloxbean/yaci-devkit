@@ -217,11 +217,11 @@ public class ClusterCommands {
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void startLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
-        boolean started = localClusterService.startCluster(clusterName);
-        if (!started)
+        var runStatus = localClusterService.startCluster(clusterName);
+        if (!runStatus.stared())
             return;
 
-        if (localClusterService.isFirstRunt(clusterName)) {
+        if (runStatus.isFirstRun()) {
             publisher.publishEvent(new FirstRunDone(clusterName));
             publisher.publishEvent(new ClusterStarted(clusterName));
         } else {

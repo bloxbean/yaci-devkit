@@ -32,32 +32,37 @@ public class FirstRunTopupAccounts {
         Consumer<String> writer = msg -> writeLn(msg);
         try {
             String clusterName = firstRunDone.getCluster();
-            if (localClusterService.isFirstRunt(clusterName)) {
-                defaultAddressService.printDefaultAddresses(true);
-                if (topupAddresses != null) {
-                    if (topupAddresses.length > 0) {
-                        writeLn("First run. Let's topup configured addresses");
-                        Thread.sleep(1000);
-                        clusterUtilService.waitForNextBlocks(1, writer);
+            var clusterInfo = localClusterService.getClusterInfo(clusterName);
+            if (clusterInfo != null && !clusterInfo.isMasterNode()) {
+                //Return if it's a peer node, not the master node
+                return;
+            }
 
-                        Era era = CommandContext.INSTANCE.getEra();
-
-                        for (String topupAddress : topupAddresses) {
-                            String[] tokens = topupAddress.split(":");
-                            String address = tokens[0].trim();
-                            String value = tokens[1].trim();
-                            writeLn("Topup address: " + address + ", value: " + value + " Ada" + "\n");
-                            accountService.topup(clusterName, era, address, Double.parseDouble(value), msg -> writeLn(msg));
-                            boolean flag = clusterUtilService.waitForNextBlocks(1, writer);
-                            if (flag)
-                                writeLn(infoLabel("OK", "Topup done"));
-                        }
-                    }
-                } else {
+            defaultAddressService.printDefaultAddresses(true);
+            if (topupAddresses != null) {
+                if (topupAddresses.length > 0) {
+                    writeLn("First run. Let's topup configured addresses");
                     Thread.sleep(1000);
                     clusterUtilService.waitForNextBlocks(1, writer);
+
+                    Era era = CommandContext.INSTANCE.getEra();
+
+                    for (String topupAddress : topupAddresses) {
+                        String[] tokens = topupAddress.split(":");
+                        String address = tokens[0].trim();
+                        String value = tokens[1].trim();
+                        writeLn("Topup address: " + address + ", value: " + value + " Ada" + "\n");
+                        accountService.topup(clusterName, era, address, Double.parseDouble(value), msg -> writeLn(msg));
+                        boolean flag = clusterUtilService.waitForNextBlocks(1, writer);
+                        if (flag)
+                            writeLn(infoLabel("OK", "Topup done"));
+                    }
                 }
+            } else {
+                Thread.sleep(1000);
+                clusterUtilService.waitForNextBlocks(1, writer);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
             writeLn("Ada topup failed. Please manually topup additional account");
