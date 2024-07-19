@@ -215,14 +215,17 @@ public class YaciStoreService {
     @EventListener
     public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
         Path clusterFolder = clusterService.getClusterFolder(clusterDeleted.getClusterName());
+        Path nodeFolder = clusterFolder.resolve("node");
         String dbDir = "yaci_store";
-        Path dbPath = clusterFolder.resolve(dbDir);
+        Path dbPath = nodeFolder.resolve(dbDir);
 
+        writeLn(info("Deleting Yaci Store db folder : " + dbPath.toFile().getAbsolutePath()));
         if (dbPath.toFile().exists()) {
             try {
                 FileUtils.deleteDirectory(dbPath.toFile());
+                writeLn(success("Yaci Store db folder deleted successfully"));
             } catch (IOException e) {
-                writeLn(error("Yaci store db could not be deleted, " + dbPath.toAbsolutePath()));
+                writeLn(error("Yaci store db could not be deleted : " + dbPath.toAbsolutePath()));
             }
         }
     }
