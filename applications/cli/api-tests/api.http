@@ -1,3 +1,8 @@
+### Reset cluster first
+###
+#POST {{admin_url}}//local-cluster/api/admin/devnet/reset
+#
+
 ###
 GET {{base_url}}/api/v1/blocks
 
@@ -68,7 +73,7 @@ GET {{base_url}}/api/v1/accounts/stake_test1uruw6wswag80sd0l57alehj47llf6tx96402
 
 > {%
     client.test("Get balance of default stake address", function() {
-        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.status === 200, "Response status is not 200, Actual status: " + response.status);
         client.assert(response.body.controlled_amount >= 13000000000, "Incorrect balance " + response.body.controlled_amount)
 
     });
@@ -115,3 +120,78 @@ GET {{base_url}}/api/v1/epochs/latest
         client.assert(response.body.epoch >= 1, "Epoch no not found")
     });
 %}
+
+### Create tx to create utxo with reference input
+###
+POST {{admin_url}}/local-cluster/api/test-data
+Content-Type: application/json
+
+{
+  "type": "REFERENCE_INPUT_GEN_TRANSACTION"
+}
+
+### Verify Get Script by Script Hash
+###
+GET {{base_url}}/api/v1/scripts/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712
+
+> {%
+    client.test("Get script by script hash", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.script_hash === "3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712", "Incorrect script hash " + response.body.script_hash)
+        //"type": "plutusV2",
+        client.assert(response.body.type === "plutusV2", "Incorrect script type " + response.body.type)
+        //"serialised_size": 9
+        client.assert(response.body.serialised_size >= 3, "Incorrect serialised size " + response.body.serialised_size)
+    });
+%}
+
+### Get Script Contents by Script Hash
+###
+GET {{base_url}}/api/v1/scripts/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712/details
+
+> {%
+    client.test("Get script contents by script hash", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.script_hash === "3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712", "Incorrect script hash " + response.body.script_hash)
+        client.assert(response.body.script_type === "plutusV2", "Incorrect script type " + response.body.script_type)
+        client.assert(response.body.content !== undefined, "Content is undefined" + response.body.content)
+        client.assert(response.body.content.length >= 5 , "Incorrect script length " + response.body.content.length)
+    });
+%}
+
+### Get Script Contents cbor by Script Hash
+###
+GET {{base_url}}/api/v1/scripts/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712/cbor
+
+> {%
+         client.test("Get script contents by script hash", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.cbor === "480100002221200101", "Invalid script cbor : " + response.body.cbor)
+        client.assert(response.body.cbor.length >= 5, "Invalid script cbor length: " + response.body.cbor.length)
+    });
+%}
+
+#### Create tx to create utxo with datum
+####
+#POST {{admin_url}}/local-cluster/api/test-data
+#Content-Type: application/json
+#
+#{
+#  "type": "DATUM_OUTPUT_GEN_TRANSACTION"
+#}
+
+
+#### Find datum by datum hash (/api/v1/scripts/datum/{datumHash})
+####
+#GET {{base_url}}/api/v1/scripts/datum/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712
+#
+#> {%
+#        client.test("Get datum by datum hash", function() {
+#        client.assert(response.status === 200, "Response status is not 200");
+#        client.assert(response.body.datum_hash === "36643c8dbde0ad0f092aec2d4d672730e863d6f8d034c7da3b8c31d868e20b4e", "Incorrect datum hash " + response.body.datum_hash)
+#        client.assert(response.body.datum !== undefined, "Datum is undefined" + response.body.datum)
+#        client.assert(response.body.datum.length >= 5 , "Incorrect datum length " + response.body.datum.length)
+#    });
+# %}
+
+
