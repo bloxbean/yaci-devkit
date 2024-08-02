@@ -96,8 +96,21 @@ GET {{base_url}}/api/v1/epochs/latest/parameters
 %}
 
 ###
+### Get latest epoch
+GET {{base_url}}/api/v1/epochs/latest
+
+> {%
+    client.test("Get latest epoch", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.epoch >= 0, "Latest epoch not found. Actual value: " + JSON.stringify(response.body))
+
+        client.global.set("current_epoch", response.body.epoch);
+    });
+%}
+
+###
 ### Get epoch params
-GET {{base_url}}/api/v1/epochs/1/parameters
+GET {{base_url}}/api/v1/epochs/{{current_epoch}}/parameters
 
 > {%
     client.test("Get epoch parameters by epoch", function() {
@@ -107,17 +120,6 @@ GET {{base_url}}/api/v1/epochs/1/parameters
         client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
         client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
         client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
-    });
-%}
-
-###
-### Get epochs
-GET {{base_url}}/api/v1/epochs/latest
-
-> {%
-    client.test("Get epochs", function() {
-        client.assert(response.status === 200, "Response status is not 200");
-        client.assert(response.body.epoch >= 1, "Epoch no not found")
     });
 %}
 
