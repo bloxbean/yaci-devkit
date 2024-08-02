@@ -100,7 +100,7 @@ public class ClusterCommands {
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
-                              @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era,
+                              @ShellOption(value = {"--era"}, defaultValue = "conway",  help = "Era (babbage, conway)") String era,
                               @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL, help = "Use a pre-defined genesis profile (Options: zero_fee)") GenesisProfile genesisProfile,
                               @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys
     ) {
@@ -124,7 +124,7 @@ public class ClusterCommands {
             //Era check
             Era nodeEra;
             if (era == null || era.isEmpty())
-                nodeEra = Era.Babbage;
+                nodeEra = Era.Conway;
             else if (era.equalsIgnoreCase("babbage"))
                 nodeEra = Era.Babbage;
             else if (era.equalsIgnoreCase("conway"))
