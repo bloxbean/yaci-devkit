@@ -4,10 +4,11 @@
     import Nav from "../components/Nav.svelte";
 </script>
 <body>
-<Nav></Nav>
+<!--<Nav></Nav>-->
 <div class="flex flex-col min-h-screen">
     <!-- Main -->
     <main class="container mx-auto flex-grow px-4">
+        <Nav></Nav>
         {#if $navigating}
             <section class="flex justify-center h-screen">
                 <span class="loading loading-ring loading-lg mx-auto"></span>
