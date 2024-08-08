@@ -19,6 +19,13 @@
             detailsElement.removeAttribute("open");
         }
     }
+
+    function closeMenu(menuId) {
+        const detailsElement = document.querySelector(`#${menuId}`);
+        if (detailsElement) {
+            detailsElement.removeAttribute("open");
+        }
+    }
 </script>
 
 <div class="navbar bg-base-100">
@@ -37,28 +44,22 @@
             <ul tabindex="0" class="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52">
                 <li><a href="/">Home</a></li>
                 <li>
-                    <details id="certificate-menu">
+                    <details id="mobile-certificate-menu">
                         <summary>Certificates</summary>
                         <ul class="p-2 bg-base-100">
-                            <li><a href="/certificates/stakekey-registrations" on:click={closeDropdownCertificateMenu}>Stake
-                                Registration</a></li>
-                            <li><a href="/certificates/stakekey-deregistrations"
-                                   on:click={closeDropdownCertificateMenu}>Stake DeRegistration</a></li>
-                            <li><a href="/certificates/pool-registrations" on:click={closeDropdownCertificateMenu}>Pool
-                                Registration</a></li>
-                            <li><a href="/certificates/pool-retirements" on:click={closeDropdownCertificateMenu}>Pool
-                                Retirements</a></li>
-                            <li><a href="/certificates/delegations"
-                                   on:click={closeDropdownCertificateMenu}>Delegations</a></li>
+                            <li><a href="/certificates/stakekey-registrations" on:click={closeDropdownCertificateMenu}>Stake Registration</a></li>
+                            <li><a href="/certificates/stakekey-deregistrations" on:click={closeDropdownCertificateMenu}>Stake DeRegistration</a></li>
+                            <li><a href="/certificates/pool-registrations" on:click={closeDropdownCertificateMenu}>Pool Registration</a></li>
+                            <li><a href="/certificates/pool-retirements" on:click={closeDropdownCertificateMenu}>Pool Retirements</a></li>
+                            <li><a href="/certificates/delegations" on:click={closeDropdownCertificateMenu}>Delegations</a></li>
                         </ul>
                     </details>
                 </li>
                 <li>
-                    <details id="governance-menu">
+                    <details id="mobile-governance-menu">
                         <summary>Governance</summary>
                         <ul class="p-2 bg-base-100">
-                            <li><a href="/governance/govactions" on:click={closeDropdownGovernanceMenu}>Proposals</a>
-                            </li>
+                            <li><a href="/governance/govactions" on:click={closeDropdownGovernanceMenu}>Proposals</a></li>
                             <li><a href="/governance/votes" on:click={closeDropdownGovernanceMenu}>Votes</a></li>
                         </ul>
                     </details>
@@ -74,16 +75,11 @@
                 <details id="certificate-menu">
                     <summary>Certificates</summary>
                     <ul class="p-2 bg-base-100">
-                        <li><a href="/certificates/stakekey-registrations" on:click={closeDropdownCertificateMenu}>Stake
-                            Registration</a></li>
-                        <li><a href="/certificates/stakekey-deregistrations" on:click={closeDropdownCertificateMenu}>Stake
-                            DeRegistration</a></li>
-                        <li><a href="/certificates/pool-registrations" on:click={closeDropdownCertificateMenu}>Pool
-                            Registration</a></li>
-                        <li><a href="/certificates/pool-retirements" on:click={closeDropdownCertificateMenu}>Pool
-                            Retirements</a></li>
-                        <li><a href="/certificates/delegations" on:click={closeDropdownCertificateMenu}>Delegations</a>
-                        </li>
+                        <li><a href="/certificates/stakekey-registrations" on:click={() => closeMenu('certificate-menu')}>Stake Registration</a></li>
+                        <li><a href="/certificates/stakekey-deregistrations" on:click={() => closeMenu('certificate-menu')}>Stake DeRegistration</a></li>
+                        <li><a href="/certificates/pool-registrations" on:click={() => closeMenu('certificate-menu')}>Pool Registration</a></li>
+                        <li><a href="/certificates/pool-retirements" on:click={() => closeMenu('certificate-menu')}>Pool Retirements</a></li>
+                        <li><a href="/certificates/delegations" on:click={() => closeMenu('certificate-menu')}>Delegations</a></li>
                     </ul>
                 </details>
             </li>
@@ -91,8 +87,8 @@
                 <details id="governance-menu">
                     <summary>Governance</summary>
                     <ul class="p-2 bg-base-100">
-                        <li><a href="/governance/govactions" on:click={closeDropdownGovernanceMenu}>Proposals</a></li>
-                        <li><a href="/governance/votes" on:click={closeDropdownGovernanceMenu}>Votes</a></li>
+                        <li><a href="/governance/govactions" on:click={() => closeMenu('governance-menu')}>Proposals</a></li>
+                        <li><a href="/governance/votes" on:click={() => closeMenu('governance-menu')}>Votes</a></li>
                     </ul>
                 </details>
             </li>
