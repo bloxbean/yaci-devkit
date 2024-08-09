@@ -77,31 +77,32 @@ public class GenesisConfig {
     private float pvtMotionNoConfidence = 0.51f;
     private float pvtPPSecurityGroup = 0.51f;
 
-    private float dvtMotionNoConfidence = 0.51f;
-    private float dvtCommitteeNormal = 0.51f;
-    private float dvtCommitteeNoConfidence = 0.51f;
-    private float dvtUpdateToConstitution = 0.51f;
-    private float dvtHardForkInitiation = 0.51f;
-    private float dvtPPNetworkGroup = 0.51f;
-    private float dvtPPEconomicGroup = 0.51f;
-    private float dvtPPTechnicalGroup = 0.51f;
-    private float dvtPPGovGroup = 0.51f;
-    private float dvtTreasuryWithdrawal = 0.51f;
+    private float dvtMotionNoConfidence = 0.67f;
+    private float dvtCommitteeNormal = 0.67f;
+    private float dvtCommitteeNoConfidence = 0.6f;
+    private float dvtUpdateToConstitution = 0.75f;
+    private float dvtHardForkInitiation = 0.6f;
+    private float dvtPPNetworkGroup = 0.67f;
+    private float dvtPPEconomicGroup = 0.67f;
+    private float dvtPPTechnicalGroup = 0.67f;
+    private float dvtPPGovGroup = 0.75f;
+    private float dvtTreasuryWithdrawal = 0.67f;
 
     private int committeeMinSize = 0;
-    private int committeeMaxTermLength = 200;
-    private int govActionLifetime = 10;
+    private int committeeMaxTermLength = 146;
+    private int govActionLifetime = 6;
     private BigInteger govActionDeposit = BigInteger.valueOf(1000000000);
     private BigInteger dRepDeposit = BigInteger.valueOf(2000000);
     private int dRepActivity = 20;
-    private BigDecimal minFeeRefScriptCostPerByte = BigDecimal.valueOf(44);
+    private BigDecimal minFeeRefScriptCostPerByte = BigDecimal.valueOf(15);
 
     private String constitutionUrl = "https://devkit.yaci.xyz/constitution.json";
     private String constitutionDataHash = "f89cc2469ce31c3dfda2f3e0b56c5c8b4ee4f0e5f66c30a3f12a95298b01179e";
     private String constitutionScript;
 
     private List<CCMember> ccMembers = new ArrayList<>();
-    private float ccThreshold = 0f;
+    private int ccThresholdNumerator = 2;
+    private int ccThresholdDenominator = 3;
 
     private boolean disableFaucet = false;
     private boolean disableShelleyInitialFunds = false;
@@ -327,7 +328,8 @@ public class GenesisConfig {
         if (ccMembers != null && ccMembers.size() > 0)
             ccMembers.getLast().setLast(true);
         map.put("ccMembers", ccMembers);
-        map.put("ccThreshold", ccThreshold);
+        map.put("ccThresholdNumerator", ccThresholdNumerator);
+        map.put("ccThresholdDenominator", ccThresholdDenominator);
 
         map.put("initialFunds", initialFundsList);
 
@@ -410,7 +412,8 @@ public class GenesisConfig {
         genesisConfig.setConstitutionDataHash(constitutionDataHash);
         genesisConfig.setConstitutionScript(constitutionScript);
         genesisConfig.setCcMembers(ccMembers);
-        genesisConfig.setCcThreshold(ccThreshold);
+        genesisConfig.setCcThresholdNumerator(ccThresholdNumerator);
+        genesisConfig.setCcThresholdDenominator(ccThresholdDenominator);
 
         genesisConfig.setFaucets(faucets);
         genesisConfig.setInitialFunds(initialFunds);

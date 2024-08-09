@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
@@ -97,10 +98,10 @@ public class ClusterService {
         }
     }
 
-    public boolean startCluster(String clusterName) {
+    public RunStatus startCluster(String clusterName) {
         try {
-            boolean startedSuccessfully = clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), msg -> writeLn(msg));
-            if (startedSuccessfully)
+            RunStatus startedSuccessfully = clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), msg -> writeLn(msg));
+            if (startedSuccessfully.stared())
                 writeLn(info("Swagger Url to interact with the cluster's node : " + "http://localhost:" + server.getWebServer().getPort() +"/swagger-ui.html"));
 
             return startedSuccessfully;

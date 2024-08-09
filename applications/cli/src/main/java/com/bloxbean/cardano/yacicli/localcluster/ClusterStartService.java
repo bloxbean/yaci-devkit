@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -37,46 +38,46 @@ public class ClusterStartService {
     private final ProcessUtil processUtil;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-    private AtomicBoolean showLog = new AtomicBoolean(true);
     private List<Process> processes = new ArrayList<>();
 
     private Queue<String> logs = EvictingQueue.create(200);
     private Queue<String> submitApiLogs = EvictingQueue.create(100);
 
-    public boolean startCluster(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
+    public RunStatus startCluster(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
         logs.clear();
         submitApiLogs.clear();
 
         if (processes.size() > 0) {
             writer.accept("A cluster is already running. You can only run one cluster at a time.");
-            return false;
+            return new RunStatus(false, false);
         }
 
         //check if all ports are available
         if (!portAvailabilityCheck(clusterInfo, writer))
-            return false;
+            return new RunStatus(false, false);
 
         try {
-            if (clusterInfo.isMasterNode() && checkIfFirstRun(clusterFolder))
+            boolean firstRun = checkIfFirstRun(clusterFolder);
+            if (clusterInfo.isMasterNode() && firstRun)
                 setupFirstRun(clusterInfo, clusterFolder, writer);
 
             Process nodeProcess = startNode(clusterFolder, clusterInfo, writer);
             if (nodeProcess == null) {
                 writer.accept(error("Node process could not be started."));
-                return false;
+                return new RunStatus(false, firstRun);
             }
 
             Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
             if (submitApiProcess == null) {
                 writer.accept(error("Submit API process could not be started."));
-                return false;
+                return new RunStatus(false, firstRun);
             }
 
             processes.add(nodeProcess);
             if (submitApiProcess != null)
                 processes.add(submitApiProcess);
 
-            return true;
+            return new RunStatus(true, firstRun);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {

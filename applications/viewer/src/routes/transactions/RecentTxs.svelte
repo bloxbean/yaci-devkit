@@ -16,7 +16,9 @@
                         <span class="font-bold">Tx Hash</span>
                         <span class="text-gray-600 text-right overflow-auto md:overflow-hidden">
                           <a href="/transactions/{tx.hash}"
-                             class="text-blue-500 hover:underline">{truncate(tx.hash, 40, '...')}</a>
+                             class="text-blue-500 hover:underline">{truncate(tx.hash, 38, '...')}
+                          </a>
+
                         </span>
                     </p>
                     <p class="text-sm text-gray-600 py-1">

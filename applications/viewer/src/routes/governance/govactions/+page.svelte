@@ -61,11 +61,11 @@
 
 
 <section class="container mx-auto text-sm">
+    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Proposals</h2>
     <div class="flex flex-wrap justify-between mt-4 mb-2">
         <a href="#"
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
            role="button" on:click={previous}>&lt; Previous</a>
-        <h2 class="text-2xl font-bold text-center text-gray-500">Proposals</h2>
         <a href="#"
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
            role="button" on:click={next}>Next &gt;</a>
