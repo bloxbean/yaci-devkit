@@ -59,6 +59,9 @@
                     <details id="mobile-governance-menu">
                         <summary>Governance</summary>
                         <ul class="p-2 bg-base-100">
+                            <li><a href="/governance/drep-registrations" on:click={closeDropdownGovernanceMenu}>DRep Registrations</a></li>
+                            <li><a href="/governance/drep-updates" on:click={closeDropdownGovernanceMenu}>DRep Updates</a></li>
+                            <li><a href="/governance/drep-deregistrations" on:click={closeDropdownGovernanceMenu}>DRep DeRegistrations</a></li>
                             <li><a href="/governance/govactions" on:click={closeDropdownGovernanceMenu}>Proposals</a></li>
                             <li><a href="/governance/votes" on:click={closeDropdownGovernanceMenu}>Votes</a></li>
                         </ul>
@@ -87,6 +90,9 @@
                 <details id="governance-menu">
                     <summary>Governance</summary>
                     <ul class="p-2 bg-base-100">
+                        <li><a href="/governance/drep-registrations" on:click={() => closeMenu('governance-menu')}>DRep Registrations</a></li>
+                        <li><a href="/governance/drep-updates" on:click={() => closeMenu('governance-menu')}>DRep Updates</a></li>
+                        <li><a href="/governance/drep-deregistrations" on:click={() => closeMenu('governance-menu')}>DRep DeRegistrations</a></li>
                         <li><a href="/governance/govactions" on:click={() => closeMenu('governance-menu')}>Proposals</a></li>
                         <li><a href="/governance/votes" on:click={() => closeMenu('governance-menu')}>Votes</a></li>
                     </ul>
