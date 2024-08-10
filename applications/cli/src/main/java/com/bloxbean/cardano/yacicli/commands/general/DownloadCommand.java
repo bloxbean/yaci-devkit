@@ -31,15 +31,15 @@ public class DownloadCommand {
 
             if (component.equals("node")) {
                 downloadService.downloadNode(overwrite);
-//            } else if (component.equals("yaci-store")) {
-//                downloadService.downloadYaciStore(overwrite);
+            } else if (component.equals("yaci-store")) {
+                downloadService.downloadYaciStore(overwrite);
             } else if (component.equals("ogmios")) {
                 downloadService.downloadOgmios(overwrite);
             } else if (component.equals("kupo")) {
                 downloadService.downloadKupo(overwrite);
             } else if (component.equals("all")) {
                 downloadService.downloadNode(overwrite);
-//                downloadService.downloadYaciStore(overwrite);
+                downloadService.downloadYaciStore(overwrite);
                 downloadService.downloadOgmios(overwrite);
                 downloadService.downloadKupo(overwrite);
             } else {

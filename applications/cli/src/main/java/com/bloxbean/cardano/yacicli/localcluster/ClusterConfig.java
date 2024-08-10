@@ -47,6 +47,9 @@ public class ClusterConfig {
     @Value("${kupo.folder:#{null}}")
     private String kupoFolder;
 
+    @Value("${jre.folder:#{null}}")
+    private String jreFolder;
+
     public String getYaciCliHome() {
         if (yaciCliHome == null)
             yaciCliHome = System.getProperty("user.home") + File.separator + ".yaci-cli";
@@ -119,5 +122,12 @@ public class ClusterConfig {
 
     public Path getGenesisKeysFolder(String clusterName) {
         return Path.of(getGenesisKeysHome(), clusterName);
+    }
+
+    public String getJreHome() {
+        if (jreFolder == null || !StringUtils.hasLength(jreFolder.trim()))
+            return Path.of(getYaciCliHome(), "jre").toAbsolutePath().toString();
+        else
+            return Path.of(jreFolder).toAbsolutePath().toString();
     }
 }
