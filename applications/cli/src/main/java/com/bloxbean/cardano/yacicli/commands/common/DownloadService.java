@@ -19,6 +19,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
@@ -64,23 +65,25 @@ public class DownloadService {
             return false;
         }
 
-        Path cardanoNode = Path.of(clusterConfig.getYaciCliHome(), "bin", "cardano-node");
-        Path cardanoCLI = Path.of(clusterConfig.getYaciCliHome(), "bin", "cardano-cli");
-        Path cardanoSubmitApi = Path.of(clusterConfig.getYaciCliHome(), "bin", "cardano-submit-api");
+        Path cardanoNode = Path.of(clusterConfig.getCLIBinFolder(), "cardano-node");
+        Path cardanoCLI = Path.of(clusterConfig.getCLIBinFolder(), "cardano-cli");
+        Path cardanoSubmitApi = Path.of(clusterConfig.getCLIBinFolder(), "cardano-submit-api");
 
         if (cardanoNode.toFile().exists()) {
             if (!overwrite) {
                 writeLn(info("cardano-node already exists in %s", cardanoNode.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing cardano-node"));
                 return false;
+            } else {
+                deleteExistingDir("cardano-node", clusterConfig.getCardanoNodeFolder());
             }
         }
 
-        String targetDir = clusterConfig.getYaciCliHome();
+        String targetDir = clusterConfig.getCardanoNodeFolder();
         var downloadedFile = download("cardano-node", downloadPath, targetDir, "cardano-node.tar.gz");
         if (downloadedFile != null) {
             try {
-                extractTarGz(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getYaciCliHome());
+                extractTarGz(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getCardanoNodeFolder());
                 setExecutablePermission(cardanoNode.toFile().getAbsolutePath());
                 setExecutablePermission(cardanoCLI.toFile().getAbsolutePath());
                 setExecutablePermission(cardanoSubmitApi.toFile().getAbsolutePath());
@@ -113,17 +116,7 @@ public class DownloadService {
                 writeLn(info("Use --overwrite to overwrite the existing yaci-store"));
                 return false;
             } else {
-                try {
-                    File yaciStoreBin = new File(clusterConfig.getYaciStoreBinPath());
-                    if (yaciStoreBin.getName().equals("store")) { //Additional check to avoid deleting wrong directory
-                        infoLabel("Deleting", "Deleting existing yaci-store directory %s", yaciStoreBin);
-                        FileUtils.deleteDirectory(yaciStoreBin);
-                    } else {
-                        infoLabel("Deleting", "Skipping deleting yaci-store directory as it's not a default yaci-store directory. Please delete it manually if required. " + yaciStoreBin);
-                    }
-                } catch (IOException e) {
-                    writeLn(error("Error deleting existing yaci-store directory"));
-                }
+                deleteExistingDir("store", clusterConfig.getYaciStoreBinPath());
             }
         }
 
@@ -155,17 +148,7 @@ public class DownloadService {
                 writeLn(info("Use --overwrite to overwrite the existing JRE"));
                 return false;
             } else {
-                try {
-                    File jreHomeFile = new File(jreHome);
-                    if (jreHomeFile.getName().equals("jre")) { //Additional check to avoid deleting wrong directory
-                        infoLabel("Deleting", "Deleting existing JRE directory %s", jreHome);
-                        FileUtils.deleteDirectory(new File(jreHome));
-                    } else {
-                        infoLabel("Deleting", "Skipping deleting JRE directory as it's not a default JRE directory. Please delete it manually if required. " + jreHome);
-                    }
-                } catch (IOException e) {
-                    writeLn(error("Error deleting existing JRE directory"));
-                }
+                deleteExistingDir("jre", jreHome);
             }
         }
 
@@ -201,6 +184,8 @@ public class DownloadService {
                 writeLn(info("ogmios already exists in %s", ogmiosExec.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing ogmios"));
                 return false;
+            } else {
+                deleteExistingDir("ogmios", clusterConfig.getOgmiosHome());
             }
         }
 
@@ -236,6 +221,8 @@ public class DownloadService {
                 writeLn(info("Kupo already exists in %s", kupoExec.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing kupo"));
                 return false;
+            } else {
+                deleteExistingDir("kupo", clusterConfig.getKupoHome());
             }
         }
 
@@ -472,5 +459,22 @@ public class DownloadService {
 
         String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-v" + kupoVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
         return url;
+    }
+
+    private void deleteExistingDir(String componentName, String componentHome) {
+        Objects.requireNonNull(componentHome, "Component home cannot be null");
+
+        try {
+            File componentHomeFolder = new File(componentHome);
+            if (componentHomeFolder.getName().equals(componentName)) { //Additional check to avoid deleting wrong directory
+                writeLn(infoLabel("Deleting", "Deleting existing %s directory %s", componentName, componentHomeFolder));
+                FileUtils.deleteDirectory(componentHomeFolder);
+            } else {
+                writeLn(warnLabel("Deleting", "Skipping deletion of %s directory as it's not a default %s directory. " +
+                        "Please delete it manually if required. %s", componentName, componentName, componentHomeFolder));
+            }
+        } catch (IOException e) {
+            writeLn(error("Error deleting existing %s directory", componentName));
+        }
     }
 }

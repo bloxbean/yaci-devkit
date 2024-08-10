@@ -4,12 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
-import java.net.URL;
 import java.nio.file.*;
 
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
-import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.success;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
 @RequiredArgsConstructor
@@ -29,7 +26,7 @@ public class JreResolver {
             if (Files.exists(Paths.get(javaCommand))) {
                 return javaCommand;
             } else {
-                error("Java command not found in the provided JRE folder: " + jreFolder);
+                writeLn(error("Java command not found in the provided JRE folder: " + jreFolder));
                 return JAVA;
             }
         }
@@ -52,11 +49,11 @@ public class JreResolver {
 
             String jreUrl = getJreDownloadUrl(os, arch);
             if (jreUrl == null) {
-                error("Unsupported OS or architecture");
+                writeLn(error("Unsupported OS or architecture"));
                 return null;
             }
 
-            success("JRE download URL: " + jreUrl);
+            writeLn(success("JRE download URL: " + jreUrl));
 
             return jreUrl;
     }
