@@ -449,7 +449,7 @@ public class DownloadService {
         if (arch.startsWith("aarch") || arch.startsWith("arm")) {
             cpuArch = "aarch64";
         } else{
-            cpuArch = "aarch64";
+            cpuArch = "x86_64";
         }
 
         String versionParts[] = kupoVersion.split("\\.");
