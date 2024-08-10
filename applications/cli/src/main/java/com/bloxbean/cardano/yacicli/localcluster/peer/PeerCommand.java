@@ -43,7 +43,7 @@ public class PeerCommand {
             @ShellOption(value = {"--bp"}, defaultValue = "false", help = "True if this is a block producing node, else false") boolean bp,
             @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
             @ShellOption(value = {"--overwrite--pool-keys"}, defaultValue = "false", help = "Overwrite Pool Keys") boolean overwritePoolKeys,
-            @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era
+            @ShellOption(value = {"--era"}, defaultValue = "conway",  help = "Era (babbage, conway)") String era
     ) {
         try {
             //stop any cluster if running
@@ -64,7 +64,7 @@ public class PeerCommand {
             //Era check
             Era nodeEra;
             if (era == null || era.isEmpty())
-                nodeEra = Era.Babbage;
+                nodeEra = Era.Conway;
             else if (era.equalsIgnoreCase("babbage"))
                 nodeEra = Era.Babbage;
             else if (era.equalsIgnoreCase("conway"))
