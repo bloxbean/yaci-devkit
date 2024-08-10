@@ -1,7 +1,8 @@
 <script>
     import {goto} from "$app/navigation";
     import {page} from "$app/stores";
-    import DRepDetails from "../../../components/drep/DRepDetails.svelte";
+    import {truncate} from "../../util/util.js";
+    import {EyeIcon} from "svelte-feather-icons";
 
     export let data;
 
@@ -28,38 +29,26 @@
         let prevPage = currentPage - 1;
         if (prevPage <= 0)
             prevPage = 1;
-        goto(`/governance/drep-registrations?page=${prevPage}&count=${data.count}`)
+        goto(`/governance/votes?page=${prevPage}&count=${data.count}`)
     };
     const next = () => {
         let currentPage = parseInt(data.page);
         let nextPage = currentPage + 1;
 
-        if (data.registrations.length == 0)
+        if (data.votes.length == 0)
             nextPage = currentPage;
 
-        goto(`/governance/drep-registrations?page=${nextPage}&count=${data.count}`)
+        goto(`/governance/votes?page=${nextPage}&count=${data.count}`)
     };
 
-    if (!data.registrations)
-        data.registrations = []
-
-    let showDetails = false;
-    let selectedDRep = {};
-
-    const toggleDRep = (drep) => {
-        selectedDRep = drep;
-        showDetails = !showDetails;
-        console.log(JSON.stringify(drep))
-    };
-
-    function closeDetails() {
-        showDetails = false;
-    }
+    console.log(data);
+    if (!data.votes)
+        data.votes = []
 </script>
 
 
 <section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">DRep Registrations</h2>
+    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Votes</h2>
     <div class="flex flex-wrap justify-between mt-4 mb-2">
         <button
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -72,24 +61,41 @@
         <table class="w-full bg-white border border-gray-300">
             <thead>
             <tr>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">DRep Id</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Type</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
                 <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Txn Hash</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Gov Action Id</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Voter Type</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Vote</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Voter Hash</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Anchor URL</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Anchor Hash</th>
             </tr>
             </thead>
             <tbody>
             <!-- Iterate over stake registrations data -->
-            {#each data.registrations as registration, index}
+            {#each data.votes as vote, index}
                 <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
                     <td class="py-2 px-4">
-                        <a href="#" class="text-blue-500">
-                            <span class="ml-2" on:click={() => {toggleDRep(registration); }}>{registration.drep_id}</span>
+                        <a href="/transactions/{vote.tx_hash}" class="text-blue-500">
+                            <span class="ml-2">{truncate(vote.tx_hash, 30, "...")}</span>
                         </a>
                     </td>
-                    <td class="py-2 px-4">{registration.cred_type}</td>
-                    <td class="py-2 px-4"><a href="/blocks/{registration.block_number}" class="text-blue-500">{registration.block_number}</a></td>
-                    <td class="py-2 px-4"><a href="/transactions/{registration.tx_hash}" class="text-blue-500">{registration.tx_hash}</a></td>
+                    <td class="py-2 px-4 text-center">
+                        <a href="/blocks/{vote.block_number}" class="text-blue-500">
+                            {vote.block_number}
+                        </a>
+                    </td>
+                    <td class="py-2 px-4">{vote.gov_action_tx_hash}#{vote.gov_action_index}</td>
+                    <td class="py-2 px-4 text-center">{vote.voter_type}</td>
+                    <td class="py-2 px-4 text-center">{vote.vote}</td>
+                    <td class="py-2 px-4">{truncate(vote.voter_hash, 30, "...")}</td>
+                    {#if vote.anchor_url}
+                        <td class="py-2 px-4"><a href="{vote.anchor_url}" target="_blank">{vote.anchor_url}</a></td>
+                        <td class="py-2 px-4">{vote.anchor_hash}</td>
+                    {:else }
+                        <td class="py-2 px-4 text-center">_</td>
+                        <td class="py-2 px-4 text-center">_</td>
+                    {/if}
                 </tr>
             {/each}
             </tbody>
@@ -104,5 +110,3 @@
            role="button" on:click={next}>Next &gt;</button>
     </div>
 </section>
-
-<DRepDetails drep={selectedDRep} show={showDetails} on:closeDetails={closeDetails}/>

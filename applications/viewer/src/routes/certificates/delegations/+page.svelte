@@ -34,7 +34,7 @@
         let currentPage = parseInt(data.page);
         let nextPage = currentPage + 1;
 
-        if (data.registrations.length == 0)
+        if (data.delegations.length == 0)
             nextPage = currentPage;
 
         goto(`/certificates/delegations?page=${nextPage}&count=${data.count}`)
@@ -67,7 +67,7 @@
             </tr>
             </thead>
             <tbody>
-            <!-- Iterate over stake registrations data -->
+            <!-- Iterate over stake delegations data -->
             {#each data.delegations as delegation, index}
                 <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
                     <td class="py-2 px-4">{delegation.address}</td>

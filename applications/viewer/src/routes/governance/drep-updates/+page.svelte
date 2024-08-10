@@ -28,7 +28,7 @@
         let prevPage = currentPage - 1;
         if (prevPage <= 0)
             prevPage = 1;
-        goto(`/governance/dreps/updates?page=${prevPage}&count=${data.count}`)
+        goto(`/governance/drep-updates?page=${prevPage}&count=${data.count}`)
     };
     const next = () => {
         let currentPage = parseInt(data.page);
@@ -37,7 +37,7 @@
         if (data.updates.length == 0)
             nextPage = currentPage;
 
-        goto(`/governance/dreps/updates?page=${nextPage}&count=${data.count}`)
+        goto(`/governance/drep-updates?page=${nextPage}&count=${data.count}`)
     };
 
     if (!data.updates)
@@ -49,7 +49,6 @@
     const toggleDRep = (drep) => {
         selectedDRep = drep;
         showDetails = !showDetails;
-        console.log(JSON.stringify(drep))
     };
 
     function closeDetails() {
@@ -61,12 +60,12 @@
 <section class="container mx-auto text-sm">
     <h2 class="text-xl font-bold text-center text-gray-500 mb-4">DRep Updates</h2>
     <div class="flex flex-wrap justify-between mt-4 mb-2">
-        <a href="#"
+        <button
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={previous}>&lt; Previous</a>
-        <a href="#"
+           role="button" on:click={previous}>&lt; Previous</button>
+        <button
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={next}>Next &gt;</a>
+           role="button" on:click={next}>Next &gt;</button>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full bg-white border border-gray-300">
@@ -96,12 +95,12 @@
         </table>
     </div>
     <div class="flex flex-wrap justify-between mt-2 mb-2">
-        <a href="#"
+        <button
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={previous}>&lt; Previous</a>
-        <a href="#"
+           role="button" on:click={previous}>&lt; Previous</button>
+        <button
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={next}>Next &gt;</a>
+           role="button" on:click={next}>Next &gt;</button>
     </div>
 </section>
 

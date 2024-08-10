@@ -55,7 +55,7 @@
         let currentPage = parseInt(data.page);
         let nextPage = currentPage + 1;
 
-        if (data.txs.length === 0)
+        if (data.txs.length == 0)
             nextPage = currentPage;
 
         goto(`/transactions?page=${nextPage}&count=${data.count}`)

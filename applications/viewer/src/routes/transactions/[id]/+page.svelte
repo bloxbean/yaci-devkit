@@ -84,18 +84,18 @@
 <section class="py-10 px-4 md:px-0">
     <div class="container mx-auto">
         <div class="tabs tabs-boxed tabs-xs md:tabs-sm lg:tabs">
-            <a href="#" role="tab" class="tab  {activeTabIndex == 0 ? 'tab-active' : ''}" on:click={() => activeTabIndex = INPUT_TAB}>
+            <button role="tab" class="tab  {activeTabIndex == 0 ? 'tab-active' : ''}" on:click={() => activeTabIndex = INPUT_TAB}>
                 <span class="block md:hidden">I/O</span>
                 <span class="hidden md:block">Input/Output</span>
-            </a>
-            <a href="#" role="tab" class="tab  {activeTabIndex == 1 ? 'tab-active' : ''}" on:click={() => activeTabIndex = CONTRACT_TAB}>Contracts</a>
-            <a href="#" role="tab" class="tab  {activeTabIndex == 2 ? 'tab-active' : ''}" on:click={() => activeTabIndex = COLLATERAL_TAB}>Collaterals</a>
-            <a href="#" role="tab" class="tab  {activeTabIndex == 3 ? 'tab-active' : ''}" on:click={() => activeTabIndex = METADATA_TAB}>Metadata</a>
-            <a href="#" role="tab" class="tab {activeTabIndex == 4 ? 'tab-active' : ''}" on:click={() => activeTabIndex = REFERENCE_INPUT_TAB}>
+            </button>
+            <button role="tab" class="tab  {activeTabIndex == 1 ? 'tab-active' : ''}" on:click={() => activeTabIndex = CONTRACT_TAB}>Contracts</button>
+            <button role="tab" class="tab  {activeTabIndex == 2 ? 'tab-active' : ''}" on:click={() => activeTabIndex = COLLATERAL_TAB}>Collaterals</button>
+            <button role="tab" class="tab  {activeTabIndex == 3 ? 'tab-active' : ''}" on:click={() => activeTabIndex = METADATA_TAB}>Metadata</button>
+            <button role="tab" class="tab {activeTabIndex == 4 ? 'tab-active' : ''}" on:click={() => activeTabIndex = REFERENCE_INPUT_TAB}>
                 <span class="block md:hidden">Ref In</span>
                 <span class="hidden md:block">Reference Input</span>
-            </a>
-            <a href="#" role="tab" class="tab hidden md:flex md:items-center md:justify-center {activeTabIndex == 5 ? 'tab-active' : ''}" on:click={() => activeTabIndex = JSON_TAB}>Json</a>
+            </button>
+            <button role="tab" class="tab hidden md:flex md:items-center md:justify-center {activeTabIndex == 5 ? 'tab-active' : ''}" on:click={() => activeTabIndex = JSON_TAB}>Json</button>
         </div>
 
         {#if activeTabIndex == INPUT_TAB}

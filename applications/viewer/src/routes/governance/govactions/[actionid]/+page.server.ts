@@ -5,7 +5,7 @@ export const load: PageLoad = async ({params}) => {
     let splits = params.actionid.split('_');
     let index = parseInt(splits[1]);
     const INDEXER_BASE_URL = import.meta.env.VITE_INDEXER_BASE_URL;
-    const blockApiUrl = `${INDEXER_BASE_URL}/gov-action-proposals/${splits[0]}`;
+    const blockApiUrl = `${INDEXER_BASE_URL}/governance/proposals/${splits[0]}`;
 
     const res = await fetch(blockApiUrl);
     const govActions = await res.json();
