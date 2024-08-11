@@ -31,7 +31,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
  */
 @Component
 @RequiredArgsConstructor
-@ConditionalOnExpression("${yaci.cli.test-transactions.enabled:true} && ${yaci.store.enabled:false}")
+//@ConditionalOnExpression("${yaci.cli.test-transactions.enabled:true} && ${yaci.store.enabled:false}")
 @Slf4j
 public class TestTransactionService {
     private final DefaultAddressService defaultAddressService;
