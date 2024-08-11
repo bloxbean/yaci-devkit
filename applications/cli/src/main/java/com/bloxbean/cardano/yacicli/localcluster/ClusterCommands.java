@@ -101,7 +101,9 @@ public class ClusterCommands {
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
                               @ShellOption(value = {"--era"}, defaultValue = "conway",  help = "Era (babbage, conway)") String era,
-                              @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL, help = "Use a pre-defined genesis profile (Options: zero_fee)") GenesisProfile genesisProfile,
+                              @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL,
+                                      help = "Use a pre-defined genesis profile (Options: zero_fee, zero_min_utxo_value, zero_fee_and_min_utxo_value)")
+                                  GenesisProfile genesisProfile,
                               @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys
     ) {
 
