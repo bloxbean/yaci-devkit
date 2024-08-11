@@ -45,11 +45,11 @@
 </script>
 
 <section class="container mx-auto text-sm">
+    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Pool Retirements</h2>
     <div class="flex flex-wrap justify-between mt-4 mb-2">
         <a href="#"
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
            role="button" on:click={previous}>&lt; Previous</a>
-        <h2 class="text-2xl font-bold text-center text-gray-500">Pool Retirements</h2>
         <a href="#"
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
            role="button" on:click={next}>Next &gt;</a>
@@ -58,30 +58,30 @@
         <table class="w-full bg-white border border-gray-300">
             <thead>
             <tr>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
                 <th class="py-2 px-4 bg-gray-100 font-bold text-center">Pool</th>
                 <th class="py-2 px-4 bg-gray-100 font-bold text-center">Epoch</th>
                 <th class="py-2 px-4 bg-gray-100 font-bold text-center">Retirement Epoch</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
             </tr>
             </thead>
             <tbody>
             <!-- Iterate over stake retirements data -->
             {#each data.retirements as retirement, index}
                 <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
-                    <td class="py-2 px-4">
-                        <a href="/transactions/{retirement.tx_hash}" class="text-blue-500">
-                            <span class="ml-2">{truncate(retirement.tx_hash, 50)}</span>
-                        </a>
-                    </td>
+                    <td class="py-2 px-4 ">{retirement.pool_id_bech32}</td>
+                    <td class="py-2 px-4 text-center">{retirement.epoch}</td>
+                    <td class="py-2 px-4 text-center">{retirement.retirement_epoch}</td>
                     <td class="py-2 px-4 text-center">
                         <a href="/blocks/{retirement.block_number}" class="text-blue-500">
                             {retirement.block_number}
                         </a>
                     </td>
-                    <td class="py-2 px-4 ">{truncate(retirement.pool_id_bech32, 50, "...")}</td>
-                    <td class="py-2 px-4 text-center">{retirement.epoch}</td>
-                    <td class="py-2 px-4 text-center">{retirement.retirement_epoch}</td>
+                    <td class="py-2 px-4">
+                        <a href="/transactions/{retirement.tx_hash}" class="text-blue-500">
+                            <span class="ml-2">{truncate(retirement.tx_hash, 30)}</span>
+                        </a>
+                    </td>
                 </tr>
             {/each}
             </tbody>

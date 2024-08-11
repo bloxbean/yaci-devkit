@@ -38,7 +38,7 @@ public class OgmiosCommands {
         writeLn(infoLabel("OK", "Ogmios/Kupo Status: Enable"));
     }
 
-    @ShellMethod(value = "Disble Ogmios & Kupo")
+    @ShellMethod(value = "Disble Ogmios & Kupo", key ={ "disable-kupomios", "disable-ogmios-kupo"})
     public void disableOgmiosKupo() {
         ogmiosService.setEnableOgmios(false);
         ogmiosService.setEnableKupo(false);

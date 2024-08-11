@@ -1,0 +1,199 @@
+### Reset cluster first
+###
+#POST {{admin_url}}//local-cluster/api/admin/devnet/reset
+#
+
+###
+GET {{base_url}}/api/v1/blocks
+
+> {%
+    client.test("Get recent blocks returns last 10 blocks", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    client.test("Block number is not null", function() {
+        client.assert(response.body.blocks.length >= 1, "No blocks found in the response" + response.body)
+        client.assert(response.body.blocks[0].number !== null, "Block number is null")
+    });
+%}
+
+###
+GET {{base_url}}/api/v1/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/utxos?count=10&page=0&order=asc
+
+> {%
+    client.test("Get utxos for default address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.length > 0, "No utxo found for default address" + response.body)
+    });
+%}
+
+###
+### Topup address
+POST {{admin_url}}//local-cluster/api/addresses/topup
+Content-Type: application/json
+
+{
+  "address": "addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex",
+  "adaAmount": 3000
+}
+
+> {%
+    client.test("Topup address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.status === true, "Topup failed" + response.body)
+        client.assert(response.body.adaAmount === 3000, "Incorrect ada amount " + response.body.adaAmount)
+    });
+%}
+
+###
+### Get utxos for topup address
+GET {{base_url}}/api/v1/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/utxos?count=10&page=0&order=asc
+
+> {%
+    client.test("Get utxos for topup address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.length > 1, "New utxos not found for topup address" + response.body)
+    });
+%}
+
+###
+### Get balance of topup address
+GET {{base_url}}/api/v1/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/balance?address=addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex
+
+> {%
+    client.test("Get balance of topup address", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.amounts.length > 0, "Incorrect amounts array length :" + response.body.amounts.length)
+        client.assert(response.body.amounts[0].quantity >= 13000000000, "Incorrect balance " + response.body.amounts[0].quantity)
+    });
+%}
+
+###
+### Get balance of default stake address
+GET {{base_url}}/api/v1/accounts/stake_test1uruw6wswag80sd0l57alehj47llf6tx96402vt8vks46k0q0e2ne6
+
+> {%
+    client.test("Get balance of default stake address", function() {
+        client.assert(response.status === 200, "Response status is not 200, Actual status: " + response.status);
+        client.assert(response.body.controlled_amount >= 13000000000, "Incorrect balance " + response.body.controlled_amount)
+
+    });
+%}
+
+
+###
+### Get epoch params
+GET {{base_url}}/api/v1/epochs/latest/parameters
+
+> {%
+    client.test("Get epoch parameters", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.min_fee_a === 44, "Min Fin A is not 44. Actual value: " + response.body.min_fee_a)
+        client.assert(response.body.min_fee_b === 155381, "Min Fin A is not 44. Actual value: " + response.body.min_fee_b)
+        client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
+        client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
+        client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
+    });
+%}
+
+###
+### Get latest epoch
+GET {{base_url}}/api/v1/epochs/latest
+
+> {%
+    client.test("Get latest epoch", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.epoch >= 0, "Latest epoch not found. Actual value: " + JSON.stringify(response.body))
+
+        client.global.set("current_epoch", response.body.epoch);
+    });
+%}
+
+###
+### Get epoch params
+GET {{base_url}}/api/v1/epochs/{{current_epoch}}/parameters
+
+> {%
+    client.test("Get epoch parameters by epoch", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.min_fee_a === 44, "Min Fin A is not 44. Actual value: " + response.body.min_fee_a)
+        client.assert(response.body.min_fee_b === 155381, "Min Fin A is not 44. Actual value: " + response.body.min_fee_b)
+        client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
+        client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
+        client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
+    });
+%}
+
+### Create tx to create utxo with reference input
+###
+POST {{admin_url}}/local-cluster/api/test-data
+Content-Type: application/json
+
+{
+  "type": "REFERENCE_INPUT_GEN_TRANSACTION"
+}
+
+### Verify Get Script by Script Hash
+###
+GET {{base_url}}/api/v1/scripts/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712
+
+> {%
+    client.test("Get script by script hash", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.script_hash === "3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712", "Incorrect script hash " + response.body.script_hash)
+        //"type": "plutusV2",
+        client.assert(response.body.type === "plutusV2", "Incorrect script type " + response.body.type)
+        //"serialised_size": 9
+        client.assert(response.body.serialised_size >= 3, "Incorrect serialised size " + response.body.serialised_size)
+    });
+%}
+
+### Get Script Contents by Script Hash
+###
+GET {{base_url}}/api/v1/scripts/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712/details
+
+> {%
+    client.test("Get script contents by script hash", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.script_hash === "3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712", "Incorrect script hash " + response.body.script_hash)
+        client.assert(response.body.script_type === "plutusV2", "Incorrect script type " + response.body.script_type)
+        client.assert(response.body.content !== undefined, "Content is undefined" + response.body.content)
+        client.assert(response.body.content.length >= 5 , "Incorrect script length " + response.body.content.length)
+    });
+%}
+
+### Get Script Contents cbor by Script Hash
+###
+GET {{base_url}}/api/v1/scripts/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712/cbor
+
+> {%
+         client.test("Get script contents by script hash", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.cbor === "480100002221200101", "Invalid script cbor : " + response.body.cbor)
+        client.assert(response.body.cbor.length >= 5, "Invalid script cbor length: " + response.body.cbor.length)
+    });
+%}
+
+#### Create tx to create utxo with datum
+####
+#POST {{admin_url}}/local-cluster/api/test-data
+#Content-Type: application/json
+#
+#{
+#  "type": "DATUM_OUTPUT_GEN_TRANSACTION"
+#}
+
+
+#### Find datum by datum hash (/api/v1/scripts/datum/{datumHash})
+####
+#GET {{base_url}}/api/v1/scripts/datum/3a888d65f16790950a72daee1f63aa05add6d268434107cfa5b67712
+#
+#> {%
+#        client.test("Get datum by datum hash", function() {
+#        client.assert(response.status === 200, "Response status is not 200");
+#        client.assert(response.body.datum_hash === "36643c8dbde0ad0f092aec2d4d672730e863d6f8d034c7da3b8c31d868e20b4e", "Incorrect datum hash " + response.body.datum_hash)
+#        client.assert(response.body.datum !== undefined, "Datum is undefined" + response.body.datum)
+#        client.assert(response.body.datum.length >= 5 , "Incorrect datum length " + response.body.datum.length)
+#    });
+# %}
+
+

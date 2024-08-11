@@ -100,8 +100,10 @@ public class ClusterCommands {
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
-                              @ShellOption(value = {"--era"}, defaultValue = "babbage",  help = "Era (babbage, conway)") String era,
-                              @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL, help = "Use a pre-defined genesis profile (Options: zero_fee)") GenesisProfile genesisProfile,
+                              @ShellOption(value = {"--era"}, defaultValue = "conway",  help = "Era (babbage, conway)") String era,
+                              @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL,
+                                      help = "Use a pre-defined genesis profile (Options: zero_fee, zero_min_utxo_value, zero_fee_and_min_utxo_value)")
+                                  GenesisProfile genesisProfile,
                               @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys
     ) {
 
@@ -124,7 +126,7 @@ public class ClusterCommands {
             //Era check
             Era nodeEra;
             if (era == null || era.isEmpty())
-                nodeEra = Era.Babbage;
+                nodeEra = Era.Conway;
             else if (era.equalsIgnoreCase("babbage"))
                 nodeEra = Era.Babbage;
             else if (era.equalsIgnoreCase("conway"))
@@ -217,11 +219,11 @@ public class ClusterCommands {
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void startLocalCluster() {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
-        boolean started = localClusterService.startCluster(clusterName);
-        if (!started)
+        var runStatus = localClusterService.startCluster(clusterName);
+        if (!runStatus.stared())
             return;
 
-        if (localClusterService.isFirstRunt(clusterName)) {
+        if (runStatus.isFirstRun()) {
             publisher.publishEvent(new FirstRunDone(clusterName));
             publisher.publishEvent(new ClusterStarted(clusterName));
         } else {

@@ -2,7 +2,6 @@ package com.bloxbean.cardano.yacicli.commands.general;
 
 import com.bloxbean.cardano.yacicli.commands.common.DownloadService;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
-import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.*;
 
@@ -18,7 +17,7 @@ public class DownloadCommand {
     @ShellMethod(value = "Download", key = "download")
     @ShellMethodAvailability("generalCmdAvailability")
     public void download(
-            @ShellOption(value = {"--component", "-c"}, defaultValue = "all",  help = "node,ogmios,kupo") String component,
+            @ShellOption(value = {"--component", "-c"}, defaultValue = "all",  help = "node,ogmios,kupo,yaci-store") String component,
             @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing installation. default: false") boolean overwrite
             ) {
 
@@ -31,15 +30,15 @@ public class DownloadCommand {
 
             if (component.equals("node")) {
                 downloadService.downloadNode(overwrite);
-//            } else if (component.equals("yaci-store")) {
-//                downloadService.downloadYaciStore(overwrite);
+            } else if (component.equals("yaci-store")) {
+                downloadService.downloadYaciStore(overwrite);
             } else if (component.equals("ogmios")) {
                 downloadService.downloadOgmios(overwrite);
             } else if (component.equals("kupo")) {
                 downloadService.downloadKupo(overwrite);
             } else if (component.equals("all")) {
                 downloadService.downloadNode(overwrite);
-//                downloadService.downloadYaciStore(overwrite);
+                downloadService.downloadYaciStore(overwrite);
                 downloadService.downloadOgmios(overwrite);
                 downloadService.downloadKupo(overwrite);
             } else {

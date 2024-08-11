@@ -1,0 +1,213 @@
+###
+### Get Devnet Info
+GET {{admin_url}}/local-cluster/api/admin/devnet
+
+> {%
+    client.test("Get devnet info", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        client.assert(response.body.nodePort > 0, "Node port is not set. Actual: " + response.body.nodePort);
+        client.assert(response.body.nodePort < 65536, "Node port is invalid. Actual: " + response.body.nodePort);
+        //Test submitApiPort
+        client.assert(response.body.submitApiPort > 0, "Submit API port is not set. Actual: " + response.body.submitApiPort);
+        client.assert(response.body.submitApiPort < 65536, "Submit API port is invalid. Actual: " + response.body.submitApiPort);
+        //Test socketPath
+        client.assert(response.body.socketPath !== null, "Socket path is not set. Actual: " + response.body.socketPath);
+        client.assert(response.body.protocolMagic === 42, "Protocol magic is not set. Actual: " + response.body.protocolMagic);
+
+        //ogmios port
+        client.assert(response.body.ogmiosPort > 0, "Ogmios port is not set. Actual: " + response.body.ogmiosPort);
+        //kupo port
+        client.assert(response.body.kupoPort > 0, "Kupo port is not set. Actual: " + response.body.kupoPort);
+        //yaci store port
+        client.assert(response.body.yaciStorePort > 0, "Yaci store port is not set. Actual: " + response.body.yaciStorePort);
+        //socat port
+        client.assert(response.body.socatPort > 0, "Socat port is not set. Actual: " + response.body.socatPort);
+        //block producer is true
+        client.assert(response.body.blockProducer === true, "Block producer is not set. Actual: " + response.body.blockProducer);
+    });
+%}
+
+###
+### Get Devnet Status
+{{admin_url}}/local-cluster/api/admin/devnet/status
+
+> {%
+    client.test("Get devnet status", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        client.assert(response.body === "initialized", "Devnet status is not running. Actual: " + response.body);
+    });
+
+%}
+
+###
+### Get kes period
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/kes-period
+
+> {%
+    client.test("Get kes period", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        client.assert(response.body >= 0, "Kes period is not set. Actual: " + response.body);
+    });
+%}
+
+###
+### Get conway genesis file
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/conway
+
+> {%
+    client.test("Get era specific genesis file", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        client.assert(response.body.poolVotingThresholds !== null, "Pool voting thresholds is not set. Actual: " + response.body.poolVotingThresholds);
+        client.assert(response.body.dRepVotingThresholds !== null, "DRep voting thresholds is not set. Actual: " + response.body.dRepVotingThresholds);
+        client.assert(response.body.committeeMinSize >= 0, "Committee min size is not set. Actual: " + response.body.committeeMinSize);
+        client.assert(response.body.committeeMaxTermLength >= 0, "Committee max term length is not set. Actual: " + response.body.committeeMaxTermLength);
+        client.assert(response.body.govActionLifetime >= 0, "Gov action lifetime is not set. Actual: " + response.body.govActionLifetime);
+        client.assert(response.body.govActionDeposit >= 0, "Gov action deposit is not set. Actual: " + response.body.govActionDeposit);
+        client.assert(response.body.dRepDeposit >= 0, "DRep deposit is not set. Actual: " + response.body.dRepDeposit);
+        client.assert(response.body.dRepActivity >= 0, "DRep activity is not set. Actual: " + response.body.dRepActivity);
+        client.assert(response.body.minFeeRefScriptCostPerByte >= 0, "Min fee ref script cost per byte is not set. Actual: " + response.body.minFeeRefScriptCostPerByte);
+        client.assert(response.body.plutusV3CostModel !== null, "Plutus V3 cost model is not set. Actual: " + response.body.plutusV3CostModel);
+        client.assert(response.body.constitution !== null, "Constitution is not set. Actual: " + response.body.constitution);
+        client.assert(response.body.committee !== null, "Committee is not set. Actual: " + response.body.committee);
+    });
+%}
+
+###
+### Get alonzo genesis file
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/alonzo
+
+> {%
+    client.test("Get alonzo genesis file", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        //write tests based on below sample resposne
+        client.assert(response.body.collateralPercentage === 150, "Collateral percentage is not correct. Actual: " + response.body.collateralPercentage);
+    });
+%}
+
+###
+### Get babbage genesis file
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/babbage
+
+> {%
+    client.test("Babbage genesis file doesn't exist", function () {
+        client.assert(response.status === 404, "Response status is not 404. Actual: " + response.status);
+    });
+%}
+
+###
+### Get byron genesis file
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/byron
+
+> {%
+    client.test("Get byron genesis file", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+    });
+%}
+
+###
+### Get shelley genesis file
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/shelley
+
+> {%
+    client.test("Get shelley genesis file", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        //activeSlotsCoeff
+        client.assert(response.body.activeSlotsCoeff > 0 , "Active slots coeff is not set. Actual: " + response.body.activeSlotsCoeff);
+    });
+%}
+
+###
+### Dowload genesis file
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/download
+
+> {%
+    client.test("Download genesis file", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        client.assert(response.headers.valueOf("Content-Type").valueOf("application/octet-stream"), "Content type is not application/octet-stream. Actual: " + response.headers.valueOf("Content-Type"));
+        client.assert(response.headers.valueOf("Content-Disposition").includes("genesis.zip"), "Content type is not application/octate-stream. Actual: " + JSON.stringify(response.headers.valueOf("Content-Disposition")));
+    });
+%}
+
+###
+### Download devnet folder
+
+GET {{admin_url}}/local-cluster/api/admin/devnet/download
+
+> {%
+    client.test("Download devnet folder zip", function () {
+        client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+        client.assert(response.headers.valueOf("Content-Disposition").includes("devnet.zip"), "Content type is not application/octate-stream. Actual: " + JSON.stringify(response.headers.valueOf("Content-Disposition")));
+
+    });
+%}
+
+### Address Controller
+
+###
+### Topup address
+POST {{admin_url}}//local-cluster/api/addresses/topup
+Content-Type: application/json
+
+{
+  "address": "addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex",
+  "adaAmount": 3000
+}
+
+
+### Get Utxos
+GET {{admin_url}}//local-cluster/api/addresses/addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex/utxos
+Content-Type: application/json
+
+> {%
+    client.assert(response.status === 200, "Response status is not 200. Actual: " + response.status);
+    client.assert(response.body.length > 0, "Utxos are not available. Actual: " + response.body);
+    client.assert(response.body[0].tx_hash !== null, "Tx hash is not set. Actual: " + response.body[0].tx_hash);
+    client.assert(response.body[0].output_index >= 0, "Tx index is not set. Actual: " + response.body[0].output_index);
+    client.assert(response.body[0].amount.length > 0, "Amount is not set. Actual: " + response.body[0].amount.length);
+  %}
+
+
+### Epoch Controller
+
+###
+### Get epoch parameters
+GET {{admin_url}}/local-cluster/api/epochs/1/parameters
+
+> {%
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.min_fee_a === 44, "Min Fin A is not 44. Actual value: " + response.body.min_fee_a)
+    client.assert(response.body.min_fee_b === 155381, "Min Fin A is not 44. Actual value: " + response.body.min_fee_b)
+    client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
+    client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
+    client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
+ %}
+
+###
+### Get current parameters
+GET {{admin_url}}/local-cluster/api/epochs/parameters
+
+> {%
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.min_fee_a === 44, "Min Fin A is not 44. Actual value: " + response.body.min_fee_a)
+    client.assert(response.body.min_fee_b === 155381, "Min Fin A is not 44. Actual value: " + response.body.min_fee_b)
+    client.assert(response.body.coins_per_utxo_size === "4310", "coins_per_utxo_size is not 4310. Actual value: " + response.body.coins_per_utxo_size)
+    client.assert(response.body.cost_models.PlutusV1 !== null, "Plutus V1 Cost model is null")
+    client.assert(response.body.cost_models.PlutusV2 !== null, "Plutus V2 Cost model is null")
+%}
+
+###
+### Get latest epoch
+GET {{admin_url}}/local-cluster/api/epochs/latest
+
+> {%
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.epoch>= 0, "Lastest epoch not found. Actual value: " + response.body.epoch)
+%}
+

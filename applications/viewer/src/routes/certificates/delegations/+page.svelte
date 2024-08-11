@@ -34,7 +34,7 @@
         let currentPage = parseInt(data.page);
         let nextPage = currentPage + 1;
 
-        if (data.registrations.length == 0)
+        if (data.delegations.length == 0)
             nextPage = currentPage;
 
         goto(`/certificates/delegations?page=${nextPage}&count=${data.count}`)
@@ -47,11 +47,11 @@
 
 
 <section class="container mx-auto text-sm">
+    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Delegations</h2>
     <div class="flex flex-wrap justify-between mt-4 mb-2">
         <a href="#"
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
            role="button" on:click={previous}>&lt; Previous</a>
-        <h2 class="text-2xl font-bold text-center text-gray-500">Delegations</h2>
         <a href="#"
            class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
            role="button" on:click={next}>Next &gt;</a>
@@ -60,28 +60,28 @@
         <table class="w-full bg-white border border-gray-300">
             <thead>
             <tr>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Pool Id</th>
                 <th class="py-2 px-4 bg-gray-100 font-bold text-center">Address</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Pool Id</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
+                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
             </tr>
             </thead>
             <tbody>
-            <!-- Iterate over stake registrations data -->
+            <!-- Iterate over stake delegations data -->
             {#each data.delegations as delegation, index}
                 <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
-                    <td class="py-2 px-4">
-                        <a href="/transactions/{delegation.tx_hash}" class="text-blue-500">
-                            <span class="ml-2">{delegation.tx_hash}</span>
-                        </a>
-                    </td>
+                    <td class="py-2 px-4">{delegation.address}</td>
+                    <td class="py-2 px-4">{delegation.pool_id}</td>
                     <td class="py-2 px-4 text-center">
                         <a href="/blocks/{delegation.block_number}" class="text-blue-500">
                             {delegation.block_number}
                         </a>
                     </td>
-                    <td class="py-2 px-4">{truncate(delegation.pool_id, 30, "...")}</td>
-                    <td class="py-2 px-4">{truncate(delegation.address, 30, "...")}</td>
+                    <td class="py-2 px-4">
+                        <a href="/transactions/{delegation.tx_hash}" class="text-blue-500">
+                            <span class="ml-2">{truncate(delegation.tx_hash, 30, "...")}</span>
+                        </a>
+                    </td>
                 </tr>
             {/each}
             </tbody>

@@ -7,6 +7,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +19,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
@@ -63,23 +65,25 @@ public class DownloadService {
             return false;
         }
 
-        Path cardanoNode = Path.of(clusterConfig.getYaciCliHome(), "bin", "cardano-node");
-        Path cardanoCLI = Path.of(clusterConfig.getYaciCliHome(), "bin", "cardano-cli");
-        Path cardanoSubmitApi = Path.of(clusterConfig.getYaciCliHome(), "bin", "cardano-submit-api");
+        Path cardanoNode = Path.of(clusterConfig.getCLIBinFolder(), "cardano-node");
+        Path cardanoCLI = Path.of(clusterConfig.getCLIBinFolder(), "cardano-cli");
+        Path cardanoSubmitApi = Path.of(clusterConfig.getCLIBinFolder(), "cardano-submit-api");
 
         if (cardanoNode.toFile().exists()) {
             if (!overwrite) {
                 writeLn(info("cardano-node already exists in %s", cardanoNode.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing cardano-node"));
                 return false;
+            } else {
+                deleteExistingDir("cardano-node", clusterConfig.getCardanoNodeFolder());
             }
         }
 
-        String targetDir = clusterConfig.getYaciCliHome();
+        String targetDir = clusterConfig.getCardanoNodeFolder();
         var downloadedFile = download("cardano-node", downloadPath, targetDir, "cardano-node.tar.gz");
         if (downloadedFile != null) {
             try {
-                extractTarGz(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getYaciCliHome());
+                extractTarGz(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getCardanoNodeFolder());
                 setExecutablePermission(cardanoNode.toFile().getAbsolutePath());
                 setExecutablePermission(cardanoCLI.toFile().getAbsolutePath());
                 setExecutablePermission(cardanoSubmitApi.toFile().getAbsolutePath());
@@ -95,6 +99,8 @@ public class DownloadService {
     }
 
     public boolean downloadYaciStore(boolean overwrite) {
+        downloadJre(overwrite); //Download JRE first (if not already downloaded
+
         String downloadPath = resolveYaciStoreDownloadPath();
 
         if ( downloadPath == null) {
@@ -109,6 +115,8 @@ public class DownloadService {
                 writeLn(info("YaciStore Jar already exists in %s", yaciStoreJar.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing yaci-store"));
                 return false;
+            } else {
+                deleteExistingDir("store", clusterConfig.getYaciStoreBinPath());
             }
         }
 
@@ -122,12 +130,46 @@ public class DownloadService {
         return false;
     }
 
-    public boolean downloadOgmios(boolean overwrite) {
-        if (!SystemUtils.IS_OS_LINUX) {
-            writeLn(error("Ogmios is supported only on linux. Skipping!!!"));
+    public boolean downloadJre(boolean overwrite) {
+        String downloadPath = JreResolver.resolveJreDownloadUrl();
+
+        if ( downloadPath == null) {
+            writeLn(error("Download URL for JRE is not set. Please set the download URL in application.properties"));
             return false;
         }
 
+        String jreHome = clusterConfig.getJreHome();
+        String binDir = JreResolver.getJreRelativeBinPath();
+        Path javaExec = Path.of(jreHome, binDir, "java");
+
+        if (javaExec.toFile().exists()) {
+            if (!overwrite) {
+                writeLn(info("JRE already exists in %s", javaExec.toFile().getAbsolutePath()));
+                writeLn(info("Use --overwrite to overwrite the existing JRE"));
+                return false;
+            } else {
+                deleteExistingDir("jre", jreHome);
+            }
+        }
+
+        String targetDir = clusterConfig.getJreHome();
+        var downloadedFile = download("java", downloadPath, targetDir, "jre.tar.gz");
+        if (downloadedFile != null) {
+            try {
+                extractTarGz(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getJreHome());
+                setExecutablePermission(javaExec.toFile().getAbsolutePath());
+                return true;
+            } catch (IOException e) {
+                writeLn(error("Error extracting JRE" + e.getMessage()));
+            }
+        } else {
+            writeLn(error("Download failed for JRE"));
+        }
+
+        return false;
+    }
+
+    public boolean downloadOgmios(boolean overwrite) {
         String downloadPath = resolveOgmiosDownloadPath();
 
         if ( downloadPath == null) {
@@ -142,6 +184,8 @@ public class DownloadService {
                 writeLn(info("ogmios already exists in %s", ogmiosExec.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing ogmios"));
                 return false;
+            } else {
+                deleteExistingDir("ogmios", clusterConfig.getOgmiosHome());
             }
         }
 
@@ -177,14 +221,16 @@ public class DownloadService {
                 writeLn(info("Kupo already exists in %s", kupoExec.toFile().getAbsolutePath()));
                 writeLn(info("Use --overwrite to overwrite the existing kupo"));
                 return false;
+            } else {
+                deleteExistingDir("kupo", clusterConfig.getKupoHome());
             }
         }
 
         String targetDir = clusterConfig.getKupoHome();
-        var downloadedFile = download("kupo", downloadPath, targetDir, "kupo.tar.gz");
+        var downloadedFile = download("kupo", downloadPath, targetDir, "kupo.zip");
         if (downloadedFile != null) {
             try {
-                extractTarGz(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getKupoHome());
+                extractZip(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getKupoHome());
                 setExecutablePermission(kupoExec.toFile().getAbsolutePath());
                 return true;
             } catch (IOException e) {
@@ -358,6 +404,15 @@ public class DownloadService {
             return null;
         }
 
+        String osPrefix = null;
+        if (SystemUtils.IS_OS_MAC) {
+            osPrefix = "macos";
+        } else if (SystemUtils.IS_OS_LINUX) {
+            osPrefix = "linux";
+        } else {
+            writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
+        }
+
         String arch = System.getProperty("os.arch");
         String cpuArch = null;
         if (arch.startsWith("aarch") || arch.startsWith("arm")) {
@@ -366,7 +421,7 @@ public class DownloadService {
             cpuArch = "x86_64";
         }
 
-        String url = OGMIOS_DOWNLOAD_URL + "/v" + ogmiosVersion + "/ogmios-v" + ogmiosVersion + "-" + cpuArch + "-linux.zip";
+        String url = OGMIOS_DOWNLOAD_URL + "/v" + ogmiosVersion + "/ogmios-v" + ogmiosVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
         return url;
     }
 
@@ -382,9 +437,9 @@ public class DownloadService {
 
         String osPrefix = null;
         if (SystemUtils.IS_OS_MAC) {
-            osPrefix = "Darwin";
+            osPrefix = "macos";
         } else if (SystemUtils.IS_OS_LINUX) {
-            osPrefix = "Linux";
+            osPrefix = "linux";
         } else {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
         }
@@ -392,9 +447,9 @@ public class DownloadService {
         String arch = System.getProperty("os.arch");
         String cpuArch = null;
         if (arch.startsWith("aarch") || arch.startsWith("arm")) {
-            cpuArch = "arm64";
+            cpuArch = "aarch64";
         } else{
-            cpuArch = "amd64";
+            cpuArch = "x86_64";
         }
 
         String versionParts[] = kupoVersion.split("\\.");
@@ -402,7 +457,24 @@ public class DownloadService {
         if (versionParts.length == 3)
              trimmedVersionPath = versionParts[0] + "." + versionParts[1];
 
-        String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-" + kupoVersion + "-" + cpuArch + "-" + osPrefix + ".tar.gz";
+        String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-v" + kupoVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
         return url;
+    }
+
+    private void deleteExistingDir(String componentName, String componentHome) {
+        Objects.requireNonNull(componentHome, "Component home cannot be null");
+
+        try {
+            File componentHomeFolder = new File(componentHome);
+            if (componentHomeFolder.getName().equals(componentName)) { //Additional check to avoid deleting wrong directory
+                writeLn(infoLabel("Deleting", "Deleting existing %s directory %s", componentName, componentHomeFolder));
+                FileUtils.deleteDirectory(componentHomeFolder);
+            } else {
+                writeLn(warnLabel("Deleting", "Skipping deletion of %s directory as it's not a default %s directory. " +
+                        "Please delete it manually if required. %s", componentName, componentName, componentHomeFolder));
+            }
+        } catch (IOException e) {
+            writeLn(error("Error deleting existing %s directory", componentName));
+        }
     }
 }

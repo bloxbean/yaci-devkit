@@ -49,7 +49,7 @@ java-setup:
 docker-build:
     FROM ubuntu:22.04
     ENV JAVA_HOME=/opt/java/openjdk
-    ENV STORE_VERSION=0.1.0-rc3
+    ENV STORE_VERSION=0.1.0-rc5
 
     ARG TARGETOS
     ARG TARGETARCH

@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.yacistore;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.commands.common.JreResolver;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
@@ -36,11 +37,16 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 public class YaciStoreService {
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
+    private final JreResolver jreResolver;
+    private final YaciStoreConfigBuilder yaciStoreConfigBuilder;
 
     private List<Process> processes = new ArrayList<>();
 
     @Value("${yaci.store.enabled:false}")
     private boolean enableYaciStore;
+
+    @Value("${is.docker:false}")
+    private boolean isDocker;
 
     private Queue<String> logs = EvictingQueue.create(300);
 
@@ -97,10 +103,16 @@ public class YaciStoreService {
             return null;
         }
 
+        if (!isDocker) {
+            yaciStoreConfigBuilder.build(clusterInfo);
+        }
+
+        String javaExecPath = jreResolver.getJavaCommand();
+
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         } else {
-            builder.command("java", "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         }
 
         Process process = builder.start();
@@ -215,14 +227,17 @@ public class YaciStoreService {
     @EventListener
     public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
         Path clusterFolder = clusterService.getClusterFolder(clusterDeleted.getClusterName());
+        Path nodeFolder = clusterFolder.resolve("node");
         String dbDir = "yaci_store";
-        Path dbPath = clusterFolder.resolve(dbDir);
+        Path dbPath = nodeFolder.resolve(dbDir);
 
+        writeLn(info("Deleting Yaci Store db folder : " + dbPath.toFile().getAbsolutePath()));
         if (dbPath.toFile().exists()) {
             try {
                 FileUtils.deleteDirectory(dbPath.toFile());
+                writeLn(success("Yaci Store db folder deleted successfully"));
             } catch (IOException e) {
-                writeLn(error("Yaci store db could not be deleted, " + dbPath.toAbsolutePath()));
+                writeLn(error("Yaci store db could not be deleted : " + dbPath.toAbsolutePath()));
             }
         }
     }

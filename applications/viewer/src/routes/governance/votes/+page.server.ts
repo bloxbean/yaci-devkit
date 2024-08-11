@@ -6,7 +6,7 @@ export const load: PageLoad = async ({params, url}) => {
     const count = 20;
 
     const INDEXER_BASE_URL = import.meta.env.VITE_INDEXER_BASE_URL;
-    const apiUrl = `${INDEXER_BASE_URL}/voting-procedures?page=${page}&count=${count}`;
+    const apiUrl = `${INDEXER_BASE_URL}/governance/votes?page=${page}&count=${count}`;
     console.log(apiUrl);
 
     const res = await fetch(apiUrl);

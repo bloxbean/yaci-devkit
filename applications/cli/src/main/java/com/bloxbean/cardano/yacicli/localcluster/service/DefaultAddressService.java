@@ -97,4 +97,9 @@ public class DefaultAddressService {
         return sb.toString();
 
     }
+
+    public Account getAccount(int accountIndex) {
+        DerivationPath derivationPath = DerivationPath.createExternalAddressDerivationPathForAccount(accountIndex);
+        return new Account(Networks.testnet(), mnemonic, derivationPath);
+    }
 }

@@ -57,8 +57,24 @@ public class ConsoleWriter {
            return PREFIX + str;
     }
 
+    public static String errorLabel(String label, String str, Object...args) {
+        String PREFIX = AnsiColors.RED + "[" + label + "] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
     public static String warn(String str, Object...args) {
-        String PREFIX = AnsiColors.YELLOW + "[WARN] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.PURPLE + "[WARN] " + AnsiColors.ANSI_RESET;
+        if (args.length != 0)
+            return PREFIX + String.format(str, args);
+        else
+            return PREFIX + str;
+    }
+
+    public static String warnLabel(String label, String str, Object...args) {
+        String PREFIX = AnsiColors.PURPLE + "[" + label + "] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
