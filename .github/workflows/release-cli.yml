@@ -20,7 +20,7 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
-#          native-image-musl: 'true'
+          native-image-musl: 'true'
           distribution: 'liberica'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
@@ -36,7 +36,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
             cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
-            echo "os_prefix=linux" >> $GITHUB_ENV
+            echo "os_prefix=ubuntu" >> $GITHUB_ENV
       - name: MacOS specific env
         if: runner.os == 'macOS'
         run: |            

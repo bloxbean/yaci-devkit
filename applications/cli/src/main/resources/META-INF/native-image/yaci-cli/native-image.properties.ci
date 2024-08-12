@@ -1,4 +1,4 @@
-Args = -H:+StaticExecutableWithDynamicLibC --initialize-at-run-time=io.netty.channel.epoll.Epoll \
+Args = --static --libc=musl --initialize-at-run-time=io.netty.channel.epoll.Epoll \
 --initialize-at-run-time=io.netty.channel.epoll.Native \
 --initialize-at-run-time=io.netty.channel.epoll.EpollEventLoop \
 --initialize-at-run-time=io.netty.channel.epoll.EpollEventArray \
