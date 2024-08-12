@@ -21,8 +21,10 @@ jobs:
         with:
           java-version: '21'
           native-image-musl: 'true'
-          distribution: 'liberica'
+#          distribution: 'liberica'
+          distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: '21.0.2'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
@@ -36,7 +38,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
             cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
-            echo "os_prefix=ubuntu" >> $GITHUB_ENV
+            echo "os_prefix=linux" >> $GITHUB_ENV
       - name: MacOS specific env
         if: runner.os == 'macOS'
         run: |            
