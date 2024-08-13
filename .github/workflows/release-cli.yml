@@ -20,9 +20,9 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
-          native-image-musl: 'true'
+#          native-image-musl: 'true'
 #          distribution: 'liberica'
-#          distribution: 'graalvm'
+          distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: '21.0.2'
           native-image-job-reports: 'true'
