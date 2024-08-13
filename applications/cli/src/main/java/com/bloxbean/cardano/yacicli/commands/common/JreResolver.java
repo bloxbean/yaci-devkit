@@ -1,5 +1,6 @@
 package com.bloxbean.cardano.yacicli.commands.common;
 
+import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,11 +16,19 @@ public class JreResolver {
     private static String JRE_MAC_OS_BIN = "jdk-21+35-jre/Contents/Home/bin";
     private static String JRE_LINUX_BIN = "jdk-21+35-jre/bin";
 
-    @Value("${store.custom.jre.folder:#{null}}")
-    private String jreFolder;
+    private final ClusterConfig clusterConfig;
+
+    @Value("${is.docker:false}")
+    private boolean isDocker;
 
     public String getJavaCommand() {
-        if (jreFolder == null)
+        if (isDocker) {
+            return JAVA;
+        }
+
+        String jreFolder = clusterConfig.getJreHome();
+
+        if (jreFolder == null || jreFolder.isEmpty())
             return JAVA;
         else {
             String javaCommand = Paths.get(jreFolder, getJreRelativeBinPath(), JAVA).toString();
