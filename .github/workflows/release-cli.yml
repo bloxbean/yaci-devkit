@@ -50,7 +50,7 @@ jobs:
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: yaci-cli
+          name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
           path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
 #      - name: Release
 #        uses: softprops/action-gh-release@v1
