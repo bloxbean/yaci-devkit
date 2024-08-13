@@ -9,7 +9,7 @@ jobs:
   buildAndPush:
     strategy:
       matrix:
-        os: ["self-hosted-ubuntu-20-04", "macos-14"]
+        os: ["self-hosted-ubuntu-20-04"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -21,10 +21,10 @@ jobs:
         with:
           java-version: '21'
           native-image-musl: 'true'
-          distribution: 'liberica'
+#          distribution: 'liberica'
 #          distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-#          version: '21.0.2'
+          version: '21.0.2'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
