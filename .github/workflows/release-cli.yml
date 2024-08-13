@@ -37,7 +37,6 @@ jobs:
         working-directory: applications/cli
         if: runner.os == 'Linux'
         run: |
-#            cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
             echo "os_prefix=linux" >> $GITHUB_ENV
       - name: MacOS specific env
         if: runner.os == 'macOS'
