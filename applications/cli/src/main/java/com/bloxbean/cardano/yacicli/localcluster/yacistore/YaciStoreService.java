@@ -115,6 +115,8 @@ public class YaciStoreService {
             builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
         }
 
+        writeLn(info("Java Path: " + javaExecPath));
+
         Process process = builder.start();
 
         writeLn(success("Yaci store starting ..."));
