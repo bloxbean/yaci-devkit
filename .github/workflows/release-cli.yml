@@ -9,7 +9,7 @@ jobs:
   buildAndPush:
     strategy:
       matrix:
-        os: ["ubuntu-latest", "macos-latest"]
+        os: ["ubuntu-20.04", "macos-13", "macos-13-xlarge"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -37,7 +37,7 @@ jobs:
         working-directory: applications/cli
         if: runner.os == 'Linux'
         run: |
-            cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
+#            cp src/main/resources/META-INF/native-image/yaci-cli/native-image.properties.ci src/main/resources/META-INF/native-image/yaci-cli/native-image.properties
             echo "os_prefix=linux" >> $GITHUB_ENV
       - name: MacOS specific env
         if: runner.os == 'macOS'
@@ -49,12 +49,16 @@ jobs:
       - name: Copy artifacts
         working-directory: applications/cli
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - uses: actions/upload-artifact@v4
         with:
-          files: |
-            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: yaci-cli
+          path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: |
+#            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+#          prerelease: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
