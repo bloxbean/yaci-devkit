@@ -24,7 +24,7 @@ if [ -z "$1" ]; then
     fi
     # Fetch the latest release version from GitHub
     VERSION=$(curl -s "https://api.github.com/repos/bloxbean/yaci-devkit/releases/latest" | jq -r '.tag_name' | sed 's/^v//')
-    ARTIFACT=$(curl -s "https://api.github.com/repos/bloxbean/yaci-devkit/releases/latest" | jq -r '.assets[0].name')
+    ARTIFACT="yaci-devkit-$VERSION.zip"
     echo "No version specified. Fetching latest version: $VERSION"
 else
     VERSION=$1

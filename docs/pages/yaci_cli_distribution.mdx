@@ -1,0 +1,135 @@
+import { Callout } from 'nextra/components'
+
+## Introduction
+
+For users who prefer not to use Docker, there's a ZIP distribution that contains only Yaci CLI. This allows you to download
+and manage necessary components like Cardano Node, Ogmios, Kupo, and Yaci Store directly through the command line.
+
+Please note that **Yaci Viewer** is not currently supported out-of-the-box in this distribution.
+
+### Who is this for?
+
+- **Developers and system administrators:** Quickly set up a new custom node or multi-node networks
+- **Users wanting more control:** Easily manage compatible component versions and configurations
+
+### Key advantages of the Yaci CLI distribution:
+
+- **Reduced Disk Space:** Requires less disk space than the Docker image, containing only the Yaci CLI binary, configuration files, and any downloaded components.
+- **Version Flexibility:** Specify compatible versions of Cardano Node and other components directly in the download configuration file if the default versions don't meet your requirements.
+- **Customizable Setup:** Developers can selectively enable components like Yaci Store, Ogmios, and Kupo to achieve the same functionality as the Yaci DevKit Docker image.
+
+
+## Supported Platforms
+
+Yaci CLI is currently supported on the following platforms:
+
+1. **Linux x86:** Tested on Ubuntu 20.04, Ubuntu 22.04
+2. **MacOS 14 (Arm64) or later**
+
+## Installation
+
+- Download the latest version of the Yaci CLI Zip file from the [releases page](https://github.com/bloxbean/yaci-devkit/releases).
+- Unzip the downloaded file.
+- You will find the `yaci-cli` binary in the unzipped folder, and the configuration files in the `config` folder.
+
+## Run Yaci CLI
+
+You can now run the `yaci-cli` binary. However, this distribution doesn't include any of the necessary components for creating a devnet.
+You'll need to download these using Yaci CLI before proceeding.
+
+
+## Download Components
+
+The simplest way to download the necessary components is to use the `download` command. This will automatically download all
+the required components for your specific platform, including Cardano Node, Ogmios, Kupo, Yaci Store, and JRE.
+
+```shell
+yaci-cli:> download
+```
+
+All components will be downloaded to the `$user_home/.yaci-cli` folder by default.
+
+If you need to replace any existing components, simply use the `--overwrite` option.
+
+
+```shell
+yaci-cli:> download --overwrite
+```
+
+Alternatively, you can download the components individually using the `download -c <component>` command, replacing `<component>` with the specific component you want to download.
+
+```shell
+yaci-cli:> download -c node
+yaci-cli:> download -c ogmios
+yaci-cli:> download -c kupo
+yaci-cli:> download -c yaci-store
+```
+
+<Callout type="warning">
+**Note:** You can change the default `yaci-cli` home folder by setting the `yaci.cli.home` property in the `application.properties` configuration file.
+</Callout>
+
+## Create a new Devnet
+
+Once you have downloaded the required components, you're ready to create a new devnet. You can use the `create-node` command to do this.
+
+```shell
+yaci-cli:> create-node -o --start
+```
+
+This command will create a new devnet with a single node and start it. By default, Yaci Store, Ogmios, and Kupo are disabled.
+You can enable them by setting their respective `enabled` properties to `true` in the `config/application.properties` file.
+
+Alternatively, you can use the `enable-kupomios`, `enable-yacistore`, or `enable-kupo` commands before creating/starting the devnet.
+
+For more information on the available commands and their usage, refer to the Yaci CLI commands documentation [here](/commands).
+
+## Configuration
+
+You'll find three configuration files within the `config` folder:
+
+### **application.properties :**
+
+This is the main configuration file to manage the functionality of Yaci CLI.
+
+#### 1. Enable/Disable Optional Components
+
+By default, all optional components are disabled. To enable any of them, simply set their respective `enabled` property to `true`.
+
+```properties
+ogmios.enabled=true
+kupo.enabled=true
+yaci.store.enabled=true
+```
+<Callout type="warning">
+**Note:** If you want to use Yaci Store for transaction building, script cost evaluation, and transaction submission via a Blockfrost-compatible API layer,
+you'll need to enable both `Yaci Store` and `Ogmios`.
+
+</Callout>
+
+#### 2. Update Ports
+You can update the default ports for the Ogmios, Kupo, and Yaci Store.
+
+```properties
+ogmios.port=1337
+kupo.port=1442
+yaci.store.port=8080
+```
+
+### **node.properties**
+
+This file contains the configuration for the Cardano Node. You can update the configuration as per your requirements to modify the node's genesis configuration.
+
+### **download.properties**
+
+This file contains the default download versions for the various components. You can update these versions or even provide direct download URLs if needed.
+This configuration helps you to download specific compatible versions of Cardano Node or other components, giving you greater control over your environment.
+
+## Multi Node Network Setup
+
+Since Yaci CLI is used in both Yaci DevKit and this distribution, the commands to create a multi-node network remain the same.
+You can follow the instructions provided in the [Additional Nodes on Different Machines](/multi-node-setup#additional-nodes-on-different-machines) section of the multi-node setup guide.
+
+
+
+
