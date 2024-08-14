@@ -1,5 +1,6 @@
 {
   "index": "Introduction",
+  "yaci_cli_distribution": "Yaci CLI (Non Docker Dist)",
   "how_to_use": "How to use",
   "about": {
     "title": "About",
