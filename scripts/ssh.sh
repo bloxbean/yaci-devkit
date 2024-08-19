@@ -1,9 +1,7 @@
 #!/bin/bash
 
 cd "$(dirname "$0")"
-
-ENV_FILE="../config/env"
-VERSION_FILE="../config/version"
+cat ../config/env ../config/version > .env
 
 CMD="docker-compose"
 if ! command -v docker-compose &> /dev/null
@@ -12,5 +10,5 @@ then
     CMD="docker compose"
 fi
 
-$CMD --env-file $ENV_FILE --env-file $VERSION_FILE exec yaci-cli /bin/bash
+$CMD exec yaci-cli /bin/bash
 

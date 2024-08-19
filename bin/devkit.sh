@@ -34,36 +34,36 @@ fi
 case $1 in
     start)
         echo "Attempting to start the service..."
-        sh $SCRIPT_DIR/start.sh
+        bash $SCRIPT_DIR/start.sh
 
         # Check if start.sh was successful
         if [ $? -eq 0 ]; then
             echo "start.sh executed successfully. Running yaci-cli.sh..."
             first_arg="$1"
             shift
-            sh $SCRIPT_DIR/yaci-cli.sh "$@"
+            bash $SCRIPT_DIR/yaci-cli.sh "$@"
         else
             echo "start.sh failed. Not executing yaci-cli.sh."
         fi
         ;;
     stop)
         echo "Stopping the service..."
-        sh $SCRIPT_DIR/stop.sh
+        bash $SCRIPT_DIR/stop.sh
         ;;
     ssh)
         echo "ssh to Devkit container..."
-        sh $SCRIPT_DIR/ssh.sh
+        bash $SCRIPT_DIR/ssh.sh
         ;;
     info)
         echo "Info of Devkit"
-        sh $SCRIPT_DIR/info.sh
+        bash $SCRIPT_DIR/info.sh
         ;;
     cli)
         echo "Run cardano-cli in Devkit container..."
         # Discard the first argument
         first_arg="$1"
         shift
-        sh $SCRIPT_DIR//cardano-cli.sh "$@"
+        bash $SCRIPT_DIR//cardano-cli.sh "$@"
         ;;
     version)
        # Show version information
