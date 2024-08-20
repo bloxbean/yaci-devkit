@@ -13,3 +13,4 @@ then
 fi
 
 $CMD --env-file $ENV_FILE --env-file $VERSION_FILE exec yaci-cli /bin/bash
+
