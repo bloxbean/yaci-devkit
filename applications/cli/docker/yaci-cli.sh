@@ -7,9 +7,9 @@ fi
 
 # Check the value of yaci_cli_mode and run the appropriate command
 if [ "$yaci_cli_mode" == "java" ]; then
-    java -jar /app/yaci-cli.jar
+    java -jar /app/yaci-cli.jar $*
 elif [ "$yaci_cli_mode" == "native" ]; then
-    /app/yaci-cli
+    /app/yaci-cli $*
 else
     echo "Invalid mode. Please use 'java' or 'native'."
     exit 1

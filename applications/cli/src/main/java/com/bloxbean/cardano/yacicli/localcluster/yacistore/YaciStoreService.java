@@ -132,7 +132,7 @@ public class YaciStoreService {
         Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
 
         int counter = 0;
-        while (counter < 20) {
+        while (counter < 40) {
             counter++;
             if (started.get())
                 break;
@@ -140,7 +140,7 @@ public class YaciStoreService {
             writeLn("Waiting for Yaci Store to start ...");
         }
 
-        if (counter == 20) {
+        if (counter == 40) {
             writeLn(error("Waited too long. Could not start Yaci Store. Something is wrong.."));
             writeLn(error("Use \"yaci-store-logs\" to see the logs"));
             writeLn(error("Please verify if another yaci-store in running in the same port. " +
