@@ -118,9 +118,13 @@ public class ClusterCommands {
                 return;
             }
 
-            if (epochLength < 20) {
-                writeLn(error("Epoch length should be 20 or more"));
+            if (epochLength < 5) {
+                writeLn(error("Epoch length below 5 is not allowed."));
                 return;
+            }
+
+            if (epochLength < 20) {
+                writeLn(warn("Epoch length is too small. The node may behave unexpectedly if the epoch length is too small. Keep it at least 20 or more."));
             }
 
             //Era check
