@@ -157,6 +157,8 @@ public class GenesisConfig {
 //            new NonAvvmBalances("2657WMsDfac6if177KSAP7hosuDveRHN3ZsyP2EQNgTaQ5tqFTnmw1EMZcGreMHva", "3340000000", true)
     );
 
+    private int conwayHardForkAtEpoch = 0;
+
     @PostConstruct
     public void postInit() {
         if (faucets.size() == 0 && !disableFaucet) {
@@ -337,6 +339,8 @@ public class GenesisConfig {
         map.put("genesisDelegs", genesisDelegs);
         map.put("nonAvvmBalances", nonAvvmBalances);
 
+        map.put("conwayHardForkAtEpoch", conwayHardForkAtEpoch);
+
         return map;
     }
 
@@ -422,6 +426,8 @@ public class GenesisConfig {
         genesisConfig.setHeavyDelegations(new ArrayList<>(heavyDelegations));
         genesisConfig.setGenesisDelegs(new ArrayList<>(genesisDelegs));
         genesisConfig.setNonAvvmBalances(new ArrayList<>(nonAvvmBalances));
+
+        genesisConfig.setConwayHardForkAtEpoch(conwayHardForkAtEpoch);
 
         return genesisConfig;
     }
