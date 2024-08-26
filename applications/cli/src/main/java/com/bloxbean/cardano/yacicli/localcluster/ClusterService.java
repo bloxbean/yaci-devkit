@@ -285,7 +285,7 @@ public class ClusterService {
         if (era == Era.Babbage) {
             srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
             srcShelleyGenesisFile = clusterFolder.resolve("genesis-templates").resolve("shelley-genesis.json");
-            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json.babbage");
             srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json");
         } else if (era == Era.Conway) {
             srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
@@ -313,9 +313,9 @@ public class ClusterService {
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
 
-        //Check if protocol version should be minimun 10 and it's conway era
-        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 10) {
-            values.put("protocolMajorVer", 10);
+        //Check if protocol version should be minimun 9 and it's conway era
+        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 9) {
+            values.put("protocolMajorVer", 9);
             values.put("protocolMinorVer", 0);
         }
 
