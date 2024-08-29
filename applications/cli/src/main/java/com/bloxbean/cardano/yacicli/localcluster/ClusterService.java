@@ -354,7 +354,8 @@ public class ClusterService {
         if (stabilityWindow > epochLength) {
             writer.accept(warn("Stability window is greater than epoch length. Stability window : %s, Epoch length : %s", stabilityWindow, epochLength));
             writer.accept(warn("You may want to adjust the security parameter to make sure stability window is less than epoch length. " +
-                    "\nThe features like rewards calculation which depends on stability window may not work as expected"));
+                    "\nThe features like rewards calculation which depends on stability window may not work as expected" +
+                    "\nIf you are using default configuration, you can ignore this warning. The transaction processing will work fine"));
         }
 
         writer.accept(success("Slot length updated in genesis.json"));
