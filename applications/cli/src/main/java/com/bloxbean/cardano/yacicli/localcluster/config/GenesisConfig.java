@@ -162,7 +162,6 @@ public class GenesisConfig {
     //Introduced for the issue https://github.com/bloxbean/yaci-devkit/issues/65
     private int conwayHardForkAtEpoch = 0;
     private boolean shiftStartTimeBehind = false;
-    private int shiftStartTimeBehindBySecs = 0; //By default, it will be epochLength
 
     @PostConstruct
     public void postInit() {
@@ -347,7 +346,6 @@ public class GenesisConfig {
 
         map.put("conwayHardForkAtEpoch", conwayHardForkAtEpoch);
         map.put("shiftStartTimeBehind", shiftStartTimeBehind);
-        map.put("shiftStartTimeBehindBySecs", shiftStartTimeBehindBySecs);
 
         return map;
     }
@@ -438,7 +436,6 @@ public class GenesisConfig {
 
         genesisConfig.setConwayHardForkAtEpoch(conwayHardForkAtEpoch);
         genesisConfig.setShiftStartTimeBehind(shiftStartTimeBehind);
-        genesisConfig.setShiftStartTimeBehindBySecs(shiftStartTimeBehindBySecs);
 
         return genesisConfig;
     }

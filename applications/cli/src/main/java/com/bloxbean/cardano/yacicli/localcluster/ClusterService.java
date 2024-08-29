@@ -321,9 +321,17 @@ public class ClusterService {
 
         //Derive security param
         long securityParam = genesisConfigCopy.getSecurityParam();
-        if (securityParam == 0) {
-            //For stabilityWindow = epochLength * stabilityWindowFactory (0-1) ,  k = (epochLength * coefficient) / (3 * 2)
-            securityParam = Math.round(((epochLength * activeSlotsCoeff) / 3) * genesisConfig.getStabilityWindowFactor());
+
+        if (genesisConfig.getConwayHardForkAtEpoch() > 0 && genesisConfig.isShiftStartTimeBehind()) {
+            //Workaround for https://github.com/bloxbean/yaci-devkit/issues/65
+            //Calculate required securityParam to jump directly to epoch = 1
+            long expectedStabilityWindow = Math.round(epochLength * 1.5);
+            securityParam = Math.round(expectedStabilityWindow * activeSlotsCoeff) / 3;
+        } else {
+            if (securityParam == 0) {
+                //For stabilityWindow = epochLength * stabilityWindowFactory (0-1) ,  k = (epochLength * coefficient) / (3 * 2)
+                securityParam = Math.round(((epochLength * activeSlotsCoeff) / 3) * genesisConfig.getStabilityWindowFactor());
+            }
         }
 
         values.put("securityParam", securityParam);

@@ -262,9 +262,8 @@ public class ClusterStartService {
                 maxBehindBySecond = clusterInfo.getEpochLength();
             }
 
-            long shiftTimeBehindSeconds = genesisConfig.getShiftStartTimeBehindBySecs() > 0 ? genesisConfig.getShiftStartTimeBehindBySecs() : maxBehindBySecond;
-            byronStartTime = byronStartTime - shiftTimeBehindSeconds;
-            writer.accept(success("Updating Start time to current time - " + shiftTimeBehindSeconds + " in byron-genesis.json"));
+            byronStartTime = byronStartTime - maxBehindBySecond;
+            writer.accept(success("Updating Start time to current time - " + maxBehindBySecond + " in byron-genesis.json"));
         }
         jsonNode.set("startTime", new LongNode(byronStartTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
