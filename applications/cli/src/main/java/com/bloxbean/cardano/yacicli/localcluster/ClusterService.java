@@ -319,6 +319,18 @@ public class ClusterService {
             values.put("protocolMinorVer", 0);
         }
 
+        //Derive security param
+        long securityParam = genesisConfigCopy.getSecurityParam();
+        if (securityParam == 0) {
+            //For stabilityWindow = epochLength * stabilityWindowFactory (0-1) ,  k = (epochLength * coefficient) / (3 * 2)
+            securityParam = Math.round(((epochLength * activeSlotsCoeff) / 3) * genesisConfig.getStabilityWindowFactor());
+        }
+
+        values.put("securityParam", securityParam);
+        clusterInfo.setSecurityParam(securityParam);
+        clusterInfo.setActiveSlotsCoeff(activeSlotsCoeff);
+        writer.accept(info("Security parameter : %s", securityParam));
+
         //Update Genesis files
         try {
             templateEngineHelper.replaceValues(srcByronGenesisFile, destByronGenesisFile, values);
@@ -327,6 +339,14 @@ public class ClusterService {
             templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, values);
         } catch (Exception e) {
             throw new IOException(e);
+        }
+
+        //Check security Parameter
+        long stabilityWindow = Math.round((3 * securityParam) / activeSlotsCoeff);
+        if (stabilityWindow > epochLength) {
+            writer.accept(warn("Stability window is greater than epoch length. Stability window : %s, Epoch length : %s", stabilityWindow, epochLength));
+            writer.accept(warn("You may want to adjust the security parameter to make sure stability window is less than epoch length. " +
+                    "\nThe features like rewards calculation which depends on stability window may not work as expected"));
         }
 
         writer.accept(success("Slot length updated in genesis.json"));

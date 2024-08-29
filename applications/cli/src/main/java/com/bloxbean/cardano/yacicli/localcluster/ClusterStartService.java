@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
@@ -24,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
@@ -36,6 +36,7 @@ public class ClusterStartService {
     private final ClusterConfig clusterConfig;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
     private final ProcessUtil processUtil;
+    private final GenesisConfig genesisConfig;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Process> processes = new ArrayList<>();
@@ -252,6 +253,19 @@ public class ClusterStartService {
         //Update Byron Genesis file
         ObjectNode jsonNode = (ObjectNode) objectMapper.readTree(byronGenesis.toFile());
         long byronStartTime = Instant.now().getEpochSecond();
+
+        if (genesisConfig.getConwayHardForkAtEpoch() > 0 && genesisConfig.isShiftStartTimeBehind()) {
+            long stabilityWindow = (long) Math.floor((3 * clusterInfo.getSecurityParam()) / clusterInfo.getActiveSlotsCoeff());
+
+            long maxBehindBySecond = stabilityWindow - 5;
+            if (stabilityWindow > clusterInfo.getEpochLength()) {
+                maxBehindBySecond = clusterInfo.getEpochLength();
+            }
+
+            long shiftTimeBehindSeconds = genesisConfig.getShiftStartTimeBehindBySecs() > 0 ? genesisConfig.getShiftStartTimeBehindBySecs() : maxBehindBySecond;
+            byronStartTime = byronStartTime - shiftTimeBehindSeconds;
+            writer.accept(success("Updating Start time to current time - " + shiftTimeBehindSeconds + " in byron-genesis.json"));
+        }
         jsonNode.set("startTime", new LongNode(byronStartTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
 
@@ -265,7 +279,7 @@ public class ClusterStartService {
         clusterInfo.setStartTime(byronStartTime);
         saveClusterInfo(clusterFolder, clusterInfo);
 
-        writer.accept(success("Update Start time"));
+        writer.accept(success("Updated Start time"));
         return true;
     }
 
