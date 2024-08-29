@@ -27,8 +27,6 @@ public class ClusterUtilService {
     private final LocalClientProviderHelper localQueryClientUtil;
     private final RootLogService rootLogService;
 
-    final static int slotsPerKESPeriod = 129600; //TODO -- take from configuration
-
     public Tuple<Long, Point> getTip(Consumer<String> writer) {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();
@@ -55,6 +53,16 @@ public class ClusterUtilService {
 
     @SneakyThrows
     public int getKESPeriod() {
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+
+        long slotsPerKESPeriod = 129600;
+        var clusterInfo = clusterService.getClusterInfo(clusterName);
+        if (clusterInfo == null) {
+            writeLn(error("Cluster not found. Please create a cluster first."));
+        } else {
+            if (clusterInfo.getSlotsPerKESPeriod() > 0)
+                slotsPerKESPeriod = clusterInfo.getSlotsPerKESPeriod();
+        }
 
         Tuple<Long, Point> tip = getTip((msg) -> {writeLn(msg);});
 
