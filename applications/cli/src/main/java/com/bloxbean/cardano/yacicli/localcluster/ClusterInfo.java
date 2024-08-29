@@ -19,6 +19,9 @@ public class ClusterInfo {
     private double slotLength;
     private double blockTime;
     private int epochLength;
+    private long slotsPerKESPeriod;
+    private long securityParam;
+    private double activeSlotsCoeff;
     private boolean p2pEnabled;
     private long startTime;
     private boolean masterNode;
