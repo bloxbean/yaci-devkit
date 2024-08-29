@@ -285,7 +285,7 @@ public class ClusterService {
         if (era == Era.Babbage) {
             srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
             srcShelleyGenesisFile = clusterFolder.resolve("genesis-templates").resolve("shelley-genesis.json");
-            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json");
+            srcAlonzoGenesisFile = clusterFolder.resolve("genesis-templates").resolve("alonzo-genesis.json.babbage");
             srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json");
         } else if (era == Era.Conway) {
             srcByronGenesisFile = clusterFolder.resolve("genesis-templates").resolve("byron-genesis.json");
@@ -313,11 +313,31 @@ public class ClusterService {
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
 
-        //Check if protocol version should be minimun 10 and it's conway era
-        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 10) {
-            values.put("protocolMajorVer", 10);
+        //Check if protocol version should be minimun 9 and it's conway era
+        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 9) {
+            values.put("protocolMajorVer", 9);
             values.put("protocolMinorVer", 0);
         }
+
+        //Derive security param
+        long securityParam = genesisConfigCopy.getSecurityParam();
+
+        if (genesisConfig.getConwayHardForkAtEpoch() > 0 && genesisConfig.isShiftStartTimeBehind()) {
+            //Workaround for https://github.com/bloxbean/yaci-devkit/issues/65
+            //Calculate required securityParam to jump directly to epoch = 1
+            long expectedStabilityWindow = Math.round(epochLength * 1.5);
+            securityParam = Math.round(expectedStabilityWindow * activeSlotsCoeff) / 3;
+        } else {
+            if (securityParam == 0) {
+                //For stabilityWindow = epochLength * stabilityWindowFactory (0-1) ,  k = (epochLength * coefficient) / (3 * 2)
+                securityParam = Math.round(((epochLength * activeSlotsCoeff) / 3) * genesisConfig.getStabilityWindowFactor());
+            }
+        }
+
+        values.put("securityParam", securityParam);
+        clusterInfo.setSecurityParam(securityParam);
+        clusterInfo.setActiveSlotsCoeff(activeSlotsCoeff);
+        writer.accept(info("Security parameter : %s", securityParam));
 
         //Update Genesis files
         try {
@@ -327,6 +347,15 @@ public class ClusterService {
             templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, values);
         } catch (Exception e) {
             throw new IOException(e);
+        }
+
+        //Check security Parameter
+        long stabilityWindow = Math.round((3 * securityParam) / activeSlotsCoeff);
+        if (stabilityWindow > epochLength) {
+            writer.accept(warn("Stability window is greater than epoch length. Stability window : %s, Epoch length : %s", stabilityWindow, epochLength));
+            writer.accept(warn("You may want to adjust the security parameter to make sure stability window is less than epoch length. " +
+                    "\nThe features like rewards calculation which depends on stability window may not work as expected" +
+                    "\nIf you are using default configuration, you can ignore this warning. The transaction processing will work fine"));
         }
 
         writer.accept(success("Slot length updated in genesis.json"));

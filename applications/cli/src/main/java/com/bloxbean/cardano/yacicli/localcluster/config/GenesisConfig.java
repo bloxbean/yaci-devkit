@@ -16,7 +16,8 @@ public class GenesisConfig {
     private String networkId = "Testnet";
     private long protocolMagic = 42;
     private int maxKESEvolutions = 60;
-    private int securityParam = 300;
+    private double stabilityWindowFactor = 0.5; //This is used to automatically derive the security parameter from epoch length
+    private int securityParam = 0;
     private long slotsPerKESPeriod = 129600;
     private int updateQuorum = 1;
     private boolean peerSharing = true;
@@ -157,6 +158,11 @@ public class GenesisConfig {
 //            new NonAvvmBalances("2657WMsDfac6if177KSAP7hosuDveRHN3ZsyP2EQNgTaQ5tqFTnmw1EMZcGreMHva", "3340000000", true)
     );
 
+
+    //Introduced for the issue https://github.com/bloxbean/yaci-devkit/issues/65
+    private int conwayHardForkAtEpoch = 0;
+    private boolean shiftStartTimeBehind = false;
+
     @PostConstruct
     public void postInit() {
         if (faucets.size() == 0 && !disableFaucet) {
@@ -250,6 +256,7 @@ public class GenesisConfig {
         }
         map.put("protocolMagic", protocolMagic);
         map.put("maxKESEvolutions", maxKESEvolutions);
+        map.put("stabilityWindowFactor", stabilityWindowFactor);
         map.put("securityParam", securityParam);
         map.put("slotsPerKESPeriod", slotsPerKESPeriod);
         map.put("updateQuorum", updateQuorum);
@@ -337,6 +344,9 @@ public class GenesisConfig {
         map.put("genesisDelegs", genesisDelegs);
         map.put("nonAvvmBalances", nonAvvmBalances);
 
+        map.put("conwayHardForkAtEpoch", conwayHardForkAtEpoch);
+        map.put("shiftStartTimeBehind", shiftStartTimeBehind);
+
         return map;
     }
 
@@ -345,6 +355,7 @@ public class GenesisConfig {
         genesisConfig.setNetworkId(networkId);
         genesisConfig.setProtocolMagic(protocolMagic);
         genesisConfig.setMaxKESEvolutions(maxKESEvolutions);
+        genesisConfig.setStabilityWindowFactor(stabilityWindowFactor);
         genesisConfig.setSecurityParam(securityParam);
         genesisConfig.setSlotsPerKESPeriod(slotsPerKESPeriod);
         genesisConfig.setUpdateQuorum(updateQuorum);
@@ -422,6 +433,9 @@ public class GenesisConfig {
         genesisConfig.setHeavyDelegations(new ArrayList<>(heavyDelegations));
         genesisConfig.setGenesisDelegs(new ArrayList<>(genesisDelegs));
         genesisConfig.setNonAvvmBalances(new ArrayList<>(nonAvvmBalances));
+
+        genesisConfig.setConwayHardForkAtEpoch(conwayHardForkAtEpoch);
+        genesisConfig.setShiftStartTimeBehind(shiftStartTimeBehind);
 
         return genesisConfig;
     }

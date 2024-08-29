@@ -97,7 +97,7 @@ public class ClusterCommands {
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
                               @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
                               @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
-                              @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "500") int epochLength,
+                              @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "600") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
                               @ShellOption(value = {"--era"}, defaultValue = "conway",  help = "Era (babbage, conway)") String era,
@@ -118,9 +118,13 @@ public class ClusterCommands {
                 return;
             }
 
-            if (epochLength < 20) {
-                writeLn(error("Epoch length should be 20 or more"));
+            if (epochLength < 5) {
+                writeLn(error("Epoch length below 5 is not allowed."));
                 return;
+            }
+
+            if (epochLength < 20) {
+                writeLn(warn("Epoch length is too small. The node may behave unexpectedly if the epoch length is too small. Keep it at least 20 or more."));
             }
 
             //Era check
@@ -137,6 +141,7 @@ public class ClusterCommands {
             }
 
             long protocolMagic = genesisConfig.getProtocolMagic();
+            long slotsPerKESPeriod = genesisConfig.getSlotsPerKESPeriod();
 
             //stop any cluster if running
             localClusterService.stopCluster(msg -> writeLn(msg));
@@ -148,6 +153,7 @@ public class ClusterCommands {
                     .slotLength(slotLength)
                     .blockTime(blockTime)
                     .epochLength(epochLength)
+                    .slotsPerKESPeriod(slotsPerKESPeriod)
                     .protocolMagic(protocolMagic)
                     .p2pEnabled(true)
                     .masterNode(true)

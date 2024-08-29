@@ -16,6 +16,7 @@ import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Value;
 import com.bloxbean.cardano.client.transaction.spec.cert.PoolRegistration;
+import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
@@ -111,6 +112,9 @@ public class PeerService {
                 .slotLength(bootstrapClusterInfo.getSlotLength())
                 .blockTime(bootstrapClusterInfo.getBlockTime())
                 .epochLength(bootstrapClusterInfo.getEpochLength())
+                .securityParam(bootstrapClusterInfo.getSecurityParam())
+                .activeSlotsCoeff(bootstrapClusterInfo.getActiveSlotsCoeff())
+                .slotsPerKESPeriod(bootstrapClusterInfo.getSlotsPerKESPeriod())
                 .protocolMagic(bootstrapClusterInfo.getProtocolMagic())
                 .startTime(bootstrapClusterInfo.getStartTime())
                 .masterNode(false)
@@ -198,10 +202,10 @@ public class PeerService {
             if (amountAvailable.compareTo(poolConfig.getPledge()) < 0) {
                 writer.accept(info("Owner address does not have enough funds for pledge amount. Let's transfer some funds to owner address."));
                 BigInteger topupAmount = poolConfig.getPledge().subtract(amountAvailable).add(adaToLovelace(1000));
-                writer.accept(info("Let's topup owner address with " + lovelaceToAda(topupAmount) + " ada"));
+                writer.accept(info("Let's topup owner address with " + lovelaceToAda(topupAmount) + " ₳"));
                 TopupResult topupResult = ClusterAdminClient.topup(clusterInfo.getAdminNodeUrl(), addr, lovelaceToAda(topupAmount).doubleValue());
                 if (topupResult.isStatus()) {
-                    writer.accept(success("Topup successful. Amount: " + topupResult.getAdaAmount() + " Ada"));
+                    writer.accept(success("Topup successful. Amount: " + topupResult.getAdaAmount() + " ₳"));
                 } else {
                     writer.accept(error("Topup failed. Please topup manually."));
                 }
@@ -215,11 +219,12 @@ public class PeerService {
                     .orElseThrow();
 
             String poolId = Bech32.encode(poolRegistration.getOperator(), "pool");
-            writer.accept(successLabel("Pool Id", poolId));
+            writer.accept(infoLabel("Pool Id ", poolId) + " \uD83D\uDE80");
+            writer.accept(infoLabel("Pool Hash", HexUtil.encodeHexString(poolRegistration.getOperator())) + " \uD83D\uDE80");
 
             Address stakeAddress = AddressProvider.getStakeAddress(new Address(addr));
-            writer.accept(successLabel("Owner Stake address", stakeAddress.getAddress()));
-            writer.accept(successLabel("Owner Payment address", addr));
+            writer.accept(infoLabel("Owner Stake address", stakeAddress.getAddress()) + " \uD83D\uDE80");
+            writer.accept(infoLabel("Owner Payment address", addr) + " \uD83D\uDE80");
 
             BackendService backendService = new BFBackendService(clusterInfo.getAdminNodeUrl()
                     + "/local-cluster/api/", "dummy  id");

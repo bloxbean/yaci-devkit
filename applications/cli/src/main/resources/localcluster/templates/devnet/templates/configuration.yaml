@@ -59,7 +59,7 @@ TestMaryHardForkAtEpoch: 0
 TestAlonzoHardForkAtEpoch: 0
 TestBabbageHardForkAtEpoch: 0
 {{#conway_era}}
-TestConwayHardForkAtEpoch: 0
+TestConwayHardForkAtEpoch: {{conwayHardForkAtEpoch}}
 {{/conway_era}}
 {{/mainnet}}
 

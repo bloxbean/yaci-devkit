@@ -109,6 +109,7 @@ public class PoolKeyGeneratorService {
     @SneakyThrows
     public void generateOperationalCert(String adminUrl, String nodeName, Consumer<String> writer) {
         int kesPeriod = ClusterAdminClient.getKesPeriod(adminUrl);
+        writer.accept(info("KES Period : " + kesPeriod));
         generateOperationalCert(nodeName, kesPeriod, writer);
     }
 
