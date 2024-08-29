@@ -24,17 +24,20 @@ public class ClusterPortInfoHelper {
         if (isDocker) {
             writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details (Container) ######"));
         } else {
-            writeLn(successLabel("Admin Port", String.valueOf(applicationConfig.getAdminPort())));
+            writeLn(infoLabel("Admin Port", String.valueOf(applicationConfig.getAdminPort())));
             writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details ######"));
         }
-        writeLn(successLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
-        writeLn(successLabel("Node Socket Paths", ""));
+        writeLn(infoLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
+        writeLn(infoLabel("Node Socket Paths", ""));
         writeLn(clusterInfo.getSocketPath());
-        writeLn(successLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
-        writeLn(successLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
-        writeLn(successLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
-        writeLn(successLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
-        writeLn(successLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
+        writeLn(infoLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
+        writeLn(infoLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
+        writeLn(infoLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
+        writeLn(infoLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
+        writeLn(infoLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
+        writeLn(infoLabel("Epoch Length", String.valueOf(clusterInfo.getEpochLength())));
+        writeLn(infoLabel("Security Param", String.valueOf(clusterInfo.getSecurityParam())));
+        writeLn(infoLabel("SlotsPerKESPeriod", String.valueOf(clusterInfo.getSlotsPerKESPeriod())));
 
         if (clusteName == null || !"default".equals(clusteName))
             return;
@@ -42,22 +45,22 @@ public class ClusterPortInfoHelper {
         if (isDocker) {
             writeLn("\n");
             writeLn(header(AnsiColors.CYAN_BOLD, "#################### URLS (Host) ####################"));
-            writeLn(successLabel("Yaci Viewer", String.format("http://localhost:%s", getViewerPort())));
-            writeLn(successLabel("Yaci Store Swagger UI", String.format("http://localhost:%s/swagger-ui.html", getStorePort(clusterInfo))));
-            writeLn(successLabel("Yaci Store Api URL", String.format("http://localhost:%s/api/v1/", getStorePort(clusterInfo))));
-            writeLn(successLabel("Pool Id", "pool1wvqhvyrgwch4jq9aa84hc8q4kzvyq2z3xr6mpafkqmx9wce39zy"));
+            writeLn(infoLabel("Yaci Viewer", String.format("http://localhost:%s", getViewerPort())));
+            writeLn(infoLabel("Yaci Store Swagger UI", String.format("http://localhost:%s/swagger-ui.html", getStorePort(clusterInfo))));
+            writeLn(infoLabel("Yaci Store Api URL", String.format("http://localhost:%s/api/v1/", getStorePort(clusterInfo))));
+            writeLn(infoLabel("Pool Id", "pool1wvqhvyrgwch4jq9aa84hc8q4kzvyq2z3xr6mpafkqmx9wce39zy"));
 
             if (enableOgmios) {
                 writeLn("\n");
                 writeLn(header(AnsiColors.CYAN_BOLD, "#################### Other URLS ####################"));
-                writeLn(successLabel("Ogmios Url (Optional)", "ws://localhost:" + getOgmiosPort(clusterInfo)));
-                writeLn(successLabel("Kupo Url   (Optional)", "http://localhost:" + getKupoPort(clusterInfo)));
+                writeLn(infoLabel("Ogmios Url (Optional)", "ws://localhost:" + getOgmiosPort(clusterInfo)));
+                writeLn(infoLabel("Kupo Url   (Optional)", "http://localhost:" + getKupoPort(clusterInfo)));
             }
 
             writeLn("\n");
             writeLn(header(AnsiColors.CYAN_BOLD, "#################### Node Ports ####################"));
-            writeLn(successLabel("n2n port", "localhost:" + getN2NPort(clusterInfo)));
-            writeLn(successLabel("n2c port (socat)", "localhost:" + getN2cSocatPort(clusterInfo)));
+            writeLn(infoLabel("n2n port", "localhost:" + getN2NPort(clusterInfo)));
+            writeLn(infoLabel("n2c port (socat)", "localhost:" + getN2cSocatPort(clusterInfo)));
         }
     }
 

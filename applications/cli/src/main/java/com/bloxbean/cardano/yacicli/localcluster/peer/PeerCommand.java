@@ -131,14 +131,17 @@ public class PeerCommand {
         ClusterInfo clusterInfo = clusterService.getClusterInfo(clusterName);
         writeLn("");
         writeLn(header(AnsiColors.CYAN_BOLD, "###### Node Details ######"));
-        writeLn(successLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
-        writeLn(successLabel("Node Socket Paths", ""));
+        writeLn(infoLabel("Node port", String.valueOf(clusterInfo.getNodePort())));
+        writeLn(infoLabel("Node Socket Paths", ""));
         writeLn(clusterInfo.getSocketPath());
-        writeLn(successLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
-        writeLn(successLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
-        writeLn(successLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
-        writeLn(successLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
-        writeLn(successLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
+        writeLn(infoLabel("Submit Api Port", String.valueOf(clusterInfo.getSubmitApiPort())));
+        writeLn(infoLabel("Protocol Magic", String.valueOf(clusterInfo.getProtocolMagic())));
+        writeLn(infoLabel("Block Time", String.valueOf(clusterInfo.getBlockTime())) + " sec");
+        writeLn(infoLabel("Slot Length", String.valueOf(clusterInfo.getSlotLength())) + " sec");
+        writeLn(infoLabel("Start Time", String.valueOf(clusterInfo.getStartTime())));
+        writeLn(infoLabel("Epoch Length", String.valueOf(clusterInfo.getEpochLength())));
+        writeLn(infoLabel("Security Param", String.valueOf(clusterInfo.getSecurityParam())));
+        writeLn(infoLabel("SlotsPerKESPeriod", String.valueOf(clusterInfo.getSlotsPerKESPeriod())));
     }
 
     public Availability peerCommandAvailability() {
