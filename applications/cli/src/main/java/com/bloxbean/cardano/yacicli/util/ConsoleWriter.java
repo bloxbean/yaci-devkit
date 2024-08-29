@@ -18,7 +18,7 @@ public class ConsoleWriter {
     }
 
     public static String success(String str, Object...args) {
-        String PREFIX = AnsiColors.BLUE + "[Success] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.BLUE + "✅ " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -26,7 +26,7 @@ public class ConsoleWriter {
     }
 
     public static String successLabel(String label, String str, Object...args) {
-        String PREFIX = AnsiColors.BLUE + "[" + label + "] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.BLUE + "[✅ " + label + "] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -34,7 +34,7 @@ public class ConsoleWriter {
     }
 
     public static String info(String str, Object...args) {
-        String PREFIX = AnsiColors.YELLOW_BRIGHT + "[Info] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.YELLOW_BRIGHT + "\uD83D\uDCA1 " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -42,7 +42,7 @@ public class ConsoleWriter {
     }
 
     public static String infoLabel(String label, String str, Object...args) {
-        String PREFIX = AnsiColors.YELLOW_BRIGHT + "[" + label + "] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.YELLOW_BRIGHT + "[\uD83D\uDCA1 " + label + "] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -50,7 +50,7 @@ public class ConsoleWriter {
     }
 
     public static String error(String str, Object...args) {
-        String PREFIX = AnsiColors.RED + "[ERROR] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.RED + "\uD83D\uDD34 " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -58,7 +58,7 @@ public class ConsoleWriter {
     }
 
     public static String errorLabel(String label, String str, Object...args) {
-        String PREFIX = AnsiColors.RED + "[" + label + "] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.RED + "[\uD83D\uDD34 " + label + "] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -66,7 +66,7 @@ public class ConsoleWriter {
     }
 
     public static String warn(String str, Object...args) {
-        String PREFIX = AnsiColors.PURPLE + "[WARN] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.PURPLE + "❗ " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
@@ -74,7 +74,7 @@ public class ConsoleWriter {
     }
 
     public static String warnLabel(String label, String str, Object...args) {
-        String PREFIX = AnsiColors.PURPLE + "[" + label + "] " + AnsiColors.ANSI_RESET;
+        String PREFIX = AnsiColors.PURPLE + "[❗" + label + "] " + AnsiColors.ANSI_RESET;
         if (args.length != 0)
             return PREFIX + String.format(str, args);
         else
