@@ -64,13 +64,13 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 
 **n2c port for remote client (socat)**   : localhost:3333
 
-# Component Versions
+# Components
 - [Yaci CLI](./applications/cli)
 - [Yaci Viewer](./applications/viewer)
-- [Yaci Store](https://github.com/bloxbean/yaci-store) : v0.1.0-rc2-preview1
-- [Cardano Node](https://cardano.org/): 8.7.3
-- [Ogmios](https://ogmios.dev/): v6.2.0
-- [Kupo](https://cardanosolutions.github.io/kupo/): v2.8.0
+- [Yaci Store](https://github.com/bloxbean/yaci-store) 
+- [Cardano Node](https://cardano.org/)
+- [Ogmios](https://ogmios.dev/)
+- [Kupo](https://cardanosolutions.github.io/kupo/)
 
 **Note:** Includes Cardano Node binaries for both amd64 and arm64. arm64 binary is from [Armada Alliance](https://github.com/armada-alliance/cardano-node-binaries)
   (Include both amd64 and arm64 binaries)
