@@ -33,12 +33,12 @@ public class GenesisConfig {
     private BigDecimal decentralisationParam = BigDecimal.ZERO;
     private int eMax =18;
     private BigInteger keyDeposit = BigInteger.valueOf(2000000);
-    private long maxBlockBodySize = 65536;
+    private long maxBlockBodySize = 90112;
     private long maxBlockHeaderSize = 1100;
     private long maxTxSize = 16384;
     private long minFeeA = 44;
     private long minFeeB = 155381;
-    private BigInteger minPoolCost = BigInteger.valueOf(340000000);
+    private BigInteger minPoolCost = BigInteger.valueOf(170000000);
     private BigInteger minUTxOValue = BigInteger.valueOf(1000000);
     private int nOpt = 100;
     private BigInteger poolDeposit = BigInteger.valueOf(500000000);
@@ -93,7 +93,7 @@ public class GenesisConfig {
     private int committeeMaxTermLength = 146;
     private int govActionLifetime = 6;
     private BigInteger govActionDeposit = BigInteger.valueOf(1000000000);
-    private BigInteger dRepDeposit = BigInteger.valueOf(2000000);
+    private BigInteger dRepDeposit = BigInteger.valueOf(500000000);
     private int dRepActivity = 20;
     private BigDecimal minFeeRefScriptCostPerByte = BigDecimal.valueOf(15);
 
