@@ -1,3 +1,5 @@
+import { Callout } from 'nextra/components'
+
 ## Multi Node Setup (Experimental)
 
 While the primary purpose of DevKit is to provide a simple way to get started with a single devnet node, it is possible to use
@@ -6,6 +8,18 @@ DevKit to create a multi-node setup. The additional nodes can be mix of **block 
 A multi-node setup can be useful for various testing scenarios.
 
 The additional nodes can be on the **same machine** or on **different machines**. There are separate commands to start a block producing node or a relay node.
+
+<Callout type={"default"}>
+    For non-development multi-node setups, it is recommended to set `shiftStartTimeBehind=false` in the `config/node.properties` file
+    and configure `conwayHardForkAtEpoch=1`. This way, the network will start in the Babbage era and transition to the Conway era at epoch 1.
+    This approach helps avoid a V2 cost model issue that occurs if the network starts in the Conway era at epoch 0.
+
+    For more details, check this issue: https://github.com/bloxbean/yaci-devkit/issues/65#issuecomment-2318155838."
+
+`conwayHardForkAtEpoch=1` <br/>
+`shiftStartTimeBehind=false`
+
+</Callout>
 
 **You need to following steps in order to setup a multi-node setup:**
 
