@@ -1,0 +1,3 @@
+[submodule "applications/yaci-store"]
+	path = applications/yaci-store
+	url = https://github.com/bloxbean/yaci-store
