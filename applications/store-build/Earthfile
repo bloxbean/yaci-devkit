@@ -1,0 +1,16 @@
+VERSION 0.8
+
+cli-native-ci:
+  LOCALLY
+  ARG EARTHLY_TARGET_NAME
+  ARG EARTHLY_GIT_SHORT_HASH
+  ARG APP_VERSION
+
+  COPY store.build.application.properties ../yaci-store/applications/all/src/main/resources/application.properties
+
+  WORKDIR ../yaci-store
+
+  RUN ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+
+  SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
+  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
