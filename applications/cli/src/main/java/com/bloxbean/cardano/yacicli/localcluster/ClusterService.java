@@ -63,7 +63,7 @@ public class ClusterService {
     @Autowired
     ObjectMapper objectMapper;
 
-    @Autowired
+    @Autowired(required = false)
     private WebServerApplicationContext server;
 
     @Autowired

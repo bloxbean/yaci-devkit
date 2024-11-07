@@ -1,0 +1,29 @@
+VERSION 0.8
+
+store-native:
+  LOCALLY
+  ARG STORE_BRANCH
+  ARG APP_VERSION
+
+  WORKDIR .
+  RUN rm -rf tmp
+  RUN mkdir tmp
+  WORKDIR tmp
+  RUN git clone --depth 1 --branch ${STORE_BRANCH} https://github.com/bloxbean/yaci-store.git yaci-store
+
+  RUN git --git-dir yaci-store/.git rev-parse --short HEAD > yaci-store/store.git.properties
+
+  RUN cp ../store.build.application.properties yaci-store/applications/all/src/main/resources/application.properties
+
+  FROM ghcr.io/graalvm/graalvm-community:21
+
+  COPY tmp/yaci-store yaci-store
+
+  WORKDIR yaci-store
+
+  # Build with Gradle
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+
+  # Save artifacts
+  SAVE ARTIFACT applications/all/build/native/nativeCompile/yaci-store-all yaci-store
+  SAVE ARTIFACT store.git.properties yaci-store.git.properties

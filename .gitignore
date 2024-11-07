@@ -1,3 +1,4 @@
 scripts/scala/*.sc
 /docs/node_modules/
 /docs/.next
+applications/store-build/tmp
