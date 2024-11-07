@@ -43,6 +43,70 @@
     "queryAllDeclaredMethods":true,
     "queryAllDeclaredConstructors":true,
     "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.BytesDataJsonSerializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.BytesDataJsonDeserializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.BigIntDataJsonSerializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.BigIntDataJsonDeserializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.ConstrDataJsonSerializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.ConstrDataJsonDeserializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.ListDataJsonSerializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.ListDataJsonDeserializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.MapDataJsonSerializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.plutus.spec.serializers.MapDataJsonDeserializer",
+    "allPublicConstructors": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.backend.model.TxContentUtxo",
+    "allPublicConstructors": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.backend.model.TxContentUtxoInputs",
+    "allPublicConstructors": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.backend.model.TxContentOutputAmount",
+    "allPublicConstructors": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "com.bloxbean.cardano.client.backend.model.TxContentUtxoOutputs",
+    "allPublicConstructors": true,
+    "allPublicFields": true,
+    "allDeclaredMethods": true
   }
 ]
 

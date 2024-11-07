@@ -1,11 +1,33 @@
 [
   {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.AccountApi"]
+  },
+  {
     "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.AddressesApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.AssetsApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.BlockApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.CardanoLedgerApi"]
   },
   {
     "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.EpochApi"]
   },
   {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.MetadataApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.PoolApi"]
+  },
+  {
     "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.TransactionApi"]
+  },
+  {
+    "interfaces":["com.bloxbean.cardano.client.backend.blockfrost.service.http.ScriptApi"]
   }
 ]
+

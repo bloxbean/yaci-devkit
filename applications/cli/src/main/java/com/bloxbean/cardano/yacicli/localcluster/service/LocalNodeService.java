@@ -187,7 +187,7 @@ public class LocalNodeService {
         String txHash = TransactionUtil.getTxHash(signedTransaction);
 
         //Submit Tx using LocalStateQuery mini-protocol
-        TxSubmissionRequest txSubmissionRequest = new TxSubmissionRequest(TxBodyType.BABBAGE, signedTransaction.serialize());
+        TxSubmissionRequest txSubmissionRequest = new TxSubmissionRequest(TxBodyType.CONWAY, signedTransaction.serialize());
         var mono = localClientProvider.getTxSubmissionClient().submitTx(txSubmissionRequest);
         var txResult = mono.block(Duration.ofSeconds(2));
         if (!txResult.isAccepted()) {
@@ -235,7 +235,7 @@ public class LocalNodeService {
         var verificationKey = KeyGenUtil.getPublicKeyFromPrivateKey(senderSkey);
         var scriptPubkey = ScriptPubkey.create(verificationKey);
 
-        var transactionProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.BABBAGE);
+        var transactionProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.CONWAY);
 
         Tx tx = new Tx()
                 .mintAssets(scriptPubkey, Asset.builder()
