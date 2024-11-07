@@ -48,6 +48,9 @@ public class YaciStoreService {
     @Value("${is.docker:false}")
     private boolean isDocker;
 
+    @Value("${yaci.store.mode:java}")
+    private String yaciStoreMode;
+
     private Queue<String> logs = EvictingQueue.create(300);
 
     @EventListener
@@ -109,10 +112,20 @@ public class YaciStoreService {
 
         String javaExecPath = jreResolver.getJavaCommand();
 
-        if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-            builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+        if (yaciStoreMode != null && yaciStoreMode.equals("native")) {
+            builder.environment().put("STORE_CARDANO_N2C_ERA", era.name());
+            builder.environment().put("STORE_CARDANO_PROTOCOL_MAGIC", String.valueOf(clusterInfo.getProtocolMagic()));
+            if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+                builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.exe");
+            } else {
+                builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store");
+            }
         } else {
-            builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+                builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            } else {
+                builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            }
         }
 
         writeLn(info("Java Path: " + javaExecPath));
