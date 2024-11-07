@@ -4,6 +4,7 @@ kupo_enabled=false
 
 node=node1
 yaci_cli_mode=native
+yaci_store_mode=native
 
 #######################################################
 # Ports

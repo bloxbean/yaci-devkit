@@ -1,16 +1,26 @@
 VERSION 0.8
 
-cli-native-ci:
+store-native:
   LOCALLY
-  ARG EARTHLY_TARGET_NAME
-  ARG EARTHLY_GIT_SHORT_HASH
+  ARG STORE_BRANCH
   ARG APP_VERSION
 
-  COPY store.build.application.properties ../yaci-store/applications/all/src/main/resources/application.properties
+  WORKDIR .
+  RUN rm -rf tmp
+  RUN mkdir tmp
+  WORKDIR tmp
+  RUN git clone --depth 1 --branch ${STORE_BRANCH} https://github.com/bloxbean/yaci-store.git yaci-store
 
-  WORKDIR ../yaci-store
+  RUN cp ../store.build.application.properties yaci-store/applications/all/src/main/resources/application.properties
 
-  RUN ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+  FROM ghcr.io/graalvm/graalvm-community:21
 
-  SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
-  SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
+  COPY tmp/yaci-store yaci-store
+
+  WORKDIR yaci-store
+
+  # Build with Gradle
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+
+  # Save artifacts
+  SAVE ARTIFACT applications/all/build/native/nativeCompile/yaci-store-all yaci-store
