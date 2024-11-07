@@ -37,12 +37,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'org.springframework.boot:spring-boot-starter-mustache'
 
-	implementation('com.bloxbean.cardano:yaci:0.3.0-beta14') {
+	implementation('com.bloxbean.cardano:yaci:0.3.3') {
         exclude group: 'com.bloxbean.cardano', module: 'cardano-client-core'
     }
-	implementation 'com.bloxbean.cardano:cardano-client-lib:0.5.1'
-	implementation 'com.bloxbean.cardano:cardano-client-backend:0.5.1'
-    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.5.1'
+	implementation 'com.bloxbean.cardano:cardano-client-lib:0.6.2'
+	implementation 'com.bloxbean.cardano:cardano-client-backend:0.6.2'
+    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.6.2'
     //implementation 'com.bloxbean.cardano:cardano-client-supplier-local:0.5.1'
 
     implementation 'org.apache.commons:commons-compress:1.23.0'

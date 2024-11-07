@@ -2,8 +2,8 @@ package com.bloxbean.cardano.yacicli.localcluster.service;
 
 import co.nstant.in.cbor.model.Array;
 import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.Number;
 import co.nstant.in.cbor.model.Special;
-import co.nstant.in.cbor.model.UnsignedInteger;
 import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
 import com.bloxbean.cardano.client.api.model.ProtocolParams;
 import com.bloxbean.cardano.client.plutus.util.PlutusOps;
@@ -20,7 +20,6 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
     public static final String PLUTUS_V_1 = "PlutusV1";
@@ -74,16 +73,16 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
         protocolParams.setMinPoolCost(String.valueOf(protocolParamUpdate.getMinPoolCost()));
 //        protocolParams.setNonce(currentProtocolParameters.getProtocolParameters().getNonce()); //TODO
 
-        Map<String, Long> plutusV1CostModel
+        LinkedHashMap<String, Long> plutusV1CostModel
                 = cborToCostModel(protocolParamUpdate.getCostModels().get(0), PlutusOps.getOperations(1));
-        Map<String, Long> plutusV2CostModel
+        LinkedHashMap<String, Long> plutusV2CostModel
                 = cborToCostModel(protocolParamUpdate.getCostModels().get(1), PlutusOps.getOperations(2));
-        Map<String, Long> plutusV3CostModel = null;
-//        if (era == Era.Conway) { //TODO -- Uncomment for 8.11.0 and later
-//            plutusV3CostModel = cborToCostModel(protocolParamUpdate.getCostModels().get(2), EMPTY_LIST);
-//        }
+        LinkedHashMap<String, Long> plutusV3CostModel = null;
+        if (era == Era.Conway) {
+            plutusV3CostModel = cborToCostModel(protocolParamUpdate.getCostModels().get(2), PlutusOps.getOperations(3));
+        }
 
-        LinkedHashMap<String, Map<String, Long>> costModels = new LinkedHashMap<>();
+        LinkedHashMap<String, LinkedHashMap<String, Long>> costModels = new LinkedHashMap<>();
         costModels.put("PlutusV1", plutusV1CostModel);
         costModels.put("PlutusV2", plutusV2CostModel);
         if (plutusV3CostModel != null)
@@ -104,16 +103,16 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
         return protocolParams;
     }
 
-    private Map<String, Long> cborToCostModel(String costModelCbor, List<String> ops) {
+    private LinkedHashMap<String, Long> cborToCostModel(String costModelCbor, List<String> ops) {
         Array array = (Array) CborSerializationUtil.deserializeOne(HexUtil.decodeHexString(costModelCbor));
-        Map<String, Long> costModel = new LinkedHashMap<>();
+        LinkedHashMap<String, Long> costModel = new LinkedHashMap<>();
 
         if (ops.size() == array.getDataItems().size()) {
             int index = 0;
             for (DataItem di : array.getDataItems()) {
                 if (di == Special.BREAK)
                     continue;
-                BigInteger val = ((UnsignedInteger) di).getValue();
+                BigInteger val = ((Number) di).getValue();
                 costModel.put(ops.get(index++), val.longValue());
             }
         } else {
@@ -121,7 +120,7 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
             for (DataItem di : array.getDataItems()) {
                 if (di == Special.BREAK)
                     continue;
-                BigInteger val = ((UnsignedInteger) di).getValue();
+                BigInteger val = ((Number) di).getValue();
                 costModel.put(String.format("%03d", index++), val.longValue());
             }
         }
