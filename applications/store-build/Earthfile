@@ -11,6 +11,8 @@ store-native:
   WORKDIR tmp
   RUN git clone --depth 1 --branch ${STORE_BRANCH} https://github.com/bloxbean/yaci-store.git yaci-store
 
+  RUN git --git-dir yaci-store/.git rev-parse --short HEAD > yaci-store/store.git.properties
+
   RUN cp ../store.build.application.properties yaci-store/applications/all/src/main/resources/application.properties
 
   FROM ghcr.io/graalvm/graalvm-community:21
@@ -24,3 +26,4 @@ store-native:
 
   # Save artifacts
   SAVE ARTIFACT applications/all/build/native/nativeCompile/yaci-store-all yaci-store
+  SAVE ARTIFACT store.git.properties yaci-store.git.properties

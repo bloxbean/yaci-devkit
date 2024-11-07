@@ -99,7 +99,7 @@ docker-build:
     RUN echo ${APP_VERSION} > /app/version
 
     IF [ "$BUILD_TYPE" = "native" ]
-    COPY (../store-build/+store-native/yaci-store --APP_VERSION=${APP_VERSION} --STORE_BRANCH=${STORE_NATIVE_BRANCH}) /app/store/yaci-store
+    COPY (../store-build/+store-native/yaci-store* --APP_VERSION=${APP_VERSION} --STORE_BRANCH=${STORE_NATIVE_BRANCH}) /app/store/
     END
 
     RUN echo "Build type: $BUILD_TYPE"
