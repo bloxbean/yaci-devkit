@@ -195,7 +195,7 @@ public class YaciStoreService {
             writeLn("");
             writeLn(info("######################### Important ########################################################################################"));
             writeLn("!!!! Yaci Store is connecting to an external database: " + customDBHelper.getStoreDbUrl());
-            writeLn("Automatic management of an external database is not possible during 'reset' or when creating a new devnet with 'create-node'.");
+            writeLn("Automatic management of an external database may not be possible during 'reset' or when creating a new devnet with 'create-node'.");
             writeLn("You can use the 'yaci-store-drop-db' command to drop the schema. If that doesn’t work, " +
                     "please drop the schema manually before performing a reset or creating a new devnet.");
             writeLn("Use the 'yaci-store-logs' command to verify if Yaci Store has started successfully.");
