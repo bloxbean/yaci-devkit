@@ -40,13 +40,15 @@ jobs:
         if: runner.os == 'macOS'
         run: |            
             echo "os_prefix=macos" >> $GITHUB_ENV
+      - name: Set lowercase architecture
+        run: echo "arch=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
       - name: Copy artifacts
         working-directory: applications/cli
-        run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+        run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}
-          path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+          name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}
+          path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip

@@ -42,8 +42,14 @@ public class DownloadService {
     @Value("${yaci.store.version:#{null}}")
     private String yaciStoreVersion;
 
+    @Value("${yaci.store.jar.version:#{null}}")
+    private String yaciStoreJarVersion;
+
     @Value("${yaci.store.url:#{null}}")
     private String yaciStoreUrl;
+
+    @Value("${yaci.store.jar.url:#{null}}")
+    private String yaciStoreJarUrl;
 
     @Value("${ogmios.version:#{null}}")
     private String ogmiosVersion;
@@ -98,13 +104,74 @@ public class DownloadService {
         return false;
     }
 
-    public boolean downloadYaciStore(boolean overwrite) {
-        downloadJre(overwrite); //Download JRE first (if not already downloaded
-
-        String downloadPath = resolveYaciStoreDownloadPath();
+    public boolean downloadYaciStoreNative(boolean overwrite) {
+        String downloadPath = resolveYaciStoreNativeDownloadPath();
 
         if ( downloadPath == null) {
             writeLn(error("Download URL for yaci-store is not set. Please set the download URL in application.properties"));
+            return false;
+        }
+
+        Path yaciStoreExec = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store");
+
+        if (yaciStoreExec.toFile().exists()) {
+            if (!overwrite) {
+                writeLn(info("yaci-store already exists in %s", yaciStoreExec.toFile().getAbsolutePath()));
+                writeLn(info("Use --overwrite to overwrite the existing yaci-store"));
+                return false;
+            } else {
+                deleteExistingDir("store", clusterConfig.getYaciStoreBinPath());
+            }
+        }
+
+        String targetDir = clusterConfig.getYaciStoreBinPath();
+        var downloadedFile = download("yaci-store", downloadPath, targetDir, "yaci-store.zip");
+        if (downloadedFile != null) {
+            try {
+                var tmpFolder = Paths.get(clusterConfig.getYaciStoreBinPath(), "tmp");
+                extractZip(downloadedFile.toFile().getAbsolutePath(), tmpFolder.toFile().getAbsolutePath());
+
+                File[] files = tmpFolder.toFile().listFiles();
+                if(files != null && files.length > 0) {
+                    File extractedFolder = files[0];
+                    if (extractedFolder.getName().startsWith("yaci-store")) {
+                        extractedFolder.renameTo(Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files").toFile());
+                    }
+                }
+
+                //Move the file yaci-store inside yaci-store folder to yaciStoreBinPath. Then remove the tmpFolder
+                Path yaciStoreBinFile = Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files", "yaci-store");
+
+                if(yaciStoreBinFile.toFile().exists()) {
+                    writeLn(info("Copying yaci-store binary to " + yaciStoreExec.toFile().getAbsolutePath()));
+                    Files.copy(yaciStoreBinFile, yaciStoreExec.toFile().toPath());
+                    writeLn(success("Copied"));
+                } else {
+                    writeLn(error("yaci-store binary not found in the extracted folder : " + yaciStoreBinFile.toFile().getAbsolutePath()));
+                }
+
+                setExecutablePermission(yaciStoreExec.toFile().getAbsolutePath());
+
+                FileUtils.deleteDirectory(tmpFolder.toFile());
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                writeLn(error("Error extracting yaci-store" + e.getMessage()));
+            }
+        } else {
+            writeLn(error("Download failed for yaci-store native binary"));
+        }
+
+        return false;
+    }
+
+    public boolean downloadYaciStoreJar(boolean overwrite) {
+        downloadJre(overwrite); //Download JRE first (if not already downloaded
+
+        String downloadPath = resolveYaciStoreJarDownloadPath();
+
+        if ( downloadPath == null) {
+            writeLn(error("Download URL for yaci-store-jar is not set. Please set the download URL in application.properties"));
             return false;
         }
 
@@ -380,7 +447,7 @@ public class DownloadService {
         return url;
     }
 
-    private String resolveYaciStoreDownloadPath() {
+    private String resolveYaciStoreNativeDownloadPath() {
         if (!StringUtils.isEmpty(yaciStoreUrl)) {
             return yaciStoreUrl;
         }
@@ -390,7 +457,39 @@ public class DownloadService {
             return null;
         }
 
-        String url = YACI_STORE_DOWNLOAD_URL + "/v" + yaciStoreVersion + "/yaci-store-all-" + yaciStoreVersion +".jar";
+        String osPrefix = null;
+        if (SystemUtils.IS_OS_MAC) {
+            osPrefix = "macos";
+        } else if (SystemUtils.IS_OS_LINUX) {
+            osPrefix = "linux";
+        } else {
+            writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
+        }
+
+        String arch = System.getProperty("os.arch");
+        String cpuArch = null;
+        if (arch.startsWith("aarch") || arch.startsWith("arm")) {
+            cpuArch = "arm64";
+        } else{
+            cpuArch = "x64";
+        }
+
+
+        String url = YACI_STORE_DOWNLOAD_URL + "/rel-graal-" + yaciStoreVersion + "/yaci-store-" + yaciStoreVersion + "-" + osPrefix + "-" + cpuArch +"-n2c.zip";
+        return url;
+    }
+
+    private String resolveYaciStoreJarDownloadPath() {
+        if (!StringUtils.isEmpty(yaciStoreJarUrl)) {
+            return yaciStoreJarUrl;
+        }
+
+        if (StringUtils.isEmpty(yaciStoreJarVersion)) {
+            writeLn(error("YaciStore Jar version is not set. Please set the yaci-store version (yaci.store.jar.version) or yaci-store download url (yaci.store.jar.url) in application.properties"));
+            return null;
+        }
+
+        String url = YACI_STORE_DOWNLOAD_URL + "/v" + yaciStoreJarVersion + "/yaci-store-all-" + yaciStoreJarVersion +".jar";
         return url;
     }
 
