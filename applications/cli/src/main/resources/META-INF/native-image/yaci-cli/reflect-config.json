@@ -107,6 +107,21 @@
     "allPublicConstructors": true,
     "allPublicFields": true,
     "allDeclaredMethods": true
+  },
+  {
+    "name":"org.postgresql.Driver",
+    "methods":[{"name":"<init>","parameterTypes":[] }]
+  },
+  {
+    "name":"org.postgresql.core.QueryExecutorCloseAction",
+    "fields":[{"name":"pgStream"}]
+  },
+  {
+    "name":"org.postgresql.jdbc.PgStatement",
+    "fields":[{"name":"cancelTimerTask"}, {"name":"isClosed"}, {"name":"statementState"}]
+  },
+  {
+    "name":"org.postgresql.util.PGobject"
   }
 ]
 
