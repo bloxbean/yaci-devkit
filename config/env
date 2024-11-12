@@ -36,7 +36,7 @@ IS_DOCKER=true
 
 ############################################################
 #To configure an external database for Yaci Store (Indexer),
-uncomment the following properties and provide the required values
+#uncomment the following properties and provide the required values
 #Only PostgreSQL is supported for now for external database
 ############################################################
 
