@@ -39,6 +39,7 @@ public class YaciStoreService {
     private final ClusterConfig clusterConfig;
     private final JreResolver jreResolver;
     private final YaciStoreConfigBuilder yaciStoreConfigBuilder;
+    private final YaciStoreCustomDbHelper customDBHelper;
 
     private List<Process> processes = new ArrayList<>();
 
@@ -138,16 +139,38 @@ public class YaciStoreService {
             writeLn(info("Java Path: " + javaExecPath));
         }
 
+        //Set custom db info if provided through env file (docker) or application.properties
+        if (customDBHelper.getStoreDbUrl() != null) {
+            builder.environment().put("SPRING_DATASOURCE_URL", customDBHelper.getStoreDbUrl());
+
+            writeLn(info("Yaci Store DB Url: " + customDBHelper.getStoreDbUrl()));
+            writeLn(info("Yaci Store DB User: " + customDBHelper.getStoreDbUsername()));
+        }
+        if (customDBHelper.getStoreDbUsername() != null)
+            builder.environment().put("SPRING_DATASOURCE_USERNAME", customDBHelper.getStoreDbUsername());
+        if (customDBHelper.getStoreDbPassword() != null)
+            builder.environment().put("SPRING_DATASOURCE_PASSWORD", customDBHelper.getStoreDbPassword());
+
         Process process = builder.start();
 
         writeLn(success("Yaci store starting ..."));
         AtomicBoolean started = new AtomicBoolean(false);
+        AtomicBoolean intersectNotFoundAlreadyShown = new AtomicBoolean(false);
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     logs.add(line);
                     if (line != null && line.contains("Started YaciStoreApplication")) {
                         writeLn(infoLabel("OK", "Yaci Store Started"));
                         started.set(true);
+                    }
+
+                    if (line != null && customDBHelper.getStoreDbUrl() != null && !customDBHelper.getStoreDbUrl().isEmpty()) {
+                        if (!intersectNotFoundAlreadyShown.get() && line.contains("IntersactNotFound")) {
+                            writeLn(warn("Looks like some issue while starting yaci store."));
+                            writeLn(warn("Please check the logs for more details. Command: yaci-store-logs"));
+                            writeLn(warn("Please verify if you are using an empty schema while creating a new devnet."));
+                            intersectNotFoundAlreadyShown.set(true);
+                        }
                     }
                 });
         Future<?> future = Executors.newSingleThreadExecutor().submit(processStream);
@@ -166,6 +189,17 @@ public class YaciStoreService {
             writeLn(error("Use \"yaci-store-logs\" to see the logs"));
             writeLn(error("Please verify if another yaci-store in running in the same port. " +
                     "If so, please check the process and kill it manually. e.g. kill -9 <pid>"));
+        }
+
+        if (customDBHelper.getStoreDbUrl() != null && !customDBHelper.getStoreDbUrl().isEmpty()) {
+            writeLn("");
+            writeLn(info("######################### Important ########################################################################################"));
+            writeLn("!!!! Yaci Store is connecting to an external database: " + customDBHelper.getStoreDbUrl());
+            writeLn("Automatic management of an external database may not be possible during 'reset' or when creating a new devnet with 'create-node'.");
+            writeLn("You can use the 'yaci-store-drop-db' command to drop the schema. If that doesn’t work, " +
+                    "please drop the schema manually before performing a reset or creating a new devnet.");
+            writeLn("Use the 'yaci-store-logs' command to verify if Yaci Store has started successfully.");
+            writeLn("###########################################################################################################################");
         }
 
         return process;
@@ -249,20 +283,7 @@ public class YaciStoreService {
 
     @EventListener
     public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
-        Path clusterFolder = clusterService.getClusterFolder(clusterDeleted.getClusterName());
-        Path nodeFolder = clusterFolder.resolve("node");
-        String dbDir = "yaci_store";
-        Path dbPath = nodeFolder.resolve(dbDir);
-
-        writeLn(info("Deleting Yaci Store db folder : " + dbPath.toFile().getAbsolutePath()));
-        if (dbPath.toFile().exists()) {
-            try {
-                FileUtils.deleteDirectory(dbPath.toFile());
-                writeLn(success("Yaci Store db folder deleted successfully"));
-            } catch (IOException e) {
-                writeLn(error("Yaci store db could not be deleted : " + dbPath.toAbsolutePath()));
-            }
-        }
+        customDBHelper.dropDatabase(clusterDeleted.getClusterName());
     }
 
     private void killForcibly(Process process) {

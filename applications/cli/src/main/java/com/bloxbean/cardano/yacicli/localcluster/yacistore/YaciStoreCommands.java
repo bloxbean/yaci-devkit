@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.yacistore;
 
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.shell.Availability;
@@ -15,6 +16,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class YaciStoreCommands {
     private final YaciStoreService yaciStoreService;
+    private final YaciStoreCustomDbHelper yaciStoreCustomDbHelper;
 
     @ShellMethod(value = "Show recent Yaci Store logs", key = "yaci-store-logs")
     @ShellMethodAvailability("yaciStoreEnableAvailability")
@@ -40,6 +42,12 @@ public class YaciStoreCommands {
             writeLn(info("Yaci Store Status: Enable"));
         else
             writeLn(info("Yaci Store Status: disable"));
+    }
+
+    @ShellMethod(value = "Drop yaci store db or schema (for external Postgres)", key = "yaci-store-drop-db")
+    public void dropYaciStoreDb() {
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        yaciStoreCustomDbHelper.dropDatabase(clusterName);
     }
 
     public Availability yaciStoreEnableAvailability() {

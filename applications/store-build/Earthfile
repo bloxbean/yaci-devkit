@@ -25,5 +25,5 @@ store-native:
   RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
 
   # Save artifacts
-  SAVE ARTIFACT applications/all/build/native/nativeCompile/yaci-store-all yaci-store
+  SAVE ARTIFACT applications/all/build/native/nativeCompile/yaci-store yaci-store
   SAVE ARTIFACT store.git.properties yaci-store.git.properties
