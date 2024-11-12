@@ -17,7 +17,7 @@ public class DownloadCommand {
     @ShellMethod(value = "Download", key = "download")
     @ShellMethodAvailability("generalCmdAvailability")
     public void download(
-            @ShellOption(value = {"--component", "-c"}, defaultValue = "all",  help = "node,ogmios,kupo,yaci-store") String component,
+            @ShellOption(value = {"--component", "-c"}, defaultValue = "all",  help = "node,ogmios,kupo,yaci-store,yaci-store-jar") String component,
             @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing installation. default: false") boolean overwrite
             ) {
 
@@ -31,14 +31,16 @@ public class DownloadCommand {
             if (component.equals("node")) {
                 downloadService.downloadNode(overwrite);
             } else if (component.equals("yaci-store")) {
-                downloadService.downloadYaciStore(overwrite);
+                downloadService.downloadYaciStoreNative(overwrite);
+            } else if (component.equals("yaci-store-jar")) {
+                downloadService.downloadYaciStoreJar(overwrite);
             } else if (component.equals("ogmios")) {
                 downloadService.downloadOgmios(overwrite);
             } else if (component.equals("kupo")) {
                 downloadService.downloadKupo(overwrite);
             } else if (component.equals("all")) {
                 downloadService.downloadNode(overwrite);
-                downloadService.downloadYaciStore(overwrite);
+                downloadService.downloadYaciStoreNative(overwrite);
                 downloadService.downloadOgmios(overwrite);
                 downloadService.downloadKupo(overwrite);
             } else {

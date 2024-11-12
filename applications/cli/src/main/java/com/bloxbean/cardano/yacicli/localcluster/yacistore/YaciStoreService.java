@@ -100,17 +100,23 @@ public class YaciStoreService {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
-        Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
-        if (!yaciStoreJar.toFile().exists()) {
-            writeLn(error("yaci-store.jar is not found at " + clusterConfig.getYaciStoreBinPath()));
-            return null;
+        if (yaciStoreMode == null || yaciStoreMode.equals("java")) {
+            Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
+            if (!yaciStoreJar.toFile().exists()) {
+                writeLn(error("yaci-store.jar is not found at " + clusterConfig.getYaciStoreBinPath()));
+                return null;
+            }
+        } else if (yaciStoreMode != null && yaciStoreMode.equals("native")) {
+            Path yaciStoreBin = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store");
+            if (!yaciStoreBin.toFile().exists()) {
+                writeLn(error("yaci-store binary is not found at " + clusterConfig.getYaciStoreBinPath()));
+                return null;
+            }
         }
 
         if (!isDocker) {
             yaciStoreConfigBuilder.build(clusterInfo);
         }
-
-        String javaExecPath = jreResolver.getJavaCommand();
 
         if (yaciStoreMode != null && yaciStoreMode.equals("native")) {
             builder.environment().put("STORE_CARDANO_N2C_ERA", era.name());
@@ -121,6 +127,8 @@ public class YaciStoreService {
                 builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store");
             }
         } else {
+            String javaExecPath = jreResolver.getJavaCommand();
+
             if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
                 builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
             } else {
