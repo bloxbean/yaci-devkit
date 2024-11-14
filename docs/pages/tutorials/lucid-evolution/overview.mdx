@@ -11,10 +11,12 @@ import { Kupmios, Lucid, SLOT_CONFIG_NETWORK } from "@lucid-evolution/lucid";
 const shelleyParams: any = await fetch("http://localhost:10000/local-cluster/api/admin/devnet/genesis/shelley").then(
   (res) => res.json()
 );
+
 const zeroTime = new Date(shelleyParams.systemStart).getTime();
+const slotLength = shelleyParams.slotLength * 1000; // in milliseconds
 
 // for a default devkit cluster, we can now configure time parameters
-SLOT_CONFIG_NETWORK["Custom"] = { zeroTime, zeroSlot: 0, slotLength: 1000 };
+SLOT_CONFIG_NETWORK["Custom"] = { zeroTime, slotLength, zeroSlot: 0 };
 
 // for example we use a kupmios configurion
 const kupmios = new Kupmios("http://localhost:1442", "http://localhost:1337");
