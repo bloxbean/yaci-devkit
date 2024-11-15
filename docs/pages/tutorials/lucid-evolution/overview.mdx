@@ -1,3 +1,35 @@
+# Lucid evolution
+
 https://github.com/Anastasia-Labs/lucid-evolution
 
-//TODO
+Note : To be able to add **validFrom** and **validTo** constraints to a transaction you have to give Lucid Evolution some Yaci DevKit related informations :
+
+```typescript
+import { Kupmios, Lucid, SLOT_CONFIG_NETWORK } from "@lucid-evolution/lucid";
+
+// we fetch the local cluster info to determine the start time
+const shelleyParams: any = await fetch("http://localhost:10000/local-cluster/api/admin/devnet/genesis/shelley").then(
+  (res) => res.json()
+);
+
+const zeroTime = new Date(shelleyParams.systemStart).getTime();
+const slotLength = shelleyParams.slotLength * 1000; // in milliseconds
+
+// for a default devkit cluster, we can now configure time parameters
+SLOT_CONFIG_NETWORK["Custom"] = { zeroTime, slotLength, zeroSlot: 0 };
+
+// for example we use a kupmios configurion
+const kupmios = new Kupmios("http://localhost:1442", "http://localhost:1337");
+// now we use our Kupmios provider and tell to use our Custom config settings
+const lucid = await Lucid(kupmios, "Custom");
+
+const currentTime = Date.now() - 10000;
+const laterTime = currentTime + 1000000;
+const tx = await lucid
+  .newTx()
+  .validFrom(currentTime)
+  .validTo(laterTime)
+  .pay.ToAddress("addr_testa...", { lovelace: 5000000n })
+  .pay.ToAddress("addr_testb...", { lovelace: 5000000n })
+  .complete();
+```
