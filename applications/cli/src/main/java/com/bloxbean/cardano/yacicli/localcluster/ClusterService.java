@@ -385,8 +385,14 @@ public class ClusterService {
         values.put("SUBMIT_API_PORT", String.valueOf(submitApiPort));
         values.put("PROTOCOL_MAGIC", String.valueOf(protocolMagic));
 
+        Path submitApiSh;
         //Update submit api script
-        Path submitApiSh = destPath.resolve("submit-api.sh");
+        if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+            submitApiSh = destPath.resolve("submit-api.bat");
+        } else {
+            submitApiSh = destPath.resolve("submit-api.sh");
+        }
+
         try {
             templateEngine.replaceValues(submitApiSh, values);
         } catch (Exception e) {
@@ -441,7 +447,12 @@ public class ClusterService {
             throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
         }
 
-        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX).resolve("node.sock").toString();
+        String socketPath;
+        if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+            socketPath = "\\\\.\\pipe\\node.sock";
+        } else {
+            socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX).resolve("node.sock").toString();
+        }
         clusterInfo.setSocketPath(socketPath);
 
         String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
