@@ -79,10 +79,10 @@ jobs:
         shell: pwsh
         run: |
           $TAG = (Get-Content config/version | Where-Object { $_ -match "^tag=" } | ForEach-Object { $_.Split('=')[1].Trim() })
-          echo "TAG=${TAG}" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "TAG=$TAG"
       - name: Windows specific env
         run: |
-          echo "os_prefix=windows" >> $GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "os_prefix=windows"
       - name: Set lowercase architecture (Windows)
         shell: pwsh
         run: |
