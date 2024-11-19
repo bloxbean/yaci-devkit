@@ -1,9 +1,12 @@
 name: Build and Release Yaci CLI Zip
 
+#on:
+#  push:
+#    tags:
+#      - 'rel-dev-*'
+
 on:
-  push:
-    tags:
-      - 'rel-dev-*'
+  workflow_dispatch:
 
 jobs:
   buildAndPush:
@@ -22,7 +25,7 @@ jobs:
           java-version: '21'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.0.2'
+          version: '23.0.1'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
