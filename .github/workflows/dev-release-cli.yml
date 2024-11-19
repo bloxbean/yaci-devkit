@@ -37,7 +37,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          TAG = (Get-Content config/version | Where-Object { $_ -match "^tag=" } | ForEach-Object { $_.Split('=')[1].Trim() })
+          $TAG = (Get-Content config/version | Where-Object { $_ -match "^tag=" } | ForEach-Object { $_.Split('=')[1].Trim() })
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Grant execute permission for gradlew
         working-directory: applications/cli
