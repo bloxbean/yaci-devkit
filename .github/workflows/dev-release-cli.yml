@@ -12,8 +12,7 @@ jobs:
   buildAndPush:
     strategy:
       matrix:
-#        os: ["ubuntu-20.04", "macos-14", "windows-latest"]
-        os: ["ubuntu-20.04", "macos-14", "windows-latest"]
+        os: ["ubuntu-20.04", "macos-14"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -29,15 +28,8 @@ jobs:
           version: '21.0.5'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
-        if: runner.os != 'Windows'
         run: |
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
-          echo "TAG=${TAG}" >> $GITHUB_ENV
-      - name: Get Tag from (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $TAG = (Get-Content config/version | Where-Object { $_ -match "^tag=" } | ForEach-Object { $_.Split('=')[1].Trim() })
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Grant execute permission for gradlew
         working-directory: applications/cli
@@ -51,24 +43,56 @@ jobs:
         if: runner.os == 'macOS'
         run: |            
             echo "os_prefix=macos" >> $GITHUB_ENV
-      - name: Windows specific env
-        if: runner.os == 'Windows'
-        run: |
-          echo "os_prefix=windows" >> $GITHUB_ENV
-      - name: Set lowercase architecture (Linux/Mac)
-        if: runner.os != 'Windows'
+      - name: Set lowercase architecture
         run: echo "arch=$(echo ${{ runner.arch }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-      - name: Set lowercase architecture (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $arch = "${{ runner.arch }}".ToLower()
-          Add-Content -Path $env:GITHUB_ENV -Value "arch=$arch"
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
       - name: Copy artifacts
         working-directory: applications/cli
+        run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}
+          path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
+
+  windowsBuild:
+    strategy:
+      matrix:
+        os: ["windows-latest"]
+    runs-on: ${{ matrix.os }}
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      FORCE_COLOR: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: '21.0.5'
+          native-image-job-reports: 'true'
+      - name: Get Tag from (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $TAG = (Get-Content config/version | Where-Object { $_ -match "^tag=" } | ForEach-Object { $_.Split('=')[1].Trim() })
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Windows specific env
+        run: |
+          echo "os_prefix=windows" >> $GITHUB_ENV
+      - name: Set lowercase architecture (Windows)
+        shell: pwsh
+        run: |
+          $arch = "${{ runner.arch }}".ToLower()
+          Add-Content -Path $env:GITHUB_ENV -Value "arch=$arch"
+      - name: Build with Gradle
+        working-directory: applications\cli
+        run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
+      - name: Copy artifacts
+        working-directory: applications\cli
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
       - uses: actions/upload-artifact@v4
         with:
