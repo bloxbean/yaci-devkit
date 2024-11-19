@@ -90,7 +90,7 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "arch=$arch"
       - name: Build with Gradle
         working-directory: applications\cli
-        run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
+        run: ./gradlew --no-daemon -i -Pversion="${{ env.TAG }}" clean build nativeCompile cliZip
       - name: Copy artifacts
         working-directory: applications\cli
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
