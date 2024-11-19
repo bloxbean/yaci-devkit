@@ -1,4 +1,4 @@
-name: Build and Release Yaci CLI Zip
+name: Dev Build and Upload Yaci CLI Zip
 
 #on:
 #  push:
