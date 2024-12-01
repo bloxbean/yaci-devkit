@@ -25,7 +25,7 @@ jobs:
           java-version: '21'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.0.2'
+          version: '21.0.5'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
