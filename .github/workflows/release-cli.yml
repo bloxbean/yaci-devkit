@@ -22,7 +22,7 @@ jobs:
           java-version: '21'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.0.2'
+          version: '21.0.5'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
@@ -31,7 +31,7 @@ jobs:
       - name: Grant execute permission for gradlew
         working-directory: applications/cli
         run: chmod +x gradlew
-      - name: Copy CI specific native-image properties
+      - name: Set OS prefix
         working-directory: applications/cli
         if: runner.os == 'Linux'
         run: |
