@@ -22,7 +22,8 @@ cli-docker:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
 
-  BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH}
+  #BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH}
+  BUILD ./applications/cli+docker-build-native --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH}
 
 viewer:
   ARG EARTHLY_TARGET_NAME
