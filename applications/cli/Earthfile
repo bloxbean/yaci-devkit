@@ -132,3 +132,78 @@ docker-build:
     ENTRYPOINT ["sh", "/app/yaci-cli.sh"]
 
     SAVE IMAGE --push ${REGISTRY_ORG}/yaci-cli:${APP_VERSION}
+
+docker-build-native:
+    FROM ubuntu:22.04
+
+    ARG TARGETOS
+    ARG TARGETARCH
+    ARG BUILD_TYPE
+    ARG APP_VERSION
+    ARG REGISTRY_ORG
+    ARG COMMIT_ID
+
+    COPY docker/install-packages.sh .
+    RUN chmod -R 755 install-packages.sh
+    RUN ./install-packages.sh
+
+    #RUN apk update && apk --no-cache add wget && apk --no-cache add zip && apk --no-cache add unzip
+    #RUN apk --no-cache add zstd
+    #RUN apk --no-cache add curl
+    #RUN apk --no-cache add socat
+
+    RUN mkdir "/app"
+
+    WORKDIR /app
+
+    COPY docker/download-$TARGETARCH.sh .
+    RUN sh download-$TARGETARCH.sh
+
+    #Ogmios download
+    COPY docker/download-ogmios.sh .
+    RUN sh download-ogmios.sh $TARGETARCH
+
+    #Kupo download
+    COPY docker/download-kupo.sh .
+    RUN sh download-kupo.sh $TARGETARCH
+
+    #Yaci Store download
+    COPY docker/download-yaci-store.sh .
+    RUN sh download-yaci-store.sh $TARGETARCH
+
+    #RUN apk --no-cache add curl
+
+    RUN echo "I'm building for $TARGETOS/$TARGETARCH"
+
+    RUN mkdir -p /app/store/config
+    COPY docker/store-application.properties /app/store/config/application.properties
+
+
+    RUN echo "Build type: $BUILD_TYPE"
+    IF [ "$BUILD_TYPE" = "native" ]
+    COPY (+cli-native/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
+    ELSE IF [ "$BUILD_TYPE" = "native-ci" ]
+    COPY (+cli-native-ci/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
+    END
+
+    COPY docker/yaci-cli.sh /app/
+    RUN chmod +x /app/yaci-cli.sh
+
+    RUN mkdir -p /app/config
+    COPY docker/application.properties /app/config/
+
+    ENV PATH="$PATH:/app/cardano-bin"
+    ENV CARDANO_NODE_SOCKET_PATH=/clusters/nodes/default/node/node.sock
+    ENV PROTOCOL_MAGIC=42
+
+    WORKDIR /app
+    EXPOSE 3001
+    EXPOSE 8090
+    EXPOSE 10000
+    EXPOSE 8080
+    EXPOSE 1337
+    EXPOSE 1442
+
+    ENTRYPOINT ["sh", "/app/yaci-cli.sh"]
+
+    SAVE IMAGE --push ${REGISTRY_ORG}/yaci-cli:${APP_VERSION}

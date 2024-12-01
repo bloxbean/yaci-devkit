@@ -25,7 +25,7 @@ jobs:
           java-version: '21'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.0.2'
+          version: '21.0.5'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
@@ -50,6 +50,49 @@ jobs:
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
       - name: Copy artifacts
         working-directory: applications/cli
+        run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}
+          path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
+
+  windowsBuild:
+    strategy:
+      matrix:
+        os: ["windows-latest"]
+    runs-on: ${{ matrix.os }}
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      FORCE_COLOR: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: '21.0.5'
+          native-image-job-reports: 'true'
+      - name: Get Tag from (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $TAG = (Get-Content config/version | Where-Object { $_ -match "^tag=" } | ForEach-Object { $_.Split('=')[1].Trim() })
+          Add-Content -Path $env:GITHUB_ENV -Value "TAG=$TAG"
+      - name: Windows specific env
+        run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "os_prefix=windows"
+      - name: Set lowercase architecture (Windows)
+        shell: pwsh
+        run: |
+          $arch = "${{ runner.arch }}".ToLower()
+          Add-Content -Path $env:GITHUB_ENV -Value "arch=$arch"
+      - name: Build with Gradle
+        working-directory: applications\cli
+        run: ./gradlew --no-daemon -i -Pversion="${{ env.TAG }}" clean build nativeCompile cliZip
+      - name: Copy artifacts
+        working-directory: applications\cli
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
       - uses: actions/upload-artifact@v4
         with:

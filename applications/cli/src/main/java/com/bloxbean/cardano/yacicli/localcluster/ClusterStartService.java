@@ -191,7 +191,7 @@ public class ClusterStartService {
 
         ProcessBuilder builder = new ProcessBuilder();
         if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-            builder.command("cmd.exe", startScript + ".bat");
+            builder.command("cmd", "/c", startScript + ".bat");
         } else {
             builder.command("sh", startScript + ".sh");
         }
@@ -220,6 +220,9 @@ public class ClusterStartService {
 
         //Check if cardano-submit-api exists
         String cardanoSubmitCli = "cardano-submit-api";
+        if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS)
+            cardanoSubmitCli = "cardano-submit-api.exe";
+
         Path binFolder = Path.of(clusterConfig.getCLIBinFolder());
         Path cardanoSubmitCliPath = binFolder.resolve(cardanoSubmitCli);
         if (!Files.exists(cardanoSubmitCliPath)) {
@@ -229,7 +232,11 @@ public class ClusterStartService {
         }
 
         ProcessBuilder builder = new ProcessBuilder();
-        builder.command("sh", "submit-api.sh");
+        if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+            builder.command("cmd", "/c", "submit-api.bat");
+        } else {
+            builder.command("sh", "submit-api.sh");
+        }
 
         File submitApiStartDir = new File(clusterFolderPath);
         builder.directory(submitApiStartDir);
