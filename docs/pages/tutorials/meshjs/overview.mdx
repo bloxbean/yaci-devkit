@@ -12,7 +12,7 @@ This example demonstrates how to build a transaction with the Mesh SDK and submi
 
 Providers are services provided to help you interact with the blockchain. In this case, we are using the Yaci provider to interact with the Yaci instance. It is used to query and submit transactions to the Yaci instance.
 
-First, we import `YaciProvider` from `@meshsdk/core` [[source]](https://github.com/MeshJS/examples/blob/main/mesh/common/get-yaci-provider.ts):
+First, we import [`YaciProvider`](https://meshjs.dev/providers/yaci) from `@meshsdk/core`:
 
 ```js
 import { YaciProvider } from "@meshsdk/core";
@@ -24,7 +24,7 @@ export function getYaciProvider() {
 
 ### A wallet for signing transactions
 
-Next, a wallet is used to sign transactions. We import `MeshWallet` from `@meshsdk/core` and create a wallet with `YaciProvider` [[source]](https://github.com/MeshJS/examples/blob/main/mesh/common/get-wallet-yaci.ts):
+Next, a wallet is used to sign transactions. We import [`MeshWallet`](https://meshjs.dev/apis/wallets/meshwallet) and create a wallet with `YaciProvider`:
 
 ```js
 import { MeshWallet } from "@meshsdk/core";
@@ -52,7 +52,7 @@ export function getWalletForYaci() {
 
 ### Create a transaction to send lovelace
 
-Finally, we create a transaction to send lovelace to a recipient [[source]](https://github.com/MeshJS/examples/blob/main/mesh/yaci-send-lovelace.ts):
+Finally, we create a transaction to send lovelace to a recipient:
 
 ```js
 import { Transaction, UTxO } from "@meshsdk/core";

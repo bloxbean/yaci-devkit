@@ -79,6 +79,8 @@ Yaci DevKit provides API endpoints that can be used in your off-chain code (e.g.
 
 Check the [Yaci DevKit Documentation site](https://devkit.yaci.xyz/) for more details.
 
+You can also check [Mesh SDK](https://meshjs.dev/yaci/getting-started) for tooling to interact with Yaci DevKit.
+
 # How to Run
 
 ## Pre-requisites
@@ -263,15 +265,11 @@ To query protocol parameters, you can use `cli` option with devkit script.
 
 ### Videos
 
-#### 1. Yaci DevKit + Lucid JS Demo
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/r8K99dOPync/0.jpg)](https://www.youtube.com/watch?v=r8K99dOPync)
-
-#### 2. Yaci Viewer with Local Devnet and Cardano Client Lib Demo
+#### 1. Yaci Viewer with Local Devnet and Cardano Client Lib Demo
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rfwTuKXtqzg/0.jpg)](https://www.youtube.com/watch?v=rfwTuKXtqzg)
 
-#### 3. Test Aiken Smart Contract Using Java Offchain Code with Yaci DevKit
+#### 2. Test Aiken Smart Contract Using Java Offchain Code with Yaci DevKit
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/PTnSc85t0Nk/0.jpg)](https://www.youtube.com/watch?v=PTnSc85t0Nk)
 
