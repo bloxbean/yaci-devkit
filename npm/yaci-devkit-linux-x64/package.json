@@ -1,0 +1,17 @@
+{
+  "name": "@bloxbean/yaci-devkit-linux-x64",
+  "version": "0.10.0",
+  "main": "yaci-cli",
+  "files": [
+    "yaci-cli",
+    "config"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 12"
+  },
+  "bin": {
+    "yaci-devkit-linux-x64": "./yaci-cli"
+  },
+  "repository": "github:bloxbean/yaci-devkit"
+}
