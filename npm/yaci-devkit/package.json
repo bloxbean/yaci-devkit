@@ -1,0 +1,19 @@
+{
+  "name": "@bloxbean/yaci-devkit",
+  "version": "0.10.0",
+  "engines": {
+    "node": ">=20.8.0"
+  },
+  "license": "MIT",
+  "repository": "github:bloxbean/yaci-devkit",
+  "bin": {
+    "yaci-devkit": "./start.mjs"
+  },
+  "dependencies": {
+    "@bloxbean/yaci-devkit-linux-x64": "file:../yaci-devkit-linux-x64"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": ">=5.0.0"
+  }
+}
