@@ -101,7 +101,9 @@ public class GenesisConfig {
 
     private String constitutionUrl = "https://devkit.yaci.xyz/constitution.json";
     private String constitutionDataHash = "f89cc2469ce31c3dfda2f3e0b56c5c8b4ee4f0e5f66c30a3f12a95298b01179e";
-    private String constitutionScript;
+
+    //Always true script V3. Cbor hex: 46450101002499
+    private String constitutionScript = "186e32faa80a26810392fda6d559c7ed4721a65ce1c9d4ef3e1c87b4";
 
     private List<CCMember> ccMembers = new ArrayList<>();
     private int ccThresholdNumerator = 2;
