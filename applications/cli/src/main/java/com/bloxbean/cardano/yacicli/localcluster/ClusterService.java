@@ -308,8 +308,14 @@ public class ClusterService {
             privNetService.setupNewKeysAndDefaultPool(clusterFolder, clusterName, clusterInfo, genesisConfigCopy, activeSlotsCoeff, writer);
         }
 
+        String slotLengthStr;
+        if ((int)slotLength == slotLength)
+            slotLengthStr = String.valueOf((int)slotLength);
+        else
+            slotLengthStr = String.valueOf(slotLength);
+
         Map values = genesisConfigCopy.getConfigMap();
-        values.put("slotLength", String.valueOf(slotLength));
+        values.put("slotLength", String.valueOf(slotLengthStr));
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
 

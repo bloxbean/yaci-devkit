@@ -23,8 +23,10 @@ public enum GenesisProfile {
     private static GenesisConfig zeroFeeGenesisProfile(GenesisConfig genesisConfig) {
         genesisConfig.setMinFeeA(0);
         genesisConfig.setMinFeeB(0);
-        genesisConfig.setPrMem("0");
-        genesisConfig.setPrSteps("0");
+        genesisConfig.setPrMemNumerator("0");
+        genesisConfig.setPrMemDenominator("1");
+        genesisConfig.setPrStepsNumerator("0");
+        genesisConfig.setPrStepsDenominator("1");
         genesisConfig.setLovelacePerUTxOWord(0);
 
         return genesisConfig;
