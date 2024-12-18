@@ -61,8 +61,10 @@ public class GenesisConfig {
 
     //Alonzo
     private int collateralPercentage = 150;
-    private String prMem = "5.77e-2";
-    private String prSteps = "7.21e-5";
+    private String prMemNumerator = "577";
+    private String prMemDenominator ="10000";
+    private String prStepsNumerator = "721";
+    private String prStepsDenominator ="10000000";
     private long lovelacePerUTxOWord = 34482;
     private long maxBlockExUnitsMem = 62000000;
     private long maxBlockExUnitsSteps = 20000000000L;
@@ -292,8 +294,10 @@ public class GenesisConfig {
         map.put("defaultDelegators", defaultDelegators);
 
         map.put("collateralPercentage", collateralPercentage);
-        map.put("prMem", prMem);
-        map.put("prSteps", prSteps);
+        map.put("prMemNumerator", prMemNumerator);
+        map.put("prMemDenominator", prMemDenominator);
+        map.put("prStepsNumerator", prStepsNumerator);
+        map.put("prStepsDenominator", prStepsDenominator);
         map.put("lovelacePerUTxOWord", lovelacePerUTxOWord);
         map.put("maxBlockExUnitsMem", maxBlockExUnitsMem);
         map.put("maxBlockExUnitsSteps", maxBlockExUnitsSteps);
@@ -385,8 +389,10 @@ public class GenesisConfig {
         genesisConfig.setDefaultDelegators(new ArrayList<>(defaultDelegators));
 
         genesisConfig.setCollateralPercentage(collateralPercentage);
-        genesisConfig.setPrMem(prMem);
-        genesisConfig.setPrSteps(prSteps);
+        genesisConfig.setPrMemNumerator(prMemNumerator);
+        genesisConfig.setPrMemDenominator(prMemDenominator);
+        genesisConfig.setPrStepsNumerator(prStepsNumerator);
+        genesisConfig.setPrStepsDenominator(prStepsDenominator);
         genesisConfig.setLovelacePerUTxOWord(lovelacePerUTxOWord);
         genesisConfig.setMaxBlockExUnitsMem(maxBlockExUnitsMem);
         genesisConfig.setMaxBlockExUnitsSteps(maxBlockExUnitsSteps);

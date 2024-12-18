@@ -348,8 +348,14 @@
     ]
   },
     "executionPrices": {
-        "prMem": {{prMem}},
-        "prSteps": {{prSteps}}
+        "prSteps": {
+            "numerator" :   {{prStepsNumerator}},
+            "denominator" : {{prStepsDenominator}}
+        },
+        "prMem": {
+            "numerator" :   {{prMemNumerator}},
+            "denominator" : {{prMemDenominator}}
+        }
     },
     "lovelacePerUTxOWord": {{lovelacePerUTxOWord}},
     "maxBlockExUnits": {
