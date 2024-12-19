@@ -22,14 +22,20 @@ public class CustomShellRunner implements ShellRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        boolean canRun = nonInteractiveShellRunner.canRun(args);
-        if (canRun)
+        boolean canRunNonInteractive = nonInteractiveShellRunner.canRun(args);
+        boolean canRunInteractive = interactiveShellRunner.canRun(args);
+
+        if (canRunNonInteractive) {
             nonInteractiveShellRunner.run(args);
 
-        var interactive = args.containsOption("i") || args.containsOption("interactive");
+            var interactive = args.containsOption("i") || args.containsOption("interactive");
 
-        if (interactive) {
+            if (interactive) {
+                interactiveShellRunner.run(args);
+            }
+        } else if (canRunInteractive) {
             interactiveShellRunner.run(args);
         }
+
     }
 }
