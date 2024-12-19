@@ -3,6 +3,7 @@ package com.bloxbean.cardano.yacicli.localcluster.yacistore;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.shell.Availability;
@@ -15,6 +16,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class YaciStoreCommands {
+    private final ApplicationConfig appConfig;
     private final YaciStoreService yaciStoreService;
     private final YaciStoreCustomDbHelper yaciStoreCustomDbHelper;
 
@@ -26,19 +28,19 @@ public class YaciStoreCommands {
 
     @ShellMethod(value = "Enable Yaci Store")
     public void enableYaciStore() {
-        yaciStoreService.setEnableYaciStore(true);
+        appConfig.setYaciStoreEnabled(true);
         writeLn(infoLabel("OK", "Yaci Store Status: Enable"));
     }
 
     @ShellMethod(value = "Disble Yaci Store")
     public void disableYaciStore() {
-        yaciStoreService.setEnableYaciStore(false);
+        appConfig.setYaciStoreEnabled(false);
         writeLn(infoLabel("OK", "Yaci Store Status: Disable"));
     }
 
     @ShellMethod(value = "Check if Yaci Store is enable or disable")
     public void checkYaciStoreStatus() {
-        if (yaciStoreService.isEnableYaciStore())
+        if (appConfig.isYaciStoreEnabled())
             writeLn(info("Yaci Store Status: Enable"));
         else
             writeLn(info("Yaci Store Status: disable"));

@@ -6,6 +6,7 @@ import com.bloxbean.cardano.yacicli.commands.common.JreResolver;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
@@ -14,7 +15,6 @@ import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -35,6 +35,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class YaciStoreService {
+    private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
     private final JreResolver jreResolver;
@@ -42,12 +43,6 @@ public class YaciStoreService {
     private final YaciStoreCustomDbHelper customDBHelper;
 
     private List<Process> processes = new ArrayList<>();
-
-    @Value("${yaci.store.enabled:false}")
-    private boolean enableYaciStore;
-
-    @Value("${is.docker:false}")
-    private boolean isDocker;
 
     @Value("${yaci.store.mode:java}")
     private String yaciStoreMode;
@@ -57,7 +52,7 @@ public class YaciStoreService {
     @EventListener
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         logs.clear();
-        if (!enableYaciStore)
+        if (!appConfig.isYaciStoreEnabled())
             return;
 
         if (!clusterStarted.getClusterName().equals("default")) {
@@ -115,7 +110,7 @@ public class YaciStoreService {
             }
         }
 
-        if (!isDocker) {
+        if (!appConfig.isDocker()) {
             yaciStoreConfigBuilder.build(clusterInfo);
         }
 
@@ -309,13 +304,5 @@ public class YaciStoreService {
                 consumer.accept(logs.poll());
             }
         }
-    }
-
-    public boolean isEnableYaciStore() {
-        return enableYaciStore;
-    }
-
-    public void setEnableYaciStore(boolean enableYaciStore) {
-        this.enableYaciStore = enableYaciStore;
     }
 }

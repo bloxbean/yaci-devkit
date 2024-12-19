@@ -4,6 +4,7 @@ import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterPortInfoHelper;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
@@ -16,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -34,17 +34,12 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class OgmiosService {
+    private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
 
     private List<Process> processes = new ArrayList<>();
-
-    @Value("${ogmios.enabled:false}")
-    private boolean enableOgmios;
-
-    @Value("${kupo.enabled:false}")
-    private boolean enableKupo;
 
     @Autowired
     private TemplateEngine templateEngine;
@@ -59,7 +54,7 @@ public class OgmiosService {
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         ogmiosLogs.clear();
         kupoLogs.clear();
-        if (!enableOgmios && !enableKupo)
+        if (!appConfig.isOgmiosEnabled() && !appConfig.isKupoEnabled())
             return;
 
         if (!clusterStarted.getClusterName().equals("default")) {
@@ -73,7 +68,7 @@ public class OgmiosService {
                 throw new IllegalStateException("Cluster info not found for cluster: " + clusterStarted.getClusterName()
                         + ". Please check if the cluster is created.");
 
-            if (enableOgmios) {
+            if (appConfig.isOgmiosEnabled()) {
                 if (!ogmiosPortAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
                     return;
 
@@ -82,7 +77,7 @@ public class OgmiosService {
                     processes.add(process);
             }
 
-            if (enableKupo) {
+            if (appConfig.isKupoEnabled()) {
                 if (!kupoPortAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
                     return;
 
@@ -290,21 +285,5 @@ public class OgmiosService {
                 consumer.accept(ogmiosLogs.poll());
             }
         }
-    }
-
-    public boolean isEnableOgmios() {
-        return enableOgmios;
-    }
-
-    public void setEnableOgmios(boolean enableOgmios) {
-        this.enableOgmios = enableOgmios;
-    }
-
-    public boolean isEnableKupo() {
-        return enableKupo;
-    }
-
-    public void setEnableKupo(boolean enableKupo) {
-        this.enableKupo = enableKupo;
     }
 }
