@@ -61,8 +61,10 @@ public class GenesisConfig {
 
     //Alonzo
     private int collateralPercentage = 150;
-    private String prMem = "5.77e-2";
-    private String prSteps = "7.21e-5";
+    private String prMemNumerator = "577";
+    private String prMemDenominator ="10000";
+    private String prStepsNumerator = "721";
+    private String prStepsDenominator ="10000000";
     private long lovelacePerUTxOWord = 34482;
     private long maxBlockExUnitsMem = 62000000;
     private long maxBlockExUnitsSteps = 20000000000L;
@@ -99,7 +101,9 @@ public class GenesisConfig {
 
     private String constitutionUrl = "https://devkit.yaci.xyz/constitution.json";
     private String constitutionDataHash = "f89cc2469ce31c3dfda2f3e0b56c5c8b4ee4f0e5f66c30a3f12a95298b01179e";
-    private String constitutionScript;
+
+    //Always true script V3. Cbor hex: 46450101002499
+    private String constitutionScript = "186e32faa80a26810392fda6d559c7ed4721a65ce1c9d4ef3e1c87b4";
 
     private List<CCMember> ccMembers = new ArrayList<>();
     private int ccThresholdNumerator = 2;
@@ -292,8 +296,10 @@ public class GenesisConfig {
         map.put("defaultDelegators", defaultDelegators);
 
         map.put("collateralPercentage", collateralPercentage);
-        map.put("prMem", prMem);
-        map.put("prSteps", prSteps);
+        map.put("prMemNumerator", prMemNumerator);
+        map.put("prMemDenominator", prMemDenominator);
+        map.put("prStepsNumerator", prStepsNumerator);
+        map.put("prStepsDenominator", prStepsDenominator);
         map.put("lovelacePerUTxOWord", lovelacePerUTxOWord);
         map.put("maxBlockExUnitsMem", maxBlockExUnitsMem);
         map.put("maxBlockExUnitsSteps", maxBlockExUnitsSteps);
@@ -385,8 +391,10 @@ public class GenesisConfig {
         genesisConfig.setDefaultDelegators(new ArrayList<>(defaultDelegators));
 
         genesisConfig.setCollateralPercentage(collateralPercentage);
-        genesisConfig.setPrMem(prMem);
-        genesisConfig.setPrSteps(prSteps);
+        genesisConfig.setPrMemNumerator(prMemNumerator);
+        genesisConfig.setPrMemDenominator(prMemDenominator);
+        genesisConfig.setPrStepsNumerator(prStepsNumerator);
+        genesisConfig.setPrStepsDenominator(prStepsDenominator);
         genesisConfig.setLovelacePerUTxOWord(lovelacePerUTxOWord);
         genesisConfig.setMaxBlockExUnitsMem(maxBlockExUnitsMem);
         genesisConfig.setMaxBlockExUnitsSteps(maxBlockExUnitsSteps);
