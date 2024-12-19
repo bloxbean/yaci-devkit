@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'rel-cli-*'
 
 jobs:
   buildAndPush:
