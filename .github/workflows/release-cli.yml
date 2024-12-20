@@ -80,7 +80,7 @@ jobs:
         working-directory: npm/${{ env.npm_folder }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish
+        run: npm publish --access public
 
       - name: Release
         uses: softprops/action-gh-release@v1
