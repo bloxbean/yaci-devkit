@@ -44,9 +44,35 @@ jobs:
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
-      - name: Copy artifacts
+      - name: Copy zip artifacts
         working-directory: applications/cli
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+
+      - name: Determine Platform-Specific NPM Folder
+        id: platform-folder
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+            echo "npm_folder=yaci-devkit-linux-x64" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "macos-14" ]]; then
+            echo "npm_folder=yaci-devkit-macos-arm64" >> $GITHUB_ENV
+          fi
+          echo "npm_folder=${{ env.npm_folder }}"
+
+      - name: Copy yaci-cli binary and config folder
+        run: |
+          cp applications/cli/build/native/nativeCompile/yaci-cli npm/${{ env.npm_folder }}/
+          cp -r applications/cli/config npm/${{ env.npm_folder }}/
+
+      - name: Set npm package version
+        working-directory: npm/${{ env.npm_folder }}
+        run: npm version ${{ env.TAG }} --no-git-tag-version
+
+      - name: Publish to platform specific npm
+        working-directory: npm/${{ env.npm_folder }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
