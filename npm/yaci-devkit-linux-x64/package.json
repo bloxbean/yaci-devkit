@@ -13,5 +13,8 @@
   "bin": {
     "yaci-devkit-linux-x64": "./yaci-cli"
   },
-  "repository": "github:bloxbean/yaci-devkit"
+  "repository": "github:bloxbean/yaci-devkit",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
 }

@@ -67,6 +67,10 @@ jobs:
         working-directory: npm/${{ env.npm_folder }}
         run: npm version ${{ env.TAG }} --no-git-tag-version
 
+      - name: Configure npm for scoped package
+        run: |
+          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc
+
       - name: Publish to platform specific npm
         working-directory: npm/${{ env.npm_folder }}
         env:
