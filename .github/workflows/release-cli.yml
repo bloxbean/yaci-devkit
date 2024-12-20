@@ -15,6 +15,7 @@ jobs:
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +26,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: '21.0.5'
           native-image-job-reports: 'true'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
       - name: Get Tag from version file
         run: |
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
