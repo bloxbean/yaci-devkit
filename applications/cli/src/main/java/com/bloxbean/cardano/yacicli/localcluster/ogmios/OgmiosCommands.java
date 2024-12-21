@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.ogmios;
 
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.shell.Availability;
@@ -17,6 +18,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class OgmiosCommands {
+    private final ApplicationConfig appConfig;
     private final OgmiosService ogmiosService;
 
     @ShellMethod(value = "Show recent Ogmios logs", key = "ogmios-logs")
@@ -33,33 +35,33 @@ public class OgmiosCommands {
 
     @ShellMethod(value = "Enable Ogmios & Kupo")
     public void enableKupomios() {
-        ogmiosService.setEnableOgmios(true);
-        ogmiosService.setEnableKupo(true);
+        appConfig.setOgmiosEnabled(true);
+        appConfig.setKupoEnabled(true);
         writeLn(infoLabel("OK", "Ogmios/Kupo Status: Enable"));
     }
 
     @ShellMethod(value = "Disble Ogmios & Kupo", key ={ "disable-kupomios", "disable-ogmios-kupo"})
     public void disableOgmiosKupo() {
-        ogmiosService.setEnableOgmios(false);
-        ogmiosService.setEnableKupo(false);
+        appConfig.setOgmiosEnabled(false);
+        appConfig.setKupoEnabled(false);
         writeLn(infoLabel("OK", "Ogmios/Kupo Status: Disable"));
     }
 
     @ShellMethod(value = "Enable Ogmios")
     public void enableOgmios() {
-        ogmiosService.setEnableOgmios(true);
+        appConfig.setOgmiosEnabled(true);
         writeLn(infoLabel("OK", "Ogmios Status: Enable"));
     }
 
     @ShellMethod(value = "Disble Ogmios")
     public void disableOgmios() {
-        ogmiosService.setEnableOgmios(false);
+        appConfig.setOgmiosEnabled(false);
         writeLn(infoLabel("OK", "Ogmios Status: Disable"));
     }
 
     @ShellMethod(value = "Check if Ogmios is enabled or disabled")
     public void checkOgmiosStatus() {
-        if (ogmiosService.isEnableOgmios())
+        if (appConfig.isOgmiosEnabled())
             writeLn(info("Ogmios Status: Enable"));
         else
             writeLn(info("Ogmios Status: disable"));
@@ -67,7 +69,7 @@ public class OgmiosCommands {
 
     @ShellMethod(value = "Check if Kupo is enabled or disabled")
     public void checkKupoStatus() {
-        if (ogmiosService.isEnableKupo())
+        if (appConfig.isKupoEnabled())
             writeLn(info("Kupo Status: Enable"));
         else
             writeLn(info("Kupo Status: disable"));

@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'rel-cli-*'
 
 jobs:
   buildAndPush:
@@ -14,6 +15,7 @@ jobs:
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v4
@@ -43,15 +45,110 @@ jobs:
       - name: Build with Gradle
         working-directory: applications/cli
         run: ./gradlew --no-daemon -i -Pversion=${{ env.TAG }} clean build nativeCompile cliZip
-      - name: Copy artifacts
+
+      - name: Copy zip artifacts
         working-directory: applications/cli
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          files: |
-            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
-          prerelease: true
+          name: yaci-cli-${{ matrix.os }}
+          path: |
+            applications/cli/build/native/nativeCompile/yaci-cli
+            applications/cli/config
+          retention-days: 2
+
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: |
+#            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+#          prerelease: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  npm-publish:
+    needs: buildAndPush
+    strategy:
+      matrix:
+        os: [ "ubuntu-20.04", "macos-14" ]
+    runs-on: ${{ matrix.os }}
+    env:
+      FORCE_COLOR: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV    
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: yaci-cli-${{ matrix.os }}
+
+      - name: Determine Platform-Specific Folder
+        id: platform-folder
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+            echo "npm_folder=yaci-devkit-linux-x64" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "macos-14" ]]; then
+            echo "npm_folder=yaci-devkit-macos-arm64" >> $GITHUB_ENV
+          fi
+          echo "npm_folder=${{ env.npm_folder }}"
+
+      - name: Prepare npm package
+        run: |
+          cp build/native/nativeCompile/yaci-cli npm/${{ env.npm_folder }}/
+          cp -r config npm/${{ env.npm_folder }}/
+
+      - name: Set npm package version
+        working-directory: npm/${{ env.npm_folder }}
+        run: npm version ${{ env.TAG }} --no-git-tag-version
+
+      - name: Configure npm for scoped package
+        run: |
+          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc  
+
+      - name: Publish to npm
+        working-directory: npm/${{ env.npm_folder }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+  publish-yaci-devkit:
+    needs: npm-publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV    
+
+      - name: Update `yaci-devkit` Version and Dependencies
+        working-directory: npm/yaci-devkit
+        run: |
+          # Update the version
+          npm version ${{ env.TAG }} --no-git-tag-version
+          # Update platform-specific dependency versions
+          sed -i "s/\"@bloxbean\/yaci-devkit-macos-arm64\": \".*\"/\"@bloxbean\/yaci-devkit-macos-arm64\": \"${{ env.TAG }}\"/" package.json
+          sed -i "s/\"@bloxbean\/yaci-devkit-linux-x64\": \".*\"/\"@bloxbean\/yaci-devkit-linux-x64\": \"${{ env.TAG }}\"/" package.json
+
+      - name: Publish `yaci-devkit` to npm
+        working-directory: npm/yaci-devkit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public

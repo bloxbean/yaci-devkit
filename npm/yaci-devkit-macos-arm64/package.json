@@ -1,5 +1,5 @@
 {
-  "name": "@bloxbean/yaci-devkit-linux-x64",
+  "name": "@bloxbean/yaci-devkit-macos-arm64",
   "version": "0.0.1",
   "main": "yaci-cli",
   "files": [
