@@ -57,18 +57,17 @@ jobs:
           path: |
             applications/cli/build/native/nativeCompile/yaci-cli
             applications/cli/config
-            applications/cli/build/yaci-cli-${{ env.TAG }}.zip
           retention-days: 2
 
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        if: startsWith(github.ref, 'refs/tags/')
+#        with:
+#          files: |
+#            ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
+#          prerelease: true
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   npm-publish:
     needs: buildAndPush
@@ -102,7 +101,7 @@ jobs:
 
       - name: Prepare npm package
         run: |
-          mv yaci-cli npm/${{ env.npm_folder }}/
+          cp build/native/nativeCompile/yaci-cli npm/${{ env.npm_folder }}/
           cp -r config npm/${{ env.npm_folder }}/
 
       - name: Set npm package version
