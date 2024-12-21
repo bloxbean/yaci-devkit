@@ -1,10 +1,13 @@
 {
   "name": "@bloxbean/yaci-devkit",
   "version": "0.10.0-preview3-dev1",
+  "description": "A set of development tools for building on Cardano by creating a local devnet.",
+  "keywords": ["yaci-devkit", "cardano", "devnet"],
   "engines": {
     "node": ">=20.8.0"
   },
   "license": "MIT",
+  "homepage": "https://devkit.yaci.xyz/",
   "repository": "github:bloxbean/yaci-devkit",
   "bin": {
     "yaci-devkit": "./start.mjs"
