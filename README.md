@@ -1,7 +1,7 @@
 <div align="center">
 <img src="static/DevKit.png" width="300">
 
-<h4>A set of dev tools for development on Cardano</h4>
+<h4>A set of development tools for building on Cardano by creating a local devnet.</h4>
 </div>
 
 # What's Yaci DevKit
