@@ -84,6 +84,11 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV    
+
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -114,6 +119,36 @@ jobs:
 
       - name: Publish to npm
         working-directory: npm/${{ env.npm_folder }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+  publish-yaci-devkit:
+    needs: npm-publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV    
+
+      - name: Update `yaci-devkit` Version and Dependencies
+        working-directory: npm/yaci-devkit
+        run: |
+          # Update the version
+          npm version ${{ env.TAG }} --no-git-tag-version
+          # Update platform-specific dependency versions
+          sed -i "s/\"@bloxbean\/yaci-devkit-macos-arm64\": \".*\"/\"@bloxbean\/yaci-devkit-macos-arm64\": \"${{ env.TAG }}\"/" package.json
+          sed -i "s/\"@bloxbean\/yaci-devkit-linux-x64\": \".*\"/\"@bloxbean\/yaci-devkit-linux-x64\": \"${{ env.TAG }}\"/" package.json
+
+      - name: Publish `yaci-devkit` to npm
+        working-directory: npm/yaci-devkit
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public

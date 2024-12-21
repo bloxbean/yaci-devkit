@@ -1,6 +1,6 @@
 {
   "name": "@bloxbean/yaci-devkit",
-  "version": "0.10.0",
+  "version": "0.10.0-preview3-dev1",
   "engines": {
     "node": ">=20.8.0"
   },
@@ -10,8 +10,8 @@
     "yaci-devkit": "./start.mjs"
   },
   "dependencies": {
-    "@bloxbean/yaci-devkit-linux-x64": "file:../yaci-devkit-linux-x64",
-    "@bloxbean/yaci-devkit-macos-arm64": "file:../yaci-devkit-macos-arm64"
+    "@bloxbean/yaci-devkit-linux-x64": "0.10.0-preview3-dev1",
+    "@bloxbean/yaci-devkit-macos-arm64": "0.10.0-preview3-dev1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { platform } from "node:os";
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { createHash } from "node:crypto";
+// import { createHash } from "node:crypto";
 
 const osType = platform();
 
@@ -34,18 +34,25 @@ if (packageMap[osType] == null) {
 }
 const binPath = fileURLToPath(packageMap[osType]());
 
-const workDir = dirname(binPath);
-const configPath = resolve(workDir, 'config');
+const devkitDir = dirname(binPath);
 
-const tmpSuffix = createHash('md5').update(workDir).digest("hex");
+const configPath = resolve(devkitDir, 'config');
+
+// const tmpSuffix = createHash('md5').update(workDir).digest("hex");
 // const yaciCLIHome = resolve("/tmp", ".yaci-cli" + tmpSuffix )
 
-const child = spawn(binPath, [...process.argv.slice(2)], {
+const additionalConfig = "optional:file:" + configPath + "/application.properties,"
+    + "optional:file:" + configPath + "/download.properties,"
+    + "optional:file:" + configPath + "/node.properties"
+
+const additionalConfigArg = "-Dspring.config.import=" + additionalConfig;
+
+const child = spawn(binPath, [additionalConfigArg, ...process.argv.slice(2)], {
     stdio: "inherit",
-    cwd: workDir
-    // env: {
-    //     YACI_CLI_HOME: yaciCLIHome
-    // }
+    env: {
+        // YACI_CLI_HOME: yaciCLIHome
+    },
+
 });
 
 child.on("close", (code) => {
