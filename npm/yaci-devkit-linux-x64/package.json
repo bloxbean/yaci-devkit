@@ -1,6 +1,6 @@
 {
   "name": "@bloxbean/yaci-devkit-linux-x64",
-  "version": "0.10.0",
+  "version": "0.0.1",
   "main": "yaci-cli",
   "files": [
     "yaci-cli",
