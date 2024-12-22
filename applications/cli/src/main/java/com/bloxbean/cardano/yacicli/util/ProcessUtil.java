@@ -80,4 +80,29 @@ public class ProcessUtil {
         return process;
     }
 
+    public String executeAndReturnOutput(ProcessBuilder processBuilder) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            Process process = processBuilder.start();
+
+            ProcessStream processStream =
+                    new ProcessStream(process.getInputStream(), line -> {
+                        if (line != null && !line.isEmpty())
+                            sb.append(line).append(System.lineSeparator());
+                    });
+
+            Future<?> inputFuture = executorHelper.getExecutor().submit(processStream);
+            inputFuture.get();
+
+            // Wait for process to complete
+            process.waitFor();
+
+            return sb.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
 }

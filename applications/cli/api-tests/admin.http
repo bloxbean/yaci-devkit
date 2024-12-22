@@ -211,3 +211,11 @@ GET {{admin_url}}/local-cluster/api/epochs/latest
     client.assert(response.body.epoch>= 0, "Lastest epoch not found. Actual value: " + response.body.epoch)
 %}
 
+###
+### Get genesis hash
+GET {{admin_url}}/local-cluster/api/admin/devnet/genesis/hash
+
+> {%
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.length > 10, "genesis hash not found " + response.body)
+%}

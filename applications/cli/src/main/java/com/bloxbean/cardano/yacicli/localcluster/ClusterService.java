@@ -11,6 +11,7 @@ import com.bloxbean.cardano.yacicli.localcluster.privnet.PrivNetService;
 import com.bloxbean.cardano.yacicli.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
 import com.bloxbean.cardano.yacicli.output.OutputFormatter;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.bloxbean.cardano.yacicli.util.TemplateEngine;
 import com.bloxbean.cardano.yacicli.util.AdvancedTemplateEngine;
 import com.bloxbean.cardano.yacicli.util.ZipUtil;
@@ -77,6 +78,9 @@ public class ClusterService {
 
     @Autowired
     private ApplicationConfig applicationConfig;
+
+    @Autowired
+    private ProcessUtil processUtil;
 
     public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
         this.clusterConfig = config;
@@ -501,6 +505,45 @@ public class ClusterService {
         } catch (InterruptedException ex) {
             if (log.isDebugEnabled())
                 log.error("Interrupt exception", ex);
+        }
+    }
+
+    public String getGenesisHash(String clusterName) {
+        try {
+            Path binFolder = Path.of(clusterConfig.getCLIBinFolder());
+            if (!Files.exists(binFolder))
+                Files.createDirectories(binFolder);
+
+            String cardanoCLI = OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS ? "cardano-cli.exe" : "cardano-cli";
+            Path cardanoCliPath = binFolder.resolve(cardanoCLI); //TODO -- Handle for windows
+            if (!Files.exists(cardanoCliPath)) {
+                writeLn(error("cardano-cli not found"));
+                return null;
+            }
+
+            var clusterPath = clusterConfig.getClusterFolder(clusterName);
+            var byronGenesisPath = clusterPath.resolve("node").resolve("genesis").resolve("byron-genesis.json");
+            var byronGenesisPathStr = byronGenesisPath.toFile().getAbsolutePath();
+
+            ProcessBuilder builder = new ProcessBuilder();
+            if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
+                builder.command("cmd.exe",
+                        cardanoCliPath.toFile().getAbsolutePath(),
+                        "byron", "genesis", "print-genesis-hash", "--genesis-json",
+                        byronGenesisPathStr);
+            } else {
+                builder.command(cardanoCliPath.toFile().getAbsolutePath(),
+                        "byron", "genesis", "print-genesis-hash", "--genesis-json",
+                        byronGenesisPathStr);
+            }
+
+            var genesisHash = processUtil.executeAndReturnOutput(builder);
+            return genesisHash;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            writeLn(error("Error getting genesis hash", e));
+            return null;
         }
     }
 
