@@ -1,3 +1,14 @@
+## To run
+
+- Install Yaci Viewer 
+
+```
+npm install -g @bloxbean/yaci-viewer
+```
+
+- Start Yaci DevKit
+- Run `yaci-viewer`
+
 ## Developing
 
 Once you've checked out the project and installed dependencies with `npm install`  start a development server:
