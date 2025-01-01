@@ -28,7 +28,12 @@ jobs:
 
       - name: Configure npm for scoped package
         run: |
-          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc 
+          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc
+
+      - name: Set default .env
+        working-directory: applications/viewer
+        run: |
+          mv env.local .env
 
       - name: NPM Build
         working-directory: applications/viewer
