@@ -28,7 +28,11 @@ jobs:
 
       - name: Configure npm for scoped package
         run: |
-          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc  
+          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc 
+
+      - name: NPM Build
+        working-directory: applications/viewer
+        run: npm run build
 
       - name: Publish to npm
         working-directory: applications/viewer
