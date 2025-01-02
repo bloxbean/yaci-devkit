@@ -56,7 +56,9 @@
   },
   "type": "module",
   "dependencies": {
+    "dotenv": "^16.4.7",
     "moment": "^2.30.1",
-    "svelte-feather-icons": "^4.1.0"
+    "svelte-feather-icons": "^4.1.0",
+    "yargs": "^17.7.2"
   }
 }

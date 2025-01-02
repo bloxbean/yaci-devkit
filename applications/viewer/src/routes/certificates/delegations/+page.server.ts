@@ -1,11 +1,12 @@
 import type { PageLoad } from './$types'
+import { env } from '$env/dynamic/public';
 
 export const load: PageLoad = async ({params, url}) => {
     let page = url.searchParams.get('page');
     if (!page) page = 0;
     const count = 20;
 
-    const INDEXER_BASE_URL = import.meta.env.VITE_INDEXER_BASE_URL;
+    const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
     const apiUrl = `${INDEXER_BASE_URL}/stake/delegations?page=${page}&count=${count}`;
     console.log(apiUrl);
 

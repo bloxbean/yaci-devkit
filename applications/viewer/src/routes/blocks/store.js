@@ -1,5 +1,5 @@
 import {writable} from 'svelte/store';
-import { variables } from '../../lib/variables'
+import { env } from '$env/dynamic/public';
 
 export const blocksStore = writable({});
 export const aggregateStore = writable({});
@@ -8,7 +8,7 @@ export const recentTxStore = writable({});
 export let blocksCache = [];
 export let txCache = [];
 
-const socket = new WebSocket(variables.wsUrl);
+const socket = new WebSocket(env["PUBLIC_INDEXER_WS_URL"]);
 
 // Connection opened
 socket.addEventListener('open', function (event) {
