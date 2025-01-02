@@ -3,7 +3,6 @@
     import {navigating} from "$app/stores";
     import Nav from "../components/Nav.svelte";
 </script>
-<body>
 <!--<Nav></Nav>-->
 <div class="flex flex-col min-h-screen">
     <!-- Main -->
@@ -28,4 +27,3 @@
         </div>
     </footer>
 </div>
-</body>

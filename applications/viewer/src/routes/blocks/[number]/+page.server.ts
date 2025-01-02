@@ -1,7 +1,8 @@
 import type { PageLoad } from './$types'
+import { env } from '$env/dynamic/public';
 
 export const load: PageLoad = async ({params}) => {
-    const INDEXER_BASE_URL = import.meta.env.VITE_INDEXER_BASE_URL;
+    const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
     const blockApiUrl = `${INDEXER_BASE_URL}/blocks/${params.number}`;
     const blockTxsApiUrl = `${INDEXER_BASE_URL}/blocks/${params.number}/txs`;
 
