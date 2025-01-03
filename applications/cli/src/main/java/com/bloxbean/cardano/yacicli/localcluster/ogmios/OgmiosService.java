@@ -34,18 +34,16 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class OgmiosService {
+    private final static String OGMIOS_PROCESS_NAME = "ogmios";
+    private final static String KUPO_PROCESS_NAME = "kupo";
     private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
+    private final TemplateEngine templateEngine;
+    private final ProcessUtil processUtil;
 
     private List<Process> processes = new ArrayList<>();
-
-    @Autowired
-    private TemplateEngine templateEngine;
-
-    @Autowired
-    private ProcessUtil processUtil;
 
     private Queue<String> ogmiosLogs = EvictingQueue.create(300);
     private Queue<String> kupoLogs = EvictingQueue.create(300);
@@ -181,6 +179,7 @@ public class OgmiosService {
             if (processes != null && processes.size() > 0)
                 writeLn(info("Trying to stop ogmios/kupo ..."));
 
+            boolean error = false;
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
                     process.descendants().forEach(processHandle -> {
@@ -195,8 +194,15 @@ public class OgmiosService {
                         writeLn(success("Killed : " + process));
                     } else {
                         writeLn(error("Process could not be killed : " + process));
+                        error = true;
                     }
                 }
+            }
+
+            if (!error) {
+                //clean pid files
+                processUtil.deletePidFile(OGMIOS_PROCESS_NAME);
+                processUtil.deletePidFile(KUPO_PROCESS_NAME);
             }
 
             ogmiosLogs.clear();

@@ -33,6 +33,8 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ClusterStartService {
+    public static final String SUBMIT_API_PROCESS_NAME = "submit-api";
+    public static final String NODE_PROCESS_NAME = "node";
     private final ClusterConfig clusterConfig;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
     private final ProcessUtil processUtil;
@@ -123,6 +125,7 @@ public class ClusterStartService {
             if (processes != null && processes.size() > 0)
                 writer.accept(info("Trying to stop the running cluster ..."));
 
+            boolean error = false;
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
                     process.descendants().forEach(processHandle -> {
@@ -137,6 +140,12 @@ public class ClusterStartService {
                     else
                         writer.accept(error("Process could not be killed : " + process));
                 }
+            }
+
+            if (!error) {
+                //clean pid files
+                processUtil.deletePidFile(NODE_PROCESS_NAME);
+                processUtil.deletePidFile(SUBMIT_API_PROCESS_NAME);
             }
 
             logs.clear();
@@ -200,7 +209,7 @@ public class ClusterStartService {
         builder.directory(nodeStartDir);
 
         writer.accept(success("Starting node from directory : " + nodeStartDir.getAbsolutePath()));
-        Process process = processUtil.startLongRunningProcess("Node", builder, logs, writer);
+        Process process = processUtil.startLongRunningProcess(NODE_PROCESS_NAME, builder, logs, writer);
         if (process == null) return null;
 
         Path nodeSocketPath = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock");
@@ -234,7 +243,7 @@ public class ClusterStartService {
         File submitApiStartDir = new File(clusterFolderPath);
         builder.directory(submitApiStartDir);
 
-        Process process = processUtil.startLongRunningProcess("SubmitApi", builder, submitApiLogs, writer);
+        Process process = processUtil.startLongRunningProcess(SUBMIT_API_PROCESS_NAME, builder, submitApiLogs, writer);
         if (process == null) return null;
 
         writer.accept(success("Started submit api : http://localhost:" + clusterPortInfoHelper.getSubmitApiPort(clusterInfo)));
