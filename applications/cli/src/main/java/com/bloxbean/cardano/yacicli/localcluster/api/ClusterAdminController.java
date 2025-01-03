@@ -161,4 +161,13 @@ public class ClusterAdminController {
     public int getKesPeriod() throws IOException {
         return clusterUtilService.getKESPeriod();
     }
+
+    @GetMapping("/devnet/genesis/hash")
+    public ResponseEntity<String> getGenesisHash() {
+        var genesisHash = clusterService.getGenesisHash(DEFAULT_CLUSTER_NAME);
+        if (genesisHash != null)
+            return ResponseEntity.ok(genesisHash);
+        else
+            return ResponseEntity.notFound().build();
+    }
 }
