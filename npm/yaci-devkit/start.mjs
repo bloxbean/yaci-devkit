@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { platform } from "node:os";
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { platform, homedir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve, join } from "node:path";
+import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
+
 // import { createHash } from "node:crypto";
 
 const osType = platform();
@@ -38,6 +40,42 @@ const devkitDir = dirname(binPath);
 
 const configPath = resolve(devkitDir, 'config');
 
+// Determine the path to the user's `.yaci-cli` directory
+const yaciCliHome = join(homedir(), ".yaci-cli");
+if (!existsSync(yaciCliHome)) {
+    mkdirSync(yaciCliHome, { recursive: true });
+}
+
+// Path for the PID file
+const pidFilePath = join(yaciCliHome, "yaci-cli.pid");
+
+function killProcessTree(pid) {
+    try {
+        if (osType === "linux" || osType === "darwin") {
+            // Use `pkill` to kill the entire process tree
+            spawn("pkill", ["-TERM", "-P", pid], { stdio: "ignore" });
+            process.kill(pid, "SIGKILL"); // Kill the main process
+        } else {
+            console.error("Unsupported platform for process termination.");
+        }
+    } catch (err) {
+        console.error(`Failed to kill process tree for PID ${pid}: ${err.message}`);
+    }
+}
+
+if (existsSync(pidFilePath)) {
+    try {
+        const existingPid = parseInt(readFileSync(pidFilePath, "utf-8"), 10);
+        if (!isNaN(existingPid)) {
+            console.log(`Killing existing yaci-cli process and its subprocesses with PID: ${existingPid}`);
+            killProcessTree(existingPid); // Kill the process tree
+            unlinkSync(pidFilePath); // Remove the stale PID file
+        }
+    } catch (err) {
+        console.error(`Failed to clean up existing yaci-cli process: ${err.message}`);
+    }
+}
+
 // const tmpSuffix = createHash('md5').update(workDir).digest("hex");
 // const yaciCLIHome = resolve("/tmp", ".yaci-cli" + tmpSuffix )
 
@@ -55,6 +93,17 @@ const child = spawn(binPath, [additionalConfigArg, ...process.argv.slice(2)], {
 
 });
 
+
+writeFileSync(pidFilePath, child.pid.toString());
+console.log(`yaci-cli process started with PID: ${child.pid}`);
+
+// Handle process exit
 child.on("close", (code) => {
+    console.log(`yaci-cli process exited with code: ${code}`);
+    try {
+        unlinkSync(pidFilePath);
+    } catch (err) {
+        console.error(`Failed to remove PID file: ${err.message}`);
+    }
     process.exit(code ?? 0);
 });
