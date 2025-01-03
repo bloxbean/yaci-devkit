@@ -12,6 +12,7 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
+import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,12 +36,14 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class YaciStoreService {
+    private static final String STORE_PROCESS_NAME = "yaci-store";
     private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
     private final ClusterConfig clusterConfig;
     private final JreResolver jreResolver;
     private final YaciStoreConfigBuilder yaciStoreConfigBuilder;
     private final YaciStoreCustomDbHelper customDBHelper;
+    private final ProcessUtil processUtil;
 
     private List<Process> processes = new ArrayList<>();
 
@@ -73,6 +76,7 @@ public class YaciStoreService {
             Process process = startStoreApp(clusterInfo, era);
             if (process != null)
                 processes.add(process);
+
 //            Process viewerProcess = startViewerApp(clusterStarted.getClusterName());
 //                processes.add(viewerProcess);
         } catch (Exception e) {
@@ -197,6 +201,8 @@ public class YaciStoreService {
             writeLn("###########################################################################################################################");
         }
 
+        processUtil.createProcessId(STORE_PROCESS_NAME, process);
+
         return process;
     }
 
@@ -249,6 +255,7 @@ public class YaciStoreService {
             if (processes != null && processes.size() > 0)
                 writeLn(info("Trying to stop yaci-store ..."));
 
+            boolean error = false;
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
                     process.descendants().forEach(processHandle -> {
@@ -265,6 +272,11 @@ public class YaciStoreService {
                         writeLn(error("Process could not be killed : " + process));
                     }
                 }
+            }
+
+            if (!error) {
+                //clean pid files
+                processUtil.deletePidFile(STORE_PROCESS_NAME);
             }
 
             logs.clear();
