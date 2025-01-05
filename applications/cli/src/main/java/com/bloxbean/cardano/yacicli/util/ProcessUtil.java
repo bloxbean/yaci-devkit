@@ -3,6 +3,7 @@ package com.bloxbean.cardano.yacicli.util;
 import com.bloxbean.cardano.yacicli.commands.common.ExecutorHelper;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ProcessUtil {
     private final ExecutorHelper executorHelper;
     private final ClusterConfig clusterConfig;
@@ -96,12 +98,12 @@ public class ProcessUtil {
             // Validate the yaciCliHome directory
             Path homePath = Paths.get(yaciCliHome);
             if (!Files.exists(homePath)) {
-                writeLn(error("yaci-cli home directory does not exist: " + yaciCliHome));
+                log.debug("yaci-cli home directory does not exist: " + yaciCliHome);
                 return null;
             }
 
             if (!Files.isDirectory(homePath)) {
-                writeLn(error("yaci-cli home path is not a directory: " + yaciCliHome));
+                log.debug("yaci-cli home path is not a directory: " + yaciCliHome);
                 return null;
             }
 
@@ -140,18 +142,18 @@ public class ProcessUtil {
         // Validate the yaciCliHome directory
         Path homePath = Paths.get(yaciCliHome);
         if (!Files.exists(homePath)) {
-            writeLn(error("The yaciCliHome directory does not exist: " + yaciCliHome));
+            log.debug("The yaciCliHome directory does not exist: " + yaciCliHome);
             return;
         }
         if (!Files.isDirectory(homePath)) {
-            writeLn(error("The yaciCliHome path is not a directory: " + yaciCliHome));
+            log.debug("The yaciCliHome path is not a directory: " + yaciCliHome);
             return;
         }
 
         // Resolve the pids directory
         Path pidsDir = homePath.resolve("pids");
         if (!Files.exists(pidsDir) || !Files.isDirectory(pidsDir)) {
-            writeLn(error("The pids directory does not exist or is not a directory: " + pidsDir));
+            log.debug("The pids directory does not exist or is not a directory: " + pidsDir);
             return;
         }
 
@@ -165,11 +167,11 @@ public class ProcessUtil {
                         pidList.add(Long.parseLong(pidString));
                     }
                 } catch (IOException | NumberFormatException e) {
-                    writeLn(error("Failed to read or parse PID file: " + pidFile + " - " + e.getMessage()));
+                    log.debug("Failed to read or parse PID file: " + pidFile + " - " + e.getMessage());
                 }
             }
         } catch (IOException e) {
-            writeLn(error("Failed to list PID files in directory: " + pidsDir + " : " + e.getMessage()));
+            log.debug("Failed to list PID files in directory: " + pidsDir + " : " + e.getMessage());
             return;
         }
 
@@ -184,13 +186,13 @@ public class ProcessUtil {
                                     });
                                     var result = processHandle.destroyForcibly();
                                     if (!result) {
-                                        writeLn(error("Failed to kill process with PID : " + pid));
+                                        log.debug("Failed to kill process with PID : " + pid);
                                     } else {
                                         deletedPids.add(processHandle.pid());
                                     }
                                 });
             } catch (Exception e) {
-                writeLn(error("Failed to kill process with PID: " + pid + " - " + e.getMessage()));
+                log.debug("Failed to kill process with PID: " + pid + " - " + e.getMessage());
             }
         }
 
