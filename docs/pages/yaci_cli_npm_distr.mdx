@@ -1,0 +1,114 @@
+import { Callout } from 'nextra/components'
+
+## Yaci DevKit NPM Distribution (0.10.0-preview5 and later)
+
+For users who prefer npm, you can install Yaci DevKit using the `npm install` command. When installing from npm,
+you need to install both the `yaci-devkit` and `yaci-viewer` packages separately.
+
+## Supported Platforms
+
+Like the non-Docker ZIP distribution, the npm distribution is currently supported on the following platforms:
+
+1. **Linux x86**: Tested on Ubuntu 20.04 and Ubuntu 22.04
+2. **macOS 14 (Arm64) or later**
+
+
+## Installation
+
+### Yaci DevKit Installation
+
+```
+npm i -g @bloxbean/yaci-devkit
+```
+
+### Yaci Viewer Installation
+
+```
+npm install -g @bloxbean/yaci-viewer
+```
+
+<Callout type="warning">
+The following commands are used for the NPM distribution instead of the standard `devkit` or `yaci-cli` commands:
+
+- **`yaci-devkit`**: Starts the Yaci CLI and other components.
+- **`yaci-viewer`**: Starts the Yaci Viewer.
+
+</Callout>
+
+## Yaci DevKit - Commands
+
+There is a new command, `up`, which handles both the download process and devnet creation.
+
+### **Commands**
+
+1. **Download and Start Cardano Node**
+
+   ```bash
+   yaci-devkit up
+   ```
+    - Downloads the Cardano node (if not already downloaded) and starts a new devnet.
+    - You can pass other node-creation-specific arguments (same as the `create-node` command), such as --block-time or --port.
+
+2. **Interactive Mode**
+
+   If you want to interact with the running processes using `yaci-cli`, pass the `--interactive` option to the `up` command.
+
+   ```bash
+   yaci-devkit up --interactive
+   ```
+    - Downloads the node (if not already downloaded), starts a new devnet, and launches the `yaci-cli` prompt.
+
+3. **Yaci Store Mode (Blockfrost-Compatible API Endpoints)**
+
+   ```bash
+   yaci-devkit up --enable-yaci-store
+   ```
+    - Downloads and starts the Cardano node, Yaci Store, and Ogmios (used for script cost evaluation).
+    - Add `--interactive` to enter the `yaci-cli` prompt.
+
+4. **Kupomios Mode (Ogmios + Kupo)**
+
+   ```bash
+   yaci-devkit up --enable-kupomios
+   ```
+    - Downloads and starts the Cardano node, Ogmios, and Kupo.
+
+For a full list of Yaci CLI commands, check the Yaci DevKit [documentation](/commands).
+
+## Yaci Viewer Commands
+
+Once the Yaci DevKit DevNet with yaci-store support is running, you can run Yaci Viewer using `yaci-viewer` command.
+
+```bash
+yaci-viewer
+```
+
+By default, Yaci Viewer connects to a Yaci-Store backend running on `localhost` at port `8080`.
+
+
+### Configuration Options
+
+If you need to connect to a Yaci-Store backend running on a different host or port, you can configure Yaci Viewer in one of the following ways:
+
+#### Option 1: Using a `.env` File
+
+Create a `.env` file in the same directory where you are starting Yaci Viewer, and specify the following environment variables:
+
+- `PUBLIC_INDEXER_BASE_URL`: The base URL for the indexer API. Default: `http://localhost:8080/api/v1`.
+- `PUBLIC_INDEXER_WS_URL`: The WebSocket URL for live updates. Default: `ws://localhost:8080/ws/liveblocks`.
+
+#### Option 2: Using Command-Line Arguments
+
+You can also specify the indexer base URL and WebSocket URL directly via command-line arguments:
+
+```bash
+yaci-viewer --indexerBaseUrl http://new-url.com/api/v1 --indexerWsUrl ws://new-url.com/ws/liveblocks
+```
+
+### Notes
+
+- Ensure that the YaciDevKit or Yaci-Store backend is running and accessible before starting Yaci Viewer.
+
+
+
+

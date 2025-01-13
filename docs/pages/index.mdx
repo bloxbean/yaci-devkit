@@ -9,44 +9,19 @@ with Blockfrost API endpoints, all easily deployable with Docker Compose for eff
 
 ## Distribution Types
 
-1. **Yaci DevKit:** A Docker Compose-based distribution that includes all required components. This is the **recommended**
-distribution for most users. Follow the installation instructions in the next section to install Yaci DevKit.
+1. **Yaci DevKit (Docker) :** A Docker Compose-based distribution that includes all required components. This is the **recommended**
+distribution for most users. Follow the installation instructions in [Yaci DevKit Docker page](/docker) to install Yaci DevKit.
 
-2. **Yaci CLI (Non-Docker):** A ZIP distribution that includes only Yaci CLI. This distribution is useful for users who
+2. **Yaci CLI Zip (Non-Docker):** A ZIP distribution that includes only Yaci CLI. This distribution is useful for users who
 prefer to use Yaci CLI without Docker. With this distribution, you can download and manage required components like Cardano Node,
 Ogmios, Kupo, and Yaci Store using Yaci CLI. For installation instructions, refer to the [Yaci CLI Installation](/yaci_cli_distribution) section.
 
-This version improves readability and consistency in terminology.
+3. **NPM Distribution**: You can also use Yaci Devkit and Yaci Viewer NPM distribution. For more information, check [NPM distribution](/yaci_cli_npm_distr) page.
 
-## Yaci DevKit Installation
 
-## Pre-requisites:
-- Docker
-
-## Installation
-
-To install latest stable version of Yaci DevKit, run:
-
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://devkit.yaci.xyz/install.sh | bash
-```
-
-To install a specific version of Yaci DevKit, run:
-
-```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://devkit.yaci.xyz/install.sh | bash -s -- <version>
-```
-
-**Note:** Replace `<version>` with the desired version number without the `v` prefix.
-
-## Zip Installation
-
-Download the latest zip from [release section](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
-<br/>
-
-<Callout type={"error"}>
 **Important:**
 
+<Callout>
 In Yaci DevKit **v0.9.1-beta** and later, the Yaci CLI's native executable is the default. If you encounter issues starting DevKit,
 you can switch back to the Java version by setting the **`yaci_cli_mode`** environment variable to **`java`** in the `config/env` file within
 the Yaci DevKit installation directory."

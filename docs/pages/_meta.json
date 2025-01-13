@@ -1,6 +1,8 @@
 {
   "index": "Introduction",
-  "yaci_cli_distribution": "Yaci CLI (Non Docker Dist)",
+  "docker": "Docker Distribution",
+  "yaci_cli_distribution": "Zip (Non-Docker) Distribution",
+  "yaci_cli_npm_distr": "NPM Distribution",
   "how_to_use": "How to use",
   "about": {
     "title": "About",
