@@ -325,8 +325,8 @@ public class ClusterService {
 
         //Check if protocol version should be minimun 9 and it's conway era
         if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 9) {
-            values.put("protocolMajorVer", 9);
-            values.put("protocolMinorVer", 0);
+            values.put("protocolMajorVer", 10);
+            values.put("protocolMinorVer", 2);
         }
 
         //Derive security param
