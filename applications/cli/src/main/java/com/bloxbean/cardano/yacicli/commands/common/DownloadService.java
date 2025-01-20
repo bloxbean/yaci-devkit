@@ -339,6 +339,12 @@ public class DownloadService {
                 int percentCompleted;
 
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        writeLn(warnLabel("Download", "Download interrupted by user."));
+                        Files.deleteIfExists(targetPath);
+                        return null;
+                    }
+
                     outputStream.write(buffer, 0, bytesRead);
                     totalBytesRead += bytesRead;
                     percentCompleted = (int) ((totalBytesRead * 100) / fileSize);
