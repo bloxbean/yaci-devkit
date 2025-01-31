@@ -51,7 +51,7 @@ jobs:
         run: mv build/yaci-cli-${{ env.TAG }}.zip build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ runner.arch }}.zip
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: yaci-cli-${{ matrix.os }}
           path: |
