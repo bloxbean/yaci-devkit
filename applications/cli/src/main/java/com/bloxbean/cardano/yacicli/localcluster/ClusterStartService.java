@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
@@ -39,6 +40,7 @@ public class ClusterStartService {
     private final ClusterPortInfoHelper clusterPortInfoHelper;
     private final ProcessUtil processUtil;
     private final GenesisConfig genesisConfig;
+    private final CustomGenesisConfig customGenesisConfig;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Process> processes = new ArrayList<>();
@@ -263,7 +265,10 @@ public class ClusterStartService {
         ObjectNode jsonNode = (ObjectNode) objectMapper.readTree(byronGenesis.toFile());
         long byronStartTime = Instant.now().getEpochSecond();
 
-        if (genesisConfig.getConwayHardForkAtEpoch() > 0 && genesisConfig.isShiftStartTimeBehind()) {
+        var genesisConfigCopy = genesisConfig.copy();
+        genesisConfigCopy.merge(customGenesisConfig.getMap());
+
+        if (genesisConfigCopy.getConwayHardForkAtEpoch() > 0 && genesisConfigCopy.isShiftStartTimeBehind()) {
             long stabilityWindow = (long) Math.floor((3 * clusterInfo.getSecurityParam()) / clusterInfo.getActiveSlotsCoeff());
 
             long maxBehindBySecond = stabilityWindow - 5;

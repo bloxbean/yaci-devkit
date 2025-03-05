@@ -335,7 +335,7 @@ public class GenesisConfig {
         map.put("minFeeRefScriptCostPerByte", minFeeRefScriptCostPerByte);
         map.put("constitutionUrl", constitutionUrl);
         map.put("constitutionDataHash", constitutionDataHash);
-        if (constitutionScript != null)
+        if (constitutionScript != null && !constitutionScript.trim().isEmpty())
             map.put("constitutionScript", constitutionScript);
 
         if (ccMembers != null && ccMembers.size() > 0)
@@ -446,6 +446,116 @@ public class GenesisConfig {
         genesisConfig.setShiftStartTimeBehind(shiftStartTimeBehind);
 
         return genesisConfig;
+    }
+
+    public void merge(Map<String, String> updatedValues) {
+        if (updatedValues != null && !updatedValues.isEmpty()) {
+            if (updatedValues.get("protocolMagic") != null && !updatedValues.get("protocolMagic").isEmpty())
+                protocolMagic = Long.parseLong(updatedValues.get("protocolMagic"));
+            if (updatedValues.get("maxKESEvolutions") != null && !updatedValues.get("maxKESEvolutions").isEmpty())
+                maxKESEvolutions = Integer.parseInt(updatedValues.get("maxKESEvolutions"));
+            if (updatedValues.get("stabilityWindowFactor") != null && !updatedValues.get("stabilityWindowFactor").isEmpty())
+                stabilityWindowFactor = Integer.parseInt(updatedValues.get("stabilityWindowFactor"));
+            if (updatedValues.get("securityParam") != null && !updatedValues.get("securityParam").isEmpty())
+                securityParam = Integer.parseInt(updatedValues.get("securityParam"));
+            if (updatedValues.get("slotsPerKESPeriod") != null && !updatedValues.get("slotsPerKESPeriod").isEmpty())
+                slotsPerKESPeriod = Integer.parseInt(updatedValues.get("slotsPerKESPeriod"));
+            if (updatedValues.get("updateQuorum") != null && !updatedValues.get("updateQuorum").isEmpty())
+                updateQuorum = Integer.parseInt(updatedValues.get("updateQuorum"));
+            if (updatedValues.get("peerSharing") != null && !updatedValues.get("peerSharing").isEmpty())
+                peerSharing = Boolean.parseBoolean(updatedValues.get("peerSharing"));
+            if (updatedValues.get("genesisUtxoSupply") != null && !updatedValues.get("genesisUtxoSupply").isEmpty())
+                genesisUtxoSupply = updatedValues.get("genesisUtxoSupply");
+            if (updatedValues.get("nGenesisKeys") != null && !updatedValues.get("nGenesisKeys").isEmpty())
+                nGenesisKeys = Integer.parseInt(updatedValues.get("nGenesisKeys"));
+            if (updatedValues.get("nGenesisUtxoKeys") != null && !updatedValues.get("nGenesisUtxoKeys").isEmpty())
+                nGenesisUtxoKeys = Integer.parseInt(updatedValues.get("nGenesisUtxoKeys"));
+            if (updatedValues.get("maxLovelaceSupply") != null && !updatedValues.get("maxLovelaceSupply").isEmpty())
+                maxLovelaceSupply = updatedValues.get("maxLovelaceSupply");
+            if (updatedValues.get("poolPledgeInfluence") != null && !updatedValues.get("poolPledgeInfluence").isEmpty())
+                poolPledgeInfluence = Float.parseFloat(updatedValues.get("poolPledgeInfluence"));
+            if (updatedValues.get("decentralisationParam") != null && !updatedValues.get("decentralisationParam").isEmpty())
+                decentralisationParam = new BigDecimal(updatedValues.get("decentralisationParam"));
+            if (updatedValues.get("eMax") != null && !updatedValues.get("eMax").isEmpty())
+                eMax = Integer.parseInt(updatedValues.get("eMax"));
+            if (updatedValues.get("keyDeposit") != null && !updatedValues.get("keyDeposit").isEmpty())
+                keyDeposit = new BigInteger(updatedValues.get("keyDeposit"));
+            if (updatedValues.get("maxBlockBodySize") != null && !updatedValues.get("maxBlockBodySize").isEmpty())
+                maxBlockBodySize = Long.parseLong(updatedValues.get("maxBlockBodySize"));
+            if (updatedValues.get("maxBlockHeaderSize") != null && !updatedValues.get("maxBlockHeaderSize").isEmpty())
+                maxBlockHeaderSize = Long.parseLong(updatedValues.get("maxBlockHeaderSize"));
+            if (updatedValues.get("maxTxSize") != null && !updatedValues.get("maxTxSize").isEmpty())
+                maxTxSize = Long.parseLong(updatedValues.get("maxTxSize"));
+            if (updatedValues.get("minFeeA") != null && !updatedValues.get("minFeeA").isEmpty())
+                minFeeA = Long.parseLong(updatedValues.get("minFeeA"));
+            if (updatedValues.get("minFeeB") != null && !updatedValues.get("minFeeB").isEmpty())
+                minFeeB = Long.parseLong(updatedValues.get("minFeeB"));
+            if (updatedValues.get("minPoolCost") != null && !updatedValues.get("minPoolCost").isEmpty())
+                minPoolCost = new BigInteger(updatedValues.get("minPoolCost"));
+            if (updatedValues.get("minUTxOValue") != null && !updatedValues.get("minUTxOValue").isEmpty())
+                minUTxOValue = new BigInteger(updatedValues.get("minUTxOValue"));
+            if (updatedValues.get("nOpt") != null && !updatedValues.get("nOpt").isEmpty())
+                nOpt = Integer.parseInt(updatedValues.get("nOpt"));
+            if (updatedValues.get("poolDeposit") != null && !updatedValues.get("poolDeposit").isEmpty())
+                poolDeposit = new BigInteger(updatedValues.get("poolDeposit"));
+            if (updatedValues.get("protocolMajorVer") != null && !updatedValues.get("protocolMajorVer").isEmpty())
+                protocolMajorVer = Integer.parseInt(updatedValues.get("protocolMajorVer"));
+            if (updatedValues.get("protocolMinorVer") != null && !updatedValues.get("protocolMinorVer").isEmpty())
+                protocolMinorVer = Integer.parseInt(updatedValues.get("protocolMinorVer"));
+            if (updatedValues.get("monetaryExpansionRate") != null && !updatedValues.get("monetaryExpansionRate").isEmpty())
+                monetaryExpansionRate = Float.parseFloat(updatedValues.get("monetaryExpansionRate"));
+            if (updatedValues.get("treasuryGrowthRate") != null && !updatedValues.get("treasuryGrowthRate").isEmpty())
+                treasuryGrowthRate = Float.parseFloat(updatedValues.get("treasuryGrowthRate"));
+            if (updatedValues.get("collateralPercentage") != null && !updatedValues.get("collateralPercentage").isEmpty())
+                collateralPercentage = Integer.parseInt(updatedValues.get("collateralPercentage"));
+            if (updatedValues.get("prMemNumerator") != null && !updatedValues.get("prMemNumerator").isEmpty())
+                prMemNumerator = updatedValues.get("prMemNumerator");
+            if (updatedValues.get("prMemDenominator") != null && !updatedValues.get("prMemDenominator").isEmpty())
+                prMemDenominator = updatedValues.get("prMemDenominator");
+            if (updatedValues.get("prStepsNumerator") != null && !updatedValues.get("prStepsNumerator").isEmpty())
+                prStepsNumerator = updatedValues.get("prStepsNumerator");
+            if (updatedValues.get("prStepsDenominator") != null && !updatedValues.get("prStepsDenominator").isEmpty())
+                prStepsDenominator = updatedValues.get("prStepsDenominator");
+            if (updatedValues.get("lovelacePerUTxOWord") != null && !updatedValues.get("lovelacePerUTxOWord").isEmpty())
+                lovelacePerUTxOWord = Long.parseLong(updatedValues.get("lovelacePerUTxOWord"));
+            if (updatedValues.get("maxBlockExUnitsMem") != null && !updatedValues.get("maxBlockExUnitsMem").isEmpty())
+                maxBlockExUnitsMem = Long.parseLong(updatedValues.get("maxBlockExUnitsMem"));
+            if (updatedValues.get("maxBlockExUnitsSteps") != null && !updatedValues.get("maxBlockExUnitsSteps").isEmpty())
+                maxBlockExUnitsSteps = Long.parseLong(updatedValues.get("maxBlockExUnitsSteps"));
+            if (updatedValues.get("maxCollateralInputs") != null && !updatedValues.get("maxCollateralInputs").isEmpty())
+                maxCollateralInputs = Integer.parseInt(updatedValues.get("maxCollateralInputs"));
+            if (updatedValues.get("maxTxExUnitsMem") != null && !updatedValues.get("maxTxExUnitsMem").isEmpty())
+                maxTxExUnitsMem = Long.parseLong(updatedValues.get("maxTxExUnitsMem"));
+            if (updatedValues.get("maxTxExUnitsSteps") != null && !updatedValues.get("maxTxExUnitsSteps").isEmpty())
+                maxTxExUnitsSteps = Long.parseLong(updatedValues.get("maxTxExUnitsSteps"));
+            if (updatedValues.get("maxValueSize") != null && !updatedValues.get("maxValueSize").isEmpty())
+                maxValueSize = Integer.parseInt(updatedValues.get("maxValueSize"));
+            if (updatedValues.get("committeeMinSize") != null && !updatedValues.get("committeeMinSize").isEmpty())
+                committeeMinSize = Integer.parseInt(updatedValues.get("committeeMinSize"));
+            if (updatedValues.get("committeeMaxTermLength") != null && !updatedValues.get("committeeMaxTermLength").isEmpty())
+                committeeMaxTermLength = Integer.parseInt(updatedValues.get("committeeMaxTermLength"));
+            if (updatedValues.get("govActionLifetime") != null && !updatedValues.get("govActionLifetime").isEmpty())
+                govActionLifetime = Integer.parseInt(updatedValues.get("govActionLifetime"));
+            if (updatedValues.get("govActionDeposit") != null && !updatedValues.get("govActionDeposit").isEmpty())
+                govActionDeposit = new BigInteger(updatedValues.get("govActionDeposit"));
+            if (updatedValues.get("dRepDeposit") != null && !updatedValues.get("dRepDeposit").isEmpty())
+                dRepDeposit = new BigInteger(updatedValues.get("dRepDeposit"));
+            if (updatedValues.get("dRepActivity") != null && !updatedValues.get("dRepActivity").isEmpty())
+                dRepActivity = Integer.parseInt(updatedValues.get("dRepActivity"));
+            if (updatedValues.get("minFeeRefScriptCostPerByte") != null && !updatedValues.get("minFeeRefScriptCostPerByte").isEmpty())
+                minFeeRefScriptCostPerByte = new BigDecimal(updatedValues.get("minFeeRefScriptCostPerByte"));
+            if (updatedValues.get("constitutionUrl") != null && !updatedValues.get("constitutionUrl").isEmpty())
+                constitutionUrl = updatedValues.get("constitutionUrl");
+            if (updatedValues.get("constitutionDataHash") != null && !updatedValues.get("constitutionDataHash").isEmpty())
+                constitutionDataHash = updatedValues.get("constitutionDataHash");
+            if (updatedValues.get("constitutionScript") != null && !updatedValues.get("constitutionScript").trim().isEmpty())
+                constitutionScript = updatedValues.get("constitutionScript");
+
+            if (updatedValues.get("shiftStartTimeBehind") != null && !updatedValues.get("shiftStartTimeBehind").isEmpty())
+                shiftStartTimeBehind = Boolean.parseBoolean(updatedValues.get("shiftStartTimeBehind"));
+            if (updatedValues.get("conwayHardForkAtEpoch") != null && !updatedValues.get("conwayHardForkAtEpoch").isEmpty())
+                conwayHardForkAtEpoch = Integer.parseInt(updatedValues.get("conwayHardForkAtEpoch"));
+        }
     }
 
     private <K, V> List<MapItem<K, V>> createListWithLastFlag(Map<K, V> faucets) {
