@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -284,8 +285,8 @@ public class ClusterStartService {
 
         //Update Shelley Genesis file
         ObjectNode shelleyJsonNode = (ObjectNode) objectMapper.readTree(shelleyGenesis.toFile());
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
-        String shelleyStart = formatter.format(Instant.now());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        String shelleyStart = formatter.format(Instant.now().atZone(ZoneOffset.UTC));
         shelleyJsonNode.set("systemStart", new TextNode(shelleyStart));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(shelleyGenesis.toFile(), shelleyJsonNode);
 
