@@ -4,6 +4,7 @@ import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisUtil;
 import com.bloxbean.cardano.yacicli.localcluster.peer.PoolConfig;
@@ -45,6 +46,9 @@ public class PrivNetService {
     private GenesisConfig genesisConfig;
 
     @Autowired
+    private CustomGenesisConfig customGenesisConfig;
+
+    @Autowired
     private PoolKeyGeneratorService poolKeyGeneratorService;
 
     @Autowired
@@ -76,6 +80,7 @@ public class PrivNetService {
         Path genCreateScript = destPath.resolve("genesis-scripts").resolve("genesis-create.sh");
 
         GenesisConfig genesisConfigCopy = genesisConfig.copy();
+        genesisConfigCopy.merge(customGenesisConfig.getMap());
         if (clusterInfo.getGenesisProfile() != null)
             genesisConfigCopy = GenesisProfile.applyGenesisProfile(clusterInfo.getGenesisProfile(), genesisConfigCopy);
 

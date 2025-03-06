@@ -3,8 +3,10 @@ package com.bloxbean.cardano.yacicli.localcluster.api;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterCommands;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -34,6 +37,7 @@ public class ClusterAdminController {
     private final ClusterService clusterService;
     private final ClusterUtilService clusterUtilService;
     private final ClusterCommands clusterCommands;
+    private final CustomGenesisConfig customGenesisConfig;
 
     @GetMapping("/devnet/download")
     public ResponseEntity<InputStreamResource> downloadFiles() throws IOException {
@@ -169,5 +173,39 @@ public class ClusterAdminController {
             return ResponseEntity.ok(genesisHash);
         else
             return ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/devnet/create")
+    @Operation(summary = """
+        Create and start the devnet by overriding the provided genesis properties. This method accepts a JSON object as input to 
+        override the default genesis property values. All properties defined in `node.properties`, except for nested properties, are supported. 
+        This is useful for dynamically changing the node configuration without modifying the `node.properties` file.
+        A value should always be set as string even if it's a number or boolean. 
+        """)
+    public boolean create(@RequestBody Map<String, String> requestData) {
+        CommandContext.INSTANCE.setProperty("cluster_name", DEFAULT_CLUSTER_NAME);
+
+        int epochLength = 0;
+        try {
+            epochLength = Integer.parseInt(requestData.get("epochLength"));
+        } catch (Exception e) {
+        }
+
+        if (epochLength == 0)
+            epochLength = 600;
+
+        //Check if constitution script is there and it's value is empty
+        var constitutionScript = requestData.get("constitutionScript");
+        if (constitutionScript == null || constitutionScript.isEmpty())
+            requestData.remove(constitutionScript);
+
+        customGenesisConfig.populate(requestData);
+
+        try {
+            clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, 1, 1, epochLength, true, true, "conway", null, false);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
