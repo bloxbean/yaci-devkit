@@ -4,10 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+      - 'fix-v*'
 
 jobs:
   buildAndPush:
     runs-on: self-hosted
+    timeout-minutes: 1440
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
