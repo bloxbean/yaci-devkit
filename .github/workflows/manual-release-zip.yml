@@ -10,6 +10,7 @@ jobs:
       - uses: earthly/actions-setup@v1
         with:
           version: v0.8.0
+      - uses: actions/checkout@v4
       - name: Get Tag from version file
         run: |
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
