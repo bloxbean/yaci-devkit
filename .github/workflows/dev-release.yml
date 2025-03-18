@@ -1,0 +1,51 @@
+name: Maual Yaci Devkit Docker Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-amd:
+    runs-on: X64
+    timeout-minutes: 1440
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      FORCE_COLOR: 1
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          version: v0.8.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v4
+      - name: Docker Login
+        run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Run build
+        run: earthly +build --tag ${{ env.TAG }} --platform linux/amd64
+
+  build-arm:
+    runs-on: ARM64
+    timeout-minutes: 1440
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      FORCE_COLOR: 1
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          version: v0.8.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v4
+      - name: Docker Login
+        run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+      - name: Run build
+        run: earthly +build --tag ${{ env.TAG }} --platform linux/arm64
