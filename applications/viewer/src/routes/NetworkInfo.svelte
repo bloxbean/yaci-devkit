@@ -1,6 +1,7 @@
 <script lang="ts">
     import {onDestroy, onMount} from 'svelte';
     import { formatAda, formatLovelace } from '$lib/util';
+    import { env } from '$env/dynamic/public';
 
     interface NetworkInfo {
         epoch: number;
@@ -32,7 +33,8 @@
     async function fetchEpochData() {
         try {
             console.log('Fetching network data');
-            const response = await fetch('http://localhost:8080/api/v1/network');
+            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
+            const response = await fetch(`${baseUrl}/network`);
             if (!response.ok) {
                 console.error('Failed to fetch network data:', response.status, response.statusText);
                 throw new Error(`Failed to fetch network data: ${response.status} ${response.statusText}`);
@@ -56,7 +58,7 @@
             network_info.slot = currentMessage.slot || 0;
             network_info.epoch_slot = currentMessage.epoch_slot || 0;
             network_info.slots_per_epoch = currentMessage.slots_per_epoch || 0;
-            
+
             if (network_info.epoch_slot && network_info.slots_per_epoch) {
                 network_info.epoch_progress = ((network_info.epoch_slot / network_info.slots_per_epoch) * 100).toFixed(2);
             }

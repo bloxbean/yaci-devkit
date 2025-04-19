@@ -3,6 +3,7 @@
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import { env } from '$env/dynamic/public';
 
     interface AdaPotData {
         epoch: number;
@@ -86,7 +87,8 @@
         error = null;
         try {
             console.log('Loading page:', page);
-            const response = await fetch(`http://localhost:8080/api/v1/adapot/list?page=${page}&count=${itemsPerPage}`);
+            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
+            const response = await fetch(`${baseUrl}/adapot/list?page=${page}&count=${itemsPerPage}`);
             console.log('Response status:', response.status);
             
             if (!response.ok) {

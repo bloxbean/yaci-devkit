@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/private';
+import { env } from '$env/dynamic/public';
 
 // Use the public environment variable since it's already set correctly
-const INDEXER_BASE_URL = 'http://localhost:8080';
+const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
 const DEFAULT_COUNT = 15;
 const DEFAULT_ORDER = 'desc';
 
@@ -17,7 +17,7 @@ interface AccountPoolReward {
 interface AccountRestReward {
     epoch_no: number;
     amount: number;
-    type: string; 
+    type: string;
 }
 
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
     }
 
     const fetchAccountPoolRewards = async (currentPage = 1) => {
-        const apiUrl = `${INDEXER_BASE_URL}/api/v1/accounts/${address}/rewards?page=${currentPage - 1}&count=${count}&order=${order}`;
+        const apiUrl = `${INDEXER_BASE_URL}/accounts/${address}/rewards?page=${currentPage - 1}&count=${count}&order=${order}`;
         try {
             console.log("Fetching Account Pool Rewards URL:", apiUrl);
             const response = await fetch(apiUrl);
@@ -58,7 +58,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
     };
 
     const fetchAccountRestRewards = async (currentPage = 1) => {
-        const apiUrl = `${INDEXER_BASE_URL}/api/v1/accounts/${address}/reward_rest?page=${currentPage - 1}&count=${count}&order=${order}`;
+        const apiUrl = `${INDEXER_BASE_URL}/accounts/${address}/reward_rest?page=${currentPage - 1}&count=${count}&order=${order}`;
         try {
             console.log("Fetching Account Rest Rewards URL:", apiUrl);
             const response = await fetch(apiUrl);
@@ -96,4 +96,4 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
         order: order,
         error: combinedError,
     };
-}; 
+};

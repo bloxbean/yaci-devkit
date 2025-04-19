@@ -1,6 +1,7 @@
 <script lang="ts">
     import { formatAda, formatLovelace } from '$lib/util';
     import { onMount } from 'svelte';
+    import { env } from '$env/dynamic/public';
 
     interface AdaPotData {
         epoch: number;
@@ -24,7 +25,8 @@
         loading = true;
         error = null;
         try {
-            const response = await fetch('http://localhost:8080/api/v1/adapot'); 
+            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
+            const response = await fetch(`${baseUrl}/adapot`); 
             if (!response.ok) {
                 throw new Error('Failed to fetch current AdaPot');
             }
