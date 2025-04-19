@@ -122,6 +122,8 @@
             </label>
             <ul tabindex="0" id="mobile-menu-list" class="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52">
                 <li><a href="/">Home</a></li>
+                <li><a href="/blocks">Blocks</a></li>
+                <li><a href="/transactions">Transactions</a></li>
                 <li>
                     <details id="mobile-certificate-menu">
                         <summary>Certificates</summary>
@@ -130,14 +132,7 @@
                             <li><a href="/certificates/stakekey-deregistrations">Stake DeRegistration</a></li>
                             <li><a href="/certificates/pool-registrations">Pool Registration</a></li>
                             <li><a href="/certificates/pool-retirements">Pool Retirements</a></li>
-                            <li><a href="/certificates/delegations">Delegations</a></li>
-                        </ul>
-                    </details>
-                </li>
-                <li>
-                    <details id="mobile-governance-menu">
-                        <summary>Gov Certificates</summary>
-                        <ul class="p-2 bg-base-100">
+                            <li><a href="/certificates/delegations">Pool Delegations</a></li>
                             <li><a href="/governance/drep-registrations">DRep Registrations</a></li>
                             <li><a href="/governance/drep-updates">DRep Updates</a></li>
                             <li><a href="/governance/drep-deregistrations">DRep DeRegistrations</a></li>
@@ -148,7 +143,7 @@
                 </li>
                 <li>
                     <details id="mobile-governance-state-menu">
-                        <summary>Governance State</summary>
+                        <summary>Governance</summary>
                         <ul class="p-2 bg-base-100">
                             <li><a href="/governance/proposals">Proposals</a></li>
                             <li><a href="/governance/dreps">Dreps</a></li>
@@ -168,18 +163,18 @@
                     <details id="mobile-rewards-menu">
                         <summary>Pools and Rewards</summary>
                         <ul class="p-2 bg-base-100">
-                            <li><a href="/pools/search">Pool Search</a></li>
                             <li><a href="/rewards">Rewards Explorer</a></li>
+                            <li><a href="/pools/search">Pool Search</a></li>
                         </ul>
                     </details>
                 </li>
-                <li><a href="/blocks">Blocks</a></li>
-                <li><a href="/transactions">Transactions</a></li>
             </ul>
         </div>
         <!-- Desktop Menu -->
         <ul id="desktop-menu-list" class="menu menu-horizontal px-1 hidden lg:flex">
             <li><a href="/">Home</a></li>
+            <li><a href="/blocks">Blocks</a></li>
+            <li><a href="/transactions">Transactions</a></li>
             <li>
                 <details id="certificate-menu">
                     <summary>Certificates</summary>
@@ -188,14 +183,7 @@
                         <li><a href="/certificates/stakekey-deregistrations">Stake DeRegistration</a></li>
                         <li><a href="/certificates/pool-registrations">Pool Registration</a></li>
                         <li><a href="/certificates/pool-retirements">Pool Retirements</a></li>
-                        <li><a href="/certificates/delegations">Delegations</a></li>
-                    </ul>
-                </details>
-            </li>
-            <li>
-                <details id="governance-menu">
-                    <summary>Gov Certificates</summary>
-                    <ul class="p-2 bg-base-100">
+                        <li><a href="/certificates/delegations">Pool Delegations</a></li>
                         <li><a href="/governance/drep-registrations">DRep Registrations</a></li>
                         <li><a href="/governance/drep-updates">DRep Updates</a></li>
                         <li><a href="/governance/drep-deregistrations">DRep DeRegistrations</a></li>
@@ -206,7 +194,7 @@
             </li>
             <li>
                 <details id="governance-state-menu">
-                    <summary>Governance State</summary>
+                    <summary>Governance</summary>
                     <ul class="p-2 bg-base-100">
                         <li><a href="/governance/proposals">Proposals</a></li>
                         <li><a href="/governance/dreps">Dreps</a></li>
@@ -226,13 +214,11 @@
                 <details id="rewards-menu">
                     <summary>Pools and Rewards</summary>
                     <ul class="p-2 bg-base-100">
-                        <li><a href="/pools/search" on:click={() => closeMenu('rewards-menu')}>Pool Search</a></li>
                         <li><a href="/rewards" on:click={() => closeMenu('rewards-menu')}>Rewards Explorer</a></li>
+                        <li><a href="/pools/search" on:click={() => closeMenu('rewards-menu')}>Pool Search</a></li>
                     </ul>
                 </details>
             </li>
-            <li><a href="/blocks">Blocks</a></li>
-            <li><a href="/transactions">Transactions</a></li>
         </ul>
     </div>
 </div>
