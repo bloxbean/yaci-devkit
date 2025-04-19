@@ -3,8 +3,8 @@ import { env } from '$env/dynamic/public';
 
 export const load: PageLoad = async ({params, url}) => {
     let page = url.searchParams.get('page');
-    if (!page) page = 0;
-    const count = 20;
+    if (!page) page = 1;
+    const count = 15;
 
     const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
     const apiUrl = `${INDEXER_BASE_URL}/blocks?page=${page}&count=${count}`;

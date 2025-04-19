@@ -1,34 +1,37 @@
-import type { PageLoad } from './$types'
+import type { PageServerLoad } from './$types'
 import { env } from '$env/dynamic/public';
 
-export const load: PageLoad = async ({params, url}) => {
-    let page = url.searchParams.get('page');
-    if (!page) page = 0;
-    const count = 20;
+export const load: PageServerLoad = async ({params, url}) => {
+    const page = url.searchParams.get('page') || '1';
+    const count = url.searchParams.get('count') || '10';
 
     const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
     const apiUrl = `${INDEXER_BASE_URL}/stake/delegations?page=${page}&count=${count}`;
-    console.log(apiUrl);
+    console.log('Fetching delegations from:', apiUrl);
 
-    const res = await fetch(apiUrl);
-    const data = await res.json();
+    try {
+        const response = await fetch(apiUrl);
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Raw API response:', JSON.stringify(data, null, 2));
 
-    const delegations  = data;
-    console.log(data);
+        if (Array.isArray(data)) {
+            console.log('First delegation entry:', data[0]);
+            console.log('Total delegations:', data.length);
+        }
 
-    if (res.ok) {
         return {
-            delegations,
-            total: 0,
-            total_pages: 0,
+            delegations: data,
             page: page,
             count: count
-        }
+        };
+    } catch (error) {
+        console.error('Error fetching delegations:', error);
+        return {
+            delegations: [],
+            page: page,
+            count: count
+        };
     }
-
-    return {
-        status: 404,
-        body: { error: 'Can not fetch stake delegations.' }
-    };
-
-}
+};
