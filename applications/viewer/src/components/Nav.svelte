@@ -168,6 +168,16 @@
                         </ul>
                     </details>
                 </li>
+                <li>
+                    <details id="mobile-epoch-stakes-menu">
+                        <summary>Epoch Stakes</summary>
+                        <ul class="p-2 bg-base-100">
+                            <li><a href="/epoch-stakes">Epoch Overview</a></li>
+                            <li><a href="/epoch-stakes/pools">Pool Stakes</a></li>
+                            <li><a href="/epoch-stakes/accounts">Account Stakes</a></li>
+                        </ul>
+                    </details>
+                </li>
             </ul>
         </div>
         <!-- Desktop Menu -->
@@ -216,6 +226,16 @@
                     <ul class="p-2 bg-base-100">
                         <li><a href="/rewards" on:click={() => closeMenu('rewards-menu')}>Rewards Explorer</a></li>
                         <li><a href="/pools/search" on:click={() => closeMenu('rewards-menu')}>Pool Search</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li>
+                <details id="epoch-stakes-menu">
+                    <summary>Epoch Stakes</summary>
+                    <ul class="p-2 bg-base-100">
+                        <li><a href="/epoch-stakes">Epoch Overview</a></li>
+                        <li><a href="/epoch-stakes/pools">Pool Stakes</a></li>
+                        <li><a href="/epoch-stakes/accounts">Account Stakes</a></li>
                     </ul>
                 </details>
             </li>

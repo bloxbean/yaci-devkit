@@ -12,16 +12,16 @@ export interface GovAction {
 }
 
 export interface Proposal {
-    txHash: string;
+    tx_hash: string;
     index: number;
     slot: number;
     deposit: number;
-    returnAddress: string;
-    govAction: GovAction;
-    anchorUrl: string;
-    anchorHash: string;
+    return_address: string;
+    gov_action: GovAction;
+    anchor_url: string;
+    anchor_hash: string;
     status: string;
     epoch: number;
-    blockNumber: number;
-    blockTime: number;
+    block_number: number;
+    block_time: number;
 } 

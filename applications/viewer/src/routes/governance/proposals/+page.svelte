@@ -242,26 +242,26 @@
                     {#each proposals as proposal}
                         <tr class="hover:bg-gray-50">
                             <td>
-                                <a href="/transactions/{proposal.txHash}" class="link link-primary hover:underline" target="_blank">
-                                    {truncateHash(proposal.txHash)}
+                                <a href="/transactions/{proposal.tx_hash}" class="link link-primary hover:underline" target="_blank">
+                                    {truncateHash(proposal.tx_hash)}
                                 </a>
                             </td>
-                            <td>{formatGovActionType(proposal.govAction?.type || '')}</td>
+                            <td>{formatGovActionType(proposal.gov_action?.type || '')}</td>
                             <td>
                                 <span class={getStatusClass(proposal.status)}>{proposal.status}</span>
                             </td>
                             <td>{formatDeposit(proposal.deposit)}</td>
                             <td>{proposal.epoch}</td>
                             <td>
-                                <a href="/blocks/{proposal.blockNumber}" class="link link-primary hover:underline" target="_blank">
-                                    {proposal.blockNumber}
+                                <a href="/blocks/{proposal.block_number}" class="link link-primary hover:underline" target="_blank">
+                                    {proposal.block_number}
                                 </a>
                             </td>
-                            <td>{formatDate(proposal.blockTime)}</td>
+                            <td>{formatDate(proposal.block_time)}</td>
                             <td>
                                 <button 
                                     class="btn btn-ghost btn-sm hover:bg-gray-100"
-                                    on:click={() => showProposalDetails(proposal.txHash, proposal.index)}
+                                    on:click={() => showProposalDetails(proposal.tx_hash, proposal.index)}
                                 >
                                     <EyeIcon size="16" />
                                 </button>
@@ -318,11 +318,11 @@
                                 <div class="space-y-2">
                                     <p class="flex items-center gap-2">
                                         <span class="font-semibold min-w-[120px]">Transaction Hash:</span>
-                                        {#if selectedProposal?.txHash}
-                                            <a href="/transactions/{selectedProposal.txHash}" class="link link-primary hover:underline" target="_blank">
-                                                {truncateHash(selectedProposal.txHash)}
+                                        {#if selectedProposal?.tx_hash}
+                                            <a href="/transactions/{selectedProposal.tx_hash}" class="link link-primary hover:underline" target="_blank">
+                                                {truncateHash(selectedProposal.tx_hash)}
                                             </a>
-                                            <button class="btn btn-ghost btn-xs" on:click={() => selectedProposal && copyToClipboard(selectedProposal.txHash)} title="Copy full hash">
+                                            <button class="btn btn-ghost btn-xs" on:click={() => selectedProposal && copyToClipboard(selectedProposal.tx_hash)} title="Copy full hash">
                                                 <CopyIcon size="12" />
                                             </button>
                                         {/if}
@@ -335,13 +335,13 @@
                                     </p>
                                     <p class="flex items-center gap-2">
                                         <span class="font-semibold min-w-[120px]">Return Address:</span>
-                                        {#if selectedProposal?.returnAddress}
-                                            <span class="tooltip" data-tip={selectedProposal.returnAddress}>
-                                                <a href="/rewards/account/{selectedProposal.returnAddress}" class="link link-primary hover:underline" target="_blank">
-                                                    <span class="font-mono">{truncateAddress(selectedProposal.returnAddress)}</span>
+                                        {#if selectedProposal?.return_address}
+                                            <span class="tooltip" data-tip={selectedProposal.return_address}>
+                                                <a href="/rewards/account/{selectedProposal.return_address}" class="link link-primary hover:underline" target="_blank">
+                                                    <span class="font-mono">{truncateAddress(selectedProposal.return_address)}</span>
                                                 </a>
                                             </span>
-                                            <button class="btn btn-ghost btn-xs" on:click={() => selectedProposal && copyToClipboard(selectedProposal.returnAddress)} title="Copy full address">
+                                            <button class="btn btn-ghost btn-xs" on:click={() => selectedProposal && copyToClipboard(selectedProposal.return_address)} title="Copy full address">
                                                 <CopyIcon size="12" />
                                             </button>
                                         {/if}
@@ -350,8 +350,8 @@
                                 <div class="space-y-2">
                                     <p class="flex items-center gap-2">
                                         <span class="font-semibold min-w-[120px]">Block:</span>
-                                        {#if selectedProposal?.blockNumber}
-                                            <a href="/blocks/{selectedProposal.blockNumber}" class="link link-primary hover:underline" target="_blank">{selectedProposal.blockNumber}</a>
+                                        {#if selectedProposal?.block_number}
+                                            <a href="/blocks/{selectedProposal.block_number}" class="link link-primary hover:underline" target="_blank">{selectedProposal.block_number}</a>
                                         {/if}
                                     </p>
                                     <p class="flex items-center gap-2">
@@ -362,8 +362,8 @@
                                     </p>
                                     <p class="flex items-center gap-2">
                                         <span class="font-semibold min-w-[120px]">Time:</span>
-                                        {#if selectedProposal?.blockTime}
-                                            <span>{formatDate(selectedProposal.blockTime)}</span>
+                                        {#if selectedProposal?.block_time}
+                                            <span>{formatDate(selectedProposal.block_time)}</span>
                                         {/if}
                                     </p>
                                 </div>
@@ -379,8 +379,8 @@
                                 <div class="space-y-2">
                                     <p class="flex items-center gap-2">
                                         <span class="font-semibold min-w-[120px]">Type:</span>
-                                        {#if selectedProposal?.govAction?.type}
-                                            <span>{formatGovActionType(selectedProposal.govAction.type)}</span>
+                                        {#if selectedProposal?.gov_action?.type}
+                                            <span>{formatGovActionType(selectedProposal.gov_action.type)}</span>
                                         {/if}
                                     </p>
                                     <p class="flex items-center gap-2">
@@ -409,7 +409,7 @@
                     </div>
 
                     <!-- Anchor Information -->
-                    {#if selectedProposal?.anchorUrl}
+                    {#if selectedProposal?.anchor_url}
                         <div class="card bg-base-100 shadow-sm">
                             <div class="card-body p-4">
                                 <h4 class="card-title text-lg mb-2">Anchor Information</h4>
@@ -417,8 +417,8 @@
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-semibold min-w-[120px]">URL:</span>
                                         <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap">
-                                            <a href={selectedProposal.anchorUrl} class="link link-primary hover:underline break-all" target="_blank" title="Open raw URL">{selectedProposal.anchorUrl}</a>
-                                            <a href="/governance/anchor?url={encodeURIComponent(selectedProposal.anchorUrl)}" class="btn btn-primary btn-sm whitespace-nowrap" title="View Formatted Metadata" target="_blank">
+                                            <a href={selectedProposal.anchor_url} class="link link-primary hover:underline break-all" target="_blank" title="Open raw URL">{selectedProposal.anchor_url}</a>
+                                            <a href="/governance/anchor?url={encodeURIComponent(selectedProposal.anchor_url)}" class="btn btn-primary btn-sm whitespace-nowrap" title="View Formatted Metadata" target="_blank">
                                                 <span class="flex items-center gap-2">
                                                     <InfoIcon size="16" />
                                                     <span>View Formatted Details</span>
@@ -426,11 +426,11 @@
                                             </a>
                                         </div>
                                     </div>
-                                    {#if selectedProposal?.anchorHash}
+                                    {#if selectedProposal?.anchor_hash}
                                         <p class="flex items-center gap-2">
                                             <span class="font-semibold min-w-[120px]">Hash:</span>
-                                            <span class="font-mono">{selectedProposal.anchorHash}</span>
-                                            <button class="btn btn-ghost btn-xs" on:click={() => selectedProposal && copyToClipboard(selectedProposal.anchorHash)} title="Copy full hash">
+                                            <span class="font-mono">{selectedProposal.anchor_hash}</span>
+                                            <button class="btn btn-ghost btn-xs" on:click={() => selectedProposal && copyToClipboard(selectedProposal.anchor_hash)} title="Copy full hash">
                                                 <CopyIcon size="12" />
                                             </button>
                                         </p>
@@ -444,7 +444,7 @@
                     <div class="card bg-base-100 shadow-sm">
                         <div class="card-body p-4">
                             <h4 class="card-title text-lg mb-2">Details</h4>
-                            <pre class="mt-2 p-4 bg-base-200 rounded-lg overflow-x-auto">{formatGovActionDetails(selectedProposal.govAction)}</pre>
+                            <pre class="mt-2 p-4 bg-base-200 rounded-lg overflow-x-auto">{formatGovActionDetails(selectedProposal.gov_action)}</pre>
                         </div>
                     </div>
                 </div>

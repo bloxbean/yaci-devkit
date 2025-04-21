@@ -7,13 +7,13 @@
     export let data;
 
     interface Drep {
-        drepId: string | null;
-        drepHash: string | null;
+        drep_id: string | null;
+        drep_hash: string | null;
         deposit: number;
         status: string;
-        votingPower: number | null;
-        registrationSlot: number;
-        drepType: string | null;
+        voting_power: number | null;
+        registration_slot: number;
+        drep_type: string | null;
     }
 
     // Add toast state
@@ -140,12 +140,12 @@
             {#each data.dreps as drep}
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {#if drep.drepId}
+                        {#if drep.drep_id}
                             <div class="flex items-center gap-2">
-                                <span>{drep.drepId}</span>
+                                <span>{drep.drep_id}</span>
                                 <button 
                                     class="text-gray-400 hover:text-gray-600"
-                                    on:click={() => copyToClipboard(drep.drepId, 'DRep ID copied to clipboard!')}
+                                    on:click={() => copyToClipboard(drep.drep_id, 'DRep ID copied to clipboard!')}
                                     title="Copy DRep ID"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,12 +156,12 @@
                         {/if}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {#if drep.drepHash}
+                        {#if drep.drep_hash}
                             <div class="flex items-center gap-2">
-                                <span>{truncateHash(drep.drepHash)}</span>
+                                <span>{truncateHash(drep.drep_hash)}</span>
                                 <button 
                                     class="text-gray-400 hover:text-gray-600"
-                                    on:click={() => copyToClipboard(drep.drepHash, 'DRep Hash copied to clipboard!')}
+                                    on:click={() => copyToClipboard(drep.drep_hash, 'DRep Hash copied to clipboard!')}
                                     title="Copy DRep Hash"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,13 +178,13 @@
                         {formatAda(drep.deposit)}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatVotingPower(drep.votingPower)}
+                        {formatVotingPower(drep.voting_power)}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {drep.drepType || ''}
+                        {drep.drep_type || ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {drep.registrationSlot}
+                        {drep.registration_slot}
                     </td>
                 </tr>
             {/each}
