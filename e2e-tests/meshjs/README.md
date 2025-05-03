@@ -13,3 +13,9 @@ curl -fsSL https://bun.sh/install | bash
 ```shell
 bun payment.ts
 ```
+
+2. Payment Splitter (PlutusV3)
+
+```shell
+bun payment_splitter_plutusV3.ts
+```
