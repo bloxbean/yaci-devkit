@@ -42,6 +42,9 @@ public class DownloadService {
     @Value("${yaci.store.version:#{null}}")
     private String yaciStoreVersion;
 
+    @Value("${yaci.store.tag:#{null}}")
+    private String yaciStoreTag;
+
     @Value("${yaci.store.jar.version:#{null}}")
     private String yaciStoreJarVersion;
 
@@ -67,7 +70,7 @@ public class DownloadService {
         String downloadPath = resolveNodeDownloadPath();
 
         if ( downloadPath == null) {
-            writeLn(error("Download URL for cardano-node is not set. Please set the download URL in application.properties"));
+            writeLn(error("Download URL for cardano-node is not set. Please set the download URL in download.properties"));
             return false;
         }
 
@@ -108,7 +111,7 @@ public class DownloadService {
         String downloadPath = resolveYaciStoreNativeDownloadPath();
 
         if ( downloadPath == null) {
-            writeLn(error("Download URL for yaci-store is not set. Please set the download URL in application.properties"));
+            writeLn(error("Download URL for yaci-store is not set. Please set the download URL in download.properties"));
             return false;
         }
 
@@ -171,7 +174,7 @@ public class DownloadService {
         String downloadPath = resolveYaciStoreJarDownloadPath();
 
         if ( downloadPath == null) {
-            writeLn(error("Download URL for yaci-store-jar is not set. Please set the download URL in application.properties"));
+            writeLn(error("Download URL for yaci-store-jar is not set. Please set the download URL in download.properties"));
             return false;
         }
 
@@ -201,7 +204,7 @@ public class DownloadService {
         String downloadPath = JreResolver.resolveJreDownloadUrl();
 
         if ( downloadPath == null) {
-            writeLn(error("Download URL for JRE is not set. Please set the download URL in application.properties"));
+            writeLn(error("Download URL for JRE is not set. Please set the download URL in download.properties"));
             return false;
         }
 
@@ -240,7 +243,7 @@ public class DownloadService {
         String downloadPath = resolveOgmiosDownloadPath();
 
         if ( downloadPath == null) {
-            writeLn(error("Download URL for ogmios is not set. Please set the download URL in application.properties"));
+            writeLn(error("Download URL for ogmios is not set. Please set the download URL in download.properties"));
             return false;
         }
 
@@ -277,7 +280,7 @@ public class DownloadService {
         String downloadPath = resolveKupoDownloadPath();
 
         if ( downloadPath == null) {
-            writeLn(error("Download URL for Kupo is not set. Please set the download URL in application.properties"));
+            writeLn(error("Download URL for Kupo is not set. Please set the download URL in download.properties"));
             return false;
         }
 
@@ -433,7 +436,7 @@ public class DownloadService {
         }
 
         if (StringUtils.isEmpty(nodeVersion)) {
-            writeLn(error("Node version is not set. Please set the node version (node.version) or node download url (node.url) in application.properties"));
+            writeLn(error("Node version is not set. Please set the node version (node.version) or node download url (node.url) in download.properties"));
             return null;
         }
 
@@ -459,7 +462,12 @@ public class DownloadService {
         }
 
         if (StringUtils.isEmpty(yaciStoreVersion)) {
-            writeLn(error("YaciStore version is not set. Please set the yaci-store version (yaci.store.version) or yaci-store download url (yaci.store.url) in application.properties"));
+            writeLn(error("YaciStore version is not set. Please set the yaci-store version (yaci.store.version) or yaci-store download url (yaci.store.url) in download.properties"));
+            return null;
+        }
+
+        if (StringUtils.isEmpty(yaciStoreTag)) {
+            writeLn(error("YaciStore download tag is not set. Please set the yaci-store tag (yaci.store.tag) or yaci-store download url (yaci.store.url) in download.properties"));
             return null;
         }
 
@@ -481,7 +489,7 @@ public class DownloadService {
         }
 
 
-        String url = YACI_STORE_DOWNLOAD_URL + "/rel-graal-" + yaciStoreVersion + "/yaci-store-" + yaciStoreVersion + "-" + osPrefix + "-" + cpuArch +"-n2c.zip";
+        String url = YACI_STORE_DOWNLOAD_URL + "/" + yaciStoreTag + "/yaci-store-" + yaciStoreVersion + "-" + osPrefix + "-" + cpuArch +"-n2c.zip";
         return url;
     }
 
@@ -491,7 +499,7 @@ public class DownloadService {
         }
 
         if (StringUtils.isEmpty(yaciStoreJarVersion)) {
-            writeLn(error("YaciStore Jar version is not set. Please set the yaci-store version (yaci.store.jar.version) or yaci-store download url (yaci.store.jar.url) in application.properties"));
+            writeLn(error("YaciStore Jar version is not set. Please set the yaci-store version (yaci.store.jar.version) or yaci-store download url (yaci.store.jar.url) in download.properties"));
             return null;
         }
 
@@ -505,7 +513,7 @@ public class DownloadService {
         }
 
         if (StringUtils.isEmpty(ogmiosVersion)) {
-            writeLn(error("Ogmios version is not set. Please set the ogmios version (ogmios.version) or ogmios download url (ogmios.url) in application.properties"));
+            writeLn(error("Ogmios version is not set. Please set the ogmios version (ogmios.version) or ogmios download url (ogmios.url) in download.properties"));
             return null;
         }
 
@@ -536,7 +544,7 @@ public class DownloadService {
         }
 
         if (StringUtils.isEmpty(kupoVersion)) {
-            writeLn(error("Kupo version is not set. Please set the kupo version (kupo.version) or kupo download url (kupo.url) in application.properties"));
+            writeLn(error("Kupo version is not set. Please set the kupo version (kupo.version) or kupo download url (kupo.url) in download.properties"));
             return null;
         }
 
