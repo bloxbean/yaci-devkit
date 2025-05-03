@@ -6,4 +6,5 @@ This folder contains various types of end-to-end tests. Currently, these tests n
 
 1. **api-tests**: This folder contains HTTP API tests, primarily for admin endpoints and essential endpoints from Yaci Store.
 2. **lucid-evo**: Compatibility tests for Lucid Evolution.
+3. **meshjs**: Compatibility tests for MeshJs
 
