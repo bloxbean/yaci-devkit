@@ -121,7 +121,14 @@ jobs:
         working-directory: npm/${{ env.npm_folder }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then            
+            npm publish --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then            
+            npm publish --access public --tag beta
+          else            
+            npm publish --access public
+          fi                          
 
   publish-yaci-devkit:
     needs: npm-publish
@@ -151,4 +158,11 @@ jobs:
         working-directory: npm/yaci-devkit
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then            
+            npm publish --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then            
+            npm publish --access public --tag beta
+          else            
+            npm publish --access public
+          fi
