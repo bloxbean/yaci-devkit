@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +41,7 @@ public class ClusterStartService {
     private final ClusterPortInfoHelper clusterPortInfoHelper;
     private final ProcessUtil processUtil;
     private final GenesisConfig genesisConfig;
+    private final CustomGenesisConfig customGenesisConfig;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Process> processes = new ArrayList<>();
@@ -263,7 +266,10 @@ public class ClusterStartService {
         ObjectNode jsonNode = (ObjectNode) objectMapper.readTree(byronGenesis.toFile());
         long byronStartTime = Instant.now().getEpochSecond();
 
-        if (genesisConfig.getConwayHardForkAtEpoch() > 0 && genesisConfig.isShiftStartTimeBehind()) {
+        var genesisConfigCopy = genesisConfig.copy();
+        genesisConfigCopy.merge(customGenesisConfig.getMap());
+
+        if (genesisConfigCopy.getConwayHardForkAtEpoch() > 0 && genesisConfigCopy.isShiftStartTimeBehind()) {
             long stabilityWindow = (long) Math.floor((3 * clusterInfo.getSecurityParam()) / clusterInfo.getActiveSlotsCoeff());
 
             long maxBehindBySecond = stabilityWindow - 5;
@@ -279,8 +285,8 @@ public class ClusterStartService {
 
         //Update Shelley Genesis file
         ObjectNode shelleyJsonNode = (ObjectNode) objectMapper.readTree(shelleyGenesis.toFile());
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
-        String shelleyStart = formatter.format(Instant.now());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        String shelleyStart = formatter.format(Instant.now().atZone(ZoneOffset.UTC));
         shelleyJsonNode.set("systemStart", new TextNode(shelleyStart));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(shelleyGenesis.toFile(), shelleyJsonNode);
 

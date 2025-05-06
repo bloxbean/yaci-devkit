@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
@@ -72,6 +73,9 @@ public class ClusterService {
 
     @Autowired
     private GenesisConfig genesisConfig;
+
+    @Autowired
+    private CustomGenesisConfig customGenesisConfig;
 
     @Autowired
     private PrivNetService privNetService;
@@ -304,6 +308,8 @@ public class ClusterService {
         Path destConwayGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("conway-genesis.json");
 
         GenesisConfig genesisConfigCopy = genesisConfig.copy();
+        genesisConfigCopy.merge(customGenesisConfig.getMap());
+
         if (clusterInfo.getGenesisProfile() != null)
             genesisConfigCopy = GenesisProfile.applyGenesisProfile(clusterInfo.getGenesisProfile(), genesisConfigCopy);
 
@@ -324,7 +330,7 @@ public class ClusterService {
         values.put("epochLength", String.valueOf(epochLength));
 
         //Check if protocol version should be minimun 9 and it's conway era
-        if (era == Era.Conway && genesisConfig.getProtocolMajorVer() < 9) {
+        if (era == Era.Conway && genesisConfigCopy.getProtocolMajorVer() < 9) {
             values.put("protocolMajorVer", 10);
             values.put("protocolMinorVer", 2);
         }
@@ -332,7 +338,7 @@ public class ClusterService {
         //Derive security param
         long securityParam = genesisConfigCopy.getSecurityParam();
 
-        if (genesisConfig.getConwayHardForkAtEpoch() > 0 && genesisConfig.isShiftStartTimeBehind()) {
+        if (genesisConfigCopy.getConwayHardForkAtEpoch() > 0 && genesisConfigCopy.isShiftStartTimeBehind()) {
             //Workaround for https://github.com/bloxbean/yaci-devkit/issues/65
             //Calculate required securityParam to jump directly to epoch = 1
             long expectedStabilityWindow = Math.round(epochLength * 1.5);
@@ -340,7 +346,7 @@ public class ClusterService {
         } else {
             if (securityParam == 0) {
                 //For stabilityWindow = epochLength * stabilityWindowFactory (0-1) ,  k = (epochLength * coefficient) / (3 * 2)
-                securityParam = Math.round(((epochLength * activeSlotsCoeff) / 3) * genesisConfig.getStabilityWindowFactor());
+                securityParam = Math.round(((epochLength * activeSlotsCoeff) / 3) * genesisConfigCopy.getStabilityWindowFactor());
             }
         }
 
@@ -416,9 +422,12 @@ public class ClusterService {
         Path destConfigPath = clusterFolder.resolve("node").resolve("configuration.yaml");
         boolean enableP2P = clusterInfo.isP2pEnabled();
 
-        Map values = genesisConfig.getConfigMap();
+        var genesisConfigCopy = genesisConfig.copy();
+        genesisConfigCopy.merge(customGenesisConfig.getMap());
+
+        Map values = genesisConfigCopy.getConfigMap();
         values.put("enableP2P", String.valueOf(enableP2P));
-        values.put("peerSharing", genesisConfig.isPeerSharing());
+        values.put("peerSharing", genesisConfigCopy.isPeerSharing());
         values.put("prometheusPort", String.valueOf(clusterInfo.getPrometheusPort()));
         values.put("conway_era", clusterInfo.getEra() == Era.Conway ? Boolean.TRUE : Boolean.FALSE);
 
