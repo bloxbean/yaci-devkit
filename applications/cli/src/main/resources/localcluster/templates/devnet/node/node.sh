@@ -3,7 +3,7 @@
 set -e
 
 ${BIN_FOLDER}/cardano-node run \
---config configuration.yaml \
+--config configuration.json \
 --topology topology.json \
 --database-path db \
 --socket-path node.sock \
