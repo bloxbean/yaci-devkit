@@ -1,85 +1,126 @@
-<script>
+<script lang="ts">
     import {goto} from "$app/navigation";
     import {page} from "$app/stores";
-    import {truncate, getDate} from "../../../util/util.js";
+    import {truncate, getDate} from "$lib/util";
+    import { onMount } from 'svelte';
 
     export let data;
 
-    $: activeUrl = $page.url.searchParams.get('page')
-    let pages = [];
+    interface StakeRegistration {
+        address: string;
+        block_number: number;
+        block_time: number;
+        tx_hash: string;
+    }
+
+    interface PageLink {
+        href: string;
+        active: boolean;
+    }
+
+    $: activeUrl = $page.url.searchParams.get('page');
+    let pages: PageLink[] = [];
 
     $:{
-        pages.forEach((page) => {
-            let splitUrl = page.href.split('?');
+        pages.forEach((pageLink) => {
+            let splitUrl = pageLink.href.split('?');
             let queryString = splitUrl.slice(1).join('?');
             const hrefParams = new URLSearchParams(queryString);
             let hrefValue = hrefParams.get('page');
             if (hrefValue === activeUrl) {
-                page.active = true
+                pageLink.active = true
             } else {
-                page.active = false
+                pageLink.active = false
             }
         })
         pages = pages
     }
 
-    const previous = () => {
-        let currentPage = parseInt(data.page);
-        let prevPage = currentPage - 1;
-        if (prevPage <= 0)
-            prevPage = 1;
-        goto(`/certificates/stakekey-registrations?page=${prevPage}&count=${data.count}`)
-    };
-    const next = () => {
-        let currentPage = parseInt(data.page);
-        let nextPage = currentPage + 1;
+    // --- Pagination State --- 
+    let loading = false;
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 15;
 
-        if (data.registrations.length == 0)
-            nextPage = currentPage;
+    onMount(() => {
+        // Initialize currentPage from URL or data
+        currentPage = parseInt(data.page || "1", 10);
+        loading = false;
+    });
 
-        goto(`/certificates/stakekey-registrations?page=${nextPage}&count=${data.count}`)
-    };
+    // --- Has More Logic --- 
+    $: hasMore = data.registrations && data.registrations.length > 0;
 
-    console.log(data);
-    if (!data.registrations)
-        data.registrations = []
+    // --- Navigation Function --- 
+    function goToPage(targetPage: number) {
+        if (targetPage < 1 || loading) return;
+        loading = true;
+        const url = `/certificates/stakekey-registrations?page=${targetPage}&count=${ITEMS_PER_PAGE}`;
+        goto(url);
+    }
+
+    // --- Reactive Update Block --- 
+    $: if (data && $page) {
+        currentPage = parseInt(data.page || "1", 10);
+        loading = false;
+    }
+
+    // Initialize registrations array if undefined
+    if (!data.registrations) data.registrations = [];
 </script>
 
 
 <section class="container mx-auto text-sm">
     <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Stake Key Registrations</h2>
-    <div class="flex flex-wrap justify-between mb-2">
-        <button class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" on:click={previous}>
-            &lt; Previous
-        </button>
-        <button class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" on:click={next}>
-            Next &gt;
-        </button>
+    <div class="flex justify-end mt-6">
+        <div class="join">
+            <button 
+                class="join-item btn btn-sm" 
+                disabled={currentPage <= 1 || loading}
+                on:click={() => goToPage(currentPage - 1)}
+            >
+                «
+            </button>
+            <button class="join-item btn btn-sm">
+                Page {currentPage}
+            </button>
+            <button 
+                class="join-item btn btn-sm" 
+                disabled={!hasMore || loading}
+                on:click={() => goToPage(currentPage + 1)}
+            >
+                »
+            </button>
+        </div>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full bg-white border border-gray-300">
-            <thead>
+    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4 relative">
+        {#if loading}
+            <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+        {/if}
+        
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
             <tr>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Address</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Time</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
             </tr>
             </thead>
-            <tbody>
-            <!-- Iterate over stake registrations data -->
-            {#each data.registrations as registration, index}
-                <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
-                    <td class="py-2 px-4">{registration.address}</td>
-                    <td class="py-2 px-4 text-center">
-                        <a href="/blocks/{registration.block_number}" class="text-blue-500">
+            <tbody class="bg-white divide-y divide-gray-200">
+            {#each data.registrations as registration: StakeRegistration, index}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{registration.address}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <a href="/blocks/{registration.block_number}" class="text-blue-500 hover:underline">
                             {registration.block_number}
                         </a>
                     </td>
-                    <td class="py-2 px-4 text-center">{getDate(registration.block_time)}</td>
-                    <td class="py-2 px-4">
-                        <a href="/transactions/{registration.tx_hash}" class="text-blue-500">
-                            <span class="ml-2">{truncate(registration.tx_hash, 30, "...")}</span>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getDate(registration.block_time)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <a href="/transactions/{registration.tx_hash}" class="text-blue-500 hover:underline">
+                            <span>{truncate(registration.tx_hash, 30, "...")}</span>
                         </a>
                     </td>
                 </tr>
@@ -87,12 +128,25 @@
             </tbody>
         </table>
     </div>
-    <div class="flex flex-wrap justify-between mt-2 mb-4">
-        <button class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" on:click={previous}>
-            &lt; Previous
-        </button>
-        <button class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors" on:click={next}>
-            Next &gt;
-        </button>
+    <div class="flex justify-end mt-6">
+        <div class="join">
+            <button 
+                class="join-item btn btn-sm" 
+                disabled={currentPage <= 1 || loading}
+                on:click={() => goToPage(currentPage - 1)}
+            >
+                «
+            </button>
+            <button class="join-item btn btn-sm">
+                Page {currentPage}
+            </button>
+            <button 
+                class="join-item btn btn-sm" 
+                disabled={!hasMore || loading}
+                on:click={() => goToPage(currentPage + 1)}
+            >
+                »
+            </button>
+        </div>
     </div>
 </section>
