@@ -7,6 +7,7 @@ import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -31,6 +32,7 @@ import java.util.zip.ZipOutputStream;
 @RequestMapping(path = "/local-cluster/api/admin")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Devnet Admin API", description = "Controller for managing local Cardano devnet")
 public class ClusterAdminController {
     private final static String DEFAULT_CLUSTER_NAME = "default";
 
@@ -39,6 +41,7 @@ public class ClusterAdminController {
     private final ClusterCommands clusterCommands;
     private final CustomGenesisConfig customGenesisConfig;
 
+    @Operation(summary = "Download all devnet files as a zipped archive")
     @GetMapping("/devnet/download")
     public ResponseEntity<InputStreamResource> downloadFiles() throws IOException {
         Path clusterPath = clusterService.getClusterFolder(DEFAULT_CLUSTER_NAME);
@@ -83,6 +86,7 @@ public class ClusterAdminController {
                 .body(new InputStreamResource(new FileInputStream(zipFile)));
     }
 
+    @Operation(summary = "Download genesis files as a zipped archive")
     @GetMapping("/devnet/genesis/download")
     public ResponseEntity<InputStreamResource> downloadGenesisFiles() throws IOException {
         Path clusterPath = clusterService.getClusterFolder(DEFAULT_CLUSTER_NAME);
@@ -128,6 +132,7 @@ public class ClusterAdminController {
                 .body(new InputStreamResource(new FileInputStream(zipFile)));
     }
 
+    @Operation(summary = "Download a specific genesis file by era")
     @GetMapping("/devnet/genesis/{era}")
     public ResponseEntity<InputStreamResource> getGenesisFile(@PathVariable String era) throws IOException {
         Path clusterPath = clusterService.getClusterFolder(DEFAULT_CLUSTER_NAME);
@@ -143,16 +148,19 @@ public class ClusterAdminController {
                 .body(new InputStreamResource(FileUtils.openInputStream(genesisFile.toFile())));
     }
 
+    @Operation(summary = "Retrieve devnet information for the default cluster")
     @GetMapping("/devnet")
     public ClusterInfo getClusterInfo() throws IOException {
         return clusterService.getClusterInfo(DEFAULT_CLUSTER_NAME);
     }
 
+    @Operation(summary = "Check if the devnet is initialized or not")
     @GetMapping("/devnet/status")
     public String getClusterStatus() {
         return clusterService.isFirstRunt(DEFAULT_CLUSTER_NAME)? "not_initialized" : "initialized";
     }
 
+    @Operation(summary = "Reset the local devnet to its initial state")
     @PostMapping("/devnet/reset")
     public String reset() {
         CommandContext.INSTANCE.setProperty("cluster_name", DEFAULT_CLUSTER_NAME);
@@ -161,11 +169,13 @@ public class ClusterAdminController {
         return "done";
     }
 
+    @Operation(summary = "Retrieve the current KES period")
     @GetMapping("/devnet/kes-period")
     public int getKesPeriod() throws IOException {
         return clusterUtilService.getKESPeriod();
     }
 
+    @Operation(summary = "Retrieve the genesis hash")
     @GetMapping("/devnet/genesis/hash")
     public ResponseEntity<String> getGenesisHash() {
         var genesisHash = clusterService.getGenesisHash(DEFAULT_CLUSTER_NAME);

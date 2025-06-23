@@ -124,6 +124,10 @@ public class ClusterService {
         publisher.publishEvent(new ClusterStopped());
     }
 
+    public void stopClusterNode(Consumer<String> writer) {
+        clusterStartService.stopCluster(writer);
+    }
+
     public List<String> listClusters() throws IOException {
         Path path = Path.of(clusterConfig.getClusterHome());
         if (!Files.exists(path))
@@ -249,6 +253,10 @@ public class ClusterService {
             return true;
         }
 
+    }
+
+    public Path getNodeFolder(String clusterName) {
+        return getClusterFolder(clusterName).resolve(NODE_FOLDER_PREFIX);
     }
 
     @SneakyThrows
