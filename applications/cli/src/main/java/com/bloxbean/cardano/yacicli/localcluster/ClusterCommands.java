@@ -104,7 +104,8 @@ public class ClusterCommands {
                               @ShellOption(value = {"--genesis-profile",}, defaultValue = ShellOption.NULL,
                                       help = "Use a pre-defined genesis profile (Options: zero_fee, zero_min_utxo_value, zero_fee_and_min_utxo_value)")
                                   GenesisProfile genesisProfile,
-                              @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys
+                              @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys,
+                              @ShellOption(value = {"--enable-multi-node"}, defaultValue = "false", help="Create multiple local block producing nodes") boolean enableMultiNode
     ) {
 
         try {
@@ -165,9 +166,10 @@ public class ClusterCommands {
                     .yaciStorePort(yaciStorePort)
                     .socatPort(socatPort)
                     .prometheusPort(prometheusPort)
+                    .localMultiNodeEnabled(enableMultiNode)
                     .build();
 
-            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, (msg) -> writeLn(msg));
+            boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, enableMultiNode, (msg) -> writeLn(msg));
 
             if (success) {
                 printClusterInfo(clusterName);

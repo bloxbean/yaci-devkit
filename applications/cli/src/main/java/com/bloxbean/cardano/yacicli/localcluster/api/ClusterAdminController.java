@@ -3,10 +3,12 @@ package com.bloxbean.cardano.yacicli.localcluster.api;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterCommands;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,7 @@ public class ClusterAdminController {
     private final ClusterUtilService clusterUtilService;
     private final ClusterCommands clusterCommands;
     private final CustomGenesisConfig customGenesisConfig;
+    private final ApplicationConfig applicationConfig;
 
     @Operation(summary = "Download all devnet files as a zipped archive")
     @GetMapping("/devnet/download")
@@ -157,7 +160,7 @@ public class ClusterAdminController {
     @Operation(summary = "Check if the devnet is initialized or not")
     @GetMapping("/devnet/status")
     public String getClusterStatus() {
-        return clusterService.isFirstRunt(DEFAULT_CLUSTER_NAME)? "not_initialized" : "initialized";
+        return clusterService.isFirstRunt(DEFAULT_CLUSTER_NAME) ? "not_initialized" : "initialized";
     }
 
     @Operation(summary = "Reset the local devnet to its initial state")
@@ -187,35 +190,82 @@ public class ClusterAdminController {
 
     @PostMapping("/devnet/create")
     @Operation(summary = """
-        Create and start the devnet by overriding the provided genesis properties. This method accepts a JSON object as input to 
-        override the default genesis property values. All properties defined in `node.properties`, except for nested properties, are supported. 
-        This is useful for dynamically changing the node configuration without modifying the `node.properties` file.
-        A value should always be set as string even if it's a number or boolean. 
-        """)
-    public boolean create(@RequestBody Map<String, String> requestData) {
+            Create and start the devnet by overriding the provided genesis properties. This method accepts a JSON object as input to 
+            override the default genesis property values. All properties defined in `node.properties`, except for nested properties, are supported. 
+            This is useful for dynamically changing the node configuration without modifying the `node.properties` file.
+            A value should always be set as string even if it's a number or boolean. 
+            """)
+    public boolean create(@RequestBody DevNetCreateRequest request) {
         CommandContext.INSTANCE.setProperty("cluster_name", DEFAULT_CLUSTER_NAME);
 
         int epochLength = 0;
         try {
-            epochLength = Integer.parseInt(requestData.get("epochLength"));
+            epochLength = Integer.parseInt(request.genesisProperties().get("epochLength"));
         } catch (Exception e) {
         }
 
         if (epochLength == 0)
             epochLength = 600;
 
-        //Check if constitution script is there and it's value is empty
-        var constitutionScript = requestData.get("constitutionScript");
-        if (constitutionScript == null || constitutionScript.isEmpty())
-            requestData.remove(constitutionScript);
+        long blockTime = 1;
+        try {
+            blockTime = Long.parseLong(request.genesisProperties().get("blockTime"));
+        } catch (Exception e) {
+        }
 
-        customGenesisConfig.populate(requestData);
+        if (blockTime == 0) blockTime = 1;
+
+        double slotLength = 1;
+        try {
+            slotLength = Double.parseDouble(request.genesisProperties().get("slotLength"));
+        } catch (Exception e) {
+
+        }
+        if (slotLength == 0) slotLength = 1;
+
+        //Check if constitution script is there and it's value is empty
+        var constitutionScript = request.genesisProperties().get("constitutionScript");
+        if (constitutionScript == null || constitutionScript.isEmpty())
+            request.genesisProperties().remove(constitutionScript);
+
+        customGenesisConfig.populate(request.genesisProperties());
+
+        boolean originalEnableYaciStore = applicationConfig.isYaciStoreEnabled();
+        boolean originalEnableOgmios = applicationConfig.isOgmiosEnabled();
+        boolean originalEnableKupo = applicationConfig.isKupoEnabled();
+
+        applicationConfig.setYaciStoreEnabled(request.enableYaciStore());
+        applicationConfig.setOgmiosEnabled(request.enableOgmios());
+
+        if (request.enableKupomios()) {
+            applicationConfig.setOgmiosEnabled(true);
+            applicationConfig.setKupoEnabled(true);
+        } else {
+            applicationConfig.setKupoEnabled(false);
+        }
 
         try {
-            clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, 1, 1, epochLength, true, true, "conway", null, false);
+            clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, slotLength, blockTime, epochLength, true,
+                    true, "conway", null, false, request.enableMultiNode());
             return true;
         } catch (Exception e) {
             return false;
+        } finally {
+            //Reset the application config to original values
+            applicationConfig.setYaciStoreEnabled(originalEnableYaciStore);
+            applicationConfig.setOgmiosEnabled(originalEnableOgmios);
+            applicationConfig.setKupoEnabled(originalEnableKupo);
         }
+    }
+
+    record DevNetCreateRequest(Map<String, String> genesisProperties,
+                               @Schema(description = "Create multiple local block producing nodes", defaultValue = "false")
+                               boolean enableMultiNode,
+                               @Schema(description = "Enable Yaci Store", defaultValue = "false")
+                               boolean enableYaciStore,
+                               @Schema(description = "Enable Ogmios", defaultValue = "false")
+                               boolean enableOgmios,
+                               @Schema(description = "Enable Ogmios and Kupo", defaultValue = "false")
+                               boolean enableKupomios) {
     }
 }
