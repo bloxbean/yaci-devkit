@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.ogmios;
 
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +74,37 @@ public class OgmiosCommands {
             writeLn(info("Kupo Status: Enable"));
         else
             writeLn(info("Kupo Status: disable"));
+    }
+
+    @ShellMethod(value = "Start Kupomios", key = "kupomios-start")
+    @ShellMethodAvailability("ogmiosEnableAvailability")
+    public void start() {
+        if (!appConfig.isOgmiosEnabled()) {
+            appConfig.setOgmiosEnabled(true);
+        }
+        if (!appConfig.isKupoEnabled()) {
+            appConfig.setKupoEnabled(true);
+        }
+
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        ogmiosService.start(clusterName, (msg) -> writeLn(msg));
+    }
+
+    @ShellMethod(value = "Stop Kupomios", key = "kupomios-stop")
+    @ShellMethodAvailability("ogmiosEnableAvailability")
+    public void stop() {
+        ogmiosService.stop(msg -> writeLn(msg));
+    }
+
+    @ShellMethod(value = "Start Ogmios", key = "ogmios-start")
+    @ShellMethodAvailability("ogmiosEnableAvailability")
+    public void startOgmios() {
+        if (!appConfig.isOgmiosEnabled()) {
+            appConfig.setOgmiosEnabled(true);
+        }
+
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        ogmiosService.start(clusterName, (msg) -> writeLn(msg));
     }
 
     public Availability ogmiosEnableAvailability() {

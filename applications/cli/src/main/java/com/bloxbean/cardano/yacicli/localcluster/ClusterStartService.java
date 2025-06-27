@@ -314,4 +314,15 @@ public class ClusterStartService {
         else
             return true;
     }
+
+    public boolean isClusterRunning() {
+        if (processes != null && processes.size() > 0) {
+            for (Process process : processes) {
+                if (process != null && process.isAlive()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

@@ -9,6 +9,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
@@ -27,41 +29,41 @@ public class YaciStoreConfigBuilder {
         Path nodeSocketPath = Path.of(clusterInfo.getSocketPath());
         String nodeFolder = nodeSocketPath.getParent().toFile().getAbsolutePath();
 
-        Properties storeProperties = new Properties();
-        storeProperties.setProperty("server.port", String.valueOf(clusterInfo.getYaciStorePort()));
+        Map<String, String> storeProperties = new LinkedHashMap();
+        storeProperties.put("server.port", String.valueOf(clusterInfo.getYaciStorePort()));
 
-        storeProperties.setProperty("store.cardano.host", "localhost");
-        storeProperties.setProperty("store.cardano.port", String.valueOf(clusterInfo.getNodePort()));
-        storeProperties.setProperty("store.cardano.protocol-magic", String.valueOf(clusterInfo.getProtocolMagic()));
+        storeProperties.put("store.cardano.host", "localhost");
+        storeProperties.put("store.cardano.port", String.valueOf(clusterInfo.getNodePort()));
+        storeProperties.put("store.cardano.protocol-magic", String.valueOf(clusterInfo.getProtocolMagic()));
 
-        storeProperties.setProperty("store.cardano.n2c-node-socket-path", clusterInfo.getSocketPath());
-        storeProperties.setProperty("store.cardano.submit-api-url", "http://localhost:" + clusterInfo.getSubmitApiPort() + "/api/submit/tx");
-        storeProperties.setProperty("store.cardano.ogmios-url", "http://localhost:" + clusterInfo.getOgmiosPort());
-        storeProperties.setProperty("spring.datasource.url", "jdbc:h2:file:" + nodeFolder + "/yaci_store/storedb");
-        storeProperties.setProperty("spring.datasource.username", "sa");
-        storeProperties.setProperty("spring.datasource.password", "password");
+        storeProperties.put("store.cardano.n2c-node-socket-path", clusterInfo.getSocketPath());
+        storeProperties.put("store.cardano.submit-api-url", "http://localhost:" + clusterInfo.getSubmitApiPort() + "/api/submit/tx");
+        storeProperties.put("store.cardano.ogmios-url", "http://localhost:" + clusterInfo.getOgmiosPort());
+        storeProperties.put("spring.datasource.url", "jdbc:h2:file:" + nodeFolder + "/yaci_store/storedb;MV_STORE=TRUE;AUTO_SERVER=TRUE;AUTO_RECONNECT=TRUE;LOCK_TIMEOUT=120000");
+        storeProperties.put("spring.datasource.username", "sa");
+        storeProperties.put("spring.datasource.password", "password");
 
-        storeProperties.setProperty("logging.file.name", "./logs/yaci-store.log");
-        storeProperties.setProperty("spring.jpa.properties.hibernate.jdbc.batch_size", "20");
-        storeProperties.setProperty("spring.jpa.properties.hibernate.order_inserts", "true");
+        storeProperties.put("logging.file.name", "./logs/yaci-store.log");
+        storeProperties.put("spring.jpa.properties.hibernate.jdbc.batch_size", "20");
+        storeProperties.put("spring.jpa.properties.hibernate.order_inserts", "true");
 
-        storeProperties.setProperty("store.cardano.byron-genesis-file", nodeFolder + "/genesis/byron-genesis.json");
-        storeProperties.setProperty("store.cardano.shelley-genesis-file", nodeFolder + "/genesis/shelley-genesis.json");
-        storeProperties.setProperty("store.cardano.alonzo-genesis-file", nodeFolder + "/genesis/alonzo-genesis.json");
-        storeProperties.setProperty("store.cardano.conway-genesis-file", nodeFolder + "/genesis/conway-genesis.json");
+        storeProperties.put("store.cardano.byron-genesis-file", nodeFolder + "/genesis/byron-genesis.json");
+        storeProperties.put("store.cardano.shelley-genesis-file", nodeFolder + "/genesis/shelley-genesis.json");
+        storeProperties.put("store.cardano.alonzo-genesis-file", nodeFolder + "/genesis/alonzo-genesis.json");
+        storeProperties.put("store.cardano.conway-genesis-file", nodeFolder + "/genesis/conway-genesis.json");
 
-        storeProperties.setProperty("store.blocks.epoch-calculation-interval", "3600");
+        storeProperties.put("store.blocks.epoch-calculation-interval", "3600");
 
-        storeProperties.setProperty("store.account.enabled", "true");
-        storeProperties.setProperty("store.account.api-enabled", "true");
-        storeProperties.setProperty("store.account.balance-aggregation-enabled", "true");
-        storeProperties.setProperty("store.account.history-cleanup-enabled", "false");
+        storeProperties.put("store.account.enabled", "true");
+        storeProperties.put("store.account.api-enabled", "true");
+        storeProperties.put("store.account.balance-aggregation-enabled", "true");
+        storeProperties.put("store.account.history-cleanup-enabled", "false");
 
-        storeProperties.setProperty("store.live.enabled", "true");
+        storeProperties.put("store.live.enabled", "true");
 
-        storeProperties.setProperty("store.epoch.endpoints.epoch.local.enabled", "true");
+        storeProperties.put("store.epoch.endpoints.epoch.local.enabled", "true");
 
-        storeProperties.setProperty("spring.batch.job.enabled", "false");
+        storeProperties.put("spring.batch.job.enabled", "false");
 
         Path yaciStoreConfigPath = Path.of(clusterConfig.getYaciStoreBinPath(), "config", "application.properties");
         if (yaciStoreConfigPath.toFile().exists()) {
@@ -74,8 +76,8 @@ public class YaciStoreConfigBuilder {
         }
 
         try (BufferedWriter writer = Files.newBufferedWriter(yaciStoreConfigPath)) {
-            for (String key : storeProperties.stringPropertyNames()) {
-                String value = storeProperties.getProperty(key);
+            for (String key : storeProperties.keySet()) {
+                String value = storeProperties.get(key);
                 writer.write(key + "=" + value);
                 writer.newLine();
             }

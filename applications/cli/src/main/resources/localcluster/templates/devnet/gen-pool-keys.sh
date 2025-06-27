@@ -8,7 +8,7 @@ ${BIN_FOLDER}/cardano-cli address key-gen \
 --verification-key-file payment.vkey \
 --signing-key-file payment.skey
 
-${BIN_FOLDER}/cardano-cli stake-address key-gen \
+${BIN_FOLDER}/cardano-cli latest stake-address key-gen \
 --verification-key-file stake.vkey \
 --signing-key-file stake.skey
 
@@ -18,7 +18,7 @@ ${BIN_FOLDER}/cardano-cli address build \
 --out-file payment.addr \
 --testnet-magic ${protocolMagic}
 
-${BIN_FOLDER}/cardano-cli stake-address build \
+${BIN_FOLDER}/cardano-cli latest stake-address build \
 --stake-verification-key-file stake.vkey \
 --out-file stake.addr \
 --testnet-magic ${protocolMagic}

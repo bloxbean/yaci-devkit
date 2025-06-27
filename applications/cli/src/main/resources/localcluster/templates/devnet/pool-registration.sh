@@ -10,7 +10,7 @@ set -e
 # $4 metadataurl: Metadata URL
 # $5 metadatahash: Metadata Hash
 echo "Generating pool registration certificate"
-${BIN_FOLDER}/cardano-cli stake-pool registration-certificate \
+${BIN_FOLDER}/cardano-cli latest stake-pool registration-certificate \
 --cold-verification-key-file cold.vkey \
 --vrf-verification-key-file vrf.vkey \
 --pool-pledge $1 \

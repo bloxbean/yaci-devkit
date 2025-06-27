@@ -1,9 +1,6 @@
 package com.bloxbean.cardano.yacicli.localcluster.ogmios;
 
-import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
-import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
-import com.bloxbean.cardano.yacicli.localcluster.ClusterPortInfoHelper;
-import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.*;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
@@ -16,7 +13,6 @@ import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +34,7 @@ public class OgmiosService {
     private final static String KUPO_PROCESS_NAME = "kupo";
     private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
+    private final ClusterStartService clusterStartService;
     private final ClusterConfig clusterConfig;
     private final ClusterPortInfoHelper clusterPortInfoHelper;
     private final TemplateEngine templateEngine;
@@ -50,36 +47,48 @@ public class OgmiosService {
 
     @EventListener
     public void handleClusterStarted(ClusterStarted clusterStarted) {
+        String clusterName = clusterStarted.getClusterName();
+
+        start(clusterName, msg -> writeLn(msg));
+
+    }
+
+    public boolean start(String clusterName, Consumer<String> writer) {
         ogmiosLogs.clear();
         kupoLogs.clear();
         if (!appConfig.isOgmiosEnabled() && !appConfig.isKupoEnabled())
-            return;
+            return false;
 
-        if (!clusterStarted.getClusterName().equals("default")) {
+        if (!clusterName.equals("default")) {
             writeLn("Ogmios/Kupo is only supported for 'default' cluster");
-            return;
+            return false;
+        }
+
+        if (!clusterStartService.isClusterRunning()) {
+            writer.accept(warn("Node is not running. Please start the cluster first."));
+            return false;
         }
 
         try {
-            ClusterInfo clusterInfo = clusterService.getClusterInfo(clusterStarted.getClusterName());
+            ClusterInfo clusterInfo = clusterService.getClusterInfo(clusterName);
             if (clusterInfo == null)
-                throw new IllegalStateException("Cluster info not found for cluster: " + clusterStarted.getClusterName()
+                throw new IllegalStateException("Cluster info not found for cluster: " + clusterName
                         + ". Please check if the cluster is created.");
 
             if (appConfig.isOgmiosEnabled()) {
-                if (!ogmiosPortAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
-                    return;
+                if (!ogmiosPortAvailabilityCheck(clusterInfo, writer))
+                    return false;
 
-                Process process = startOgmios(clusterStarted.getClusterName(), clusterInfo);
+                Process process = startOgmios(clusterName, clusterInfo);
                 if (process != null)
                     processes.add(process);
             }
 
             if (appConfig.isKupoEnabled()) {
-                if (!kupoPortAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
-                    return;
+                if (!kupoPortAvailabilityCheck(clusterInfo, writer))
+                    return false;
 
-                Process kupoProcess = startKupo(clusterStarted.getClusterName(), clusterInfo);
+                Process kupoProcess = startKupo(clusterName, clusterInfo);
                 if (kupoProcess != null)
                     processes.add(kupoProcess);
             }
@@ -87,6 +96,7 @@ public class OgmiosService {
             throw new RuntimeException(e);
         }
 
+        return true;
     }
 
     private static boolean ogmiosPortAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
@@ -175,25 +185,29 @@ public class OgmiosService {
 
     @EventListener
     public void handleClusterStopped(ClusterStopped clusterStopped) {
+        stop(msg -> writeLn(msg));
+    }
+
+    public boolean stop(Consumer<String> writer) {
         try {
             if (processes != null && processes.size() > 0)
-                writeLn(info("Trying to stop ogmios/kupo ..."));
+                writer.accept(info("Trying to stop ogmios/kupo ..."));
 
             boolean error = false;
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
                     process.descendants().forEach(processHandle -> {
-                        writeLn(infoLabel("Process", String.valueOf(processHandle.pid())));
+                        writer.accept(infoLabel("Process", String.valueOf(processHandle.pid())));
                         processHandle.destroyForcibly();
                     });
                     process.destroyForcibly();
                     killForcibly(process);
-                    writeLn(info("Stopping ogmios/kupo process : " + process));
+                    writer.accept(info("Stopping ogmios/kupo process : " + process));
                     process.waitFor(15, TimeUnit.SECONDS);
                     if (!process.isAlive()) {
-                        writeLn(success("Killed : " + process));
+                        writer.accept(success("Killed : " + process));
                     } else {
-                        writeLn(error("Process could not be killed : " + process));
+                        writer.accept(error("Process could not be killed : " + process));
                         error = true;
                     }
                 }
@@ -208,10 +222,12 @@ public class OgmiosService {
             ogmiosLogs.clear();
         } catch (Exception e) {
             log.error("Error stopping process", e);
-            writeLn(error("Ogmios/Kupo could not be stopped. Please kill the process manually." + e.getMessage()));
+            writer.accept(error("Ogmios/Kupo could not be stopped. Please kill the process manually." + e.getMessage()));
+            return false;
+        } finally {
+            processes.clear();
         }
-
-        processes.clear();
+        return true;
     }
 
     @EventListener

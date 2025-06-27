@@ -18,9 +18,19 @@ public class LocalClientProviderHelper {
     }
 
     public LocalClientProvider getLocalClientProvider() throws Exception {
+       return getLocalClientProvider(null);
+    }
+
+    public LocalClientProvider getLocalClientProvider(String nodeName) throws Exception {
         String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         long protocolMagic = localClusterService.getClusterInfo(clusterName).getProtocolMagic();
-        String socketPath = localClusterService.getClusterInfo(clusterName).getSocketPath();
+
+        String socketPath;
+        if (nodeName == null || nodeName.isEmpty())
+            socketPath = localClusterService.getClusterInfo(clusterName).getSocketPath();
+        else
+            socketPath = localClusterService.getClusterFolder(clusterName).resolve(nodeName).resolve("node.sock")
+                    .toFile().getAbsolutePath();
 
         if (!Path.of(socketPath).toFile().exists()) {
             throw new Exception("Node Socket file is not available yet: " + socketPath);
