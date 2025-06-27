@@ -272,13 +272,15 @@ public class ClusterStartService {
         if (genesisConfigCopy.getConwayHardForkAtEpoch() > 0 && genesisConfigCopy.isShiftStartTimeBehind()) {
             long stabilityWindow = (long) Math.floor((3 * clusterInfo.getSecurityParam()) / clusterInfo.getActiveSlotsCoeff());
 
-            long maxBehindBySecond = stabilityWindow - 5;
+            long maxBehindSlots = stabilityWindow - 5;
             if (stabilityWindow > clusterInfo.getEpochLength()) {
-                maxBehindBySecond = clusterInfo.getEpochLength();
+                maxBehindSlots = clusterInfo.getEpochLength();
             }
 
-            byronStartTime = byronStartTime - maxBehindBySecond;
-            writer.accept(success("Updating Start time to current time - " + maxBehindBySecond + " in byron-genesis.json"));
+            long maxBehindSeconds = Math.round(maxBehindSlots * clusterInfo.getSlotLength());
+
+            byronStartTime = byronStartTime - maxBehindSeconds;
+            writer.accept(success("Updating Start time to current time - " + maxBehindSeconds + " in byron-genesis.json"));
         }
         jsonNode.set("startTime", new LongNode(byronStartTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
