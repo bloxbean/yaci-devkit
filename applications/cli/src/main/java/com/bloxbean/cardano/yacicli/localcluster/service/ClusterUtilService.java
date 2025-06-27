@@ -28,6 +28,10 @@ public class ClusterUtilService {
     private final RootLogService rootLogService;
 
     public Tuple<Long, Point> getTip(Consumer<String> writer) {
+        return getTip(writer, null);
+    }
+
+    public Tuple<Long, Point> getTip(Consumer<String> writer, String nodeName) {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();
 
@@ -37,7 +41,7 @@ public class ClusterUtilService {
             rootLogService.setLogLevel(Level.OFF);
         try {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, nodeName, writer);
 
             return localNodeService.getTip();
         } catch (Exception e) {

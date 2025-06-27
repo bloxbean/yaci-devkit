@@ -45,6 +45,7 @@ public class ClusterCommands {
     private final ApplicationEventPublisher publisher;
     private final ClusterPortInfoHelper clusterUrlPrinter;
     private final GenesisConfig genesisConfig;
+    private final ClusterInfoService clusterInfoService;
 
     @Value("${ogmios.port:1337}")
     private int ogmiosPort;
@@ -333,10 +334,38 @@ public class ClusterCommands {
     @ShellMethod(value = "Get tip/current block number", key = "tip")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void getTip() {
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        boolean isLocalMultiNode = false;
+        try {
+            var clusterInfo = clusterInfoService.getClusterInfo(clusterName);
+            isLocalMultiNode = clusterInfo.isLocalMultiNodeEnabled();
+        } catch (Exception e) {
+        }
+
         Tuple<Long, Point> tuple = clusterUtilService.getTip(msg -> writeLn(msg));
+        if (isLocalMultiNode) {
+            writeLn("👉===== Node1 Block Info ====");
+        }
         writeLn(successLabel("Block#", String.valueOf(tuple._1)));
         writeLn(successLabel("Slot#", String.valueOf(tuple._2.getSlot())));
         writeLn(successLabel("Block Hash", String.valueOf(tuple._2.getHash())));
+
+        if (isLocalMultiNode) {
+            Tuple<Long, Point> tuple2 = clusterUtilService.getTip(msg -> writeLn(msg), "node-2");
+            writeLn("");
+            writeLn("👉===== Node2 Block Info ====");
+            writeLn(successLabel("Block#", String.valueOf(tuple2._1)));
+            writeLn(successLabel("Slot#", String.valueOf(tuple2._2.getSlot())));
+            writeLn(successLabel("Block Hash", String.valueOf(tuple2._2.getHash())));
+
+            Tuple<Long, Point> tuple3 = clusterUtilService.getTip(msg -> writeLn(msg), "node-3");
+            writeLn("");
+            writeLn("👉===== Node3 Block Info ====");
+            writeLn(successLabel("Block#", String.valueOf(tuple3._1)));
+            writeLn(successLabel("Slot#", String.valueOf(tuple3._2.getSlot())));
+            writeLn(successLabel("Block Hash", String.valueOf(tuple3._2.getHash())));
+        }
+
     }
 
     public Availability localClusterCmdAvailability() {
