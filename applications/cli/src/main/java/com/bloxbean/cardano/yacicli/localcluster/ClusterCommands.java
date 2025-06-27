@@ -110,8 +110,8 @@ public class ClusterCommands {
     ) {
 
         try {
-            if (blockTime < 1 || blockTime > 20) {
-                writeLn(error("Block time should be between 1 and 20"));
+            if (blockTime > 20) {
+                writeLn(error("Block time should not be more than 20"));
                 return;
             }
 
