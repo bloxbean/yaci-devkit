@@ -14,8 +14,8 @@ case $1 in
         ;;
 esac
 
-file=kupo-v2.10.0-$ARCH-linux.zip
-wget https://github.com/CardanoSolutions/kupo/releases/download/v2.10/$file
+file=kupo-v2.11.0-$ARCH-linux.zip
+wget https://github.com/CardanoSolutions/kupo/releases/download/v2.11/$file
 
 mkdir /app/kupo
 unzip $file -d /app/kupo

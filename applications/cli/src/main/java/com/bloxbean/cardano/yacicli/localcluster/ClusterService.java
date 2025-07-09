@@ -457,7 +457,7 @@ public class ClusterService {
     }
 
     private void updateConfiguration(Path clusterFolder, ClusterInfo clusterInfo, Consumer<String> writer) throws IOException {
-        Path configurationPath = clusterFolder.resolve("templates").resolve("configuration.yaml");
+        Path configurationPath = clusterFolder.resolve("templates").resolve("configuration.json");
 //        if (clusterInfo.getEra() == null || clusterInfo.getEra() == Era.Babbage) {
 //            configurationPath = clusterFolder.resolve("configuration.yaml");
 //        } else if (clusterInfo.getEra() == Era.Conway) {
@@ -465,7 +465,7 @@ public class ClusterService {
 //            configurationPath = clusterFolder.resolve("configuration.yaml.conway");
 //        }
 
-        Path destConfigPath = clusterFolder.resolve("node").resolve("configuration.yaml");
+        Path destConfigPath = clusterFolder.resolve("node").resolve("configuration.json");
         boolean enableP2P = clusterInfo.isP2pEnabled();
 
         var genesisConfigCopy = genesisConfig.copy();
@@ -484,7 +484,7 @@ public class ClusterService {
             throw new IOException(e);
         }
 
-        writer.accept(success("Updated configuration.yaml"));
+        writer.accept(success("Updated configuration.json"));
     }
 
     @Deprecated

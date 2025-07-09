@@ -59,6 +59,11 @@ public class YaciStoreConfigBuilder {
         storeProperties.put("store.account.balance-aggregation-enabled", "true");
         storeProperties.put("store.account.history-cleanup-enabled", "false");
 
+        storeProperties.put("store.adapot.enabled", "true");
+        storeProperties.put("store.adapot.api-enabled", "true");
+        storeProperties.put("store.governance-aggr.enabled", "true");
+        storeProperties.put("store.governance-aggr.api-enabled", "true");
+
         storeProperties.put("store.live.enabled", "true");
 
         storeProperties.put("store.epoch.endpoints.epoch.local.enabled", "true");
@@ -66,9 +71,6 @@ public class YaciStoreConfigBuilder {
         storeProperties.put("spring.batch.job.enabled", "false");
 
         Path yaciStoreConfigPath = Path.of(clusterConfig.getYaciStoreBinPath(), "config", "application.properties");
-        if (yaciStoreConfigPath.toFile().exists()) {
-            return true;
-        }
 
         Path configFolder = yaciStoreConfigPath.getParent();
         if (!configFolder.toFile().exists()) {
