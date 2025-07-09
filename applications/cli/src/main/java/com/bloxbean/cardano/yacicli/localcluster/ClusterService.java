@@ -2,12 +2,14 @@ package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.localcluster.peer.LocalPeerService;
 import com.bloxbean.cardano.yacicli.localcluster.privnet.PrivNetService;
 import com.bloxbean.cardano.yacicli.localcluster.profiles.GenesisProfile;
 import com.bloxbean.cardano.yacicli.commands.tail.BlockStreamerService;
@@ -39,6 +41,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
+import static com.bloxbean.cardano.yacicli.localcluster.ClusterConfig.CLUSTER_NAME;
 import static com.bloxbean.cardano.yacicli.localcluster.ClusterConfig.NODE_FOLDER_PREFIX;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 import static java.nio.file.attribute.PosixFilePermission.*;
@@ -52,6 +55,7 @@ public class ClusterService {
     private ClusterConfig clusterConfig;
     private ClusterStartService clusterStartService;
     private BlockStreamerService blockStreamerService;
+    private ClusterInfoService clusterInfoService;
 
     @Autowired
     ResourceLoader resourceLoader;
@@ -86,10 +90,17 @@ public class ClusterService {
     @Autowired
     private ProcessUtil processUtil;
 
-    public ClusterService(ClusterConfig config, ClusterStartService clusterStartService, BlockStreamerService blockStreamerService) {
+    @Autowired
+    private LocalPeerService localPeerService;
+
+    public ClusterService(ClusterConfig config,
+                          ClusterStartService clusterStartService,
+                          BlockStreamerService blockStreamerService,
+                          ClusterInfoService clusterInfoService) {
         this.clusterConfig = config;
         this.clusterStartService = clusterStartService;
         this.blockStreamerService = blockStreamerService;
+        this.clusterInfoService = clusterInfoService;
     }
 
     public void startClusterContext(String clusterName, Consumer<String> writer) {
@@ -120,8 +131,13 @@ public class ClusterService {
     }
 
     public void stopCluster(Consumer<String> writer) {
+        String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         clusterStartService.stopCluster(writer);
-        publisher.publishEvent(new ClusterStopped());
+        publisher.publishEvent(new ClusterStopped(clusterName));
+    }
+
+    public void stopClusterNode(Consumer<String> writer) {
+        clusterStartService.stopCluster(writer);
     }
 
     public List<String> listClusters() throws IOException {
@@ -173,7 +189,21 @@ public class ClusterService {
         return Path.of(clusterConfig.getClusterHome(), clusterName);
     }
 
-    public boolean createNodeClusterFolder(String clusterName, ClusterInfo clusterInfo, boolean overwrite, boolean generateNewGenesisKeys, Consumer<String> writer) throws IOException {
+    public boolean createNodeClusterFolder(String clusterName,
+                                           ClusterInfo clusterInfo,
+                                           boolean overwrite,
+                                           boolean generateNewGenesisKeys,
+                                           Consumer<String> writer) throws IOException {
+
+        return createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewGenesisKeys, false, writer);
+    }
+
+    public boolean createNodeClusterFolder(String clusterName,
+                                           ClusterInfo clusterInfo,
+                                           boolean overwrite,
+                                           boolean generateNewGenesisKeys,
+                                           boolean enableMultiNode,
+                                           Consumer<String> writer) throws IOException {
         if(!checkCardanoNodeBin(writer)) return false;
 
         Path destPath = getClusterFolder(clusterName);
@@ -229,6 +259,7 @@ public class ClusterService {
                     clusterInfo.getEpochLength(),
                     clusterInfo.getProtocolMagic(),
                     generateNewGenesisKeys,
+                    enableMultiNode,
                     writer);
 
             //Update P2P configuration
@@ -244,11 +275,19 @@ public class ClusterService {
             writer.accept(success("Update ports"));
             writer.accept(success("Create Cluster : %s", clusterName));
 
+            if (enableMultiNode) {
+                localPeerService.adjustAndCopyRequiredFilesForMultiNodeSetup(clusterName, clusterInfo, writer);
+            }
+
             publisher.publishEvent(new ClusterCreated(clusterName));
 
             return true;
         }
 
+    }
+
+    public Path getNodeFolder(String clusterName) {
+        return getClusterFolder(clusterName).resolve(NODE_FOLDER_PREFIX);
     }
 
     @SneakyThrows
@@ -285,7 +324,9 @@ public class ClusterService {
 
     private void updateGenesis(Path clusterFolder, String clusterName, ClusterInfo clusterInfo, Era era, double slotLength,
                                double activeSlotsCoeff, int epochLength, long protocolMagic,
-                               boolean generateNewGenesisKeys, Consumer<String> writer) throws IOException {
+                               boolean generateNewGenesisKeys,
+                               boolean enableMultiNode,
+                               Consumer<String> writer) throws IOException {
         Path srcShelleyGenesisFile = null;
         Path srcByronGenesisFile = null;
         Path srcAlonzoGenesisFile = null;
@@ -316,6 +357,11 @@ public class ClusterService {
         //override genesis keys if new keys are generated
         if (generateNewGenesisKeys) {
             privNetService.setupNewKeysAndDefaultPool(clusterFolder, clusterName, clusterInfo, genesisConfigCopy, activeSlotsCoeff, writer);
+        }
+
+        //Local BP peers for rollback testing
+        if (enableMultiNode) {
+            localPeerService.setupNewPoolInfos(genesisConfigCopy, writer);
         }
 
         String slotLengthStr;
@@ -441,30 +487,14 @@ public class ClusterService {
         writer.accept(success("Updated configuration.json"));
     }
 
+    @Deprecated
     public ClusterInfo getClusterInfo(String clusterName) throws IOException {
-        Path clusterFolder = getClusterFolder(clusterName);
-        if (!Files.exists(clusterFolder)) {
-            throw new IllegalStateException("Cluster not found : " + clusterName);
-        }
-
-        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
-        try {
-            return objectMapper.readValue(new File(clusterInfoPath), ClusterInfo.class);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
+        return clusterInfoService.getClusterInfo(clusterName);
     }
 
+    @Deprecated
     public void saveClusterInfo(Path clusterFolder, ClusterInfo clusterInfo) throws IOException {
-        if (!Files.exists(clusterFolder)) {
-            throw new IllegalStateException("Cluster folder not found - "  + clusterFolder);
-        }
-
-        String socketPath = clusterFolder.resolve(NODE_FOLDER_PREFIX).resolve("node.sock").toString();
-        clusterInfo.setSocketPath(socketPath);
-
-        String clusterInfoPath = clusterFolder.resolve(ClusterConfig.CLUSTER_INFO_FILE).toAbsolutePath().toString();
-        objectMapper.writer(new DefaultPrettyPrinter()).writeValue(new File(clusterInfoPath), clusterInfo);
+        clusterInfoService.saveClusterInfo(clusterFolder, clusterInfo);
     }
 
     private void copy(Path sourceDir, Path destDir) throws IOException {

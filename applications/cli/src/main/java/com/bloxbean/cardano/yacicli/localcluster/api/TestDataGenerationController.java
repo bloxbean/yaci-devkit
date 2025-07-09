@@ -3,6 +3,7 @@ package com.bloxbean.cardano.yacicli.localcluster.api;
 import com.bloxbean.cardano.yacicli.localcluster.api.service.TestTransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @ConditionalOnBean(TestTransactionService.class)
 @Slf4j
+@Tag(name = "Test Data Generation", description = "APIs for generating test transactions and data for the local devnet.")
 public class TestDataGenerationController {
     private final TestTransactionService testTransactionService;
 
-    @Operation(summary = "Generate test data")
+    @Operation(summary = "Generate Test Data", description = "Generate test transactions based on the provided test type request.")
     @PostMapping(consumes = "application/json")
     ResponseEntity generate(@RequestBody TestTypeRequest testTypeRequest) {
         switch (testTypeRequest.type) {

@@ -50,7 +50,7 @@ docker-build:
     FROM ubuntu:22.04
     ENV JAVA_HOME=/opt/java/openjdk
     ENV STORE_VERSION=0.1.0
-    ENV STORE_NATIVE_BRANCH=release/0.2.0-graal-preview1
+    ENV STORE_NATIVE_BRANCH=release/devkit_lucid_evo
 
     ARG TARGETOS
     ARG TARGETARCH

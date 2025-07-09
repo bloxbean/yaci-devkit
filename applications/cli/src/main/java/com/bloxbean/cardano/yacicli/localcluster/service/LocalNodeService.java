@@ -69,8 +69,12 @@ public class LocalNodeService {
     private Era era;
 
     public LocalNodeService(Path clusterFolder, Era era, LocalClientProviderHelper localQueryClientUtil, Consumer<String> writer) throws Exception {
+        this(clusterFolder, era, localQueryClientUtil, null, writer);
+    }
+
+    public LocalNodeService(Path clusterFolder, Era era, LocalClientProviderHelper localQueryClientUtil, String nodeName, Consumer<String> writer) throws Exception {
         this.utxoKeys = new ArrayList<>();
-        this.localClientProvider = localQueryClientUtil.getLocalClientProvider();
+        this.localClientProvider = localQueryClientUtil.getLocalClientProvider(nodeName);
         this.era = era;
         this.localClientProvider.addTxSubmissionListener(new LocalTxSubmissionListener() {
             @Override

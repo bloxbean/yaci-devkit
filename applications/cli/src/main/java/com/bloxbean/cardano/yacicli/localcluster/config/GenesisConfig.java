@@ -57,7 +57,46 @@ public class GenesisConfig {
                     .publicKey("7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57")
                     .vrf("c2b62ffa92ad18ffc117ea3abeb161a68885000a466f9c71db5e4731d6630061")
                     .build());
+
+    //This is for local multi node setup
+    private List<Pool> multiNodePools = List.of(
+            Pool.builder()
+                    .poolHash("7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57")
+                    .cost(BigInteger.valueOf(340000000))
+                    .margin(BigDecimal.ZERO)
+                    .rewardAccountHash("11a14edf73b08a0a27cb98b2c57eb37c780df18fcfcf6785ed5df84a")
+                    .rewardAccountType("keyHash")
+                    .publicKey("7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57")
+                    .vrf("c2b62ffa92ad18ffc117ea3abeb161a68885000a466f9c71db5e4731d6630061")
+                    .build(),
+            Pool.builder()
+                    .poolHash("10918108df4dfd6afceb77bd86bd9f5cdd64830f89affc01aeda70e8")
+                    .cost(BigInteger.valueOf(0))
+                    .margin(BigDecimal.ZERO)
+                    .rewardAccountHash("e003b71f79c3d5848390db4ae4b81160eadba95fe0f577248bc5ae51")
+                    .rewardAccountType("keyHash")
+                    .publicKey("10918108df4dfd6afceb77bd86bd9f5cdd64830f89affc01aeda70e8")
+                    .vrf("42fb1c1f7b61ded4d4294483a34ac5864b0259f6833c87c2a0670533d3535ead")
+                    .build(),
+            Pool.builder()
+                    .poolHash("be7950fc9214b8123f68d5d05ff85cc39df6c9639918a6d2a636bae2")
+                    .cost(BigInteger.valueOf(0))
+                    .margin(BigDecimal.ZERO)
+                    .rewardAccountHash("058dee4d5a88cb54f395d6018bbbd923bf05e054c34d3b0287bdc914")
+                    .rewardAccountType("keyHash")
+                    .publicKey("be7950fc9214b8123f68d5d05ff85cc39df6c9639918a6d2a636bae2")
+                    .vrf("04cd1d3eec0bada30f70927687ff7de1561a95d50e2fe8a42f2684aa9a4b7c18")
+                    .build()
+            );
+
     private List<Delegator> defaultDelegators = List.of(new Delegator("295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062", "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57", true));
+
+    //This is for local multi node setup
+    private List<Delegator> multiNodeDefaultDelegators = List.of(
+            new Delegator("295b987135610616f3c74e11c94d77b6ced5ccc93a7d719cfb135062", "7301761068762f5900bde9eb7c1c15b09840285130f5b0f53606cc57", false),
+            new Delegator("e95458639f01cbf21e75bc2083d245e55b0773bddf0b06c8b4aff6f0", "10918108df4dfd6afceb77bd86bd9f5cdd64830f89affc01aeda70e8", false),
+            new Delegator("3a82eb2c3f2729b35c504d305e2f582f8d335d033b4109cccac3c74b", "be7950fc9214b8123f68d5d05ff85cc39df6c9639918a6d2a636bae2", true)
+    );
 
     //Alonzo
     private int collateralPercentage = 150;
@@ -119,11 +158,18 @@ public class GenesisConfig {
 
     private List<InitialAddress> initialAddresses = new ArrayList<>();
 
-    //Byron Genesis
+    //Byron Genesis. TODO - Check if this is used as this value is also derived from heavy delegations
     private List<String> bootStakeHolders = List.of(
             "4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c"
 //            "ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33",
 //            "fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4"
+    );
+
+    //This is for local multi node setup
+    private List<String> multiNodebootStakeHolders = List.of(
+            "4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c",
+            "ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33",
+            "fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4"
     );
 
     private List<HeavyDelegation> heavyDelegations = List.of(
@@ -144,6 +190,25 @@ public class GenesisConfig {
 //                    "abf663bac9650ee8547a98c33a4dca528493025f130556e9037c56885e2edbbe2d445b3714363b05f48d0bb6892cdae0ca27568f2aa7f1295cf11c5316da7b05", true)
     );
 
+    //This is for local multi node setup
+    private List<HeavyDelegation> multiNodeHeavyDelegations = List.of(
+            new HeavyDelegation("4c23c4a699c4245f41c79d444e0a3322edbf66daa7efe001c6c8657c",
+                    0,
+                    "+AkxDu8deptOlFXf1QMC0ys/w0y7mjqHRCqybUequeotqUVCz1h1HSOCNK5eBPE5svg2tHyQJKQzToAfCiSDOg==",
+                    "OBjvlmcUFmFHcRV27X2eRjBjAexq/Q0KiYDwkeEYbtJwT0xPnjn1+NE8oI4ePOA/M4mtHbtuYf40wLdvJVRCnw==",
+                    "44327b2748c561d6bfed3d3f62dde3745d89b768a24dfa5977908433afb53611bdd841f70b33554ad57aef804448f9a09132c55ab08add5aa3b7dab150c2ae0b", false),
+            new HeavyDelegation("ca456dbf716c78fd4069ca352e3c56501ed37983534de76f7987cd33",
+                    0,
+                    "EQEJb8IW6YTdsBnksNkbRi086JA0K2ek20CZgxsMDaSUkatLQY7+guZsyX9/xv1Rx/dy2mrnZSBAxo53wZecOA==",
+                    "QeBvAkkrR0T5YoeqGa0u7wCio5D9dRIT0BoPRXfDVO0skNlO4TmJHTVJnCs2hWDtwaznWygJAx1AFk4tBvhu1A==",
+                    "7525bb530324039c1c5faa2088a95272c7195ff49a97f014a60d944b1c2212b11e1867c1fb69895609f8b976926bb8309489258b3be0b819b36f9c0a0c403d02", false),
+            new HeavyDelegation("fe60e90aa8237e2fc643d38655aa5ee69c69e03db80a0f63eb8d42b4",
+                    0,
+                    "h745CvlXG8yPF2y8MU/bSbMekN61YN+V+htnswdPvAIhIwi3XH9ZIxsdR6DCYq+maOfwzUvys5Z9WEholH3/EQ==",
+                    "5p4ntkX2uDoCsi/s136jaswzPLJr7qcaTaguGokToHuwdxRV+6LGuwvmWHs5kdQg518v+0ZCji1QLo8X4ApezA==",
+                    "abf663bac9650ee8547a98c33a4dca528493025f130556e9037c56885e2edbbe2d445b3714363b05f48d0bb6892cdae0ca27568f2aa7f1295cf11c5316da7b05", true)
+    );
+
     private List<GenesisDeleg> genesisDelegs = List.of(
             new GenesisDeleg("337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e",
                     "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
@@ -156,10 +221,29 @@ public class GenesisConfig {
 //                    "ca336185cd781a6543b6c1e62ee1eee53e237d5d1fb065f08412d40d61b6ca06", true)
     );
 
+    //This is for local multi node setups
+    private List<GenesisDeleg> multiNodeGenesisDelegs = List.of(
+            new GenesisDeleg("337bc5ef0f1abf205624555c13a37258c42b46b1259a6b1a6d82574e",
+                    "41fd6bb31f34469320aa47cf6ccc3918e58a06d60ea1f2361efe2458",
+                    "7053e3ecd2b19db13e5338aa75fb518fc08b6c218f56ad65760d3eb074be95d4", false),
+            new GenesisDeleg("b5c3fed76c54bfdcda7993e4171eff2fb853f8ab920ab80047278a91",
+                    "fcb677a90948d1d5b358912f54f6baaf762ecf5cd6579c93bcb49cef",
+                    "c7715f726e8e4f7745ccc646f4350758460de71de5694b244a47761fb106ec6e", false),
+            new GenesisDeleg("e34a75849b978bb20c366f531f978b3111b91aae0e469108dca8e433",
+                    "81babf3c139646f0f0268abed36d2a54757492a3a68cda2438a37f7e",
+                    "ca336185cd781a6543b6c1e62ee1eee53e237d5d1fb065f08412d40d61b6ca06", true)
+    );
+
     private List<NonAvvmBalances> nonAvvmBalances = List.of(
             new NonAvvmBalances("2657WMsDfac6EtPTiPEptLHDYUVYD5DtRpTmVWb6X95beFrKXqPULmyvCwmCxZEGN", "3340000000", true)
 //            new NonAvvmBalances("2657WMsDfac6PDUZWRH4fh4j6ARZaH3x7SaaQ48d8SkGcNxmpoxPthQSiEahDTzAB", "3340000000", false),
 //            new NonAvvmBalances("2657WMsDfac6if177KSAP7hosuDveRHN3ZsyP2EQNgTaQ5tqFTnmw1EMZcGreMHva", "3340000000", true)
+    );
+
+    private List<NonAvvmBalances> multiNodeNonAvvmBalances = List.of(
+            new NonAvvmBalances("2657WMsDfac6EtPTiPEptLHDYUVYD5DtRpTmVWb6X95beFrKXqPULmyvCwmCxZEGN", "3340000000", false),
+            new NonAvvmBalances("2657WMsDfac6PDUZWRH4fh4j6ARZaH3x7SaaQ48d8SkGcNxmpoxPthQSiEahDTzAB", "3340000000", false),
+            new NonAvvmBalances("2657WMsDfac6if177KSAP7hosuDveRHN3ZsyP2EQNgTaQ5tqFTnmw1EMZcGreMHva", "3340000000", true)
     );
 
 

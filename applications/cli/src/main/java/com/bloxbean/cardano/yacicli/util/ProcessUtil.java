@@ -92,6 +92,20 @@ public class ProcessUtil {
         return process;
     }
 
+    public Process startLongRunningProcess(String processName, ProcessBuilder builder, Consumer<String> writer)
+            throws IOException, InterruptedException {
+        Process process = builder.start();
+        process.waitFor(1, TimeUnit.SECONDS);
+        if (!process.isAlive()) {
+            writer.accept(error("%s process could not be started.", processName));
+            return null;
+        }
+
+        createProcessId(processName, process);
+
+        return process;
+    }
+
     public String createProcessId(String processName, Process process) {
         try {
             var yaciCliHome = clusterConfig.getYaciCliHome();

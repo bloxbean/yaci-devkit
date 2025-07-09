@@ -10,7 +10,7 @@ jobs:
   buildAndPush:
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "macos-14"]
+        os: ["ubuntu-20.04-self-hosted", "macos-14"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -73,7 +73,7 @@ jobs:
     needs: buildAndPush
     strategy:
       matrix:
-        os: [ "ubuntu-20.04", "macos-14" ]
+        os: [ "ubuntu-20.04-self-hosted", "macos-14" ]
     runs-on: ${{ matrix.os }}
     env:
       FORCE_COLOR: 1
@@ -97,7 +97,7 @@ jobs:
       - name: Determine Platform-Specific Folder
         id: platform-folder
         run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-20.04-self-hosted" ]]; then
             echo "npm_folder=yaci-devkit-linux-x64" >> $GITHUB_ENV
           elif [[ "${{ matrix.os }}" == "macos-14" ]]; then
             echo "npm_folder=yaci-devkit-macos-arm64" >> $GITHUB_ENV
@@ -121,7 +121,14 @@ jobs:
         working-directory: npm/${{ env.npm_folder }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then            
+            npm publish --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then            
+            npm publish --access public --tag beta
+          else            
+            npm publish --access public
+          fi                          
 
   publish-yaci-devkit:
     needs: npm-publish
@@ -151,4 +158,11 @@ jobs:
         working-directory: npm/yaci-devkit
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then            
+            npm publish --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then            
+            npm publish --access public --tag beta
+          else            
+            npm publish --access public
+          fi
