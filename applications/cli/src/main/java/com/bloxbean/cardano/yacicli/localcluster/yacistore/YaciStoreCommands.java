@@ -52,6 +52,35 @@ public class YaciStoreCommands {
         yaciStoreCustomDbHelper.dropDatabase(clusterName);
     }
 
+    @ShellMethod(value = "Start Yaci Store", key = "yaci-store-start")
+    @ShellMethodAvailability("yaciStoreEnableAvailability")
+    public void start() {
+        if (!appConfig.isYaciStoreEnabled()) {
+            appConfig.setYaciStoreEnabled(true);
+        }
+
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        yaciStoreService.start(clusterName, (msg) -> writeLn(msg));
+    }
+
+    @ShellMethod(value = "Stop Yaci Store", key = "yaci-store-stop")
+    @ShellMethodAvailability("yaciStoreEnableAvailability")
+    public void stop() {
+        yaciStoreService.stop();
+    }
+
+    @ShellMethod(value = "Restart Yaci Store and sync from beginnning", key = "yaci-store-resync")
+    @ShellMethodAvailability("yaciStoreEnableAvailability")
+    public void resyncYaciStore() {
+        if (!appConfig.isYaciStoreEnabled()) {
+            writeLn(error("Yaci Store is not enabled. Please enable it first using 'enable-yaci-store' command."));
+            return;
+        }
+
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        yaciStoreService.stopAndSyncFromBeginning(clusterName, msg -> writeLn(msg));
+    }
+
     public Availability yaciStoreEnableAvailability() {
         return CommandContext.INSTANCE.getCurrentMode() == CommandContext.Mode.LOCAL_CLUSTER
                 ? Availability.available()

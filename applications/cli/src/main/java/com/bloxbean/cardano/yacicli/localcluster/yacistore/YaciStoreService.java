@@ -6,10 +6,12 @@ import com.bloxbean.cardano.yacicli.commands.common.JreResolver;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterStartService;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.localcluster.events.RollbackDone;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
@@ -39,6 +41,7 @@ public class YaciStoreService {
     private static final String STORE_PROCESS_NAME = "yaci-store";
     private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
+    private final ClusterStartService clusterStartService;
     private final ClusterConfig clusterConfig;
     private final JreResolver jreResolver;
     private final YaciStoreConfigBuilder yaciStoreConfigBuilder;
@@ -54,23 +57,34 @@ public class YaciStoreService {
 
     @EventListener
     public void handleClusterStarted(ClusterStarted clusterStarted) {
+        String clusterName = clusterStarted.getClusterName();
+
+        start(clusterName, msg -> writeLn(msg));
+    }
+
+    public boolean start(String clusterName, Consumer<String> writer) {
         logs.clear();
         if (!appConfig.isYaciStoreEnabled())
-            return;
+            return false;
 
-        if (!clusterStarted.getClusterName().equals("default")) {
-            writeLn("Yaci Store is only supported for 'default' cluster");
-            return;
+        if (!clusterName.equals("default")) {
+            writer.accept(warn("Yaci Store is only supported for 'default' cluster"));
+            return false;
+        }
+
+        if (!clusterStartService.isClusterRunning()) {
+            writer.accept(warn("Node is not running. Please start the cluster first."));
+            return false;
         }
 
         try {
-            ClusterInfo clusterInfo = clusterService.getClusterInfo(clusterStarted.getClusterName());
+            ClusterInfo clusterInfo = clusterService.getClusterInfo(clusterName);
             if (clusterInfo == null)
-                throw new IllegalStateException("Cluster info not found for cluster: " + clusterStarted.getClusterName()
+                throw new IllegalStateException("Cluster info not found for cluster: " + clusterName
                         + ". Please check if the cluster is created.");
 
             if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
-                return;
+                return false;
 
             Era era = clusterInfo.getEra();
             Process process = startStoreApp(clusterInfo, era);
@@ -82,6 +96,8 @@ public class YaciStoreService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        return true;
     }
 
     private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
@@ -251,6 +267,10 @@ public class YaciStoreService {
 
     @EventListener
     public void handleClusterStopped(ClusterStopped clusterStopped) {
+        stop();
+    }
+
+    public boolean stop() {
         try {
             if (processes != null && processes.size() > 0)
                 writeLn(info("Trying to stop yaci-store ..."));
@@ -283,14 +303,42 @@ public class YaciStoreService {
         } catch (Exception e) {
             log.error("Error stopping process", e);
             writeLn(error("Yaci Store could not be stopped. Please kill the process manually." + e.getMessage()));
+            return false;
+        } finally {
+            processes.clear();
         }
 
-        processes.clear();
+        return true;
     }
 
     @EventListener
     public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
         customDBHelper.dropDatabase(clusterDeleted.getClusterName());
+    }
+
+    @EventListener
+    public void handleRollbackDone(RollbackDone rollbackDone) {
+        String clusterName = rollbackDone.getClusterName();
+
+        stopAndSyncFromBeginning(clusterName, msg -> writeLn(msg));
+    }
+
+    public boolean stopAndSyncFromBeginning(String clusterName, Consumer<String> writer) {
+        if (!clusterStartService.isClusterRunning()) {
+            writer.accept(warn("Node is not running. Please start the cluster first."));
+            return false;
+        }
+
+        stop();
+
+        //delete yaci-store db folder
+        try {
+            customDBHelper.dropDatabase(clusterName);
+        } catch (Exception e) {
+        }
+
+        start(clusterName, writer);
+        return true;
     }
 
     private void killForcibly(Process process) {

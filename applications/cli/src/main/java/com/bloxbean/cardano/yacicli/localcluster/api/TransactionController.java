@@ -5,6 +5,7 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(path = "/local-cluster/api")
+@Tag(name = "Transaction API", description = "Handles submission of transactions and simulate transaction lookups.")
 public class TransactionController {
     private final ClusterUtilService clusterUtilService;
 
@@ -23,7 +25,12 @@ public class TransactionController {
     private final String SUBMIT_API_URL = "http://localhost:8090/api/submit/tx";
 
 
-    @Operation(summary = "Submit Transaction")
+    @Operation(summary = "Submit Transaction", description = "Submit a transaction in CBOR format to the cluster.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Transaction in CBOR format"),
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transaction successfully submitted"),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Bad request, invalid transaction CBOR format")
+            })
     @PostMapping(path = "tx/submit", consumes = "application/cbor")
     ResponseEntity<String> submit(@RequestBody byte[] cborTx) {
         HttpHeaders headers = new HttpHeaders();
@@ -41,7 +48,12 @@ public class TransactionController {
         }
     }
 
-    @Operation(summary = "This is a dummy endpoint to simulate Blockfrost's txs/{hash} endpoint. It just waits for 1 block and returns")
+    @Operation(summary = "Get Transaction by Hash", description = "Simulates fetching a transaction by hash. Waits for one block and returns transaction details.",
+            parameters = @io.swagger.v3.oas.annotations.Parameter(name = "hash", description = "Transaction hash to search for"),
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transaction content found"),
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Unable to fetch transaction details")
+            })
     @GetMapping(path = "txs/{hash}")
     public ResponseEntity<TransactionContent> getTransaction(@PathVariable String hash) {
         Tuple<Long, Point> tip = clusterUtilService.getTip(msg -> {

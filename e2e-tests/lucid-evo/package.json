@@ -1,0 +1,14 @@
+{
+  "name": "lucid-evo-example",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@lucid-evolution/lucid": "^0.4.27"
+  }
+}

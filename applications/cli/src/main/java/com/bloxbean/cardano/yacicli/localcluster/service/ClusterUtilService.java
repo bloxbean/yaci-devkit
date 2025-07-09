@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterInfoService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
@@ -24,10 +25,15 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class ClusterUtilService {
     private final ClusterService clusterService;
+    private final ClusterInfoService clusterInfoService;
     private final LocalClientProviderHelper localQueryClientUtil;
     private final RootLogService rootLogService;
 
     public Tuple<Long, Point> getTip(Consumer<String> writer) {
+        return getTip(writer, null);
+    }
+
+    public Tuple<Long, Point> getTip(Consumer<String> writer, String nodeName) {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();
 
@@ -37,7 +43,7 @@ public class ClusterUtilService {
             rootLogService.setLogLevel(Level.OFF);
         try {
             Path clusterFolder = clusterService.getClusterFolder(clusterName);
-            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, writer);
+            localNodeService = new LocalNodeService(clusterFolder, era, localQueryClientUtil, nodeName, writer);
 
             return localNodeService.getTip();
         } catch (Exception e) {
@@ -73,6 +79,14 @@ public class ClusterUtilService {
     }
 
     public boolean waitForNextBlocks(int noOfBlocks, Consumer<String> writer) {
+        long waitTime = 1000;
+        try {
+            String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+            var clusterInfo = clusterInfoService.getClusterInfo(clusterName);
+            waitTime = Math.round(clusterInfo.getBlockTime() * 1000); // Convert to milliseconds
+        } catch (Exception e) {
+        }
+
         int counter = 0;
         Tuple<Long, Point> tip = getTip(writer);
         if (tip == null)
@@ -82,7 +96,7 @@ public class ClusterUtilService {
         while (newTip._1 <= tip._1) {
             writer.accept("Waiting for next block...");
             try {
-                Thread.sleep(1000);
+                Thread.sleep(waitTime);
             } catch (InterruptedException e) {
                 return false;
             }

@@ -12,6 +12,7 @@ import com.bloxbean.cardano.yacicli.localcluster.service.LocalProtocolParamSuppl
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,7 @@ import java.time.Duration;
 
 @RestController
 @RequestMapping(path = "/local-cluster/api/epochs")
+@Tag(name = "Epoch API", description = "API for retrieving epoch information and protocol parameters")
 public class EpochController {
 
     private LocalClientProviderHelper localQueryClientUtil;
@@ -30,6 +32,7 @@ public class EpochController {
         this.localQueryClientUtil = localQueryClientUtil;
     }
 
+    @Operation(summary = "Retrieve the latest epoch.")
     @GetMapping("latest")
     public EpochContent getLatestEpoch() {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
@@ -52,7 +55,7 @@ public class EpochController {
         }
     }
 
-    @Operation(summary = "Get current protocol parameters.")
+    @Operation(summary = "Retrieve the current protocol parameters for the active cluster and era.")
     @GetMapping("parameters")
     ProtocolParams getProtocolParameters() {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
@@ -73,7 +76,7 @@ public class EpochController {
         }
     }
 
-    @Operation(summary = "Get protocol parameters. The {number} path variable is ignored. So any value can be passed. It always returns current protocol parameters")
+    @Operation(summary = "Retrieve the current protocol parameters. The {number} path variable is ignored.")
     @GetMapping("/{number}/parameters")
     ProtocolParams getProtocolParameters(@PathVariable int number) {
         return getProtocolParameters();
