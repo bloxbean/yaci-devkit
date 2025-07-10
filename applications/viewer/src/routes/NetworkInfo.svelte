@@ -127,8 +127,8 @@
                 <div class="tooltip" data-tip={formatLovelace(parseInt(network_info.total_active_stake))}>
                     <p class="text-gray-700">{formatAda(parseInt(network_info.total_active_stake))} ADA</p>
                 </div>
-            {:else if loading}
-                <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+                 <span>-</span>
             {/if}
         </div>
         <div class="bg-gray-100 rounded-lg p-4">
@@ -137,8 +137,8 @@
                 <div class="tooltip" data-tip={formatLovelace(parseInt(network_info.treasury))}>
                     <p class="text-gray-700">{formatAda(parseInt(network_info.treasury))} ADA</p>
                 </div>
-            {:else if loading}
-                <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+                 <span>-</span>
             {/if}
         </div>
         <div class="bg-gray-100 rounded-lg p-4">
@@ -147,8 +147,8 @@
                 <div class="tooltip" data-tip={formatLovelace(parseInt(network_info.reserves))}>
                     <p class="text-gray-700">{formatAda(parseInt(network_info.reserves))} ADA</p>
                 </div>
-            {:else if loading}
-                <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+                 <span>-</span>
             {/if}
         </div>
         <div class="bg-gray-100 rounded-lg p-4">
@@ -157,8 +157,8 @@
                 <div class="tooltip" data-tip={formatLovelace(parseInt(network_info.circulating_supply))}>
                     <p class="text-gray-700">{formatAda(parseInt(network_info.circulating_supply))} ADA</p>
                 </div>
-            {:else if loading}
-                <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+                <span>-</span>
             {/if}
         </div>
     </div>
