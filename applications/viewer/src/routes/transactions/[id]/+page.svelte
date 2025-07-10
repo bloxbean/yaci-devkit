@@ -106,9 +106,10 @@
 
         {#if activeTabIndex == CONTRACT_TAB}
             <div class="w-full">
-                {#each contracts as contract}
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-20">
-                        <Contract contract={contract}></Contract>
+                {#each contracts as contract, index}
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+                        <div class="border-b border-gray-200 mb-4"></div>
+                        <Contract contract={contract} {index}></Contract>
                     </div>
                 {/each}
             </div>
