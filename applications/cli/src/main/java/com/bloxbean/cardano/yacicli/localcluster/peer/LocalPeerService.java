@@ -239,10 +239,9 @@ public class LocalPeerService {
         ClusterInfo clusterInfo = null;
         try {
             clusterInfo = clusterInfoService.getClusterInfo(clusterName);
-        } catch (IOException e) {
-            writeLn(error("Unable to get cluster info for " + clusterName + ": " + e.getMessage()));
+        } catch (Exception e) {
         }
-        if (!clusterInfo.isLocalMultiNodeEnabled())
+        if (clusterInfo == null || !clusterInfo.isLocalMultiNodeEnabled())
             return;
 
         stopLocalPeers(msg -> writeLn(msg));

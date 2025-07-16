@@ -168,6 +168,7 @@ public class DownloadService {
         return false;
     }
 
+    //YaciStore Jar is bundled in a zip file.
     public boolean downloadYaciStoreJar(boolean overwrite) {
         downloadJre(overwrite); //Download JRE first (if not already downloaded
 
@@ -190,11 +191,39 @@ public class DownloadService {
             }
         }
 
-        var downloadedFile = download("yaci-store", downloadPath, clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
+        var downloadedFile = download("yaci-store", downloadPath, clusterConfig.getYaciStoreBinPath(), "yaci-store-jar.zip");
         if (downloadedFile != null) {
-            return true;
+            try {
+                var tmpFolder = Paths.get(clusterConfig.getYaciStoreBinPath(), "tmp");
+                extractZip(downloadedFile.toFile().getAbsolutePath(), tmpFolder.toFile().getAbsolutePath());
+
+                File[] files = tmpFolder.toFile().listFiles();
+                if(files != null && files.length > 0) {
+                    File extractedFolder = files[0];
+                    if (extractedFolder.getName().startsWith("yaci-store")) {
+                        extractedFolder.renameTo(Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files").toFile());
+                    }
+                }
+
+                //Move the file yaci-store.jar inside yaci-store folder to yaciStoreBinPath. Then remove the tmpFolder
+                Path downloadedYaciStoreJar = Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files", "yaci-store.jar");
+
+                if(downloadedYaciStoreJar.toFile().exists()) {
+                    writeLn(info("Copying yaci-store.jar to " + yaciStoreJar.toFile().getAbsolutePath()));
+                    Files.copy(downloadedYaciStoreJar, yaciStoreJar.toFile().toPath());
+                    writeLn(success("Copied"));
+                } else {
+                    writeLn(error("yaci-store.jar not found in the extracted folder : " + downloadedYaciStoreJar.toFile().getAbsolutePath()));
+                }
+
+                FileUtils.deleteDirectory(tmpFolder.toFile());
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                writeLn(error("Error extracting yaci-store jar zip" + e.getMessage()));
+            }
         } else {
-            writeLn(error("Download failed for yaci-store"));
+            writeLn(error("Download failed for yaci-store jar zip"));
         }
 
         return false;
@@ -503,7 +532,7 @@ public class DownloadService {
             return null;
         }
 
-        String url = YACI_STORE_DOWNLOAD_URL + "/v" + yaciStoreJarVersion + "/yaci-store-all-" + yaciStoreJarVersion +".jar";
+        String url = YACI_STORE_DOWNLOAD_URL + "/v" + yaciStoreJarVersion + "/yaci-store-" + yaciStoreJarVersion +".zip";
         return url;
     }
 

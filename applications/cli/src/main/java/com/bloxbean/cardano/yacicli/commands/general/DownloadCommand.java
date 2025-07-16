@@ -48,7 +48,7 @@ public class DownloadCommand {
                 validComponent = true;
             }
 
-            if (componentList.contains("all") || componentList.contains("yaci-store-jar")) {
+            if (componentList.contains("yaci-store-jar")) {
                 downloadService.downloadYaciStoreJar(overwrite);
                 validComponent = true;
             }
