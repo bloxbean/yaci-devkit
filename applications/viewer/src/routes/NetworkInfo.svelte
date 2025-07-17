@@ -33,7 +33,7 @@
     async function fetchEpochData() {
         try {
             console.log('Fetching network data');
-            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
+            const baseUrl = env.PUBLIC_INDEXER_CLIENT_BASE_URL || env.PUBLIC_INDEXER_BASE_URL;
             const response = await fetch(`${baseUrl}/network`);
             if (!response.ok) {
                 console.error('Failed to fetch network data:', response.status, response.statusText);
