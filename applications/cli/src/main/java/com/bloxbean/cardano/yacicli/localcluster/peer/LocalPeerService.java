@@ -75,9 +75,9 @@ public class LocalPeerService {
 
         //Copy configuration file
         try {
-            Path primaryConfigFile = primaryNodeFolder.resolve("configuration.yaml");
-            FileUtils.copyFile(primaryConfigFile.toFile(), node2Folder.resolve("configuration.yaml").toFile());
-            FileUtils.copyFile(primaryConfigFile.toFile(), node3Folder.resolve("configuration.yaml").toFile());
+            Path primaryConfigFile = primaryNodeFolder.resolve("configuration.json");
+            FileUtils.copyFile(primaryConfigFile.toFile(), node2Folder.resolve("configuration.json").toFile());
+            FileUtils.copyFile(primaryConfigFile.toFile(), node3Folder.resolve("configuration.json").toFile());
         } catch (Exception e) {
             writer.accept(error("Failed to copy configuration files: " + e.getMessage()));
         }
