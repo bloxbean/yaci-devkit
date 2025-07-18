@@ -40,4 +40,11 @@ jobs:
         working-directory: applications/viewer
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then            
+            npm publish --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then            
+            npm publish --access public --tag beta
+          else            
+            npm publish --access public
+          fi
