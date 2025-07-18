@@ -2,7 +2,11 @@
   "resources": {
     "includes": [
       {"pattern": "localcluster.zip$"},
-      {"pattern": ".*/wordlist/*.txt"}
+      {"pattern": ".*/wordlist/*.txt"},
+      {"pattern": "static/.*"},
+      {"pattern": "static/index.html$"},
+      {"pattern": "static/assets/.*"},
+      {"pattern": "static/.*\\.(js|css|html|png|jpg|jpeg|svg|ico|woff|woff2|ttf)$"}
     ],
     "excludes": [
 

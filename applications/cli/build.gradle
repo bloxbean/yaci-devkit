@@ -5,7 +5,10 @@ plugins {
 	id 'java'
 	id 'signing'
     id "com.gorylenko.gradle-git-properties" version "2.4.1"
+    id 'com.github.node-gradle.node' version '7.0.2'
 }
+
+import com.github.gradle.node.npm.task.NpmTask
 
 configurations {
 	compileOnly {
@@ -90,6 +93,25 @@ tasks.register('genClusterTemplatesZip', Zip) {
     destinationDirectory.set(layout.buildDirectory.dir('resources/main'))
 }
 
+// Admin UI build tasks
+task installAdminUIDeps(type: NpmTask) {
+    description = 'Install admin UI dependencies'
+    args = ['install']
+    workingDir = file("${project.projectDir}/src/main/resources/admin-ui")
+    inputs.file("src/main/resources/admin-ui/package.json")
+    outputs.dir("src/main/resources/admin-ui/node_modules")
+}
+
+task buildAdminUI(type: NpmTask) {
+    description = 'Build Svelte admin UI'
+    args = ['run', 'build']
+    workingDir = file("${project.projectDir}/src/main/resources/admin-ui")
+    inputs.dir("src/main/resources/admin-ui/src")
+    inputs.file("src/main/resources/admin-ui/package.json")
+    outputs.dir("src/main/resources/static")
+}
+
+buildAdminUI.dependsOn installAdminUIDeps
 
 compileJava {
     dependsOn genClusterTemplatesZip
@@ -99,10 +121,20 @@ processResources {
     filesMatching('application.properties') {
         expand(project.properties)
     }
+    dependsOn buildAdminUI
 }
 
 gitProperties {
     failOnNoGitDirectory = false
+}
+
+// Node.js configuration
+node {
+    version = '20.11.0'
+    npmVersion = '10.2.4'
+    workDir = file("${project.projectDir}/src/main/resources/admin-ui")
+    npmWorkDir = file("${project.projectDir}/src/main/resources/admin-ui")
+    nodeProjectDir = file("${project.projectDir}/src/main/resources/admin-ui")
 }
 
 task cliZip(type: Zip) {
