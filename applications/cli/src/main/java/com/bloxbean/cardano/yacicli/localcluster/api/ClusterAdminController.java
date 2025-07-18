@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster.api;
 
 import com.bloxbean.cardano.yacicli.localcluster.ClusterCommands;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
@@ -29,6 +30,10 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yacicli.common.Tuple;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/local-cluster/api/admin")
@@ -246,7 +251,7 @@ public class ClusterAdminController {
 
         try {
             clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, slotLength, blockTime, epochLength, true,
-                    true, "conway", null, false, request.enableMultiNode());
+                    true, "conway", null, false, request.enableMultiNode(), request.multiNodeStakeRatioFactor);
             return true;
         } catch (Exception e) {
             return false;
@@ -258,14 +263,71 @@ public class ClusterAdminController {
         }
     }
 
+    @Operation(summary = "Retrieve the current tip for all nodes (multi-node aware)")
+    @GetMapping("/devnet/tip")
+    public MultiNodeTipResponse getTip() {
+        CommandContext.INSTANCE.setProperty(ClusterConfig.CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+        
+        boolean isMultiNodeEnabled = false;
+        try {
+            var clusterInfo = clusterService.getClusterInfo(DEFAULT_CLUSTER_NAME);
+            isMultiNodeEnabled = clusterInfo.isLocalMultiNodeEnabled();
+        } catch (Exception e) {
+            log.error("Error getting cluster info", e);
+        }
+
+        List<NodeTip> tips = new ArrayList<>();
+        
+        // Get tip for primary node
+        Tuple<Long, Point> tip1 = clusterUtilService.getTip(msg -> log.debug(msg));
+        if (tip1 != null) {
+            tips.add(new NodeTip("node-1", tip1._1, tip1._2.getSlot(), tip1._2.getHash()));
+        }
+
+        // Get tips for additional nodes if multi-node is enabled
+        if (isMultiNodeEnabled) {
+            Tuple<Long, Point> tip2 = clusterUtilService.getTip(msg -> log.debug(msg), "node-2");
+            if (tip2 != null) {
+                tips.add(new NodeTip("node-2", tip2._1, tip2._2.getSlot(), tip2._2.getHash()));
+            }
+
+            Tuple<Long, Point> tip3 = clusterUtilService.getTip(msg -> log.debug(msg), "node-3");
+            if (tip3 != null) {
+                tips.add(new NodeTip("node-3", tip3._1, tip3._2.getSlot(), tip3._2.getHash()));
+            }
+        }
+
+        return new MultiNodeTipResponse(isMultiNodeEnabled, tips);
+    }
+
     record DevNetCreateRequest(Map<String, String> genesisProperties,
                                @Schema(description = "Create multiple local block producing nodes", defaultValue = "false")
                                boolean enableMultiNode,
+                               @Schema(description = "The stake ratio between the primary node and two peers is only used when multi-node is enabled for rollback testing", defaultValue = "5")
+                               int multiNodeStakeRatioFactor,
                                @Schema(description = "Enable Yaci Store", defaultValue = "false")
                                boolean enableYaciStore,
                                @Schema(description = "Enable Ogmios", defaultValue = "false")
                                boolean enableOgmios,
                                @Schema(description = "Enable Ogmios and Kupo", defaultValue = "false")
                                boolean enableKupomios) {
+    }
+
+    record NodeTip(
+            @Schema(description = "Node name")
+            String nodeName,
+            @Schema(description = "Current block number")
+            long blockNumber,
+            @Schema(description = "Current slot number")
+            long slot,
+            @Schema(description = "Current block hash")
+            String blockHash) {
+    }
+
+    record MultiNodeTipResponse(
+            @Schema(description = "Whether multi-node mode is enabled")
+            boolean multiNodeEnabled,
+            @Schema(description = "List of tips for all nodes")
+            List<NodeTip> tips) {
     }
 }

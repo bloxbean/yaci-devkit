@@ -7,6 +7,9 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.warn;
+import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.writeLn;
+
 @Component
 public class TcpProxyManager {
     private final Map<Integer, ProxyInstance> proxies = new ConcurrentHashMap<>();
@@ -59,7 +62,7 @@ public class TcpProxyManager {
                         pipe(server.getInputStream(), client.getOutputStream());
                     } catch (IOException e) {
                         if (running) {
-                            System.err.println("Proxy error on port " + localPort + ": " + e.getMessage());
+                            writeLn(warn("Proxy error on port " + localPort + ": " + e.getMessage()));
                         }
                     }
                 }

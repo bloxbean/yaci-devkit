@@ -12,7 +12,7 @@ jobs:
   buildAndPush:
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "macos-14"]
+        os: ["ubuntu-22.04", "macos-14"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

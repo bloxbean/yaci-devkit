@@ -361,7 +361,7 @@ public class ClusterService {
 
         //Local BP peers for rollback testing
         if (enableMultiNode) {
-            localPeerService.setupNewPoolInfos(genesisConfigCopy, writer);
+            localPeerService.setupNewPoolInfos(genesisConfigCopy, clusterInfo, writer);
         }
 
         String slotLengthStr;
