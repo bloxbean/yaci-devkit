@@ -210,7 +210,7 @@ public class DownloadService {
 
                 if(downloadedYaciStoreJar.toFile().exists()) {
                     writeLn(info("Copying yaci-store.jar to " + yaciStoreJar.toFile().getAbsolutePath()));
-                    Files.copy(downloadedYaciStoreJar, yaciStoreJar.toFile().toPath());
+                    Files.copy(downloadedYaciStoreJar, yaciStoreJar.toFile().toPath(), StandardCopyOption.REPLACE_EXISTING);
                     writeLn(success("Copied"));
                 } else {
                     writeLn(error("yaci-store.jar not found in the extracted folder : " + downloadedYaciStoreJar.toFile().getAbsolutePath()));
