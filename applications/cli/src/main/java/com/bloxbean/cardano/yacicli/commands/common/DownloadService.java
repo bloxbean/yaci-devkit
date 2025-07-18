@@ -201,7 +201,11 @@ public class DownloadService {
                 if(files != null && files.length > 0) {
                     File extractedFolder = files[0];
                     if (extractedFolder.getName().startsWith("yaci-store")) {
-                        extractedFolder.renameTo(Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files").toFile());
+                        File targetFolder = Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files").toFile();
+                        if (!extractedFolder.renameTo(targetFolder)) {
+                            writeLn(error("Failed to rename folder " + extractedFolder.getAbsolutePath() + " to " + targetFolder.getAbsolutePath()));
+                            return false; // Abort further operations
+                        }
                     }
                 }
 
