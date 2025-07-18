@@ -224,7 +224,7 @@ public class DownloadService {
                 return true;
             } catch (IOException e) {
                 e.printStackTrace();
-                writeLn(error("Error extracting yaci-store jar zip" + e.getMessage()));
+                writeLn(error("Error extracting yaci-store jar zip: " + e.getMessage()));
             }
         } else {
             writeLn(error("Download failed for yaci-store jar zip"));
