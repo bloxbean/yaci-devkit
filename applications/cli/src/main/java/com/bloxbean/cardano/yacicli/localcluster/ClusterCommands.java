@@ -106,7 +106,8 @@ public class ClusterCommands {
                                       help = "Use a pre-defined genesis profile (Options: zero_fee, zero_min_utxo_value, zero_fee_and_min_utxo_value)")
                                   GenesisProfile genesisProfile,
                               @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys,
-                              @ShellOption(value = {"--enable-multi-node"}, defaultValue = "false", help="Create multiple local block producing nodes") boolean enableMultiNode
+                              @ShellOption(value = {"--enable-multi-node"}, defaultValue = "false", help="Create multiple local block producing nodes") boolean enableMultiNode,
+                              @ShellOption(value = {"--stake-ratio-factor"}, defaultValue = "5", help="The stake ratio between the primary node and two peers is only used when multi-node is enabled for rollback testing") int stakeRatioFactor
     ) {
 
         try {
@@ -168,6 +169,7 @@ public class ClusterCommands {
                     .socatPort(socatPort)
                     .prometheusPort(prometheusPort)
                     .localMultiNodeEnabled(enableMultiNode)
+                    .localMultiNodeStakeRatioFactor(stakeRatioFactor)
                     .build();
 
             boolean success = localClusterService.createNodeClusterFolder(clusterName, clusterInfo, overwrite, generateNewKeys, enableMultiNode, (msg) -> writeLn(msg));

@@ -93,7 +93,8 @@ public class DownloadCommand {
             @ShellOption(value = {"--enable-kupomios"}, defaultValue = "false", help= "Enable Ogmios and Kupo") boolean enableKupomios,
             @ShellOption(value = {"--interactive"}, defaultValue="false", help="To start in interactive mode when 'up' command is passed as an arg to yaci-cli") boolean interactive,
             @ShellOption(value = {"--tail"}, defaultValue="false", help="To tail the network when 'up' command is passed as an arg to yaci-cli. Only works in non-interactive mode.") boolean tail,
-            @ShellOption(value = {"--enable-multi-node"}, defaultValue = "false", help="Create multiple local block producing nodes") boolean enableMultiNode
+            @ShellOption(value = {"--enable-multi-node"}, defaultValue = "false", help="Create multiple local block producing nodes") boolean enableMultiNode,
+            @ShellOption(value = {"--stake-ratio-factor"}, defaultValue = "5", help="The stake ratio between the primary node and two peers is only used when multi-node is enabled for rollback testing.") int stakeRatioFactor
     ) {
 
         if (components == null)
@@ -125,7 +126,7 @@ public class DownloadCommand {
         var status = download(componentList.toArray(new String[0]), overwrite);
         if (status) {
             clusterCommands.createCluster(clusterName, port, submitApiPort, slotLength, blockTime, epochLength,
-                    true, true, null, genesisProfile, false, enableMultiNode);
+                    true, true, null, genesisProfile, false, enableMultiNode, stakeRatioFactor);
 
             if (!interactive && tail)
                 clusterCommands.ltail(true, true, true, true, true, true, null, null);

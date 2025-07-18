@@ -47,7 +47,9 @@ public class LocalPeerService {
 
     private List<Process> processes = new ArrayList<>();
 
-    public void setupNewPoolInfos(GenesisConfig genesisConfigCopy, Consumer<String> writer) {
+    public void setupNewPoolInfos(GenesisConfig genesisConfigCopy, ClusterInfo clusterInfo, Consumer<String> writer) {
+        int stakeRatioFactor = clusterInfo != null? clusterInfo.getLocalMultiNodeStakeRatioFactor(): 5;
+
         genesisConfigCopy.setPools(genesisConfigCopy.getMultiNodePools());
 
         //Bootstrap loaders (Byron)
@@ -63,8 +65,8 @@ public class LocalPeerService {
         var lastItemInFundList = initialFundList.get(initialFundList.size() - 1);
         initialFundList.set(initialFundList.size() - 1, new GenesisConfig.MapItem<>(lastItemInFundList.key(),
                 lastItemInFundList.value(), false));
-        initialFundList.add(new GenesisConfig.MapItem<>("0013b147b6cc8e23615254c31598bc43159d01b6ceb5984e25771677043a82eb2c3f2729b35c504d305e2f582f8d335d033b4109cccac3c74b", new BigInteger("300000000000"), false));
-        initialFundList.add(new GenesisConfig.MapItem<>("00cb2015b6312bbbc11e8c912b54e6187d4d4f196fa5536ea6c64c80f6e95458639f01cbf21e75bc2083d245e55b0773bddf0b06c8b4aff6f0", new BigInteger("300000000000"), true));
+        initialFundList.add(new GenesisConfig.MapItem<>("0013b147b6cc8e23615254c31598bc43159d01b6ceb5984e25771677043a82eb2c3f2729b35c504d305e2f582f8d335d033b4109cccac3c74b", new BigInteger("300000000000").multiply(BigInteger.valueOf(stakeRatioFactor)), false));
+        initialFundList.add(new GenesisConfig.MapItem<>("00cb2015b6312bbbc11e8c912b54e6187d4d4f196fa5536ea6c64c80f6e95458639f01cbf21e75bc2083d245e55b0773bddf0b06c8b4aff6f0", new BigInteger("300000000000").multiply(BigInteger.valueOf(stakeRatioFactor)), true));
     }
 
     public void adjustAndCopyRequiredFilesForMultiNodeSetup(String clusterName, ClusterInfo clusterInfo, Consumer<String> writer) {
@@ -115,7 +117,6 @@ public class LocalPeerService {
         }
     }
 
-    @EventListener
     public void handleFirstRun(FirstRunDone firstRunDone) {
         var clusterName = firstRunDone.getCluster();
         Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
@@ -134,7 +135,6 @@ public class LocalPeerService {
         }
     }
 
-    @EventListener
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         var clusterName = clusterStarted.getClusterName();
         ClusterInfo clusterInfo = null;
@@ -166,14 +166,6 @@ public class LocalPeerService {
             return;
         }
 
-        //Start tcp proxy
-        try {
-            tcpProxyManager.startProxy(4001, "127.0.0.1", 3001);
-        } catch (IOException e) {
-            writeLn(error("Failed to start proxy for main node: " + e.getMessage()));
-            return;
-        }
-
         try {
             var node2Process = startNode("node-2", node2Folder, node2Logs, msg -> writeLn(msg));
             if (node2Process == null) {
@@ -197,6 +189,14 @@ public class LocalPeerService {
             tcpProxyManager.startProxy(4003, "127.0.0.1", 3003);
         } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
             writeLn(error("Error starting node-3: " + e.getMessage()));
+        }
+
+        //Node 1 is last to start
+        try {
+            tcpProxyManager.startProxy(4001, "127.0.0.1", 3001);
+        } catch (IOException e) {
+            writeLn(error("Failed to start proxy for main node: " + e.getMessage()));
+            return;
         }
     }
 

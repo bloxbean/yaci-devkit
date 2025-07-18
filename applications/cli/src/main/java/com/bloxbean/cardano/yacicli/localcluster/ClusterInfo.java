@@ -44,4 +44,5 @@ public class ClusterInfo {
     private int prometheusPort=12798;
 
     private boolean localMultiNodeEnabled;
+    private int localMultiNodeStakeRatioFactor;
 }

@@ -1,9 +1,13 @@
 package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
+import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
+import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
+import com.bloxbean.cardano.yacicli.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
+import com.bloxbean.cardano.yacicli.localcluster.peer.LocalPeerService;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -42,6 +46,7 @@ public class ClusterStartService {
     private final ProcessUtil processUtil;
     private final GenesisConfig genesisConfig;
     private final CustomGenesisConfig customGenesisConfig;
+    private final LocalPeerService localPeerService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Process> processes = new ArrayList<>();
@@ -66,6 +71,15 @@ public class ClusterStartService {
             boolean firstRun = checkIfFirstRun(clusterFolder);
             if (clusterInfo.isMasterNode() && firstRun)
                 setupFirstRun(clusterInfo, clusterFolder, writer);
+
+            if (clusterInfo.isLocalMultiNodeEnabled()) {
+                String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+                if (firstRun) {
+                    localPeerService.handleFirstRun(new FirstRunDone(clusterName));
+                }
+
+                localPeerService.handleClusterStarted(new ClusterStarted(clusterName));
+            }
 
             Process nodeProcess = startNode(clusterFolder, clusterInfo, writer);
             if (nodeProcess == null) {

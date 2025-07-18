@@ -246,7 +246,7 @@ public class ClusterAdminController {
 
         try {
             clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, slotLength, blockTime, epochLength, true,
-                    true, "conway", null, false, request.enableMultiNode());
+                    true, "conway", null, false, request.enableMultiNode(), request.multiNodeStakeRatioFactor);
             return true;
         } catch (Exception e) {
             return false;
@@ -261,6 +261,8 @@ public class ClusterAdminController {
     record DevNetCreateRequest(Map<String, String> genesisProperties,
                                @Schema(description = "Create multiple local block producing nodes", defaultValue = "false")
                                boolean enableMultiNode,
+                               @Schema(description = "The stake ratio between the primary node and two peers is only used when multi-node is enabled for rollback testing", defaultValue = "5")
+                               int multiNodeStakeRatioFactor,
                                @Schema(description = "Enable Yaci Store", defaultValue = "false")
                                boolean enableYaciStore,
                                @Schema(description = "Enable Ogmios", defaultValue = "false")
