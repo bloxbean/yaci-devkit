@@ -28,17 +28,25 @@
     
     console.log('Setting loading to false');
     loading.set(false);
+    
+    // Start periodic refresh
+    startPeriodicRefresh();
   });
 
   async function loadInitialData() {
     try {
-      const [status, tip] = await Promise.all([
-        api.getDevnetStatus(),
-        api.getDevnetTip()
-      ]);
-      
+      const status = await api.getDevnetStatus();
       console.log('DevNet status:', status);
-      console.log('DevNet tip:', tip);
+      
+      let tip = null;
+      if (status === 'initialized' || status?.initialized) {
+        try {
+          tip = await api.getDevnetTip();
+          console.log('DevNet tip:', tip);
+        } catch (tipErr) {
+          console.warn('Failed to get tip (node might be stopped):', tipErr);
+        }
+      }
       
       networkStatus.update(s => ({
         ...s,
@@ -53,14 +61,41 @@
         error: err.message,
         loading: false
       }));
-      throw err;
+      // Don't throw the error, let the UI load anyway
     }
   }
 
   async function loadServices() {
     services.update(s => ({ ...s, loading: true }));
-    // TODO: Implement service status checking
-    services.update(s => ({ ...s, loading: false }));
+    
+    try {
+      const serviceStatuses = await api.getServiceStatuses();
+      console.log('Service statuses:', serviceStatuses);
+      
+      services.update(s => ({
+        ...s,
+        ...serviceStatuses,
+        loading: false
+      }));
+    } catch (error) {
+      console.error('Failed to load service statuses:', error);
+      services.update(s => ({ ...s, loading: false }));
+    }
+  }
+
+  function startPeriodicRefresh() {
+    // Refresh service statuses every 5 seconds
+    setInterval(async () => {
+      try {
+        const serviceStatuses = await api.getServiceStatuses();
+        services.update(s => ({
+          ...s,
+          ...serviceStatuses
+        }));
+      } catch (error) {
+        console.warn('Failed to refresh service statuses:', error);
+      }
+    }, 5000);
   }
 
   function handleTabChange(tabName) {

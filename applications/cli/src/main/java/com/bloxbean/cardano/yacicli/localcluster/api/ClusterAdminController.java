@@ -8,6 +8,7 @@ import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.util.PortUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +35,7 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping(path = "/local-cluster/api/admin")
@@ -329,5 +331,36 @@ public class ClusterAdminController {
             boolean multiNodeEnabled,
             @Schema(description = "List of tips for all nodes")
             List<NodeTip> tips) {
+    }
+
+    @Operation(summary = "Get service status for all services")
+    @GetMapping("/services/status")
+    public Map<String, ServiceStatus> getServiceStatus() {
+        Map<String, ServiceStatus> serviceStatuses = new HashMap<>();
+        
+        // Check Yaci Store (port 8080)
+        boolean yaciStoreRunning = !PortUtil.isPortAvailable(8080);
+        serviceStatuses.put("yaciStore", new ServiceStatus(yaciStoreRunning, 8080));
+        
+        // Check Ogmios (port 1337)
+        boolean ogmiosRunning = !PortUtil.isPortAvailable(1337);
+        serviceStatuses.put("ogmios", new ServiceStatus(ogmiosRunning, 1337));
+        
+        // Check Kupo (port 1442)
+        boolean kupoRunning = !PortUtil.isPortAvailable(1442);
+        serviceStatuses.put("kupo", new ServiceStatus(kupoRunning, 1442));
+        
+        // Check Submit API (port 8090)
+        boolean submitApiRunning = !PortUtil.isPortAvailable(8090);
+        serviceStatuses.put("submitApi", new ServiceStatus(submitApiRunning, 8090));
+        
+        return serviceStatuses;
+    }
+
+    record ServiceStatus(
+            @Schema(description = "Whether the service is running")
+            boolean running,
+            @Schema(description = "Port number the service runs on")
+            int port) {
     }
 }

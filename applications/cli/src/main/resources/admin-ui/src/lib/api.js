@@ -15,6 +15,7 @@ class ApiClient {
                 'Content-Type': 'application/json',
                 ...options.headers
             },
+            signal: AbortSignal.timeout(5000), // 5 second timeout
             ...options
         };
 
@@ -114,6 +115,18 @@ class ApiClient {
 
     async getAddressUtxos(address) {
         return this.request(`/addresses/${address}/utxos`, {}, true);
+    }
+
+    // Service status checking
+    async getServiceStatuses() {
+        // Return initial service statuses
+        // These will be updated by the UI when services are started/stopped
+        return {
+            yaciStore: { running: false, port: 8080 },
+            ogmios: { running: false, port: 1337 },
+            kupo: { running: false, port: 1442 },
+            submitApi: { running: false, port: 8090 }
+        };
     }
 
     // Downloads

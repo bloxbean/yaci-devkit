@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { services } from '../lib/stores.js';
+  import { services, updateServiceStatus } from '../lib/stores.js';
   import { api } from '../lib/api.js';
   import { addNotification } from '../lib/stores.js';
 
@@ -102,16 +102,15 @@
       addNotification(`${serviceName} ${action} completed successfully`, 'success');
       
       // Update service status optimistically
+      console.log('Updating service status:', serviceId, action);
+      console.log('Current services:', $services);
+      
       if (action === 'start') {
-        services.update(s => ({
-          ...s,
-          [serviceId]: { ...s[serviceId], running: true }
-        }));
+        updateServiceStatus(serviceId, { running: true });
+        console.log('Updated service to running:', serviceId);
       } else if (action === 'stop') {
-        services.update(s => ({
-          ...s,
-          [serviceId]: { ...s[serviceId], running: false }
-        }));
+        updateServiceStatus(serviceId, { running: false });
+        console.log('Updated service to stopped:', serviceId);
       }
       
     } catch (error) {
@@ -132,13 +131,32 @@
     if (!service || typeof service !== 'object') return null;
     return service.port;
   }
+
+  async function refreshServiceStatus() {
+    try {
+      addNotification('Refreshing service status...', 'info');
+      const serviceStatuses = await api.getServiceStatuses();
+      services.update(s => ({
+        ...s,
+        ...serviceStatuses
+      }));
+      addNotification('Service status refreshed', 'success');
+    } catch (error) {
+      addNotification('Failed to refresh service status', 'error');
+    }
+  }
 </script>
 
 <div class="services-tab">
   <div class="tab-header">
     <h2>Services Management</h2>
-    <div class="services-summary">
-      {Object.values($services).filter(s => typeof s === 'object' && s.running).length} / {Object.keys($services).length - 1} Running
+    <div class="header-actions">
+      <button class="btn-small secondary" on:click={refreshServiceStatus}>
+        🔄 Refresh Status
+      </button>
+      <div class="services-summary">
+        {Object.values($services).filter(s => typeof s === 'object' && s.running).length} / {Object.keys($services).length - 1} Running
+      </div>
     </div>
   </div>
 
@@ -228,6 +246,31 @@
     color: #1f2937;
     font-size: 1.5rem;
     font-weight: 600;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .btn-small {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-small.secondary {
+    color: #6b7280;
+  }
+
+  .btn-small:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
   }
 
   .services-summary {

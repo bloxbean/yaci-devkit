@@ -62,7 +62,15 @@
   async function createDevnet() {
     try {
       addNotification('Creating DevNet...', 'info');
-      await api.createDevnet();
+      const config = {
+        genesisProperties: {},
+        enableMultiNode: false,
+        multiNodeStakeRatioFactor: 5,
+        enableYaciStore: false,
+        enableOgmios: false,
+        enableKupomios: false
+      };
+      await api.createDevnet(config);
       addNotification('DevNet created successfully', 'success');
       await loadStats();
     } catch (error) {
