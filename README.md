@@ -20,7 +20,7 @@
 - **⚡ Instant Devnet Creation** - Launch a complete Cardano network in seconds
 - **🎛️ Flexible Configuration** - Customize block times, epochs, eras, and network parameters
 - **🔄 Rollback Testing** - Advanced rollback simulation for robust application testing *(New in v0.11.0-beta1)*
-- **⏱️ Sub-second Block Times** - Support for ultra-fast development with 200ms block times *(New in v0.11.0-beta1)*
+- **⏱️ Sub-second Block Times** - Support for ultra-fast development with sub-second block times. e.g; 100ms, 200ms *(New in v0.11.0-beta1)*
 - **🌐 Multi-node Support** - Enable multiple nodes specifically for rollback testing scenarios
 - **📊 Built-in Indexer** - Integrated Yaci Store with Blockfrost-compatible APIs
 - **🎯 Developer Tools** - Browser-based viewer, CLI management, and extensive APIs
