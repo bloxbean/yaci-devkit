@@ -70,31 +70,26 @@ When `--enable-multi-node` is used, DevKit creates a 3-node cluster for rollback
 
 ## 📋 Current Releases
 
-### 🚀 Latest Stable Release
-[Latest Stable Release](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.10.6)
-- **Version**: v0.10.6
+🚀 **Latest Stable Release**: **[v0.10.6](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.10.6)**
 
-### 🧪 Latest Beta Release  
-[Latest Beta Release](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.11.0-beta1)
-- **Version**: v0.11.0-beta1
+🧪 **Latest Beta Release**: **[v0.11.0-beta1](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.11.0-beta1)**
 
 ## 📦 Components
 
-| Component | Description | Default Port |
-|-----------|-------------|--------------|
-| **[Yaci CLI](./applications/cli)** | Command-line interface for devnet management | - |
-| **[Yaci Store](https://github.com/bloxbean/yaci-store)** | Lightweight indexer with Blockfrost-compatible APIs | 8080 |
-| **[Yaci Viewer](./applications/viewer)** | Web-based blockchain explorer for developers | 5173 |
-| **Cardano Node** | Official Cardano node (supports both amd64/arm64) | 3001 (n2n), 3333 (n2c) |
-| **[Ogmios](https://ogmios.dev/)** | WebSocket API for Cardano (optional) | 1337 |
-| **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer focusing on patterns (optional) | 1442 |
+| Component | Description | Default Port                         |
+|-----------|-------------|--------------------------------------|
+| **[Yaci CLI](./applications/cli)** | Command-line interface for devnet management | -                                    |
+| **[Yaci Store](https://github.com/bloxbean/yaci-store)** | Lightweight indexer with Blockfrost-compatible APIs | 8080                                 |
+| **[Yaci Viewer](./applications/viewer)** | Web-based blockchain explorer for developers | 5173                                 |
+| **Cardano Node** | Official Cardano node (supports both amd64/arm64) | 3001 (n2n), 3333 (n2c through socat) |
+| **[Ogmios](https://ogmios.dev/)** | WebSocket API for Cardano (optional) | 1337                                 |
+| **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer focusing on patterns (optional) | 1442                                 |
 
 ## 🎯 Quick Start
 
 ### Prerequisites
 
-- **Docker** and **Docker Compose**
-- **4GB+ RAM** recommended
+- **Docker** and **Docker Compose** for Docker based distribution
 
 ### Installation
 
@@ -124,17 +119,13 @@ docker-compose up -d
 ```bash
 # Global installation
 npm install -g @bloxbean/yaci-devkit
-yaci-devkit start
-
-# Or in CI/CD (GitHub Actions, GitLab CI, etc.)
-npx @bloxbean/yaci-devkit start
+yaci-devkit up --enable-yaci-store
+or
+yaci-devkit up --enable-kupomios
 ```
 
 **CI Integration Examples:**
 - ✅ **GitHub Actions** - Automated testing with DevKit
-- ✅ **GitLab CI** - Pipeline integration  
-- ✅ **Jenkins** - Continuous integration
-- ✅ **Local Testing** - Development workflows
 
 [📖 **CI Integration Guide**](https://devkit.yaci.xyz/ci-integration) | [🔗 **Sample CI Project**](https://github.com/bloxbean/devkit-npm-ci-test)
 
@@ -150,8 +141,8 @@ yaci-cli> create-node -o --start
 
 🎉 **That's it!** Your devnet is now running with:
 - **Yaci Viewer**: http://localhost:5173
-- **API Docs**: http://localhost:8080/swagger-ui.html
-- **Store API**: http://localhost:8080/api/v1/
+- **API Docs**: http://localhost:8080/swagger-ui/index.html
+- **Yaci Store API**: http://localhost:8080/api/v1/
 
 ## 🎛️ Configuration Options
 
@@ -162,9 +153,6 @@ create-node -o --start
 
 # High-speed development (200ms blocks) - New in v0.11.0-beta1
 create-node --block-time 0.2 --slot-length 0.2 -o --start
-
-# Conway era with governance features
-create-node --era conway -o --start
 ```
 
 ### Rollback Testing (Multi-node)
@@ -238,15 +226,6 @@ BackendService backendService = new BFBackendService(
   "http://localhost:8080/api/v1/", 
   "your-project-id" // Not required for local devnet
 );
-```
-
-### Ogmios WebSocket
-```javascript
-// WebSocket connection (if Ogmios enabled)
-const client = new Ogmios.Client({
-  host: 'localhost',
-  port: 1337
-});
 ```
 
 ## 🧪 Testing Features
@@ -324,6 +303,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **⭐ Star this repo if Yaci DevKit helps accelerate your Cardano development!**
 
-[Documentation](https://devkit.yaci.xyz/) • [Discord](https://discord.gg/JtQ54MSw6p) • [Twitter](https://twitter.com/YaciOfficial)
+[Documentation](https://devkit.yaci.xyz/) • [Discord](https://discord.gg/JtQ54MSw6p)
 
 </div>
