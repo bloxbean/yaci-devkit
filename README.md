@@ -5,6 +5,8 @@
 
 [![GitHub release](https://img.shields.io/github/release/bloxbean/yaci-devkit.svg)](https://github.com/bloxbean/yaci-devkit/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/bloxbean/yaci-cli.svg)](https://hub.docker.com/r/bloxbean/yaci-cli)
+[![npm downloads](https://img.shields.io/npm/dt/@bloxbean/yaci-devkit.svg)](https://www.npmjs.com/package/@bloxbean/yaci-devkit)
+[![GitHub Downloads](https://img.shields.io/github/downloads/bloxbean/yaci-devkit/total?label=GitHub%20Downloads)](https://github.com/bloxbean/yaci-devkit/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
