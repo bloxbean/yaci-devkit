@@ -1,0 +1,277 @@
+import { Callout } from 'nextra/components'
+
+# Zip Setup
+
+For users who prefer not to use Docker, the ZIP distribution contains only Yaci CLI and allows you to download and manage necessary components like Cardano Node, Ogmios, Kupo, and Yaci Store directly through the command line.
+
+## Overview
+
+The Zip distribution is perfect for:
+- **Developers and system administrators**: Quickly set up custom node or multi-node networks
+- **Users wanting more control**: Easily manage compatible component versions and configurations
+- **Non-Docker environments**: Environments where Docker is not available or preferred
+
+<Callout type="info">
+**Note**: Yaci Viewer is not included in the Zip distribution. To add viewer functionality, you can install Yaci Viewer separately through NPM. See the [NPM installation guide](/getting-started/npm#step-2-install-yaci-viewer-optional) for details.
+</Callout>
+
+## Key Advantages
+
+- **Reduced Disk Space**: Requires less disk space than Docker, containing only the Yaci CLI binary and configuration files
+- **Version Flexibility**: Specify compatible versions of Cardano Node and other components directly in the download configuration
+- **Customizable Setup**: Selectively enable components like Yaci Store, Ogmios, and Kupo to achieve the same functionality as the Docker distribution
+
+## Prerequisites
+
+### Supported Platforms
+
+Yaci CLI is currently supported on:
+
+1. **Linux x86**: Tested on Ubuntu 22.04 and later
+2. **macOS 14 (Arm64) or later**
+
+<Callout type="warning">
+**Upgrading from a previous version?** If you have an existing Yaci CLI installation, remove the `$HOME/.yaci-cli` folder before installing the new version. This ensures all components are downloaded with their latest compatible versions.
+
+```bash
+rm -rf $HOME/.yaci-cli
+```
+</Callout>
+
+## Installation
+
+### Step 1: Download and Extract
+
+1. Download the latest Yaci CLI Zip file from the [releases page](https://github.com/bloxbean/yaci-devkit/releases)
+
+   **File name format:** `yaci-cli-<version>-<os>-<arch>.zip`
+
+   **Examples:**
+   - Linux: `yaci-cli-x.y.z-linux-X64.zip`
+   - macOS: `yaci-cli-x.y.z-macos-ARM64.zip`
+
+2. Unzip the downloaded file
+
+3. Navigate to the extracted folder where you'll find:
+   - `yaci-cli` - The main executable binary
+   - `config/` - Configuration files directory
+
+### Step 2: macOS Setup (macOS users only)
+
+On macOS, downloaded executables are quarantined by default. Remove the quarantine:
+
+```bash
+xattr -d com.apple.quarantine path/to/yaci-cli-distribution/yaci-cli
+```
+
+Replace `path/to/yaci-cli-distribution` with your actual path.
+
+## Getting Started
+
+### Step 1: Run Yaci CLI
+
+Navigate to the extracted folder and run:
+
+```shell
+./yaci-cli
+```
+
+You'll see the Yaci CLI prompt: `yaci-cli:>`
+
+### Step 2: Download Required Components
+
+The ZIP distribution doesn't include the necessary components for creating a devnet. Download them using:
+
+```shell
+yaci-cli:> download
+```
+
+This automatically downloads all required components for your platform:
+- Cardano Node
+- Ogmios
+- Kupo
+- Yaci Store
+
+All components are downloaded to `$HOME/.yaci-cli` by default.
+
+#### Download Options
+
+**Overwrite existing components:**
+```shell
+yaci-cli:> download --overwrite
+```
+
+**Download individual components:**
+```shell
+yaci-cli:> download -c node
+yaci-cli:> download -c ogmios
+yaci-cli:> download -c kupo
+yaci-cli:> download -c yaci-store
+```
+
+<Callout type="warning">
+You can change the default Yaci CLI home folder by setting the `yaci.cli.home` property in the `application.properties` configuration file.
+</Callout>
+
+### Step 3: Create Your First Devnet
+
+Once components are downloaded, create and start a devnet:
+
+```shell
+yaci-cli:> create-node -o --start
+```
+
+This creates a new devnet with a single node and starts it with a 1-second block time.
+
+<Callout type="info">
+**Note**: In the Zip distribution, only the Cardano devnet is started by default. Additional components (Yaci Store, Ogmios, Kupo) are not automatically started. To enable these services:
+
+**Option 1**: Configure in `application.properties` before starting (see [Configuration](#configuration) section)
+
+**Option 2**: Enable via CLI commands:
+```shell
+yaci-cli:> enable-yaci-store    # Enable Yaci Store
+yaci-cli:> enable-kupomios     # Enable both Ogmios and Kupo
+```
+
+**Important**: To use Yaci Viewer (the blockchain explorer) with your devnet, you must enable Yaci Store as Yaci Viewer retrieves its data from Yaci Store.
+</Callout>
+
+#### Customize Block Time (Optional)
+
+<Callout type="info">
+**Default Configuration**: The standard `create-node` command creates a devnet with 1-second block time. You can customize this for faster development cycles.
+</Callout>
+
+To create a devnet with custom block time:
+
+```shell
+# Sub-second block time (200ms)
+yaci-cli:> create-node -o --block-time 0.2 --slot-length 0.2 --start
+
+# Sub-second block time (100ms) with 80-slot epochs
+yaci-cli:> create-node -o --block-time 0.1 --slot-length 0.1 --epoch-length 80 --start
+
+# 5-second block time
+yaci-cli:> create-node -o --block-time 5 --slot-length 5 --start
+```
+
+**Important considerations:**
+- For sub-second block times, always set both `--block-time` and `--slot-length`
+- The slot length must be equal to or less than the block time
+- `--epoch-length` defines the number of slots per epoch (default: 600)
+- With 0.1s slots and 80-slot epochs, each epoch lasts 8 seconds
+
+## Configuration
+
+The `config` folder contains three important configuration files:
+
+### application.properties
+
+Main configuration file for Yaci CLI functionality.
+
+#### Enable Optional Components
+
+By default, optional components are disabled. Enable them as needed:
+
+```properties
+ogmios.enabled=true
+kupo.enabled=true
+yaci.store.enabled=true
+```
+
+<Callout type="warning">
+**For Blockfrost-compatible APIs**: To use Yaci Store for transaction building, script cost evaluation, and transaction submission, you must enable both Yaci Store and Ogmios.
+</Callout>
+
+#### Update Ports
+
+Customize default ports:
+
+```properties
+ogmios.port=1337
+kupo.port=1442
+yaci.store.port=8080
+```
+
+### node.properties
+
+Contains Cardano Node configuration. Update as needed to modify the node's genesis configuration.
+
+### download.properties
+
+Contains default download versions for components. You can:
+- Update versions for specific components
+- Provide direct download URLs
+- Control your environment with specific compatible versions
+
+## Basic Usage
+
+### Essential Commands
+
+Once your devnet is running, you'll be in the "devnet:default" context:
+
+#### Fund Test Addresses
+```shell
+devnet:default> topup <address> <ada_amount>
+```
+
+#### Check UTXOs
+```shell
+devnet:default> utxos <address>
+```
+
+#### Get Devnet Information
+```shell
+devnet:default> info
+```
+
+#### Reset Devnet Data
+```shell
+devnet:default> reset
+```
+
+#### Stop Devnet
+```shell
+devnet:default> stop
+```
+
+### Advanced Configuration
+
+#### Enable Services Before Creating Devnet
+
+```shell
+yaci-cli:> enable-yaci-store   # Enable Yaci Store
+yaci-cli:> enable-kupomios    # Enable both Ogmios and Kupo
+```
+
+#### Custom Block Times and Epochs
+
+```shell
+# Custom slots per epoch
+yaci-cli:> create-node -o -e 30 --start
+
+# Sub-second block times (e.g., 200ms)
+yaci-cli:> create-node -o --block-time 200 --start
+```
+
+### Service URLs
+
+When enabled, services are available at:
+- **Yaci Store (Blockfrost API)**: http://localhost:8080/api/v1/
+- **Yaci Store (Swagger UI)**: http://localhost:8080/swagger-ui/index.html
+- **Yaci Viewer**: http://localhost:3000 (If Yaci Viewer is installed separately via NPM)
+- **Ogmios**: http://localhost:1337
+- **Kupo**: http://localhost:1442
+
+## Multi-Node Networks
+
+Since Yaci CLI is used in both Yaci DevKit and this distribution, the commands to create a multi-node network remain the same.
+You can follow the instructions provided in the [Additional Nodes on Different Machines](/multi-node-setup#additional-nodes-on-different-machines) section of the multi-node setup guide.
+
+## Next Steps
+
+- **Learn all commands**: Check out [Yaci CLI Commands](/commands)
+- **Advanced setup**: Set up [Multi-node networks](/multi-node-setup)
+- **Testing**: Implement [Rollback testing](/rollback-testing)
+- **Compare options**: Consider the [Docker Setup](/getting-started/docker) for easier management

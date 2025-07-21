@@ -7,7 +7,7 @@
 Ouroboros' mini-protocols via JSON/RPC.
 - **Kupo :** Kupo is fast, lightweight and configurable chain-index for the Cardano blockchain.
 
-By default, **Yaci Store** and **Ogmios** are enabled. While Yaci Store provides a Blockfrost-compatible API, it relies on Ogmios
+By default, **Yaci Store** and **Ogmios** are enabled in Docker distribution. While Yaci Store provides a Blockfrost-compatible API, it relies on Ogmios
 to support the transaction evaluation endpoint (/api/v1/utils/txs/evaluate). This is useful if you're using a client library
 that performs online script cost estimation via Blockfrost's transaction evaluation endpoint.
 
@@ -15,16 +15,77 @@ If you enable Kupo, a default wildcard "catch all" matching pattern is pre-confi
 
 ## Configuration
 
-Based on your requirements, you should enable or disable services in the `env` file to **minimize** the **runtime memory** footprint of DevKit.
-Though, you can also enable or disable services using specific commands in yaci-cli, but it's recommended to use the `env` file for a persistent configuration.
+Based on your requirements, you should enable or disable services to **minimize** the **runtime memory** footprint of DevKit. The configuration method varies depending on your distribution type.
 
-### Location of env file
-For zip based installation, the env file is located under installation directory ``config/env``.
+### Docker Distribution
 
-For curl based installation, the env file is located under ``$HOME/.yaci-devkit/config/env``.
+For Docker distribution, services are configured using the `env` file with underscore notation.
 
-### Configuration options
+**Location:**
+- **Zip-based installation:** `config/env`
+- **Curl-based installation:** `$HOME/.yaci-devkit/config/env`
 
-- **yaci_store_enabled** : Enable or disable Yaci Store service. Default is `true`.
-- **ogmios_enabled** : Enable or disable Ogmios service. Default is `true`.
-- **kupo_enabled** : Enable or disable Kupo service. Default is `false`.
+**Configuration options:**
+```bash
+# Enable/disable services (true/false)
+yaci_store_enabled=true
+ogmios_enabled=true
+kupo_enabled=false
+```
+
+### Zip Distribution (CLI)
+
+For Zip distribution, services are configured in the `application.properties` file with dot notation.
+
+**Location:** `config/application.properties`
+
+**Configuration options:**
+```properties
+# Enable/disable services (true/false)
+yaci.store.enabled=false
+ogmios.enabled=false
+kupo.enabled=false
+```
+
+### NPM Distribution
+
+For NPM distribution, services are enabled via command-line flags when using the `up` command.
+
+**Configuration options:**
+```bash
+# Enable Yaci Store and Ogmios
+yaci-devkit up --enable-yaci-store
+
+# Enable Ogmios and Kupo
+yaci-devkit up --enable-kupomios
+
+# Enable with other options
+yaci-devkit up --enable-yaci-store --interactive
+```
+
+### Default Settings
+
+- **Docker distribution:** Yaci Store and Ogmios are enabled by default
+- **Zip distribution:** All services are disabled by default
+- **NPM distribution:** Only Cardano node is started by default
+
+### Service Dependencies
+
+- **Yaci Store** requires **Ogmios** for transaction evaluation endpoints (`/api/v1/utils/txs/evaluate`)
+- **Kupo** requires **Ogmios** to function properly
+- When **Kupo** is enabled, a default wildcard "catch all" matching pattern is pre-configured
+
+### Runtime Commands
+
+You can also enable/disable services at runtime using Yaci CLI commands:
+```bash
+# Enable services
+yaci-cli:> enable-yaci-store
+yaci-cli:> enable-kupomios
+
+# Disable services
+yaci-cli:> disable-yaci-store
+yaci-cli:> disable-kupomios
+```
+
+**Note:** Runtime changes are temporary. For persistent configuration, use the appropriate configuration file or flags for your distribution.

@@ -1,9 +1,10 @@
 {
-  "index": "Introduction",
-  "docker": "Docker Distribution",
-  "yaci_cli_distribution": "Zip (Non-Docker) Distribution",
-  "yaci_cli_npm_distr": "NPM Distribution",
-  "how_to_use": "How to use",
+  "index": {
+    "type": "page",
+    "display": "hidden"
+  },
+  "introduction": "Introduction",
+  "getting-started": "Getting Started",
   "about": {
     "title": "About",
     "type": "page"
@@ -12,5 +13,8 @@
   "commands": "Yaci CLI Commands",
   "node-configuration": "Node Configuration",
   "multi-node-setup": "Multi-node setup",
-  "tutorials": "Tutorials"
+  "rollback-testing": "Rollback Testing",
+  "ci-integration": "CI/CD Integration",
+  "tutorials": "Tutorials",
+  "known-issues": "Known Issues / FAQ"
 }
