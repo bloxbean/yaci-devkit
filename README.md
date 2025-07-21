@@ -4,7 +4,7 @@
 <h4>Complete Cardano development environment with instant local devnet</h4>
 
 [![GitHub release](https://img.shields.io/github/release/bloxbean/yaci-devkit.svg)](https://github.com/bloxbean/yaci-devkit/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/bloxbean/yaci-devkit.svg)](https://hub.docker.com/r/bloxbean/yaci-devkit)
+[![Docker Pulls](https://img.shields.io/docker/pulls/bloxbean/yaci-cli.svg)](https://hub.docker.com/r/bloxbean/yaci-cli)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
