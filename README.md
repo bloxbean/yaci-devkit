@@ -84,7 +84,7 @@ When `--enable-multi-node` is used, DevKit creates a 3-node cluster for rollback
 | **[Yaci Viewer](./applications/viewer)** | Web-based blockchain explorer for developers | 5173                                 |
 | **Cardano Node** | Official Cardano node (supports both amd64/arm64) | 3001 (n2n), 3333 (n2c through socat) |
 | **[Ogmios](https://ogmios.dev/)** | WebSocket API for Cardano (optional) | 1337                                 |
-| **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer focusing on patterns (optional) | 1442                                 |
+| **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer (optional) | 1442                                 |
 
 ## 🎯 Quick Start
 
