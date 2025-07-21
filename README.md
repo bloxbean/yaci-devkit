@@ -1,7 +1,6 @@
 <div align="center">
 <img src="static/DevKit.png" width="300">
 
-<h1>Yaci DevKit</h1>
 <h4>Complete Cardano development environment with instant local devnet</h4>
 
 [![GitHub release](https://img.shields.io/github/release/bloxbean/yaci-devkit.svg)](https://github.com/bloxbean/yaci-devkit/releases)
@@ -95,23 +94,27 @@ When `--enable-multi-node` is used, DevKit creates a 3-node cluster for rollback
 
 Yaci DevKit offers multiple distribution options to fit your development workflow:
 
-#### Option 1: Zip Distribution (Local Development)
-Perfect for local development and testing:
+#### Option 1: Docker Zip Distribution
+#### Option 2: Yaci CLI Zip Distribution (Non-Docker)
+#### Option 3: NPM Distribution (CI/CD Ready)
+
+
+#### Option 1: Docker Zip Distribution
+
+Download and unzip the latest docker distribution.
+
 ```bash
-# Download latest release
-wget https://github.com/bloxbean/yaci-devkit/releases/latest/download/yaci-devkit.zip
-unzip yaci-devkit.zip
-cd yaci-devkit
+# 
+# Start DevKit
 ./bin/devkit.sh start
 ```
 
-#### Option 2: Docker Distribution  
-For containerized environments:
+#### Option 2: Yaci CLI Zip Distribution (Non-Docker)
+Download and unzip the latest Yaci CLI distribution.
+
 ```bash
-# Pull and run with docker-compose
-git clone https://github.com/bloxbean/yaci-devkit.git
-cd yaci-devkit
-docker-compose up -d
+# Start Yaci CLI and download components
+./yaci-cli
 ```
 
 #### Option 3: NPM Distribution (CI/CD Ready)
@@ -132,9 +135,6 @@ yaci-devkit up --enable-kupomios
 ### Start Your First Devnet
 
 ```bash
-# Start DevKit
-./bin/devkit.sh start
-
 # Create and start a single-node devnet (default)
 yaci-cli> create-node -o --start
 ```
@@ -144,21 +144,32 @@ yaci-cli> create-node -o --start
 - **API Docs**: http://localhost:8080/swagger-ui/index.html
 - **Yaci Store API**: http://localhost:8080/api/v1/
 
+  <em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend or [Javascript app with MeshJS + Blockfrost provider](https://github.com/MeshJS/examples/blob/main/mesh/yaci-send-lovelace.ts) as it exposes required BF compatible minimum apis for tx building and submission)</em>
+- **Yaci Store Swagger UI**: http://localhost:8080/swagger-ui/index.html
+- **Ogmios Url (Optional)**: http://localhost:1337
+
+**(Optional) If you enabled Kupo**
+- **Kupo Url (Optional)**: http://localhost:1442
+
+### Node Ports
+- **n2n port**: localhost:3001
+- **n2c port for remote client (socat)**: localhost:3333
+
 ## 🎛️ Configuration Options
 
 ### Standard Development
 ```bash
 # Default single-node setup (1 second blocks)
-create-node -o --start
+yaci-cli> create-node -o --start
 
 # High-speed development (200ms blocks) - New in v0.11.0-beta1
-create-node --block-time 0.2 --slot-length 0.2 -o --start
+yaci-cli> create-node --block-time 0.2 --slot-length 0.2 -o --start
 ```
 
 ### Rollback Testing (Multi-node)
 ```bash
 # Enable multi-node ONLY for rollback testing
-create-node --enable-multi-node --block-time 2 -o --start
+yaci-cli> create-node --enable-multi-node --block-time 2 -o --start
 
 # Simulate network partition for rollback testing
 devnet:default> create-forks
@@ -203,54 +214,19 @@ devnet:default> info
 # Quick reset without losing configuration
 devnet:default> reset
 
-# Full cleanup
+# Full cleanup -- Docker distribution only
 ./bin/devkit.sh stop
 ./bin/devkit.sh start
 ```
-
-## 🔗 SDK Integration
-
-### Blockfrost Provider (Mesh, Lucid Evolution)
-```javascript
-// JavaScript/TypeScript
-const blockfrost = new BlockfrostProvider({
-  projectId: 'your-project-id', // Not required for local devnet
-  baseUrl: 'http://localhost:8080/api/v1'
-});
-```
-
-### Cardano Client Lib (Java)
-```java
-// Java
-BackendService backendService = new BFBackendService(
-  "http://localhost:8080/api/v1/", 
-  "your-project-id" // Not required for local devnet
-);
-```
-
-## 🧪 Testing Features
-
-### Rollback Testing (v0.11.0-beta1+)
-Test your applications against realistic rollback scenarios using multi-node setup:
-
-1. **Consensus-based Rollbacks** - Real network partitions using `create-forks`/`join-forks`
-2. **Database Snapshots** - Quick state restoration using `set-rollback-point`/`rollback`
-
-[→ Complete Rollback Testing Guide](https://devkit.yaci.xyz/rollback-testing)
-
-### Performance Testing
-- **Sub-second blocks** for high-throughput testing (0.2s blocks)
-- **Custom epoch lengths** for delegation/rewards testing
-- **Predictable block times** for reliable testing scenarios
 
 ## 📚 Documentation
 
 | Resource | Description |
 |----------|-------------|
-| **[Official Documentation](https://devkit.yaci.xyz/)** | Complete guides and API reference |
+| **[Official Documentation](https://devkit.yaci.xyz/)** | Complete guides |
 | **[Rollback Testing Guide](https://devkit.yaci.xyz/rollback-testing)** | Advanced rollback simulation |
 | **[Mesh SDK Integration](https://meshjs.dev/yaci/getting-started)** | JavaScript/TypeScript development |
-| **[CLI Commands Reference](https://devkit.yaci.xyz/commands)** | All available commands |
+| **[CLI Commands Reference](https://devkit.yaci.xyz/commands)** | Available commands |
 
 ## 🎬 Video Tutorials
 
@@ -266,14 +242,14 @@ Test your applications against realistic rollback scenarios using multi-node set
 # Using Earthly (recommended)
 earthly --arg-file-path=config/version +build
 
-# Manual build
+# Manual build yaci-cli and yaci-viewer
 cd applications/cli && ./gradlew clean build
 cd applications/viewer && npm install && npm run build
 ```
 
 ### Requirements
 - **Java 21** (for Yaci CLI)
-- **Node.js 18+** (for Yaci Viewer)
+- **Node.js** (for Yaci Viewer)
 - **Earthly** (for unified builds)
 
 ## 🤝 Community & Support
@@ -291,7 +267,6 @@ cd applications/viewer && npm install && npm run build
 | 🌐 Depend on external testnets | 🔒 Fully controlled environment |
 | 🐌 Slow iteration cycles | 🚀 Rapid development loops |
 | 🔄 Manual rollback testing | 🎯 Automated rollback scenarios |
-| 📊 Limited debugging tools | 🛠️ Rich developer tooling |
 
 ## 📄 License
 
