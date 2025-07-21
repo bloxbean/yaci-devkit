@@ -1,0 +1,227 @@
+import { Callout } from 'nextra/components'
+
+# Docker Setup
+
+The Docker distribution is the **recommended** way to get started with Yaci DevKit. It includes all required components and provides a complete, ready-to-use development environment with Docker Compose.
+
+## Overview
+
+The Docker distribution includes:
+- **Yaci CLI**: Command-line interface for managing your devnet
+- **Cardano Node**: Local Cardano blockchain node
+- **Yaci Store**: Lightweight indexer with Blockfrost-compatible APIs
+- **Yaci Viewer**: Web-based interface for exploring blockchain data
+- **Ogmios**: A lightweight bridge interface for Cardano Node
+- **Kupo**: A fast, lightweight and configurable chain-indexer
+
+## Prerequisites
+
+- **Docker**: Make sure Docker is installed and running on your system
+- **Available Ports**: Default ports (3001, 8080, 5173) should be free
+
+For Ogmios and Kupo, ensure ports 1337 and 1442 are also available if you plan to use these services.
+
+## Installation
+
+### Method 1: Curl Installation (Recommended)
+
+To install the latest stable version of Yaci DevKit:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://devkit.yaci.xyz/install.sh | bash
+```
+
+To install a specific version:
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://devkit.yaci.xyz/install.sh | bash -s -- <version>
+```
+
+**Note:** Replace `<version>` with the desired version number without the `v` prefix.
+
+### Method 2: Zip Installation
+
+Download the latest zip from the [releases page](https://github.com/bloxbean/yaci-devkit/releases) and unzip it.
+
+**File name format:** `yaci-devkit-<version>.zip`
+
+## Getting Started
+
+### DevKit Script
+
+After installation, you'll have access to the `devkit` script:
+
+- **Curl installation**: Available as `devkit` command (if bin folder is in PATH) or in `$HOME/.yaci-devkit/bin/devkit.sh`
+- **Zip installation**: Available as `./devkit.sh` in the bin folder
+
+The script provides the following options:
+
+```shell
+Options:
+  start   Start the DevKit containers and CLI.
+  stop    Stop the DevKit containers.
+  cli     Query the Cardano node in the DevKit container using cardano-cli.
+  ssh     Establish an SSH connection to the DevKit container.
+  info    Display information about the Dev Node.
+  version Display the version of the DevKit.
+  help    Display this help message.
+```
+
+### Starting Your First Devnet
+
+1. **Start the DevKit containers and Yaci CLI**:
+
+   For curl-based installation:
+   ```shell
+   devkit start
+   ```
+
+   For zip-based installation:
+   ```shell
+   ./devkit.sh start
+   ```
+
+2. **Create a default devnet**:
+   ```shell
+   yaci-cli:>create-node -o --start
+   ```
+
+ This will create a devnet with a 1-second block time.
+
+##### Customize Block Time (Optional)
+
+<Callout type="info">
+**Default Configuration**: The standard `create-node` command creates a devnet with 1-second block time. You can customize this for faster development cycles.
+</Callout>
+
+To create a devnet with custom block time:
+
+```shell
+# Sub-second block time (200ms)
+yaci-cli:>create-node -o --block-time 0.2 --slot-length 0.2 --start
+
+# Sub-second block time (100ms) with 80-slots epochs
+yaci-cli:>create-node -o --block-time 0.1 --slot-length 0.1 --epoch-length 80 --start
+
+# 5-second block time
+yaci-cli:>create-node -o --block-time 5 --slot-length 5 --start
+```
+
+**Important considerations:**
+- For sub-second block times, always set both `--block-time` and `--slot-length`
+- The slot length must be equal to or less than the block time
+- `--epoch-length` defines the number of slots per epoch (default: 600)
+- With 0.1s slots and 80-slot epochs, each epoch lasts 8 seconds
+
+3. **Access Yaci Viewer**:
+   Open http://localhost:5173 in your browser to explore your devnet through the web interface.
+
+<Callout type="info">
+**Port Conflicts**: If ports are already in use, update the `config/env` file to change port numbers. Restart the containers after making changes.
+</Callout>
+
+## Basic Usage
+
+### Essential Yaci CLI Commands
+
+Once your devnet is running, you'll be in the "devnet:default" context. Here are the most important commands:
+
+#### Fund Test Addresses
+```shell
+devnet:default> topup <address> <ada_amount>
+```
+
+#### Check UTXOs
+```shell
+devnet:default> utxos <address>
+```
+
+#### Get Devnet Information
+```shell
+devnet:default> info
+```
+
+#### Reset Devnet Data
+```shell
+devnet:default> reset
+```
+
+#### Stop Devnet
+```shell
+devnet:default> stop
+```
+
+### Advanced Configuration
+
+#### Custom Block Times and Epochs
+Create a devnet with custom settings:
+
+```shell
+# Custom slots per epoch (default: 500)
+yaci-cli> create-node -o -e 30 --start
+
+# Sub-second block times (e.g., 200ms)
+yaci-cli> create-node -o --block-time 200 --start
+```
+
+#### Auto-fund Test Accounts
+Update `config/env` file to automatically fund addresses on startup:
+
+```
+topup_addresses=addr_test1...address1:20000,addr_test1...address2:10000
+```
+
+**Important:** Restart the containers after updating the env file.
+
+### Optional Services
+
+#### Enable Ogmios and Kupo
+To activate Ogmios and Kupo support, either:
+
+1. **Via env file**: Set `ogmios_enabled=true` and `kupo_enabled=true` in `config/env`
+2. **Via CLI**: Use the `enable-kupomios` command in Yaci CLI
+
+#### Service URLs
+- **Yaci Store (Blockfrost API)**: http://localhost:8080/api/v1/
+- **Yaci Store (Swagger UI)**: http://localhost:8080/swagger-ui/index.html
+- **Yaci Viewer**: http://localhost:5173
+- **Ogmios** (if enabled): http://localhost:1337
+- **Kupo** (if enabled): http://localhost:1442
+
+## Stopping the DevKit
+
+To stop all containers:
+
+For curl-based installation:
+```shell
+devkit stop
+```
+
+For zip-based installation:
+```shell
+./devkit.sh stop
+```
+
+## Troubleshooting
+
+### Using cardano-cli with DevKit
+
+Query the Cardano node directly using the DevKit wrapper:
+
+```shell
+./devkit.sh cli query protocol-parameters
+```
+
+This allows you to use cardano-cli commands without installing it locally or specifying protocol magic numbers.
+
+### Default Pool ID
+
+For testing pool delegation and rewards:
+**pool1wvqhvyrgwch4jq9aa84hc8q4kzvyq2z3xr6mpafkqmx9wce39zy**
+
+## Next Steps
+
+- **Explore the CLI**: Check out all available [Yaci CLI Commands](/commands)
+- **Advanced Setup**: Learn about [Multi-node setup](/multi-node-setup)
+- **Testing**: Implement [Rollback testing](/rollback-testing)
+- **CI/CD**: Set up [CI/CD integration](/ci-integration)

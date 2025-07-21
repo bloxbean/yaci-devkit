@@ -16,12 +16,13 @@ Create a new node with the default options. 1 sec block time and overwrite the e
    - **Options:**
      - `--overwrite or -o boolean` : Overwrite the existing node if it exists.
      - `--start` : Start the node after creation.
-     - `--block-time or -b double` : Set the block time in seconds. Default is 1 sec.
-     - `--slot-length or -s double` : Slot Length in sec. Default is 1 sec.
+     - `--block-time or -b double` : Set the block time in seconds. Default is 1 sec. **New in 0.11.0-beta1:** Supports sub-second values like 0.2 for 200ms blocks.
+     - `--slot-length or -s double` : Slot Length in sec. Default is 1 sec. **New in 0.11.0-beta1:** Supports sub-second values like 0.2 for 200ms slots.
      - `--epoch-length or -e int` : Epoch Length in slots. Default is 500.
      - `--era String` : Era (babbage, conway). Default is babbage.
+     - `--enable-multi-node` : Enable multi-node setup for rollback testing. **New in 0.11.0-beta1.**
 
-**Note:** There are many other node specific configuration that can be set through env file. Please refer to the [Node Configuration](./node-configuration) for more details.
+**Note:** There are many other node specific configuration that can be set through env file or node.properties. Please refer to the [Node Configuration](./node-configuration) for more details.
 
 ### reset
 
@@ -133,7 +134,7 @@ utxos addr_test1qrzufj3g0ua489yt235wtc3mrjrlucww2tqdnt7kt5rs09grsag6vxw5v053atks
 
 ### tip
 
-To show the tip of the node.
+To show the tip of the node. **New in 0.11.0-beta1:** Shows tips for all nodes when multi-node mode is enabled.
 
 - **Usage:**
 ```bash
@@ -185,4 +186,46 @@ To show the logs of the kupo (if enabled).
 - **Usage:**
 ```bash
 kupo-logs
+```
+
+## Rollback Commands (0.11.0-beta1+)
+
+Rollback testing commands for simulating blockchain rollbacks. For detailed rollback testing guide, see [Rollback Testing](./rollback-testing).
+
+### create-forks
+
+Creates network forks by isolating nodes through TCP proxy. Goes through Ouroboros consensus.
+
+- **Usage:**
+```bash
+create-forks
+```
+
+**Note:** Requires `--enable-multi-node` flag when creating the devnet.
+
+### join-forks
+
+Reconnects forked nodes, triggering consensus-based rollback.
+
+- **Usage:**
+```bash
+join-forks
+```
+
+### take-db-snapshot
+
+Take a database snapshot at rollback point (non-consensus).
+
+- **Usage:**
+```bash
+take-db-snapshot
+```
+
+### rollback-to-db-snapshot
+
+Restores database to the previously taken db snapshot to simulate rollback (non-consensus).
+
+- **Usage:**
+```bash
+rollback-to-db-snapshot
 ```

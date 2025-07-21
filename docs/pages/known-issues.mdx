@@ -1,0 +1,72 @@
+import { Callout } from 'nextra/components'
+
+# Known Issues / FAQ
+
+This page documents known issues, workarounds, and frequently asked questions about Yaci DevKit.
+
+## Known Issues
+
+### Plutus V2 Script Data Hash Mismatch (v0.11.0-beta1+)
+
+<Callout type="warning">
+**Issue**: Plutus V2 transactions may fail with "script data hash mismatch" exception when using Lucid Evolution or other off-chain SDKs.
+</Callout>
+
+#### Background
+
+In Yaci DevKit v0.11.0-beta1 and later, two configuration flags are commented out by default in `config/node.properties`:
+
+```properties
+# conwayHardForkAtEpoch=1
+# shiftStartTimeBehind=true
+```
+
+These flags were previously used as a workaround to avoid extra cost model entries in Plutus V2 when the Conway hard fork happens at epoch 0. The workaround manipulated the devnet start time to move to epoch 1, avoiding 10 extra entries in the Plutus V2 cost model in protocol parameters.
+
+#### Current Behavior With Default Configuration
+
+- **Plutus V3 transactions**: Work perfectly ✅
+- **Regular transactions**: Work perfectly ✅
+- **Plutus V2 with Cardano Client Lib**: Works perfectly ✅
+- **Plutus V2 with Lucid Evolution**: May fail with script data hash mismatch ❌
+
+#### Root Cause
+
+The **default configuration works fine with Cardano Client Lib** for all Plutus versions (including Plutus V2) because Cardano Client Lib fetches the cost model directly from the node to calculate script data hash for script transactions.
+
+However, **Plutus V2 scripts fail with Lucid Evolution** using the default configuration. The issue appears to be related to hardcoded cost models that don't match the current protocol parameters when Conway hard fork occurs at epoch 0.
+
+#### Workaround
+
+If you need to use **Plutus V2** with Lucid Evolution or other off-chain SDKs, enable the workaround flags:
+
+1. **Edit your node configuration file**:
+   - **Docker distribution**: `config/node.properties`
+   - **Zip distribution**: `config/node.properties`
+
+2. **Uncomment and enable the flags**:
+   ```properties
+   conwayHardForkAtEpoch=1
+   shiftStartTimeBehind=true
+   ```
+
+3. **Restart your devnet** to apply the changes
+
+<Callout type="info">
+**Trade-off**: Enabling these flags may cause issues with rewards or AdaPot calculations, but allows Plutus V2 transactions to work correctly.
+</Callout>
+
+#### More Information
+
+For technical details about this issue, see: [GitHub Issue #65](https://github.com/bloxbean/yaci-devkit/issues/65#issuecomment-2318155838)
+
+---
+
+## Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check the documentation**: Verify you're following the correct setup for your distribution
+2. **Search existing issues**: [GitHub Issues](https://github.com/bloxbean/yaci-devkit/issues)
+3. **Join the community**: [Discord](https://discord.gg/JtQ54MSw6p)
+4. **Report a bug**: [Create new issue](https://github.com/bloxbean/yaci-devkit/issues/new)

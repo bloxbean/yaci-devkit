@@ -1,0 +1,232 @@
+import { Callout } from 'nextra/components'
+
+# Rollback Testing Guide (0.11.0-beta1+)
+
+Yaci DevKit 0.11.0-beta1 introduces comprehensive rollback simulation capabilities for testing blockchain rollback scenarios. There are two distinct approaches to rollback testing, each serving different purposes.
+
+## Types of Rollback Testing
+
+### 1. Consensus-based Rollback
+- **Commands:** `create-forks`, `join-forks`
+- **Method:** Network isolation through TCP proxy
+- **Consensus:** Goes through proper Ouroboros consensus
+- **Use case:** Realistic rollback testing that mimics real network conditions
+
+### 2. Database Snapshot Rollback
+- **Commands:** `take-db-snapshot`, `rollback-to-db-snapshot`
+- **Method:** Uses database snapshots
+- **Consensus:** Does NOT go through Ouroboros consensus
+- **Use case:** Quick state restoration for development testing
+
+
+## Prerequisites
+
+For consensus-based rollback testing, you need a multi-node setup:
+
+```bash
+create-node --enable-multi-node --block-time 2 -o --start
+```
+
+<Callout type="info">
+**Block Time Recommendation:** Use `--block-time 2` for predictable rollback behavior.
+</Callout>
+
+## Step-by-Step Consensus Rollback Testing
+
+<Callout type="info">
+**Distribution Reliability:** With `--block-time 2` and default `--stake-ratio-factor 5`, consensus-based rollbacks work reliably in **non-Docker Zip** and **NPM** distributions. However, in **Docker** distribution, rollbacks may not happen reliably and parallel forks sometimes continue without resolving. If using Docker, consider increasing the stake ratio factor or block time for more reliable rollback behavior if required.
+</Callout>
+
+### Step 1: Create Multi-Node Devnet
+
+```bash
+# Create a multi-node devnet with 2-second block time
+yaci-cli> create-node --enable-multi-node --block-time 2 -o --start
+```
+
+This creates a 3-node cluster where nodes can be isolated for rollback testing.
+
+### Step 2: Monitor Initial State
+
+Check the tip across all nodes to verify they're synchronized:
+
+```bash
+devnet:default> tip
+```
+
+The `tip` command will show the current block height, slot, and hash for all 3 nodes in the cluster.
+
+### Step 3: Create Network Fork
+
+Simulate a network partition by isolating nodes:
+
+```bash
+devnet:default> create-forks
+```
+
+This command isolates **Node 1** from **Node 2** and **Node 3** through TCP proxy manipulation:
+
+```
+Before create-forks (Normal Network):
+┌────────┐    ┌────────┐    ┌────────┐
+│ Node 1 │◄──►│ Node 2 │◄──►│ Node 3 │
+│(Stake1)│    │(Stake5)│    │(Stake5)│
+└────────┘    └────────┘    └────────┘
+     ▲             ▲             ▲
+     └─────────────┼─────────────┘
+            All nodes synchronized
+
+After create-forks (Network Partition):
+┌────────┐         ┌────────┐    ┌────────┐
+│ Node 1 │    ✗    │ Node 2 │◄──►│ Node 3 │
+│(Stake1)│         │(Stake5)│    │(Stake5)│
+└────────┘         └────────┘    └────────┘
+     │                   │             │
+ Fork A              Fork B (Higher Stake)
+```
+
+The network partition:
+- **Isolates Node 1**: Creates Fork A with lower stake (1x)
+- **Connects Node 2 & 3**: Creates Fork B with higher stake (5x + 5x = 10x total)
+- **TCP Proxy**: Blocks communication between the two groups without stopping nodes
+- **Competing Chains**: Both sides continue producing blocks independently
+
+### Step 4: Submit Transactions During Fork
+
+While the network is forked, you can submit transactions that will be subject to rollback:
+
+```bash
+# Submit transactions - these will go through Node 1 (Fork A)
+devnet:default> topup addr_test1qrzufj3g0ua489yt235wtc3mrjrlucww2tqdnt7kt5rs09grsag6vxw5v053atks5a6whke03cf2qx3h3g2nhsmzwv3sgml3ed 1000
+
+# Check individual node states
+devnet:default> tip
+```
+
+**Important:** Any transactions submitted during the fork will be processed by **Node 1** (the isolated node with lower stake). Since Node 1's chain (Fork A) will likely be rolled back when the networks rejoin, **these transactions will be rolled back** and may not appear in the final chain.
+
+You'll notice that:
+- **Node 1 tip**: Shows different block height/hash (includes your transactions)
+- **Node 2 & 3 tips**: Show identical block height/hash (synchronized with each other)
+- **Divergent chains**: The different tips indicate the nodes are processing blocks independently
+
+### Step 5: Monitor Fork Progress
+
+Continue monitoring the network state:
+
+```bash
+# Check tips periodically to see divergence
+devnet:default> tip
+
+# Submit more transactions if needed for testing
+devnet:default> topup <another-address> 500
+```
+
+### Step 6: Rejoin Network (Trigger Rollback)
+
+Reconnect the isolated nodes to trigger consensus-based rollback:
+
+```bash
+devnet:default> join-forks
+```
+
+This command:
+- Re-enables network connectivity between nodes
+- Triggers Ouroboros consensus protocol
+- Causes nodes to resolve chain conflicts
+- Results in rollback of transactions on the shorter chain
+
+### Step 7: Verify Rollback Results
+
+After rejoining, monitor the network convergence:
+
+```bash
+# Check that all nodes converge to the same tip
+devnet:default> tip
+
+# Verify transaction states
+devnet:default> utxos <address-that-received-rolled-back-tx>
+```
+
+<Callout type="info">
+**Rollback Events:** During consensus-based rollbacks, applications listening through N2N (node-to-node) protocols or Ogmios will receive standard rollback events. This allows your applications to properly handle and respond to rollbacks in real-time, making the testing environment realistic for production scenarios.
+</Callout>
+
+<Callout type="warning">
+**Transaction Rollback:** Transactions submitted during the fork period may be rolled back as they were included in the losing chain (Node 1).
+
+**Yaci Viewer Note:** If you are checking for transaction rollbacks in Yaci Viewer, go to the "Transactions" page to verify rollback status. The homepage (live view) may still show rolled-back transactions in the UI even after they've been rolled back from the chain.
+</Callout>
+
+## Important Considerations
+
+<Callout type="error">
+**Multi-node Requirement:** Rollback commands (`create-forks`, `join-forks`) are only available when using `--enable-multi-node` flag. They cannot be used in single-node setups.
+</Callout>
+
+<Callout type="info">
+**Testing Applications:** Use rollback testing to verify that your applications properly handle:
+- Transaction rollbacks
+- State inconsistencies during forks
+- Recovery after network partitions
+- UTxO availability changes
+</Callout>
+
+## Troubleshooting
+
+If rollback testing doesn't work as expected:
+
+1. Ensure you used `--enable-multi-node` when creating the node
+2. Verify `--block-time 2` or more for predictable behavior
+3. Use `tip` command to monitor node states throughout the process
+4. Check that all services are running properly before starting tests
+
+### Fork Not Joining After `join-forks`
+
+Sometimes forks may not rejoin after executing `join-forks` because Ouroboros cannot decide between competing chains and considers both forks valid. If this happens, try:
+
+**Option 1: Increase Block Time**
+```bash
+# Use longer block time for more predictable consensus
+yaci-cli> create-node --enable-multi-node --block-time 5 -o --start
+```
+
+**Option 2: Adjust Stake Ratio Factor**
+
+The `--stake-ratio-factor` defines the staking ratio between nodes for realistic network scenarios. By default, it's set to 5, meaning nodes 2 and 3 have 5 times more stake than node 1.
+
+```bash
+# Increase stake ratio to make consensus more decisive
+yaci-cli> create-node --enable-multi-node --block-time 2 --stake-ratio-factor 10 -o --start
+
+# For NPM distribution
+yaci-devkit up --enable-multi-node --block-time 2 --stake-ratio-factor 10 --interactive
+```
+
+A higher stake ratio factor (e.g., 10) gives nodes 2 and 3 even more staking power, making it more likely that their chain will be chosen during consensus resolution.
+
+## Database Snapshot Rollback (Alternative Method)
+
+For simpler state restoration without consensus involvement:
+
+### Step 1: Take Database Snapshot
+
+```bash
+devnet:default> take-db-snapshot
+```
+
+### Step 2: Perform Operations
+
+```bash
+# Submit transactions or perform other operations
+devnet:default> topup addr_test1... 1000
+devnet:default> tip
+```
+
+### Step 3: Rollback to Database Snapshot
+
+```bash
+devnet:default> rollback-to-db-snapshot
+```
+
+This instantly restores the database to the previously taken snapshot without involving network consensus.

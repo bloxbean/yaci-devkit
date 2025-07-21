@@ -1,0 +1,292 @@
+import { Callout } from 'nextra/components'
+
+# NPM Setup
+
+The NPM distribution is perfect for developers who prefer npm package management and is especially well-suited for CI/CD pipelines and automated testing environments.
+
+## Overview
+
+The NPM distribution provides:
+- **Node.js package management**: Install and manage Yaci CLI distribution through npm
+- **Streamlined commands**: Simplified `up` command that handles download and devnet creation
+- **Yaci Viewer package**: Separately installable web interface for blockchain exploration
+- **CI/CD ready**: Perfect for automated testing and continuous integration
+
+## Prerequisites
+
+### Supported Platforms
+
+The NPM distribution is supported on:
+
+1. **Linux x86**: Tested on Ubuntu 22.04 and later
+2. **macOS 14 (Arm64) or later**
+
+### Requirements
+
+- **Node.js**: 20.8.0 or later
+- **Available ports**: Default ports should be free (3001, 8080, 5173)
+
+For Ogmios and Kupo, ensure ports 1337 and 1442 are also available if you plan to use these services.
+
+## Installation
+
+### Step 1: Install Yaci DevKit
+
+For latest stable version:
+```bash
+npm i -g @bloxbean/yaci-devkit
+```
+
+For latest beta version:
+```bash
+npm i -g @bloxbean/yaci-devkit@beta
+```
+
+### Step 2: Install Yaci Viewer (Optional)
+
+For latest stable version:
+```bash
+npm install -g @bloxbean/yaci-viewer
+```
+
+For latest beta version:
+```bash
+npm install -g @bloxbean/yaci-viewer@beta
+```
+
+<Callout type="warning">
+**Important**: The NPM distribution uses different command names:
+- **`yaci-devkit`**: Starts the Yaci CLI and other components
+- **`yaci-viewer`**: Starts the Yaci Viewer web interface
+</Callout>
+
+## Getting Started
+
+### Quick Start
+
+The NPM distribution includes a convenient `up` command that handles both component download and devnet creation:
+
+```bash
+yaci-devkit up
+```
+
+This command:
+- Downloads the Cardano node (if not already downloaded)
+- Creates and starts a new devnet with 1-second block time
+- Sets up the basic development environment
+
+### Interactive Mode
+
+To interact with the running devnet using the Yaci CLI prompt:
+
+```bash
+yaci-devkit up --interactive
+```
+
+This will:
+- Set up the devnet
+- Launch the interactive Yaci CLI interface
+- Allow you to run commands like `topup`, `utxos`, etc.
+
+### Customize Block Time (Optional)
+
+<Callout type="info">
+**Default Configuration**: The standard `up` command creates a devnet with 1-second block time. You can customize this for faster development cycles.
+</Callout>
+
+The NPM distribution supports all devnet customization options, including sub-second block times:
+
+```bash
+# Sub-second block time (100ms) with 80-slot epochs and Yaci Store
+yaci-devkit up --enable-yaci-store --block-time 0.1 --slot-length 0.1 --epoch-length 80
+
+# Sub-second block time (200ms) in interactive mode
+yaci-devkit up --interactive --block-time 0.2 --slot-length 0.2
+
+# 5-second block time
+yaci-devkit up --block-time 5 --slot-length 5
+```
+
+This command will:
+- Download Cardano node (if not already downloaded)
+- Download and enable Yaci Store (if specified)
+- Create a devnet with your custom configuration
+- Start the services with specified block time and epoch settings
+
+**Important considerations:**
+- For sub-second block times, always set both `--block-time` and `--slot-length`
+- The slot length must be equal to or less than the block time
+- `--epoch-length` defines the number of slots per epoch (default: 600)
+- With 0.1s slots and 80-slot epochs, each epoch lasts 8 seconds
+
+To see all supported options:
+```bash
+yaci-devkit up --help
+```
+
+## Basic Usage
+
+### Essential Commands
+
+#### 1. Simple Devnet
+```bash
+yaci-devkit up
+```
+Basic devnet with Cardano node only.
+
+#### 2. Interactive Devnet
+```bash
+yaci-devkit up --interactive
+```
+Devnet with CLI access for manual testing.
+
+#### 3. Yaci Store Mode (Recommended for SDK Development)
+```bash
+yaci-devkit up --enable-yaci-store
+```
+Includes:
+- Cardano node
+- Yaci Store (Blockfrost-compatible APIs)
+- Ogmios (for script cost evaluation)
+
+#### 4. Kupomios Mode
+```bash
+yaci-devkit up --enable-kupomios
+```
+Includes:
+- Cardano node
+- Ogmios
+- Kupo
+
+### Advanced Configuration
+
+You can pass the same arguments as the `create-node` command:
+
+```bash
+# Custom port
+yaci-devkit up --port 3002 --interactive
+
+# Custom slots per epoch
+yaci-devkit up -e 30 --interactive
+```
+
+## Yaci Viewer Setup
+
+### Starting Yaci Viewer
+
+Once you have a devnet running with Yaci Store support:
+
+```bash
+yaci-viewer
+```
+
+By default, Yaci Viewer connects to:
+- **Indexer API**: http://localhost:8080/api/v1
+- **WebSocket**: ws://localhost:8080/ws/liveblocks
+
+### Configuration Options
+
+#### Option 1: Using .env File
+
+Create a `.env` file in your working directory:
+
+```env
+PUBLIC_INDEXER_BASE_URL=http://localhost:8080/api/v1
+PUBLIC_INDEXER_WS_URL=ws://localhost:8080/ws/liveblocks
+```
+
+#### Option 2: Command-Line Arguments
+
+```bash
+yaci-viewer --indexerBaseUrl http://new-url.com/api/v1 --indexerWsUrl ws://new-url.com/ws/liveblocks
+```
+
+## Complete Workflow Example
+
+### For SDK Development
+
+1. **Start devnet with full services**:
+   ```bash
+   yaci-devkit up --enable-yaci-store --interactive
+   ```
+
+2. **In another terminal, start Yaci Viewer**:
+   ```bash
+   yaci-viewer
+   ```
+
+3. **Fund test addresses** (in the interactive CLI):
+   ```bash
+   devnet:default> topup addr_test1... 10000
+   ```
+
+### For CI/CD Pipelines
+
+```bash
+# Start background devnet
+yaci-devkit up --enable-yaci-store
+
+# Run your tests
+npm test
+
+# DevKit will be available at localhost:8080 for your test suite
+```
+
+For detailed CI/CD integration examples and best practices, see the [CI/CD Integration](/ci-integration) guide.
+
+## Service URLs
+
+When services are enabled:
+
+- **Cardano Node**: localhost:3001
+- **Yaci Store (Blockfrost API)**: http://localhost:8080
+- **Yaci Viewer**: http://localhost:5173
+- **Ogmios** (if enabled): ws://localhost:1337
+- **Kupo** (if enabled): http://localhost:1442
+
+## CLI Commands Reference
+
+Once in interactive mode, you can use all standard Yaci CLI commands:
+
+```bash
+# Check devnet status
+devnet:default> info
+
+# Fund addresses
+devnet:default> topup <address> <amount>
+
+# Check UTXOs
+devnet:default> utxos <address>
+
+# Reset devnet
+devnet:default> reset
+
+# Stop devnet
+devnet:default> stop
+```
+
+For a complete list, see [Yaci CLI Commands](/commands).
+
+## Troubleshooting
+
+### Ensure Backend is Running
+
+Before starting Yaci Viewer, make sure your devnet is running with Yaci Store:
+
+```bash
+yaci-devkit up --enable-yaci-store
+```
+
+### Port Conflicts
+
+If you encounter port conflicts, use custom ports:
+
+```bash
+yaci-devkit up --port 3002 --enable-yaci-store
+```
+
+## Next Steps
+
+- **Learn all commands**: Check out [Yaci CLI Commands](/commands)
+- **CI/CD integration**: Set up [automated testing](/ci-integration)
+- **Compare options**: Consider [Docker Setup](/getting-started/docker) for local development

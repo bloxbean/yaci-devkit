@@ -1,0 +1,98 @@
+import { Callout } from 'nextra/components'
+
+# CI/CD Integration
+
+Yaci DevKit's NPM distribution makes it perfect for continuous integration and automated testing pipelines. Integrate DevKit into your CI/CD workflows to test your Cardano applications automatically.
+
+## 🚀 Why Use DevKit in CI/CD?
+
+- **⚡ Fast Setup** - DevKit starts in seconds, perfect for CI environments
+- **🔧 Zero Configuration** - Works out of the box with sensible defaults
+- **🧪 Isolated Testing** - Each CI run gets a fresh, clean devnet
+- **📦 NPM Distribution** - Easy integration with Node.js-based CI systems
+
+## 📦 NPM Distribution for CI
+
+The NPM distribution is specifically optimized for CI/CD environments:
+
+```bash
+# Install globally
+npm install -g @bloxbean/yaci-devkit
+```
+
+### Key Advantages:
+- **No Docker required** - Pure Node.js/Java solution
+- **Faster startup** - Optimized for CI environment constraints
+- **Easy integration** - Standard npm package workflow
+- **Cross-platform** - Works on **Linux x86**, **macOS arm64** runners
+
+## 🔄 CI Platform Integrations
+
+### GitHub Actions
+
+<Callout type="info">
+**Sample Project**: Check out our [complete GitHub Actions example](https://github.com/bloxbean/devkit-npm-ci-test) with working CI integration.
+</Callout>
+
+#### Basic GitHub Actions Workflow
+
+```yaml
+name: Test with Yaci DevKit
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.8.0'
+
+      - name: Install Yaci DevKit
+        run: npm install -g @bloxbean/yaci-devkit
+
+      - name: Start Yaci DevKit in background
+        run: nohup  yaci-devkit up --enable-yaci-store &
+
+      - name: Wait for Yaci DevKit to start
+        run: |
+          for i in {1..30}; do
+            if nc -z localhost 8080; then
+              echo "Yaci DevKit is up!"
+              exit 0
+            fi
+            echo "Waiting for Yaci DevKit to start..."
+            sleep 5
+          done
+          echo "Yaci DevKit failed to start" >&2
+          exit 1
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Run Maven tests
+        run: mvn test --batch-mode
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: target/surefire-reports/
+```
+
+The above workflow builds a Java project and uses Yaci DevKit for testing. The same workflow pattern can be adapted for testing Cardano applications in any language.
