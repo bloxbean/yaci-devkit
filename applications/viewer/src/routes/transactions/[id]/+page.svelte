@@ -194,7 +194,7 @@
 					{#if !metadata}
 						<div class="text-center py-10 text-gray-400">No metadata available.</div>
 					{:else}
-						<JsonContent text={metadata} background="bg-black"></JsonContent>
+						<JsonContent text={metadata} customStyle="bg-black text-gray-100"></JsonContent>
 					{/if}
 				</div>
 			{/if}

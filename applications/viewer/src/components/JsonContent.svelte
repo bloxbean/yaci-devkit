@@ -5,21 +5,21 @@
 		label: 'Your message',
 		rows: 30,
 		cols: 100,
-		background: '',
+		customStyle: '',
 		placeholder: 'Leave a comment...'
 	};
 
 	export let text: any = {};
 	export let rows: number = 30;
 	export let cols: number = 100;
-	export let background: string = '';
+	export let customStyle: string = '';
 
 	function toPrettyJson(obj: any): string {
 		if (!obj) return '{}';
 		return JSON.stringify(obj, null, 2);
 	}
 
-	textareaprops = { ...textareaprops, rows, cols, background };
+	textareaprops = { ...textareaprops, rows, cols, customStyle };
 </script>
 
 <div class="p-4 w-full w">
@@ -28,7 +28,7 @@
 			<textarea
 				{...textareaprops}
 				value={toPrettyJson(text)}
-				class={`w-full h-max textarea-info text-sm md:text-base ${background}`}
+				class={`w-full h-max textarea-info text-sm md:text-base ${customStyle}`}
 				disabled
 			></textarea>
 		</div>
