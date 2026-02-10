@@ -5,3 +5,10 @@ scripts/scala/*.sc
 .idea
 logs
 applications/store-build/tmp
+/examples/wallet-demo/node_modules/
+/examples/wallet-demo/test-results/
+/examples/wallet-demo/node_modules/.bin/
+/examples/wallet-demo/node_modules/@playwright/
+/examples/wallet-demo/node_modules/playwright/
+/examples/wallet-demo/node_modules/playwright-core/
+/examples/wallet-demo/test-results/

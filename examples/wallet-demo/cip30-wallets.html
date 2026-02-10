@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIP-30 Wallet Connection Demo</title>
+    <style>
+        :root {
+            --primary: #0033ad;
+            --primary-light: #1a4dc7;
+            --bg: #f5f7fa;
+            --surface: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #6b7280;
+            --success: #10b981;
+            --error: #ef4444;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        header p {
+            color: var(--text-muted);
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .wallet-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .wallet-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .wallet-btn.connected {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .wallet-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .wallet-btn img {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .wallet-btn .name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .wallet-btn .status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .wallet-btn.connected .status {
+            color: var(--success);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+            margin: 0.25rem;
+        }
+
+        .btn:hover {
+            background: var(--primary-light);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 51, 173, 0.1);
+        }
+
+        .btn-danger {
+            background: var(--error);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            background: var(--bg);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .result-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-box.error {
+            background: #fef2f2;
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .result-box.success {
+            background: #ecfdf5;
+            border-color: var(--success);
+            color: #065f46;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .section-divider {
+            border-top: 1px solid var(--border);
+            margin: 1.5rem 0;
+            padding-top: 1.5rem;
+        }
+
+        .note {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #1e40af;
+            font-size: 0.9rem;
+        }
+
+        .address-list {
+            list-style: none;
+        }
+
+        .address-list li {
+            background: var(--bg);
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+        }
+
+        .utxo-item {
+            background: var(--bg);
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .utxo-item .txid {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .utxo-item .value {
+            font-weight: 600;
+            color: var(--success);
+            margin-top: 0.25rem;
+        }
+
+        .transfer-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .transfer-form input {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .transfer-form label {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CIP-30 Wallet Connection Demo</h1>
+            <p>Connect to Cardano wallets using the CIP-30 dApp connector standard</p>
+        </header>
+
+        <div class="note">
+            <strong>About CIP-30:</strong> This demo shows how to connect to any CIP-30 compatible Cardano wallet
+            (Eternl, Lace, Nami, Yoroi, Flint, etc.). Install a wallet extension and click to connect.
+        </div>
+
+        <div class="note" style="background: #f0fdf4; border-color: #86efac; color: #166534;">
+            <strong>Yaci DevKit:</strong> If you have Yaci DevKit CLI running (port 10000), the Yaci DevKit wallet
+            will also appear below. It provides 20 pre-funded test accounts for local development without needing
+            a browser extension.
+        </div>
+
+        <!-- Available Wallets -->
+        <div class="card">
+            <h2>Available Wallets</h2>
+            <div id="wallet-grid" class="wallet-grid">
+                <div class="wallet-btn disabled">
+                    <div style="width:48px;height:48px;background:#ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;">?</div>
+                    <span class="name">Scanning...</span>
+                    <span class="status">Please wait</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connected Wallet Info -->
+        <div id="wallet-info" class="card hidden">
+            <h2>Connected Wallet</h2>
+            <div class="info-grid">
+                <span class="info-label">Wallet:</span>
+                <span class="info-value" id="wallet-name">-</span>
+
+                <span class="info-label">Network:</span>
+                <span class="info-value" id="network-id">-</span>
+
+                <span class="info-label">Balance:</span>
+                <span class="info-value" id="balance">-</span>
+
+                <span class="info-label">Stake Address:</span>
+                <span class="info-value" id="stake-address">-</span>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-danger" onclick="disconnectWallet()">Disconnect</button>
+            </div>
+        </div>
+
+        <!-- API Demo -->
+        <div id="api-demo" class="card hidden">
+            <h2>CIP-30 API Demo</h2>
+
+            <div class="actions">
+                <button class="btn" onclick="getAddresses()">Get Addresses</button>
+                <button class="btn" onclick="getUtxos()">Get UTXOs</button>
+                <button class="btn" onclick="getRewardAddresses()">Reward Addresses</button>
+                <button class="btn btn-secondary" onclick="signDataDemo()">Sign Data</button>
+            </div>
+
+            <div id="api-result" class="result-box hidden"></div>
+        </div>
+
+        <!-- Raw API Response -->
+        <div id="raw-section" class="card hidden">
+            <h2>Raw CBOR Response (for developers)</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">
+                CIP-30 returns data in CBOR hex format. This section shows the raw responses.
+            </p>
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="getRawBalance()">Raw Balance</button>
+                <button class="btn btn-secondary" onclick="getRawUtxos()">Raw UTXOs</button>
+                <button class="btn btn-secondary" onclick="getRawAddresses()">Raw Addresses</button>
+            </div>
+            <div id="raw-result" class="result-box hidden"></div>
+        </div>
+
+        <!-- Transfer Section -->
+        <div id="transfer-section" class="card hidden">
+            <h2>Transfer ADA (CIP-30 Flow)</h2>
+
+            <div class="note">
+                <strong>CIP-30 Standard Flow:</strong> Build an unsigned transaction on the server, sign it with the wallet (CIP-30 signTx),
+                then submit via the wallet (CIP-30 submitTx). Works with any CIP-30 wallet (Yaci DevKit, Eternl, Lace, etc.).
+            </div>
+
+            <!-- Transfer Form -->
+            <div class="transfer-form">
+                <div class="form-group">
+                    <label for="receiver-address">Receiver Address (bech32)</label>
+                    <input type="text" id="receiver-address" placeholder="addr_test1...">
+                </div>
+                <div class="form-group">
+                    <label for="ada-amount">Amount (ADA)</label>
+                    <input type="number" id="ada-amount" placeholder="10" step="0.000001" min="1">
+                </div>
+
+                <!-- 3-Step CIP-30 Buttons -->
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                    <button id="btn-build" class="btn" onclick="buildTransaction()">1. Build Transaction</button>
+                    <button id="btn-sign" class="btn" onclick="signTransaction()" disabled>2. Sign (CIP-30)</button>
+                    <button id="btn-submit" class="btn" onclick="submitTransaction()" disabled>3. Submit (CIP-30)</button>
+                </div>
+            </div>
+
+            <!-- Step-by-step result display -->
+            <div id="build-result" class="result-box hidden"></div>
+            <div id="sign-result" class="result-box hidden"></div>
+            <div id="submit-result" class="result-box hidden"></div>
+        </div>
+    </div>
+
+    <!-- Load Cardano Connect with Wallet Core library -->
+    <script src="https://cdn.jsdelivr.net/npm/@cardano-foundation/cardano-connect-with-wallet-core@0.2.8/dist/index.js"></script>
+
+    <!-- Load Yaci DevKit Wallet SDK (optional - only works if CLI is running on port 10000) -->
+    <script src="http://localhost:10000/wallet-sdk.js" onerror="console.log('[YaciDevKit] CLI not running - Yaci DevKit wallet will not be available')"></script>
+
+    <script>
+        // Get the Wallet class from the library
+        const Wallet = window.CardanoConnectWithWalletCore?.Wallet;
+
+        // Known wallet identifiers and metadata
+        const KNOWN_WALLETS = {
+            'eternl': { name: 'Eternl', icon: 'https://eternl.io/icons/icon-128.png' },
+            'lace': { name: 'Lace', icon: 'https://www.lace.io/favicon.ico' },
+            'nami': { name: 'Nami', icon: 'https://namiwallet.io/favicon.ico' },
+            'yoroi': { name: 'Yoroi', icon: 'https://yoroi-wallet.com/favicon.ico' },
+            'flint': { name: 'Flint', icon: 'https://flint-wallet.com/favicon.ico' },
+            'typhon': { name: 'Typhon', icon: 'https://typhonwallet.io/favicon.ico' },
+            'gerowallet': { name: 'Gero', icon: 'https://gerowallet.io/favicon.ico' },
+            'nufi': { name: 'NuFi', icon: 'https://nu.fi/favicon.ico' },
+            'begin': { name: 'Begin', icon: 'https://begin.is/favicon.ico' },
+            'vespr': { name: 'VESPR', icon: 'https://vespr.xyz/favicon.ico' },
+            'yacidevkit': {
+                name: 'Yaci DevKit',
+                icon: 'data:image/svg+xml;base64,' + btoa('<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="24" fill="#667eea"/><path d="M18 18h12v4H18zM16 24h16v4H16zM20 30h8v4h-8z" fill="white"/></svg>'),
+                isLocal: true
+            }
+        };
+
+        // Wallet state
+        let connectedWallet = null;
+        let walletApi = null;
+        let walletState = {
+            balance: null,
+            stakeAddress: null,
+            usedAddresses: [],
+            unusedAddresses: [],
+            networkId: null
+        };
+
+        // CIP-30 transfer flow state
+        let unsignedTxCbor = null;
+        let signedTxCbor = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setupWalletEventListeners();
+            setTimeout(detectWallets, 500); // Small delay for wallets to inject
+        });
+
+        // Re-detect wallets when Yaci DevKit SDK finishes async initialization
+        window.addEventListener('yacidevkit:ready', () => {
+            detectWallets();
+        });
+
+        /**
+         * Setup event listeners for the Wallet library
+         */
+        function setupWalletEventListeners() {
+            if (!Wallet) {
+                console.warn('[CardanoConnect] Library not loaded');
+                return;
+            }
+
+            // Listen for balance updates (already in lovelace, not CBOR)
+            Wallet.addEventListener('accountBalance', (balance) => {
+                walletState.balance = balance;
+                updateBalanceDisplay();
+            });
+
+            // Listen for stake address (already in bech32)
+            Wallet.addEventListener('stakeAddress', (address) => {
+                walletState.stakeAddress = address;
+                updateStakeAddressDisplay();
+            });
+
+            // Listen for used addresses (already in bech32)
+            Wallet.addEventListener('usedAddresses', (addresses) => {
+                walletState.usedAddresses = addresses || [];
+            });
+
+            // Listen for unused addresses (already in bech32)
+            Wallet.addEventListener('unusedAddresses', (addresses) => {
+                walletState.unusedAddresses = addresses || [];
+            });
+
+            // Listen for connection status
+            Wallet.addEventListener('connected', (isConnected) => {
+                if (!isConnected && connectedWallet) {
+                    handleDisconnect();
+                }
+            });
+        }
+
+        /**
+         * Update balance display
+         */
+        function updateBalanceDisplay() {
+            if (walletState.balance !== null) {
+                const balanceAda = (Number(walletState.balance) / 1000000).toFixed(6);
+                document.getElementById('balance').textContent = `${balanceAda} ADA (${walletState.balance} lovelace)`;
+            }
+        }
+
+        /**
+         * Update stake address display
+         */
+        function updateStakeAddressDisplay() {
+            if (walletState.stakeAddress) {
+                document.getElementById('stake-address').textContent = walletState.stakeAddress;
+            }
+        }
+
+        /**
+         * Update network display
+         */
+        function updateNetworkDisplay() {
+            if (walletState.networkId !== null) {
+                document.getElementById('network-id').textContent =
+                    walletState.networkId === 0 ? 'Testnet (0)' : walletState.networkId === 1 ? 'Mainnet (1)' : `Unknown (${walletState.networkId})`;
+            }
+        }
+
+        /**
+         * Handle disconnect event
+         */
+        function handleDisconnect() {
+            if (connectedWallet) {
+                const btn = document.querySelector(`[data-wallet-id="${connectedWallet.id}"]`);
+                if (btn) {
+                    btn.classList.remove('connected');
+                    btn.querySelector('.status').textContent = 'Click to connect';
+                }
+            }
+
+            connectedWallet = null;
+            walletApi = null;
+            walletState = {
+                balance: null,
+                stakeAddress: null,
+                usedAddresses: [],
+                unusedAddresses: [],
+                networkId: null
+            };
+
+            document.getElementById('wallet-info').classList.add('hidden');
+            document.getElementById('api-demo').classList.add('hidden');
+            document.getElementById('raw-section').classList.add('hidden');
+            document.getElementById('transfer-section').classList.add('hidden');
+            document.getElementById('api-result').classList.add('hidden');
+            document.getElementById('raw-result').classList.add('hidden');
+            document.getElementById('build-result').classList.add('hidden');
+            document.getElementById('sign-result').classList.add('hidden');
+            document.getElementById('submit-result').classList.add('hidden');
+
+            // Reset transfer flow state
+            unsignedTxCbor = null;
+            signedTxCbor = null;
+        }
+
+        /**
+         * Detect all available CIP-30 wallets
+         */
+        function detectWallets() {
+            const grid = document.getElementById('wallet-grid');
+            grid.innerHTML = '';
+
+            // Try to get installed extensions from the library
+            let wallets = [];
+
+            if (Wallet) {
+                try {
+                    const extensions = Wallet.getInstalledWalletExtensions();
+                    wallets = extensions.map(ext => ({
+                        id: ext,
+                        name: KNOWN_WALLETS[ext]?.name || window.cardano?.[ext]?.name || ext,
+                        icon: window.cardano?.[ext]?.icon || KNOWN_WALLETS[ext]?.icon,
+                        apiVersion: window.cardano?.[ext]?.apiVersion || '?'
+                    }));
+                } catch (e) {
+                    console.warn('[CardanoConnect] Error getting extensions:', e);
+                }
+            }
+
+            // Fallback: scan window.cardano directly
+            if (wallets.length === 0 && window.cardano) {
+                for (const key in window.cardano) {
+                    const provider = window.cardano[key];
+                    if (provider && typeof provider.enable === 'function') {
+                        wallets.push({
+                            id: key,
+                            name: provider.name || KNOWN_WALLETS[key]?.name || key,
+                            icon: provider.icon || KNOWN_WALLETS[key]?.icon,
+                            apiVersion: provider.apiVersion || '?'
+                        });
+                    }
+                }
+            }
+
+            if (wallets.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted); padding: 1rem;">No CIP-30 compatible wallets found. Install a wallet extension or start Yaci DevKit CLI and refresh.</p>';
+                return;
+            }
+
+            // Sort wallets - put Yaci DevKit first if available
+            wallets.sort((a, b) => {
+                if (a.id === 'yacidevkit') return -1;
+                if (b.id === 'yacidevkit') return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            // Create wallet buttons
+            wallets.forEach(wallet => {
+                const btn = document.createElement('div');
+                btn.className = 'wallet-btn';
+                btn.dataset.walletId = wallet.id;
+                btn.onclick = () => connectWallet(wallet.id);
+
+                const isYaciDevKit = wallet.id === 'yacidevkit';
+
+                const iconHtml = wallet.icon
+                    ? `<img src="${wallet.icon}" alt="${wallet.name}" onerror="this.style.display='none'">`
+                    : `<div style="width:48px;height:48px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${wallet.name.charAt(0)}</div>`;
+
+                const badgeHtml = isYaciDevKit
+                    ? '<span class="badge badge-success" style="margin-top:0.25rem;font-size:0.65rem;">Local Dev</span>'
+                    : '';
+
+                btn.innerHTML = `
+                    ${iconHtml}
+                    <span class="name">${wallet.name}</span>
+                    <span class="status">API v${wallet.apiVersion}</span>
+                    ${badgeHtml}
+                `;
+
+                // Add special styling for Yaci DevKit
+                if (isYaciDevKit) {
+                    btn.style.borderColor = '#667eea';
+                    btn.style.background = 'rgba(102, 126, 234, 0.05)';
+                }
+
+                grid.appendChild(btn);
+            });
+        }
+
+        /**
+         * Connect to a wallet
+         */
+        async function connectWallet(walletId) {
+            const btn = document.querySelector(`[data-wallet-id="${walletId}"]`);
+
+            try {
+                btn.classList.add('disabled');
+                btn.querySelector('.status').textContent = 'Connecting...';
+
+                // Use the Wallet library if available
+                if (Wallet) {
+                    // Connect using the library - it handles everything including data fetching
+                    await Wallet.connectToWallet(walletId, 'testnet');
+
+                    // Also get the raw API for functions not supported by the library
+                    const provider = window.cardano[walletId];
+                    if (provider) {
+                        walletApi = await provider.enable();
+                    }
+                } else {
+                    // Fallback to direct connection
+                    const provider = window.cardano[walletId];
+                    if (!provider) {
+                        throw new Error('Wallet not found');
+                    }
+                    walletApi = await provider.enable();
+                }
+
+                connectedWallet = {
+                    id: walletId,
+                    name: window.cardano[walletId]?.name || walletId,
+                    icon: window.cardano[walletId]?.icon
+                };
+
+                // Update UI
+                btn.classList.remove('disabled');
+                btn.classList.add('connected');
+                btn.querySelector('.status').textContent = 'Connected';
+
+                // Show wallet info
+                document.getElementById('wallet-name').textContent = connectedWallet.name;
+                await showWalletInfo();
+
+                document.getElementById('wallet-info').classList.remove('hidden');
+                document.getElementById('api-demo').classList.remove('hidden');
+                document.getElementById('raw-section').classList.remove('hidden');
+                document.getElementById('transfer-section').classList.remove('hidden');
+
+            } catch (error) {
+                btn.classList.remove('disabled');
+                btn.querySelector('.status').textContent = 'Click to connect';
+                showError('api-result', `Connection failed: ${error.message}`);
+            }
+        }
+
+        /**
+         * Disconnect wallet
+         */
+        function disconnectWallet() {
+            if (Wallet) {
+                try {
+                    Wallet.disconnect();
+                } catch (e) {
+                    console.warn('[CardanoConnect] Disconnect error:', e);
+                }
+            }
+            handleDisconnect();
+        }
+
+        /**
+         * Display connected wallet information
+         */
+        async function showWalletInfo() {
+            if (!walletApi) return;
+
+            try {
+                // Get network ID directly
+                const networkId = await walletApi.getNetworkId();
+                walletState.networkId = networkId;
+                updateNetworkDisplay();
+
+                // If library didn't provide balance, get it manually
+                if (walletState.balance === null) {
+                    const balanceCbor = await walletApi.getBalance();
+                    walletState.balance = parseBalanceCbor(balanceCbor);
+                    updateBalanceDisplay();
+                }
+
+                // If library didn't provide stake address, get it manually
+                if (!walletState.stakeAddress) {
+                    try {
+                        const rewardAddresses = await walletApi.getRewardAddresses();
+                        if (rewardAddresses && rewardAddresses.length > 0) {
+                            // Convert hex to bech32 using API
+                            walletState.stakeAddress = await hexAddressToBech32(rewardAddresses[0]);
+                            updateStakeAddressDisplay();
+                        }
+                    } catch (e) {
+                        console.warn('Could not get reward addresses:', e);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error fetching wallet info:', error);
+            }
+        }
+
+        /**
+         * Parse balance CBOR (fallback when library doesn't provide parsed balance)
+         */
+        function parseBalanceCbor(cborHex) {
+            try {
+                const bytes = hexToBytes(cborHex);
+                const firstByte = bytes[0];
+
+                if (firstByte >= 0x00 && firstByte <= 0x17) {
+                    return BigInt(firstByte);
+                } else if (firstByte === 0x18) {
+                    return BigInt(bytes[1]);
+                } else if (firstByte === 0x19) {
+                    return BigInt((bytes[1] << 8) | bytes[2]);
+                } else if (firstByte === 0x1a) {
+                    return BigInt(new DataView(bytes.buffer).getUint32(1, false));
+                } else if (firstByte === 0x1b) {
+                    return BigInt(new DataView(bytes.buffer).getBigUint64(1, false));
+                } else if (firstByte >= 0x80 && firstByte <= 0x9f) {
+                    return parseBalanceCbor(cborHex.substring(2));
+                }
+                return BigInt(0);
+            } catch (e) {
+                console.error('Error parsing balance:', e);
+                return BigInt(0);
+            }
+        }
+
+        /**
+         * Get addresses (uses library's decoded addresses when available)
+         */
+        async function getAddresses() {
+            if (!walletApi) return;
+
+            const resultBox = document.getElementById('api-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Fetching addresses...';
+
+            try {
+                let usedAddresses = walletState.usedAddresses;
+                let unusedAddresses = walletState.unusedAddresses;
+                let changeAddress = null;
+
+                // If library didn't provide addresses, fetch and decode manually
+                if (usedAddresses.length === 0) {
+                    const hexAddresses = await walletApi.getUsedAddresses();
+                    usedAddresses = await Promise.all(hexAddresses.map(hexAddressToBech32));
+                }
+
+                if (unusedAddresses.length === 0) {
+                    const hexAddresses = await walletApi.getUnusedAddresses();
+                    unusedAddresses = await Promise.all(hexAddresses.map(hexAddressToBech32));
+                }
+
+                const changeHex = await walletApi.getChangeAddress();
+                changeAddress = await hexAddressToBech32(changeHex);
+
+                let html = '<strong>Used Addresses:</strong>\n';
+                usedAddresses.forEach((addr, i) => {
+                    html += `${i + 1}. ${addr}\n`;
+                });
+
+                html += '\n<strong>Change Address:</strong>\n';
+                html += changeAddress;
+
+                if (unusedAddresses.length > 0) {
+                    html += '\n\n<strong>Unused Addresses:</strong>\n';
+                    unusedAddresses.forEach((addr, i) => {
+                        html += `${i + 1}. ${addr}\n`;
+                    });
+                }
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+            } catch (error) {
+                showError('api-result', error.message);
+            }
+        }
+
+        /**
+         * Get UTXOs
+         */
+        async function getUtxos() {
+            if (!walletApi) return;
+
+            const resultBox = document.getElementById('api-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Fetching UTXOs...';
+
+            try {
+                const utxos = await walletApi.getUtxos();
+
+                if (!utxos || utxos.length === 0) {
+                    resultBox.classList.add('success');
+                    resultBox.textContent = 'No UTXOs found';
+                    return;
+                }
+
+                let html = `<strong>Found ${utxos.length} UTXOs:</strong>\n\n`;
+                utxos.slice(0, 10).forEach((utxo, i) => {
+                    html += `UTXO ${i + 1}: ${utxo.substring(0, 60)}...\n`;
+                });
+
+                if (utxos.length > 10) {
+                    html += `\n... and ${utxos.length - 10} more`;
+                }
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+            } catch (error) {
+                showError('api-result', error.message);
+            }
+        }
+
+        /**
+         * Get reward addresses (uses library's stake address when available)
+         */
+        async function getRewardAddresses() {
+            if (!walletApi) return;
+
+            const resultBox = document.getElementById('api-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Fetching reward addresses...';
+
+            try {
+                // If library provided stake address, use it
+                if (walletState.stakeAddress) {
+                    resultBox.classList.add('success');
+                    resultBox.innerHTML = `<strong>Reward (Stake) Addresses:</strong>\n1. ${walletState.stakeAddress}`;
+                    return;
+                }
+
+                // Otherwise fetch and decode manually
+                const rewardAddresses = await walletApi.getRewardAddresses();
+
+                if (!rewardAddresses || rewardAddresses.length === 0) {
+                    resultBox.classList.add('success');
+                    resultBox.textContent = 'No reward addresses found';
+                    return;
+                }
+
+                const decodedAddresses = await Promise.all(rewardAddresses.map(hexAddressToBech32));
+
+                let html = '<strong>Reward (Stake) Addresses:</strong>\n';
+                decodedAddresses.forEach((addr, i) => {
+                    html += `${i + 1}. ${addr}\n`;
+                });
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+            } catch (error) {
+                showError('api-result', error.message);
+            }
+        }
+
+        /**
+         * Sign data demo
+         */
+        async function signDataDemo() {
+            if (!walletApi) return;
+
+            const resultBox = document.getElementById('api-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Requesting signature...';
+
+            try {
+                const addresses = await walletApi.getUsedAddresses();
+                if (!addresses || addresses.length === 0) {
+                    throw new Error('No addresses available');
+                }
+
+                // Sign a simple message
+                const payload = stringToHex('Hello from CIP-30 demo!');
+                const signature = await walletApi.signData(addresses[0], payload);
+
+                let html = '<strong>Data Signed Successfully!</strong>\n\n';
+                html += `Message: "Hello from CIP-30 demo!"\n\n`;
+                html += `Signature:\n${JSON.stringify(signature, null, 2)}`;
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+            } catch (error) {
+                showError('api-result', error.message);
+            }
+        }
+
+        // Raw API calls
+        async function getRawBalance() {
+            if (!walletApi) return;
+            const resultBox = document.getElementById('raw-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+
+            try {
+                const balance = await walletApi.getBalance();
+                resultBox.classList.add('success');
+                resultBox.textContent = `Balance (CBOR hex):\n${balance}`;
+            } catch (error) {
+                showError('raw-result', error.message);
+            }
+        }
+
+        async function getRawUtxos() {
+            if (!walletApi) return;
+            const resultBox = document.getElementById('raw-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+
+            try {
+                const utxos = await walletApi.getUtxos();
+                resultBox.classList.add('success');
+                resultBox.textContent = `UTXOs (CBOR hex array):\n${JSON.stringify(utxos, null, 2)}`;
+            } catch (error) {
+                showError('raw-result', error.message);
+            }
+        }
+
+        async function getRawAddresses() {
+            if (!walletApi) return;
+            const resultBox = document.getElementById('raw-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+
+            try {
+                const addresses = await walletApi.getUsedAddresses();
+                resultBox.classList.add('success');
+                resultBox.textContent = `Addresses (hex):\n${JSON.stringify(addresses, null, 2)}`;
+            } catch (error) {
+                showError('raw-result', error.message);
+            }
+        }
+
+        // Utility functions
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.classList.remove('hidden', 'success');
+            el.classList.add('error');
+            el.textContent = `Error: ${message}`;
+        }
+
+        function hexToBytes(hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
+            return bytes;
+        }
+
+        function stringToHex(str) {
+            return Array.from(new TextEncoder().encode(str))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        /**
+         * Convert hex address to bech32 using the Yaci DevKit API
+         */
+        async function hexAddressToBech32(hexAddr) {
+            try {
+                const response = await fetch(`http://localhost:10000/api/v1/wallet/decode/address?cborHex=${hexAddr}`);
+                if (response.ok) {
+                    const bech32 = await response.text();
+                    return bech32 || hexAddr;
+                }
+                // Fallback: return truncated hex if API fails
+                return `${hexAddr.substring(0, 20)}...${hexAddr.substring(hexAddr.length - 10)}`;
+            } catch (e) {
+                // Fallback: return truncated hex if API unavailable
+                return `${hexAddr.substring(0, 20)}...${hexAddr.substring(hexAddr.length - 10)}`;
+            }
+        }
+
+        // ==================== CIP-30 Transfer Flow ====================
+
+        /**
+         * Reset the transfer flow state
+         */
+        function resetTransferFlow() {
+            unsignedTxCbor = null;
+            signedTxCbor = null;
+            document.getElementById('btn-sign').disabled = true;
+            document.getElementById('btn-submit').disabled = true;
+            document.getElementById('build-result').classList.add('hidden');
+            document.getElementById('sign-result').classList.add('hidden');
+            document.getElementById('submit-result').classList.add('hidden');
+        }
+
+        /**
+         * Step 1: Build an unsigned transaction
+         */
+        async function buildTransaction() {
+            if (!walletApi) return;
+
+            resetTransferFlow();
+
+            const resultBox = document.getElementById('build-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Building transaction...';
+
+            try {
+                const receiverAddress = document.getElementById('receiver-address').value.trim();
+                const adaAmount = parseFloat(document.getElementById('ada-amount').value);
+
+                if (!receiverAddress) {
+                    throw new Error('Please enter a receiver address');
+                }
+                if (!adaAmount || adaAmount <= 0) {
+                    throw new Error('Please enter a valid ADA amount');
+                }
+
+                const lovelace = Math.floor(adaAmount * 1000000);
+
+                // Get sender address from connected wallet (works for any CIP-30 wallet)
+                let senderAddress;
+                if (walletState.usedAddresses.length > 0) {
+                    senderAddress = walletState.usedAddresses[0]; // already bech32
+                } else {
+                    const hexAddresses = await walletApi.getUsedAddresses();
+                    senderAddress = await hexAddressToBech32(hexAddresses[0]);
+                }
+
+                if (!senderAddress) {
+                    throw new Error('Could not determine sender address from wallet');
+                }
+
+                const response = await fetch('http://localhost:10000/api/v1/wallet/build-tx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senderAddress: senderAddress,
+                        receiverAddress: receiverAddress,
+                        amounts: [{ unit: 'lovelace', quantity: lovelace.toString() }]
+                    })
+                });
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.message || result.errorCode || 'Build failed');
+                }
+
+                unsignedTxCbor = result.txCbor;
+
+                const truncatedCbor = unsignedTxCbor.length > 120
+                    ? unsignedTxCbor.substring(0, 60) + '...' + unsignedTxCbor.substring(unsignedTxCbor.length - 60)
+                    : unsignedTxCbor;
+
+                let html = '<strong>Step 1: Transaction Built</strong>\n\n';
+                html += `Sender: ${senderAddress.substring(0, 30)}...\n`;
+                html += `Unsigned TX CBOR:\n${truncatedCbor}\n\n`;
+                html += `CBOR length: ${unsignedTxCbor.length} chars`;
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+                // Enable sign button
+                document.getElementById('btn-sign').disabled = false;
+
+            } catch (error) {
+                showError('build-result', error.message);
+            }
+        }
+
+        /**
+         * Step 2: Sign the transaction using CIP-30 walletApi.signTx()
+         */
+        async function signTransaction() {
+            if (!walletApi || !unsignedTxCbor) return;
+
+            const resultBox = document.getElementById('sign-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Signing transaction via CIP-30...';
+
+            try {
+                // CIP-30: signTx returns the witness set CBOR
+                const witnessSetCbor = await walletApi.signTx(unsignedTxCbor);
+
+                // Assemble the signed transaction (combine unsigned tx + witness set)
+                const assembleResponse = await fetch('http://localhost:10000/api/v1/wallet/assemble-tx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        txCbor: unsignedTxCbor,
+                        witnessCbor: witnessSetCbor
+                    })
+                });
+
+                const assembleResult = await assembleResponse.json();
+                if (!assembleResult.success) {
+                    throw new Error(assembleResult.message || assembleResult.errorCode || 'Assembly failed');
+                }
+
+                signedTxCbor = assembleResult.signedTxCbor;
+
+                const truncatedWitness = witnessSetCbor.length > 80
+                    ? witnessSetCbor.substring(0, 40) + '...' + witnessSetCbor.substring(witnessSetCbor.length - 40)
+                    : witnessSetCbor;
+
+                let html = '<strong>Step 2: Transaction Signed (CIP-30 signTx)</strong>\n\n';
+                html += `Witness Set:\n${truncatedWitness}\n\n`;
+                html += `Signed TX assembled successfully (${signedTxCbor.length} chars)`;
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+                // Enable submit button
+                document.getElementById('btn-submit').disabled = false;
+
+            } catch (error) {
+                showError('sign-result', error.message);
+            }
+        }
+
+        /**
+         * Step 3: Submit the signed transaction using CIP-30 walletApi.submitTx()
+         */
+        async function submitTransaction() {
+            if (!walletApi || !signedTxCbor) return;
+
+            const resultBox = document.getElementById('submit-result');
+            resultBox.classList.remove('hidden', 'error', 'success');
+            resultBox.textContent = 'Submitting transaction via CIP-30...';
+
+            try {
+                // CIP-30: submitTx returns the transaction hash
+                const txHash = await walletApi.submitTx(signedTxCbor);
+
+                const receiverAddress = document.getElementById('receiver-address').value.trim();
+                const adaAmount = parseFloat(document.getElementById('ada-amount').value);
+
+                let html = '<strong>Step 3: Transaction Submitted (CIP-30 submitTx)</strong>\n\n';
+                html += `To: ${receiverAddress}\n`;
+                html += `Amount: ${adaAmount} ADA\n\n`;
+                html += `Transaction Hash:\n${txHash}`;
+
+                resultBox.classList.add('success');
+                resultBox.innerHTML = html;
+
+                // Reset flow state
+                unsignedTxCbor = null;
+                signedTxCbor = null;
+                document.getElementById('btn-sign').disabled = true;
+                document.getElementById('btn-submit').disabled = true;
+
+                // Refresh balance
+                walletState.balance = null;
+                setTimeout(() => showWalletInfo(), 2000);
+
+            } catch (error) {
+                showError('submit-result', error.message);
+            }
+        }
+    </script>
+</body>
+</html>
