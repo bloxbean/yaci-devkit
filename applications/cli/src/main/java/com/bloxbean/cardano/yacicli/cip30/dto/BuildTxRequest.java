@@ -15,4 +15,5 @@ public class BuildTxRequest {
     private String senderAddress;  // bech32 address (e.g., addr_test1...)
     private String receiverAddress;
     private List<TransferAmount> amounts;
+    private List<String> utxos;   // Optional: CIP-30 UTXO CBOR hex strings from wallet
 }

@@ -1,16 +1,21 @@
 package com.bloxbean.cardano.yacicli.cip30.service;
 
+import co.nstant.in.cbor.model.Array;
 import com.bloxbean.cardano.client.account.Account;
+import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
+import com.bloxbean.cardano.client.api.UtxoSupplier;
+import com.bloxbean.cardano.client.api.common.OrderEnum;
 import com.bloxbean.cardano.client.api.model.Amount;
+import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.backend.api.BackendService;
+import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.common.cbor.CborSerializationUtil;
 import com.bloxbean.cardano.client.crypto.Blake2bUtil;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
-import com.bloxbean.cardano.client.transaction.spec.Transaction;
-import com.bloxbean.cardano.client.transaction.spec.TransactionWitnessSet;
+import com.bloxbean.cardano.client.transaction.spec.*;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yacicli.cip30.dto.*;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
@@ -22,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -162,7 +168,7 @@ public class TransferService {
             }
         }
 
-        // Get backend service
+        // Get backend service (needed for protocol params, and for UTXOs if not provided by client)
         Optional<BackendService> backendServiceOpt = getBackendService();
         if (backendServiceOpt.isEmpty()) {
             return BuildTxResponse.error("SERVICE_UNAVAILABLE", "Backend service not available. Make sure Yaci Store is running.");
@@ -173,13 +179,38 @@ public class TransferService {
         try {
             List<Amount> amounts = convertAmounts(request.getAmounts());
 
-            QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+            QuickTxBuilder quickTxBuilder;
+
+            // If client provided CIP-30 UTXOs (e.g., from an external wallet like Eternl),
+            // use them instead of querying Yaci Store
+            if (request.getUtxos() != null && !request.getUtxos().isEmpty()) {
+                log.info("Using {} client-provided CIP-30 UTXOs for transaction building", request.getUtxos().size());
+                List<Utxo> utxos = deserializeCip30Utxos(request.getUtxos());
+                UtxoSupplier utxoSupplier = new UtxoSupplier() {
+                    @Override
+                    public List<Utxo> getPage(String addr, Integer nrOfItems, Integer page, OrderEnum order) {
+                        return (page == null || page == 0) ? utxos : Collections.emptyList();
+                    }
+
+                    @Override
+                    public Optional<Utxo> getTxOutput(String txHash, int outputIndex) {
+                        return utxos.stream()
+                                .filter(u -> u.getTxHash().equals(txHash) && u.getOutputIndex() == outputIndex)
+                                .findFirst();
+                    }
+                };
+                ProtocolParamsSupplier protocolParamsSupplier =
+                        new DefaultProtocolParamsSupplier(backendService.getEpochService());
+                quickTxBuilder = new QuickTxBuilder(utxoSupplier, protocolParamsSupplier, null);
+            } else {
+                quickTxBuilder = new QuickTxBuilder(backendService);
+            }
 
             Tx tx = new Tx()
                     .payToAddress(request.getReceiverAddress(), amounts)
                     .from(request.getSenderAddress());
 
-            // Build without signing — use withSigner but only to build, then extract the unsigned tx
+            // Build without signing
             Transaction transaction = quickTxBuilder
                     .compose(tx)
                     .build();
@@ -245,6 +276,48 @@ public class TransferService {
             log.error("Error assembling transaction", e);
             return AssembleTxResponse.error("ASSEMBLE_ERROR", e.getMessage() != null ? e.getMessage() : "Failed to assemble transaction");
         }
+    }
+
+    /**
+     * Deserialize CIP-30 UTXO CBOR hex strings into Utxo objects.
+     * CIP-30 format: each UTXO is a CBOR array [TransactionInput, TransactionOutput].
+     */
+    private List<Utxo> deserializeCip30Utxos(List<String> utxoCborHexList) {
+        List<Utxo> utxos = new ArrayList<>();
+        for (String cborHex : utxoCborHexList) {
+            try {
+                byte[] cborBytes = HexUtil.decodeHexString(cborHex);
+                Array utxoArray = (Array) CborSerializationUtil.deserialize(cborBytes);
+
+                TransactionInput input = TransactionInput.deserialize((Array) utxoArray.getDataItems().get(0));
+                TransactionOutput output = TransactionOutput.deserialize(utxoArray.getDataItems().get(1));
+
+                // Convert Value to Amount list
+                List<Amount> amounts = new ArrayList<>();
+                Value value = output.getValue();
+                if (value.getCoin() != null) {
+                    amounts.add(new Amount("lovelace", value.getCoin()));
+                }
+                if (value.getMultiAssets() != null) {
+                    for (MultiAsset ma : value.getMultiAssets()) {
+                        for (Asset asset : ma.getAssets()) {
+                            amounts.add(new Amount(ma.getPolicyId() + asset.getName(), asset.getValue()));
+                        }
+                    }
+                }
+
+                Utxo utxo = Utxo.builder()
+                        .txHash(input.getTransactionId())
+                        .outputIndex(input.getIndex())
+                        .address(output.getAddress())
+                        .amount(amounts)
+                        .build();
+                utxos.add(utxo);
+            } catch (Exception e) {
+                log.warn("Failed to deserialize CIP-30 UTXO: {}", e.getMessage());
+            }
+        }
+        return utxos;
     }
 
     /**

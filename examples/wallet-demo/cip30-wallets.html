@@ -1105,13 +1105,18 @@
                     throw new Error('Could not determine sender address from wallet');
                 }
 
+                // Get UTXOs from the connected wallet (CIP-30)
+                // This allows the backend to use the wallet's actual UTXOs instead of querying Yaci Store
+                const walletUtxos = await walletApi.getUtxos();
+
                 const response = await fetch('http://localhost:10000/api/v1/wallet/build-tx', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         senderAddress: senderAddress,
                         receiverAddress: receiverAddress,
-                        amounts: [{ unit: 'lovelace', quantity: lovelace.toString() }]
+                        amounts: [{ unit: 'lovelace', quantity: lovelace.toString() }],
+                        utxos: walletUtxos
                     })
                 });
 

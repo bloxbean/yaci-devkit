@@ -12,3 +12,5 @@ applications/store-build/tmp
 /examples/wallet-demo/node_modules/playwright/
 /examples/wallet-demo/node_modules/playwright-core/
 /examples/wallet-demo/test-results/
+applications/cli/wallet-ui/node_modules/
+applications/cli/src/main/resources/static/wallet/
