@@ -1,7 +1,7 @@
 <script lang="ts">
-    import {goto} from "$app/navigation";
-    import {page} from "$app/stores";
-    import {truncate, lovelaceToAda} from "$lib/util";
+    import { goto } from "$app/navigation";
+    import { page } from "$app/stores";
+    import { truncate, lovelaceToAda } from "$lib/util";
     import { onMount } from 'svelte';
 
     export let data;
@@ -122,7 +122,7 @@
         </div>
     {/if}
 
-    <h2 class="text-2xl font-bold text-center text-gray-700 mb-6">Pool Registrations</h2>
+    <h2 class="text-xl font-bold text-center text-gray-500 mb-6">Pool Registrations</h2>
 
     {#if error}
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">

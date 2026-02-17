@@ -1,9 +1,9 @@
 <script lang="ts">
-    import {onMount} from 'svelte';
-    import {page} from "$app/stores";
-    import {goto} from '$app/navigation';
-    import {formatAda} from '$lib/util';
-    import type {Proposal} from "./types";
+    import { onMount } from 'svelte';
+    import { page } from "$app/stores";
+    import { goto } from '$app/navigation';
+    import { formatAda } from '$lib/util';
+    import type { Proposal } from "./types";
     import { EyeIcon, CopyIcon, InfoIcon } from 'svelte-feather-icons';
     import { env } from '$env/dynamic/public';
 
@@ -187,7 +187,7 @@
     {/if}
 
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Governance Action Proposals</h1>
+        <h1 class="text-2xl font-bold">Governance Action Proposals</h1>
     </div>
 
     {#if error}
