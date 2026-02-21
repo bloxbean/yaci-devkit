@@ -17,10 +17,9 @@
 
         // store.sendMessage(messages);
         unsubscribe = store.blocksStore.subscribe(currentMessage => {
-            if (messages.length > 30)
-                messages = [currentMessage, ...messages.slice(0, 30)];
-            else
-                messages = [currentMessage, ...messages];
+            if (currentMessage && currentMessage.number != null) {
+                messages = [currentMessage, ...messages.filter(b => b.number !== currentMessage.number)].slice(0, 30);
+            }
         });
 
         const unsubscribeAggregateStore = store.aggregateStore.subscribe(aggrData => {

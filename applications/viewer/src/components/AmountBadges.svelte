@@ -5,6 +5,7 @@
     interface Amount {
         asset_name: string;
         quantity: string;
+        unit?: string;
     }
 
     export let amounts: Amount[] = [];
@@ -37,11 +38,17 @@
             <div class="badge {random_color()} flex items-center gap-1">
                 <span>{amount.quantity}</span>
                 <div class="flex items-center gap-1">
-                    <span class="tooltip" data-tip={amount.asset_name}>
-                        {truncateAssetName(amount.asset_name)}
-                    </span>
-                    <button 
-                        class="text-gray-400 hover:text-gray-600" 
+                    {#if amount.unit && amount.unit !== 'lovelace'}
+                        <a href="/assets/unit/{amount.unit}" class="tooltip hover:underline" data-tip={amount.asset_name}>
+                            {truncateAssetName(amount.asset_name)}
+                        </a>
+                    {:else}
+                        <span class="tooltip" data-tip={amount.asset_name}>
+                            {truncateAssetName(amount.asset_name)}
+                        </span>
+                    {/if}
+                    <button
+                        class="text-gray-400 hover:text-gray-600"
                         on:click={() => copyToClipboard(amount.asset_name)}
                         title="Copy asset name"
                     >

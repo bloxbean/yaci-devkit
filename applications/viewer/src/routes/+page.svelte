@@ -13,11 +13,10 @@
     onMount(async () => {
         const store = await import('./blocks/store.js')
         blocks = store.blocksCache;
-        unsubscribe = store.recentTxStore.subscribe(currentBlocks => {
-            if (blocks.length > 30)
-                blocks = [currentBlocks, ...blocks.slice(0, 30)];
-            else
-                blocks = [currentBlocks, ...blocks];
+        unsubscribe = store.blocksStore.subscribe(currentBlocks => {
+            if (currentBlocks && currentBlocks.number != null) {
+                blocks = [currentBlocks, ...blocks.filter(b => b.number !== currentBlocks.number)].slice(0, 30);
+            }
         });
     })
 </script>

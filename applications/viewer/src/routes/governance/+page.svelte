@@ -1,112 +1,118 @@
-<script>
-    import {goto} from "$app/navigation";
-    import {page} from "$app/stores";
-    import {truncate} from "../../util/util.js";
-    import {EyeIcon} from "svelte-feather-icons";
+<script lang="ts">
+    import { formatAda } from '$lib/util';
+    import TruncateCopy from '../../components/TruncateCopy.svelte';
+    import EmptyState from '../../components/EmptyState.svelte';
 
     export let data;
 
-    $: activeUrl = $page.url.searchParams.get('page')
-    let pages = [];
-
-    $:{
-        pages.forEach((page) => {
-            let splitUrl = page.href.split('?');
-            let queryString = splitUrl.slice(1).join('?');
-            const hrefParams = new URLSearchParams(queryString);
-            let hrefValue = hrefParams.get('page');
-            if (hrefValue === activeUrl) {
-                page.active = true
-            } else {
-                page.active = false
-            }
-        })
-        pages = pages
+    function getStatusClass(status: string | undefined): string {
+        if (!status) return 'badge badge-ghost';
+        switch (status.toUpperCase()) {
+            case 'LIVE': return 'badge badge-warning';
+            case 'ENACTED': return 'badge badge-success';
+            case 'RATIFIED': return 'badge badge-info';
+            case 'EXPIRED': return 'badge badge-error';
+            default: return 'badge badge-ghost';
+        }
     }
 
-    const previous = () => {
-        let currentPage = parseInt(data.page);
-        let prevPage = currentPage - 1;
-        if (prevPage <= 0)
-            prevPage = 1;
-        goto(`/governance/votes?page=${prevPage}&count=${data.count}`)
-    };
-    const next = () => {
-        let currentPage = parseInt(data.page);
-        let nextPage = currentPage + 1;
+    function formatGovActionType(type: string): string {
+        if (!type) return '';
+        return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    }
 
-        if (data.votes.length == 0)
-            nextPage = currentPage;
-
-        goto(`/governance/votes?page=${nextPage}&count=${data.count}`)
-    };
-
-    console.log(data);
-    if (!data.votes)
-        data.votes = []
+    function truncateHash(hash: string): string {
+        if (!hash) return '';
+        return hash.substring(0, 8) + '...' + hash.substring(hash.length - 8);
+    }
 </script>
 
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Governance Overview</h1>
 
-<section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Votes</h2>
-    <div class="flex flex-wrap justify-between mt-4 mb-2">
-        <button
-           class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={previous}>&lt; Previous</button>
-        <button
-           class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={next}>Next &gt;</button>
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <!-- Committee Card -->
+        <a href="/governance/committee" class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
+            <div class="card-body p-4">
+                <h2 class="card-title text-sm text-gray-500">Committee</h2>
+                {#if data.committee}
+                    <p class="text-2xl font-bold">{data.activeCommitteeCount}</p>
+                    <p class="text-xs text-gray-400">active members ({data.committee.threshold_numerator}/{data.committee.threshold_denominator} threshold)</p>
+                {:else}
+                    <p class="text-sm text-gray-400">No data</p>
+                {/if}
+            </div>
+        </a>
+
+        <!-- Constitution Card -->
+        <a href="/governance/constitution" class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
+            <div class="card-body p-4">
+                <h2 class="card-title text-sm text-gray-500">Constitution</h2>
+                {#if data.constitution}
+                    <p class="text-sm font-medium">Epoch {data.constitution.active_epoch}</p>
+                    <p class="text-xs text-gray-400 truncate">{data.constitution.anchor_url || 'No anchor'}</p>
+                {:else}
+                    <p class="text-sm text-gray-400">No data</p>
+                {/if}
+            </div>
+        </a>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full bg-white border border-gray-300">
-            <thead>
-            <tr>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Transaction Hash</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Block</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Gov Action Id</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Voter Type</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Vote</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Voter Hash</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Anchor URL</th>
-                <th class="py-2 px-4 bg-gray-100 font-bold text-center">Anchor Hash</th>
-            </tr>
-            </thead>
-            <tbody>
-            <!-- Iterate over stake registrations data -->
-            {#each data.votes as vote, index}
-                <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
-                    <td class="py-2 px-4">
-                        <a href="/transactions/{vote.tx_hash}" class="text-blue-500">
-                            <span class="ml-2">{truncate(vote.tx_hash, 30, "...")}</span>
-                        </a>
-                    </td>
-                    <td class="py-2 px-4 text-center">
-                        <a href="/blocks/{vote.block_number}" class="text-blue-500">
-                            {vote.block_number}
-                        </a>
-                    </td>
-                    <td class="py-2 px-4">{vote.gov_action_tx_hash}#{vote.gov_action_index}</td>
-                    <td class="py-2 px-4 text-center">{vote.voter_type}</td>
-                    <td class="py-2 px-4 text-center">{vote.vote}</td>
-                    <td class="py-2 px-4">{truncate(vote.voter_hash, 30, "...")}</td>
-                    {#if vote.anchor_url}
-                        <td class="py-2 px-4"><a href="{vote.anchor_url}" target="_blank">{vote.anchor_url}</a></td>
-                        <td class="py-2 px-4">{vote.anchor_hash}</td>
-                    {:else }
-                        <td class="py-2 px-4 text-center">_</td>
-                        <td class="py-2 px-4 text-center">_</td>
-                    {/if}
-                </tr>
-            {/each}
-            </tbody>
-        </table>
+
+    <!-- Recent Proposals -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Recent Proposals</h2>
+            <a href="/governance/proposals" class="btn btn-sm btn-ghost">View all &rarr;</a>
+        </div>
+
+        {#if data.proposals && data.proposals.length > 0}
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="font-semibold text-gray-700">Tx Hash</th>
+                            <th class="font-semibold text-gray-700">Type</th>
+                            <th class="font-semibold text-gray-700">Status</th>
+                            <th class="font-semibold text-gray-700">Deposit (ADA)</th>
+                            <th class="font-semibold text-gray-700">Epoch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each data.proposals as proposal}
+                            <tr class="hover:bg-gray-50">
+                                <td>
+                                    <a href="/transactions/{proposal.tx_hash}" class="link link-primary">
+                                        {truncateHash(proposal.tx_hash)}
+                                    </a>
+                                </td>
+                                <td>{formatGovActionType(proposal.gov_action?.type || '')}</td>
+                                <td><span class={getStatusClass(proposal.status)}>{proposal.status}</span></td>
+                                <td>{formatAda(proposal.deposit)}</td>
+                                <td>{proposal.epoch}</td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
+        {:else}
+            <EmptyState title="No proposals yet" message="Governance proposals will appear here once submitted." />
+        {/if}
     </div>
-    <div class="flex flex-wrap justify-between mt-2 mb-2">
-        <button
-           class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={previous}>&lt; Previous</button>
-        <button
-           class="px-4 py-2 text-blue-500 font-medium rounded-md bg-gray-100 hover:bg-gray-200 transition-colors"
-           role="button" on:click={next}>Next &gt;</button>
+
+    <!-- Quick Links -->
+    <div>
+        <h2 class="text-lg font-semibold mb-4">Governance Pages</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <a href="/governance/proposals" class="btn btn-outline btn-sm">Proposals</a>
+            <a href="/governance/dreps" class="btn btn-outline btn-sm">DReps</a>
+            <a href="/governance/committee" class="btn btn-outline btn-sm">Committee</a>
+            <a href="/governance/constitution" class="btn btn-outline btn-sm">Constitution</a>
+            <a href="/governance/govactions" class="btn btn-outline btn-sm">Gov Actions</a>
+            <a href="/governance/votes" class="btn btn-outline btn-sm">Votes</a>
+            <a href="/governance/drep-registrations" class="btn btn-outline btn-sm">DRep Registrations</a>
+            <a href="/governance/drep-updates" class="btn btn-outline btn-sm">DRep Updates</a>
+            <a href="/governance/drep-deregistrations" class="btn btn-outline btn-sm">DRep DeRegistrations</a>
+        </div>
     </div>
-</section>
+</div>

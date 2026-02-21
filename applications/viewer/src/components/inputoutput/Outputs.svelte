@@ -1,5 +1,6 @@
 <script>
     import AmountBadges from "../AmountBadges.svelte";
+    import AddressLink from "../AddressLink.svelte";
     import {MoreHorizontalIcon} from "svelte-feather-icons";
     import OutputDetails from "./OutputDetails.svelte";
 
@@ -21,7 +22,7 @@
 <div>
     {#each outputs as output}
         <div class="mt-4">
-            <div class="text-sm font-medium text-gray-700 md:ml-2 break-words">{output.address}</div>
+            <div class="text-sm font-medium text-gray-700 md:ml-2 break-words"><AddressLink address={output.address} maxLength={45} /></div>
             <div class="flex justify-end mt-2">
                 <div class="space-x-2">
                     <AmountBadges amounts={output.amount}></AmountBadges>

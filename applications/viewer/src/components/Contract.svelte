@@ -73,7 +73,7 @@
         <div class="flex flex-col">
             <div class="text-sm font-medium text-gray-500 mb-2">Contract {index + 1}</div>
             <div class="flex items-center gap-2">
-                <div class="text-sm text-gray-900 break-all">{contract.script_hash}</div>
+                <a href="/scripts/{contract.script_hash}" class="text-sm text-blue-600 hover:underline break-all">{contract.script_hash}</a>
                 <span class="text-sm text-gray-500">({contract.type})</span>
             </div>
         </div>
@@ -124,7 +124,7 @@
             <div class="flex flex-col">
                 <div class="text-sm font-medium text-gray-500 mb-2">Datum Hash</div>
                 <div class="flex items-start gap-2">
-                    <div class="text-sm text-gray-900 break-all flex-grow">{contract.datum_hash}</div>
+                    <a href="/datums/{contract.datum_hash}" class="text-sm text-blue-600 hover:underline break-all flex-grow">{contract.datum_hash}</a>
                     <button 
                         class="text-gray-400 hover:text-gray-600 flex-shrink-0" 
                         on:click={() => copyToClipboard(contract.datum_hash, 'Datum Hash copied to clipboard')}
