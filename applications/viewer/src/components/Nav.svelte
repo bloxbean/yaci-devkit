@@ -124,7 +124,6 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/blocks">Blocks</a></li>
                 <li><a href="/transactions">Transactions</a></li>
-                <li><a href="http://localhost:10000/wallet" target="_blank">Wallet</a></li>
                 <li>
                     <details id="mobile-explorer-menu">
                         <summary>Explorer</summary>
@@ -199,7 +198,6 @@
             <li><a href="/">Home</a></li>
             <li><a href="/blocks">Blocks</a></li>
             <li><a href="/transactions">Transactions</a></li>
-            <li><a href="http://localhost:10000/wallet" target="_blank">Wallet</a></li>
             <li>
                 <details id="explorer-menu">
                     <summary>Explorer</summary>
