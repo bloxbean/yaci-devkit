@@ -61,7 +61,8 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
                 const balanceUrl = `${INDEXER_BASE_URL}/addresses/${address}/balance`;
                 const response = await fetch(balanceUrl);
                 if (response.ok) {
-                    const data: Amount[] = await response.json();
+                    const json = await response.json();
+                    const data: Amount[] = json.amounts || [];
                     return { data, balanceApiUsed: 'balance' };
                 }
             } catch {
