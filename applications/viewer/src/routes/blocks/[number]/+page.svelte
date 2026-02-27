@@ -2,6 +2,7 @@
     import moment from 'moment';
     import {lovelaceToAda} from "../../../util/ada_util.js";
     import {truncate} from "../../../util/util.js";
+    import AddressLink from "../../../components/AddressLink.svelte";
 
     export let data;
     let {block, txs} = data;
@@ -154,7 +155,7 @@
                         <td class="py-2 px-4 text-center">{lovelaceToAda(tx.fee)}</td>
                         <td class="py-2 px-4">
                             {#each tx.output_addresses as address}
-                                {truncate(address, 25, "...")}<br>
+                                <AddressLink {address} maxLength={25} /><br>
                             {/each}
                         </td>
                     </tr>

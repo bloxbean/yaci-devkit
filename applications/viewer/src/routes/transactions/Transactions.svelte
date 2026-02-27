@@ -16,10 +16,9 @@
 
         // store.sendMessage(messages);
         unsubscribe = store.recentTxStore.subscribe(currentMessage => {
-            if (messages.length > 30)
-                messages = [currentMessage, ...messages.slice(0, 30)];
-            else
-                messages = [currentMessage, ...messages];
+            if (currentMessage && currentMessage.hash) {
+                messages = [currentMessage, ...messages.filter(t => t.hash !== currentMessage.hash)].slice(0, 30);
+            }
         });
 
         //TODO call unsubscribe

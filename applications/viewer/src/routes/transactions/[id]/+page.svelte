@@ -1,20 +1,26 @@
 <script>
-	import { lovelaceToAda } from '../../../util/ada_util';
+	import { lovelaceToAda } from '$lib/util';
 	import InputOutput from '../../../components/inputoutput/InputOutput.svelte';
 	import TxnContext from '../../../components/TxnContext.svelte';
 	import Inputs from '../../../components/inputoutput/Inputs.svelte';
 	import Contract from '../../../components/Contract.svelte';
 	import JsonContent from '../../../components/JsonContent.svelte';
+	import AddressLink from '../../../components/AddressLink.svelte';
+	import EmptyState from '../../../components/EmptyState.svelte';
+	import { parseUnit } from '$lib/utils/asset';
+	import { truncate } from '$lib/util';
 
 	export let data;
-	let { tx, contracts, metadata } = data;
+	let { tx, contracts, metadata, withdrawals, mints } = data;
 
 	const INPUT_TAB = 0;
 	const CONTRACT_TAB = 1;
 	const COLLATERAL_TAB = 2;
 	const METADATA_TAB = 3;
 	const REFERENCE_INPUT_TAB = 4;
-	const JSON_TAB = 5;
+	const WITHDRAWALS_TAB = 5;
+	const MINTS_TAB = 6;
+	const JSON_TAB = 7;
 
 	let activeTabIndex = INPUT_TAB;
 	let copied = false;
@@ -147,6 +153,36 @@
 					Reference Inputs
 				</button>
 
+				{#if withdrawals && withdrawals.length > 0}
+					<button
+						class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
+						WITHDRAWALS_TAB
+							? 'border-blue-600 text-blue-600'
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						on:click={() => (activeTabIndex = WITHDRAWALS_TAB)}
+					>
+						Withdrawals
+						<span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs"
+							>{withdrawals.length}</span
+						>
+					</button>
+				{/if}
+
+				{#if mints && mints.length > 0}
+					<button
+						class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
+						MINTS_TAB
+							? 'border-blue-600 text-blue-600'
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						on:click={() => (activeTabIndex = MINTS_TAB)}
+					>
+						Mints
+						<span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs"
+							>{mints.length}</span
+						>
+					</button>
+				{/if}
+
 				<button
 					class="ml-auto px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					JSON_TAB
@@ -202,6 +238,86 @@
 			{#if activeTabIndex == REFERENCE_INPUT_TAB}
 				<div class="w-full animate-fade-in">
 					<Inputs inputs={tx.reference_inputs}></Inputs>
+				</div>
+			{/if}
+
+			{#if activeTabIndex == WITHDRAWALS_TAB}
+				<div class="w-full animate-fade-in">
+					{#if !withdrawals || withdrawals.length === 0}
+						<EmptyState title="No Withdrawals" message="No withdrawals found in this transaction." />
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="min-w-full divide-y divide-gray-200">
+								<thead class="bg-gray-50">
+									<tr>
+										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+									</tr>
+								</thead>
+								<tbody class="bg-white divide-y divide-gray-200">
+									{#each withdrawals as w}
+										<tr class="hover:bg-gray-50">
+											<td class="px-4 py-4 text-sm">
+												<AddressLink address={w.address} maxLength={40} />
+											</td>
+											<td class="px-4 py-4 text-sm font-medium text-gray-900">
+												{lovelaceToAda(w.amount, 6)} <span class="text-sm text-gray-500">ADA</span>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			{#if activeTabIndex == MINTS_TAB}
+				<div class="w-full animate-fade-in">
+					{#if !mints || mints.length === 0}
+						<EmptyState title="No Mints" message="No mint or burn events found in this transaction." />
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="min-w-full divide-y divide-gray-200">
+								<thead class="bg-gray-50">
+									<tr>
+										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy ID</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+									</tr>
+								</thead>
+								<tbody class="bg-white divide-y divide-gray-200">
+									{#each mints as mint}
+										{@const unit = mint.unit || (mint.policy + (mint.asset_name || ''))}
+										{@const parsed = parseUnit(unit)}
+										<tr class="hover:bg-gray-50">
+											<td class="px-4 py-4 text-sm">
+												<a href="/assets/unit/{unit}" class="text-blue-600 hover:underline">
+													{parsed.assetNameUtf8 || parsed.assetNameHex || '(empty name)'}
+												</a>
+											</td>
+											<td class="px-4 py-4 text-sm">
+												<a href="/assets/policy/{parsed.policyId}" class="text-blue-600 hover:underline">
+													{truncate(parsed.policyId, 20, '...')}
+												</a>
+											</td>
+											<td class="px-4 py-4 text-sm">
+												{#if mint.mint_type === 'MINT'}
+													<span class="badge badge-success badge-sm">MINT</span>
+												{:else}
+													<span class="badge badge-error badge-sm">BURN</span>
+												{/if}
+											</td>
+											<td class="px-4 py-4 text-sm font-medium text-gray-900">
+												{mint.quantity}
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
 				</div>
 			{/if}
 

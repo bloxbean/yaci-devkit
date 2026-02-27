@@ -1,6 +1,7 @@
 <script>
     import moment from 'moment';
     import JsonContent from "../../../../components/JsonContent.svelte";
+    import AddressLink from "../../../../components/AddressLink.svelte";
     import {lovelaceToAda} from "../../../../util/ada_util.js";
 
     export let data;
@@ -42,7 +43,7 @@
                 </div>
                 <div class="bg-gray-100 py-2 px-4">
                     <p>
-                        <small>{govAction.return_address}</small>
+                        <small><AddressLink address={govAction.return_address} maxLength={40} /></small>
                     </p>
                 </div>
             </div>

@@ -126,6 +126,16 @@
                 <li><a href="/transactions">Transactions</a></li>
                 <li><a href="http://localhost:10000/wallet" target="_blank">Wallet</a></li>
                 <li>
+                    <details id="mobile-explorer-menu">
+                        <summary>Explorer</summary>
+                        <ul class="p-2 bg-base-100">
+                            <li><a href="/addresses">Addresses</a></li>
+                            <li><a href="/assets">Assets</a></li>
+                            <li><a href="/withdrawals">Withdrawals</a></li>
+                        </ul>
+                    </details>
+                </li>
+                <li>
                     <details id="mobile-certificate-menu">
                         <summary>Certificates</summary>
                         <ul class="p-2 bg-base-100">
@@ -134,20 +144,23 @@
                             <li><a href="/certificates/pool-registrations">Pool Registration</a></li>
                             <li><a href="/certificates/pool-retirements">Pool Retirements</a></li>
                             <li><a href="/certificates/delegations">Pool Delegations</a></li>
-                            <li><a href="/governance/drep-registrations">DRep Registrations</a></li>
-                            <li><a href="/governance/drep-updates">DRep Updates</a></li>
-                            <li><a href="/governance/drep-deregistrations">DRep DeRegistrations</a></li>
-                            <li><a href="/governance/govactions">Proposals</a></li>
-                            <li><a href="/governance/votes">Votes</a></li>
                         </ul>
                     </details>
                 </li>
                 <li>
-                    <details id="mobile-governance-state-menu">
+                    <details id="mobile-governance-menu">
                         <summary>Governance</summary>
                         <ul class="p-2 bg-base-100">
+                            <li><a href="/governance">Dashboard</a></li>
                             <li><a href="/governance/proposals">Proposals</a></li>
-                            <li><a href="/governance/dreps">Dreps</a></li>
+                            <li><a href="/governance/dreps">DReps</a></li>
+                            <li><a href="/governance/committee">Committee</a></li>
+                            <li><a href="/governance/constitution">Constitution</a></li>
+                            <li><a href="/governance/govactions">Gov Actions</a></li>
+                            <li><a href="/governance/votes">Votes</a></li>
+                            <li><a href="/governance/drep-registrations">DRep Registrations</a></li>
+                            <li><a href="/governance/drep-updates">DRep Updates</a></li>
+                            <li><a href="/governance/drep-deregistrations">DRep DeRegistrations</a></li>
                         </ul>
                     </details>
                 </li>
@@ -188,6 +201,16 @@
             <li><a href="/transactions">Transactions</a></li>
             <li><a href="http://localhost:10000/wallet" target="_blank">Wallet</a></li>
             <li>
+                <details id="explorer-menu">
+                    <summary>Explorer</summary>
+                    <ul class="p-2 bg-base-100">
+                        <li><a href="/addresses">Addresses</a></li>
+                        <li><a href="/assets">Assets</a></li>
+                        <li><a href="/withdrawals">Withdrawals</a></li>
+                    </ul>
+                </details>
+            </li>
+            <li>
                 <details id="certificate-menu">
                     <summary>Certificates</summary>
                     <ul class="p-2 bg-base-100">
@@ -196,20 +219,23 @@
                         <li><a href="/certificates/pool-registrations">Pool Registration</a></li>
                         <li><a href="/certificates/pool-retirements">Pool Retirements</a></li>
                         <li><a href="/certificates/delegations">Pool Delegations</a></li>
-                        <li><a href="/governance/drep-registrations">DRep Registrations</a></li>
-                        <li><a href="/governance/drep-updates">DRep Updates</a></li>
-                        <li><a href="/governance/drep-deregistrations">DRep DeRegistrations</a></li>
-                        <li><a href="/governance/govactions">Proposals</a></li>
-                        <li><a href="/governance/votes">Votes</a></li>
                     </ul>
                 </details>
             </li>
             <li>
-                <details id="governance-state-menu">
+                <details id="governance-menu">
                     <summary>Governance</summary>
                     <ul class="p-2 bg-base-100">
+                        <li><a href="/governance">Dashboard</a></li>
                         <li><a href="/governance/proposals">Proposals</a></li>
-                        <li><a href="/governance/dreps">Dreps</a></li>
+                        <li><a href="/governance/dreps">DReps</a></li>
+                        <li><a href="/governance/committee">Committee</a></li>
+                        <li><a href="/governance/constitution">Constitution</a></li>
+                        <li><a href="/governance/govactions">Gov Actions</a></li>
+                        <li><a href="/governance/votes">Votes</a></li>
+                        <li><a href="/governance/drep-registrations">DRep Registrations</a></li>
+                        <li><a href="/governance/drep-updates">DRep Updates</a></li>
+                        <li><a href="/governance/drep-deregistrations">DRep DeRegistrations</a></li>
                     </ul>
                 </details>
             </li>

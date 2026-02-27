@@ -4,6 +4,7 @@
     import {truncate} from "$lib/util";
     import { EyeIcon} from 'svelte-feather-icons'
     import { onMount } from 'svelte';
+    import AddressLink from '../../../components/AddressLink.svelte';
 
     export let data;
 
@@ -144,7 +145,7 @@
                         </a>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{govaction.type}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{truncate(govaction.return_address, 30, "...")}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><AddressLink address={govaction.return_address} maxLength={30} /></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                          <a href="/governance/govactions/{govaction.tx_hash}_{govaction.index}" target="_blank" title="View Details">
                              <EyeIcon size="1.2x" class="inline-block"/>

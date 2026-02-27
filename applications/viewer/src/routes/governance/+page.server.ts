@@ -1,34 +1,51 @@
-import type { PageLoad } from './$types'
+import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/public';
 
-export const load: PageLoad = async ({params, url}) => {
-    let page = url.searchParams.get('page');
-    if (!page) page = 0;
-    const count = 20;
-
+export const load: PageServerLoad = async () => {
     const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-    const apiUrl = `${INDEXER_BASE_URL}/voting-procedures?page=${page}&count=${count}`;
-    console.log(apiUrl);
 
-    const res = await fetch(apiUrl);
-    const data = await res.json();
+    const [proposalsRes, committeeRes, constitutionRes, epochRes] = await Promise.allSettled([
+        fetch(`${INDEXER_BASE_URL}/governance-state/proposals?page=1&count=5&order=desc`),
+        fetch(`${INDEXER_BASE_URL}/governance/committees/current`),
+        fetch(`${INDEXER_BASE_URL}/governance/constitution`),
+        fetch(`${INDEXER_BASE_URL}/epochs/latest`)
+    ]);
 
-    const votes  = data;
-    console.log(data);
+    const proposals = proposalsRes.status === 'fulfilled' && proposalsRes.value.ok
+        ? await proposalsRes.value.json()
+        : [];
 
-    if (res.ok) {
-        return {
-            votes,
-            total: 0,
-            total_pages: 0,
-            page: page,
-            count: count
+    const committee = committeeRes.status === 'fulfilled' && committeeRes.value.ok
+        ? await committeeRes.value.json()
+        : null;
+
+    const constitution = constitutionRes.status === 'fulfilled' && constitutionRes.value.ok
+        ? await constitutionRes.value.json()
+        : null;
+
+    const epochData = epochRes.status === 'fulfilled' && epochRes.value.ok
+        ? await epochRes.value.json()
+        : null;
+
+    const currentEpoch = epochData?.epoch ?? 0;
+
+    // Compute active committee member count: deduplicate by hash, keep only active (not expired)
+    let activeCommitteeCount = 0;
+    if (committee?.members) {
+        const uniqueHashes = new Set<string>();
+        for (const member of committee.members) {
+            if (!uniqueHashes.has(member.hash) && member.expired_epoch >= currentEpoch) {
+                uniqueHashes.add(member.hash);
+            }
         }
+        activeCommitteeCount = uniqueHashes.size;
     }
 
     return {
-        status: 404,
-        body: { error: 'Can not fetch Voting Procedures.' }
+        proposals,
+        committee,
+        constitution,
+        activeCommitteeCount,
+        currentEpoch
     };
-
-}
+};

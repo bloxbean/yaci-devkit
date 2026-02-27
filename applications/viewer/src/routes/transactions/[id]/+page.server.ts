@@ -1,28 +1,25 @@
-import type { PageLoad } from './$types'
+import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/public';
 
-export const load: PageLoad = async ({params}) => {
-   const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-   const txApiUrl = `${INDEXER_BASE_URL}/txs/${params.id}`;
-   const scriptApiUrl = `${INDEXER_BASE_URL}/txs/${params.id}/scripts`;
-   const metadataApiUrl = `${INDEXER_BASE_URL}/txs/${params.id}/metadata`;
+export const load: PageServerLoad = async ({ params, fetch }) => {
+    const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
+    const txHash = params.id;
 
-   const res = await fetch(txApiUrl);
-   const scriptRes = await fetch(scriptApiUrl);
-   const metadataRes = await fetch(metadataApiUrl);
-   const tx = await res.json();
-   const scripts = await scriptRes.json();
-   const metadata = await metadataRes.json();
+    const [tx, scripts, metadata, withdrawals, mints] = await Promise.all([
+        fetch(`${INDEXER_BASE_URL}/txs/${txHash}`).then(r => r.ok ? r.json() : null),
+        fetch(`${INDEXER_BASE_URL}/txs/${txHash}/scripts`).then(r => r.ok ? r.json() : []),
+        fetch(`${INDEXER_BASE_URL}/txs/${txHash}/metadata`).then(r => r.ok ? r.json() : null),
+        fetch(`${INDEXER_BASE_URL}/txs/${txHash}/withdrawals`).then(r => r.ok ? r.json() : []),
+        fetch(`${INDEXER_BASE_URL}/assets/txs/${txHash}`).then(r => r.ok ? r.json() : []),
+    ]);
 
-   console.log(tx);
-   console.log(scripts);
-   console.log(metadata);
-
-    if (res.ok) {
+    if (tx) {
         return {
-            "tx": tx,
-            "contracts": scripts,
-            "metadata": metadata
+            tx,
+            contracts: scripts,
+            metadata,
+            withdrawals,
+            mints,
         };
     }
 
@@ -30,5 +27,4 @@ export const load: PageLoad = async ({params}) => {
         status: 404,
         body: { error: 'Can not fetch transaction.' }
     };
-
-}
+};
