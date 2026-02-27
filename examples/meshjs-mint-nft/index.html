@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeshJS NFT Minting — Yaci DevKit</title>
+  <script src="http://localhost:10000/wallet-sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { max-width: 480px; width: 100%; padding: 2rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #94a3b8; margin-bottom: 1.5rem; font-size: 0.875rem; }
+    .card { background: #1e293b; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1rem; }
+    label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem; }
+    input, select { width: 100%; padding: 0.5rem 0.75rem; border-radius: 0.5rem; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.875rem; margin-bottom: 0.75rem; }
+    input:focus, select:focus { outline: none; border-color: #6366f1; }
+    button { width: 100%; padding: 0.625rem; border-radius: 0.5rem; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #4f46e5; }
+    .btn-connect { background: #334155; color: #e2e8f0; margin-bottom: 0.75rem; }
+    .btn-connect:hover:not(:disabled) { background: #475569; }
+    .connected-info { font-size: 0.8rem; color: #22c55e; margin-bottom: 0.75rem; word-break: break-all; }
+    #status { margin-top: 1rem; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; word-break: break-all; display: none; }
+    #status.error { display: block; background: #450a0a; color: #fca5a5; }
+    #status.success { display: block; background: #052e16; color: #86efac; }
+    #status.info { display: block; background: #172554; color: #93c5fd; }
+    #status code { background: rgba(255,255,255,0.1); padding: 0.1rem 0.3rem; border-radius: 0.25rem; }
+    .field-group { margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mint NFT</h1>
+    <p class="subtitle">MeshJS + CIP-30 Wallet on Yaci DevKit</p>
+
+    <div class="card">
+      <!-- Wallet Connection -->
+      <div id="wallet-section">
+        <label>Wallet</label>
+        <select id="wallet-select" disabled>
+          <option>Detecting wallets...</option>
+        </select>
+        <button id="connect-btn" class="btn-connect" disabled>Connect Wallet</button>
+      </div>
+      <div id="connected-info" class="connected-info" style="display:none;"></div>
+
+      <!-- NFT Form -->
+      <div class="field-group">
+        <label>Asset Name</label>
+        <input id="asset-name" type="text" value="YaciTestNFT" />
+      </div>
+      <div class="field-group">
+        <label>Display Name</label>
+        <input id="display-name" type="text" value="Yaci Test NFT" />
+      </div>
+      <div class="field-group">
+        <label>Description</label>
+        <input id="description" type="text" value="NFT minted on Yaci DevKit local devnet" />
+      </div>
+      <div class="field-group">
+        <label>Image URL</label>
+        <input id="image-url" type="text" value="ipfs://QmRzicpReutwCkM6aotuKjErFCUD213DpwPq6ByuzMJaua" />
+      </div>
+
+      <button id="mint-btn" class="btn-primary" disabled>Mint NFT</button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
