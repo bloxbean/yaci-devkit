@@ -124,7 +124,6 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/blocks">Blocks</a></li>
                 <li><a href="/transactions">Transactions</a></li>
-                <li><a href="http://localhost:10000/wallet" target="_blank">Wallet</a></li>
                 <li>
                     <details id="mobile-certificate-menu">
                         <summary>Certificates</summary>
@@ -186,7 +185,6 @@
             <li><a href="/">Home</a></li>
             <li><a href="/blocks">Blocks</a></li>
             <li><a href="/transactions">Transactions</a></li>
-            <li><a href="http://localhost:10000/wallet" target="_blank">Wallet</a></li>
             <li>
                 <details id="certificate-menu">
                     <summary>Certificates</summary>
