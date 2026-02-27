@@ -85,6 +85,7 @@ When `--enable-multi-node` is used, DevKit creates a 3-node cluster for rollback
 | **Cardano Node** | Official Cardano node (supports both amd64/arm64) | 3001 (n2n), 3333 (n2c through socat) |
 | **[Ogmios](https://ogmios.dev/)** | WebSocket API for Cardano (optional) | 1337                                 |
 | **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer (optional) | 1442                                 |
+| **[MCP Server](./applications/mcp)** | AI coding assistant integration (optional) | 9500                                 |
 
 ## 🎯 Quick Start
 
@@ -220,6 +221,39 @@ devnet:default> reset
 ./bin/devkit.sh stop
 ./bin/devkit.sh start
 ```
+
+## 🤖 MCP Server (AI Coding Assistant Integration)
+
+Yaci DevKit includes an optional [MCP](https://modelcontextprotocol.io/) server that exposes devnet operations as tools for AI coding assistants like [Claude Code](https://docs.anthropic.com/en/docs/claude-code). This lets your AI assistant directly interact with the devnet — resetting state, funding addresses, querying UTxOs, and submitting transactions.
+
+The MCP server runs as a Docker container alongside the devnet and requires no additional setup.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `devnet_status` | Get devnet info and current tip (slot, block, epoch) |
+| `devnet_reset` | Reset devnet to initial state |
+| `devnet_topup` | Fund an address with ADA (params: `address`, `adaAmount`) |
+| `devnet_utxos` | Query UTxOs at an address (params: `address`) |
+| `devnet_submit_tx` | Submit a signed CBOR transaction (params: `cborHex`) |
+
+### Setup
+
+Copy [`applications/mcp/mcp.json.example`](./applications/mcp/mcp.json.example) to `.mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "yaci-devkit": {
+      "type": "http",
+      "url": "http://localhost:9500/mcp"
+    }
+  }
+}
+```
+
+Start the devnet as usual — the MCP server starts automatically on port 9500.
 
 ## 📚 Documentation
 

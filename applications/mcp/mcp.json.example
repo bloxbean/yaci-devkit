@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "yaci-devkit": {
+      "type": "http",
+      "url": "http://localhost:9500/mcp"
+    }
+  }
+}
