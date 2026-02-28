@@ -85,7 +85,7 @@ When `--enable-multi-node` is used, DevKit creates a 3-node cluster for rollback
 | **Cardano Node** | Official Cardano node (supports both amd64/arm64) | 3001 (n2n), 3333 (n2c through socat) |
 | **[Ogmios](https://ogmios.dev/)** | WebSocket API for Cardano (optional) | 1337                                 |
 | **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer (optional) | 1442                                 |
-| **[MCP Server](./applications/mcp)** | AI coding assistant integration (optional) | 9500                                 |
+| **MCP Server** | AI coding assistant integration | 10000                                |
 
 ## 🎯 Quick Start
 
@@ -224,9 +224,9 @@ devnet:default> reset
 
 ## 🤖 MCP Server (AI Coding Assistant Integration)
 
-Yaci DevKit includes an optional [MCP](https://modelcontextprotocol.io/) server that exposes devnet operations as tools for AI coding assistants like [Claude Code](https://docs.anthropic.com/en/docs/claude-code). This lets your AI assistant directly interact with the devnet — resetting state, funding addresses, querying UTxOs, and submitting transactions.
+Yaci DevKit includes a built-in [MCP](https://modelcontextprotocol.io/) server that exposes devnet operations as tools for AI coding assistants like [Claude Code](https://docs.anthropic.com/en/docs/claude-code). This lets your AI assistant directly interact with the devnet — resetting state, funding addresses, querying UTxOs, and submitting transactions.
 
-The MCP server runs as a Docker container alongside the devnet and requires no additional setup.
+The MCP server is integrated into Yaci CLI and shares the same port (10000) — no additional containers or setup required.
 
 ### Available Tools
 
@@ -240,20 +240,19 @@ The MCP server runs as a Docker container alongside the devnet and requires no a
 
 ### Setup
 
-Copy [`applications/mcp/mcp.json.example`](./applications/mcp/mcp.json.example) to `.mcp.json` in your project root:
+Copy [`mcp.json.example`](./mcp.json.example) to `.mcp.json` in your project root:
 
 ```json
 {
   "mcpServers": {
     "yaci-devkit": {
-      "type": "http",
-      "url": "http://localhost:9500/mcp"
+      "url": "http://localhost:10000/sse"
     }
   }
 }
 ```
 
-Start the devnet as usual — the MCP server starts automatically on port 9500.
+Start the devnet as usual — the MCP server is available automatically on the same port as the admin API.
 
 ## 📚 Documentation
 

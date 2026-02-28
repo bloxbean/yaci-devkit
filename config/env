@@ -17,7 +17,6 @@ HOST_CLUSTER_API_PORT=10000
 HOST_SUBMIT_API_PORT=8090
 HOST_OGMIOS_PORT=1337
 HOST_KUPO_PORT=1442
-HOST_MCP_PORT=9500
 
 #######################################################
 # Viewer Config - DON'T CHANGE

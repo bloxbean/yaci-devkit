@@ -28,11 +28,13 @@ repositories {
 
 ext {
     set('springShellVersion', "3.2.4")
+    set('springAiVersion', "1.0.3")
 }
 
 dependencies {
 	implementation 'org.springframework.shell:spring-shell-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'org.springframework.boot:spring-boot-starter-mustache'
@@ -69,6 +71,7 @@ dependencies {
 dependencyManagement {
 	imports {
 		mavenBom "org.springframework.shell:spring-shell-dependencies:${springShellVersion}"
+		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
 	}
 }
 

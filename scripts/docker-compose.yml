@@ -27,16 +27,5 @@ services:
     env_file:
       - ../config/env
 
-  yaci-mcp:
-    build:
-      context: ../applications/mcp
-      dockerfile: Dockerfile
-    ports:
-      - "${HOST_MCP_PORT}:9500"
-    environment:
-      - YACI_ADMIN_URL=http://yaci-cli:10000
-    depends_on:
-      - yaci-cli
-
 volumes:
   cluster-data:
