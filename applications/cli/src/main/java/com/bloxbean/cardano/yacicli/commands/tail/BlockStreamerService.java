@@ -221,23 +221,6 @@ public class BlockStreamerService {
                     wellKnownPoint = new Point(slot, blockHash);
                 else
                     wellKnownPoint = Constants.WELL_KNOWN_MAINNET_POINT;
-            } else if ("legacy_testnet".equals(network)) {
-                if (!StringUtils.hasLength(host)) {
-                    host = Constants.TESTNET_IOHK_RELAY_ADDR;
-                }
-
-                if (port == 0) {
-                    port = Constants.TESTNET_IOHK_RELAY_PORT;
-                }
-
-                if (protocolMagic == 0) {
-                    protocolMagic = Constants.LEGACY_TESTNET_PROTOCOL_MAGIC;
-                }
-
-                if (slot != 0 && StringUtils.hasLength(blockHash))
-                    wellKnownPoint = new Point(slot, blockHash);
-                else
-                    wellKnownPoint = Constants.WELL_KNOWN_TESTNET_POINT;
             } else if ("preprod".equals(network)) {
                 if (!StringUtils.hasLength(host)) {
                     host = Constants.PREPROD_IOHK_RELAY_ADDR;

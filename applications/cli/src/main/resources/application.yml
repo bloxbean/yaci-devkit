@@ -12,11 +12,15 @@ spring:
     location: classpath:/banner.txt
   devtools:
     add-properties:logging: false
+  shell:
+    interactive:
+      enabled: true
   ai:
     mcp:
       server:
         name: yaci-devkit
         version: 0.1.0
+        protocol: STATELESS
 
 logging:
   level:

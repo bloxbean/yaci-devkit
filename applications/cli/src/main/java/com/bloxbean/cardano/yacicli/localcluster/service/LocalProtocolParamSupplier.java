@@ -62,10 +62,10 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
         protocolParams.setPoolDeposit(String.valueOf(protocolParamUpdate.getPoolDeposit()));
         protocolParams.setEMax(protocolParamUpdate.getMaxEpoch());
         protocolParams.setNOpt(protocolParamUpdate.getNOpt());
-        protocolParams.setA0(protocolParamUpdate.getPoolPledgeInfluence());
-        protocolParams.setRho(protocolParamUpdate.getExpansionRate());
-        protocolParams.setTau(protocolParamUpdate.getTreasuryGrowthRate());
-        protocolParams.setDecentralisationParam(protocolParamUpdate.getDecentralisationParam()); //Deprecated. Not there
+        protocolParams.setA0(protocolParamUpdate.getPoolPledgeInfluence() != null? protocolParamUpdate.getPoolPledgeInfluence().safeRatio(): null);
+        protocolParams.setRho(protocolParamUpdate.getExpansionRate() != null? protocolParamUpdate.getExpansionRate().safeRatio(): null);
+        protocolParams.setTau(protocolParamUpdate.getTreasuryGrowthRate() != null? protocolParamUpdate.getTreasuryGrowthRate().safeRatio(): null);
+        protocolParams.setDecentralisationParam(protocolParamUpdate.getDecentralisationParam() != null? protocolParamUpdate.getDecentralisationParam().safeRatio(): null); //Deprecated. Not there
         //protocolParams.setExtraEntropy(protocolParamUpdate.getExtraEntropy()); //TODO
         protocolParams.setProtocolMajorVer(protocolParamUpdate.getProtocolMajorVer());
         protocolParams.setProtocolMinorVer(protocolParamUpdate.getProtocolMinorVer());
@@ -90,8 +90,8 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
 
         protocolParams.setCostModels(costModels);
 
-        protocolParams.setPriceMem(protocolParamUpdate.getPriceMem());
-        protocolParams.setPriceStep(protocolParamUpdate.getPriceStep());
+        protocolParams.setPriceMem(protocolParamUpdate.getPriceMem() != null? protocolParamUpdate.getPriceMem().safeRatio(): null);
+        protocolParams.setPriceStep(protocolParamUpdate.getPriceStep() != null? protocolParamUpdate.getPriceStep().safeRatio(): null);
         protocolParams.setMaxTxExMem(String.valueOf(protocolParamUpdate.getMaxTxExMem()));
         protocolParams.setMaxTxExSteps(String.valueOf(protocolParamUpdate.getMaxTxExSteps()));
         protocolParams.setMaxBlockExMem(String.valueOf(protocolParamUpdate.getMaxBlockExMem()));
