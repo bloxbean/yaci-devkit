@@ -28,11 +28,13 @@ repositories {
 
 ext {
     set('springShellVersion', "3.2.4")
+    set('springAiVersion', "1.0.3")
 }
 
 dependencies {
 	implementation 'org.springframework.shell:spring-shell-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'org.springframework.boot:spring-boot-starter-mustache'
@@ -69,6 +71,7 @@ dependencies {
 dependencyManagement {
 	imports {
 		mavenBom "org.springframework.shell:spring-shell-dependencies:${springShellVersion}"
+		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
 	}
 }
 
@@ -95,7 +98,28 @@ compileJava {
     dependsOn genClusterTemplatesZip
 }
 
+// Wallet UI build tasks
+tasks.register('walletUiInstall', Exec) {
+    workingDir 'wallet-ui'
+    commandLine 'bash', '-c', 'npm install'
+    inputs.file('wallet-ui/package.json')
+    outputs.dir('wallet-ui/node_modules')
+}
+
+tasks.register('walletUiBuild', Exec) {
+    dependsOn walletUiInstall
+    workingDir 'wallet-ui'
+    commandLine 'bash', '-c', 'npm run build'
+    inputs.dir('wallet-ui/src')
+    inputs.file('wallet-ui/index.html')
+    inputs.file('wallet-ui/package.json')
+    inputs.file('wallet-ui/vite.config.ts')
+    inputs.file('wallet-ui/tailwind.config.cjs')
+    outputs.dir('src/main/resources/static/wallet')
+}
+
 processResources {
+    dependsOn walletUiBuild
     filesMatching('application.properties') {
         expand(project.properties)
     }

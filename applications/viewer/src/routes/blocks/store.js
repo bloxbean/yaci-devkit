@@ -47,17 +47,15 @@ socket.addEventListener('message', function (event) {
 });
 
 blocksStore.subscribe(currentMessage => {
-    if (blocksCache.length > 30)
-        blocksCache = [currentMessage, ...blocksCache.slice(0, 30)];
-    else
-        blocksCache = [currentMessage, ...blocksCache];
+    if (currentMessage && currentMessage.number != null) {
+        blocksCache = [currentMessage, ...blocksCache.filter(b => b.number !== currentMessage.number)].slice(0, 30);
+    }
 });
 
 recentTxStore.subscribe(currentMessage => {
-    if (txCache.length > 30)
-        txCache = [currentMessage, ...txCache.slice(0, 30)];
-    else
-        txCache = [currentMessage, ...txCache];
+    if (currentMessage && currentMessage.hash) {
+        txCache = [currentMessage, ...txCache.filter(t => t.hash !== currentMessage.hash)].slice(0, 30);
+    }
 });
 
 export const sendMessage = (message) => {

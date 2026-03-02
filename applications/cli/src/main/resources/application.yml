@@ -12,6 +12,11 @@ spring:
     location: classpath:/banner.txt
   devtools:
     add-properties:logging: false
+  ai:
+    mcp:
+      server:
+        name: yaci-devkit
+        version: 0.1.0
 
 logging:
   level:

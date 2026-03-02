@@ -2,6 +2,7 @@
     import moment from 'moment';
     import { lovelaceToAda } from "../../../util/ada_util.js";
     import { truncate } from "../../../util/util.js";
+    import AddressLink from "../../../components/AddressLink.svelte";
 
     export let data;
     let {block, txs} = data;
@@ -171,15 +172,35 @@
     </div>
 </section>
 
-<style>
-    .scrollbar-thin::-webkit-scrollbar {
-        width: 4px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #cbd5e1;
-        border-radius: 10px;
-    }
-</style>
+{#if txs.length > 0}
+    <section class="container mx-auto text-sm mt-10 mb-10">
+        <div class="overflow-x-auto">
+            <table class="w-full bg-white border border-gray-300">
+                <thead>
+                <tr>
+                    <th class="py-2 px-4 bg-gray-100 font-bold">Tx Hash</th>
+                    <th class="py-2 px-4 bg-gray-100 font-bold text-center">Total Output (Ada)</th>
+                    <th class="py-2 px-4 bg-gray-100 font-bold text-center">Fee (Ada)</th>
+                    <th class="py-2 px-4 bg-gray-100 font-bold">Output Addresses</th>
+                </tr>
+                </thead>
+                <tbody>
+                {#each txs as tx, index}
+                    <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                        <td class="py-2 px-4">
+                            <a href="/transactions/{tx.tx_hash}" class="text-blue-500">{tx.tx_hash}</a>
+                        </td>
+                        <td class="py-2 px-4 text-center">{lovelaceToAda(tx.total_output)}</td>
+                        <td class="py-2 px-4 text-center">{lovelaceToAda(tx.fee)}</td>
+                        <td class="py-2 px-4">
+                            {#each tx.output_addresses as address}
+                                <AddressLink {address} maxLength={25} /><br>
+                            {/each}
+                        </td>
+                    </tr>
+                {/each}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{/if}

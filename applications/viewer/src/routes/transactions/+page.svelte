@@ -1,9 +1,10 @@
 <script lang="ts">
     // Moved imports first for convention
     import { formatAda, getDate, truncate } from '$lib/util';
-    import { goto } from '$app/navigation'; 
-    import { page } from '$app/stores';   
-    import { onMount } from 'svelte';      
+    import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
+    import { onMount } from 'svelte';
+    import AddressLink from '../../components/AddressLink.svelte';
 
     // Add toast state
     let showToast = false;
@@ -201,7 +202,7 @@
                                     <td class="px-6 py-4 text-sm text-gray-500 break-all">
                                         {#if tx.output_addresses}
                                             {#each tx.output_addresses as address, i (address + i)}
-                                                <div class="whitespace-nowrap">{truncate(address, 25, "...")}</div>
+                                                <div class="whitespace-nowrap"><AddressLink {address} maxLength={25} /></div>
                                             {/each}
                                         {/if}
                                     </td>

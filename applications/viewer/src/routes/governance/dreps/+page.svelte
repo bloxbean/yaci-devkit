@@ -142,8 +142,8 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {#if drep.drep_id}
                             <div class="flex items-center gap-2">
-                                <span>{drep.drep_id}</span>
-                                <button 
+                                <a href="/governance/dreps/{drep.drep_id}" class="link link-primary">{drep.drep_id}</a>
+                                <button
                                     class="text-gray-400 hover:text-gray-600"
                                     on:click={() => copyToClipboard(drep.drep_id, 'DRep ID copied to clipboard!')}
                                     title="Copy DRep ID"

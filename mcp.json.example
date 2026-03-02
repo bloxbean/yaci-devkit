@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "yaci-devkit": {
+      "url": "http://localhost:10000/sse"
+    }
+  }
+}
