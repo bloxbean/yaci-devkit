@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +55,20 @@ public class GlobalExceptionHandler {
 
         log.warn("Illegal argument: {}", ex.getMessage());
         return ResponseEntity.badRequest().body(response);
+    }
+
+    /**
+     * Handle missing static resource requests (e.g., MCP client probing legacy endpoints)
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFoundException(
+            NoResourceFoundException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", HttpStatus.NOT_FOUND.value());
+        response.put("message", "Resource not found");
+
+        log.debug("Resource not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     /**

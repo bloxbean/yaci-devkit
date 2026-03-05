@@ -246,7 +246,7 @@ Copy [`mcp.json.example`](./mcp.json.example) to `.mcp.json` in your project roo
 {
   "mcpServers": {
     "yaci-devkit": {
-      "url": "http://localhost:10000/sse"
+      "url": "http://localhost:10000/mcp"
     }
   }
 }

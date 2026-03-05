@@ -8,9 +8,9 @@
         </encoder>
         <file>${LOG_FILE}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <param name="FileNamePattern" value="${LOG_FILE}.%i"/>
-            <param name="MinIndex" value="1"/>
-            <param name="MaxIndex" value="20"/>
+            <fileNamePattern>${LOG_FILE}.%i</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>20</maxIndex>
         </rollingPolicy>
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
             <MaxFileSize>10MB</MaxFileSize>
@@ -21,6 +21,22 @@
             <pattern>%clr(%d){faint} %clr(${PID:- }){magenta} %clr([%15.15t]){magenta} %clr(%-5p) %clr(%-40c{40}){cyan} - %m%n</pattern>
         </encoder>
     </appender>
+
+    <!-- Tomcat socket errors go to file only, not to the CLI prompt -->
+    <logger name="org.apache.tomcat.util.net" level="ERROR" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <!-- MCP protocol negotiation warnings go to file only, not to the CLI prompt -->
+    <logger name="io.modelcontextprotocol" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <!-- Spring AI MCP provider startup warnings go to file only -->
+    <logger name="org.springframework.ai.mcp" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
     <root level="WARN">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>

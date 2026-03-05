@@ -1,6 +1,6 @@
 plugins {
-    id 'org.springframework.boot' version '3.2.5'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.5.11'
+    id 'io.spring.dependency-management' version '1.1.7'
     id 'org.graalvm.buildtools.native' version '0.10.2'
 	id 'java'
 	id 'signing'
@@ -18,17 +18,16 @@ java {
 }
 
 repositories {
-	//maven { url 'https://repo.spring.io/release' }
 	mavenCentral()
 	mavenLocal()
     maven {
-        url "https://oss.sonatype.org/content/repositories/snapshots"
+        url "https://central.sonatype.com/repository/maven-snapshots/"
     }
 }
 
 ext {
-    set('springShellVersion', "3.2.4")
-    set('springAiVersion', "1.0.3")
+    set('springShellVersion', "3.4.1")
+    set('springAiVersion', "1.1.2")
 }
 
 dependencies {
@@ -39,13 +38,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'org.springframework.boot:spring-boot-starter-mustache'
 
-	implementation('com.bloxbean.cardano:yaci:0.3.3') {
+	implementation('com.bloxbean.cardano:yaci:0.4.0') {
         exclude group: 'com.bloxbean.cardano', module: 'cardano-client-core'
     }
-	implementation 'com.bloxbean.cardano:cardano-client-lib:0.6.2'
-	implementation 'com.bloxbean.cardano:cardano-client-backend:0.6.2'
-    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.6.2'
-    //implementation 'com.bloxbean.cardano:cardano-client-supplier-local:0.5.1'
+	implementation 'com.bloxbean.cardano:cardano-client-lib:0.7.1'
+	implementation 'com.bloxbean.cardano:cardano-client-backend:0.7.1'
+    implementation 'com.bloxbean.cardano:cardano-client-backend-blockfrost:0.7.1'
 
     implementation 'org.apache.commons:commons-compress:1.23.0'
 
