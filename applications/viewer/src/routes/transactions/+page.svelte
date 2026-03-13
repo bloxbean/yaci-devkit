@@ -1,43 +1,17 @@
 <script lang="ts">
-    // Moved imports first for convention
-    import { formatAda, getDate, truncate } from '$lib/util';
+    import { formatAda, truncate } from '$lib/util';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
     import { onMount } from 'svelte';
     import AddressLink from '../../components/AddressLink.svelte';
 
-    // Add toast state
     let showToast = false;
     let toastTimeout: number;
+    let loading = false;
+    let currentPage = 1; 
+    let searchQuery = ''; 
+    const ITEMS_PER_PAGE = 15;
 
-    // Add clipboard function with toast
-    async function copyToClipboard(text: string) {
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast = true;
-            // Clear any existing timeout
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-            // Hide toast after 2 seconds
-            toastTimeout = setTimeout(() => {
-                showToast = false;
-            }, 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-        }
-    }
-
-    // Cleanup timeout on component destroy
-    onMount(() => {
-        return () => {
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-        };
-    });
-
-    // --- Type Definitions --- 
     interface TxSummary {
         tx_hash: string;
         block_number: number;
@@ -45,14 +19,12 @@
         total_output: number;
         fee: number;
         output_addresses: string[];
-        timestamp?: number;
-        epoch_no?: number;
     }
     interface SuccessData {
         txs: TxSummary[];
         total: number;
         total_pages: number;
-        page: number;
+        page: number; 
         count: number;
         status?: undefined;
         body?: undefined;
@@ -63,186 +35,258 @@
         txs?: undefined;
     }
     
-    // Declare data prop first
     export let data: SuccessData | ErrorData;
     
-    // Log initial data *after* declaration
-    console.log("[DEBUG Tx Page] Script started. Initial data:", data);
-
-    // Type guard
     function isErrorData(data: SuccessData | ErrorData): data is ErrorData { 
-        return data?.status !== undefined && data.status >= 400; 
+        return data?.status !== undefined && data.status >= 400;
     }
 
-    // --- Pagination State --- 
-    let loading = false;
-    let currentPage = 1; // UI 1-based
-    const ITEMS_PER_PAGE = 15;
-
-    onMount(() => {
-        console.log("[DEBUG Tx Page] Component Mounted. Data:", data);
-        if (!isErrorData(data)) {
-            // Ensure data.page is treated as a number
-            currentPage = parseInt(String(data.page), 10) + 1; 
+    async function copyToClipboard(text: string) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast = true;
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => showToast = false, 2000);
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
         }
-        loading = false;
-    });
+    }
 
-    // --- Has More Logic --- 
-    // Simply check if we have transactions
-    $: hasMore = !isErrorData(data) && data.txs && data.txs.length > 0;
-
-    // --- Navigation Function --- 
     function goToPage(targetPage: number) {
         if (targetPage < 1 || loading) return;
         loading = true;
-        // Use 1-based page numbers in URL
         const url = `/transactions?page=${targetPage}&count=${ITEMS_PER_PAGE}`;
         goto(url);
     }
 
-    // --- Reactive Update Block --- 
-    $: if (data && $page) {
-        console.log("[DEBUG Tx Page] Reactive update. Data:", data);
-        if (!isErrorData(data) && data.txs) { 
-            // Use the page number directly since URL is now 1-based
-            currentPage = parseInt(String(data.page), 10);
-            console.log(`[DEBUG Tx Page] State Updated: currentPage=${currentPage}`);
-            console.log(`[DEBUG Tx Page] Calculated hasMore: ${hasMore} (Txs length: ${data.txs.length})`);
+    function handleSearch() {
+        const q = searchQuery.trim();
+        if (!q) return;
+
+        if (q.startsWith('addr') || q.startsWith('stake')) {
+            goto(`/addresses/${q}`);
+        } else {
+            goto(`/transactions/${q}`);
         }
-        loading = false; 
+    
     }
 
+    onMount(() => {
+        if (!isErrorData(data)) {
+            currentPage = Number(data.page) || 1; 
+        }
+        loading = false;
+        return () => { if (toastTimeout) clearTimeout(toastTimeout); };
+    });
+    
+    $: hasMore = !isErrorData(data) && data.txs && data.txs.length === ITEMS_PER_PAGE;
+    
+    $: if (data && $page) {
+        if (!isErrorData(data) && data.txs) { 
+            currentPage = Number(data.page) || 1;
+        }
+        loading = false;
+    }
+
+    const iconCopy = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+    const iconCube = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
+    const iconCardano = `<svg class="h-4 w-4 font-medium" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 40" fill="currentColor"><path style="fill-rule: evenodd; stroke-width: 1.45536" d="M 15.4375 -0.10546875 L 9.1875 15.783203 L 0.015625 15.783203 L 0.015625 20.822266 L 7.2070312 20.822266 L 5.53125 25.083984 L 0.015625 25.083984 L 0.015625 30.123047 L 3.5488281 30.123047 L 0.015625 39.105469 L 5.0976562 39.105469 L 8.6386719 30.123047 L 27.353516 30.123047 L 30.894531 39.105469 L 35.976562 39.105469 L 32.443359 30.123047 L 35.976562 30.123047 L 35.976562 25.083984 L 30.460938 25.083984 L 28.785156 20.822266 L 35.976562 20.822266 L 35.976562 15.783203 L 26.804688 15.783203 L 20.554688 -0.10546875 L 15.4375 -0.10546875 z M 17.996094 6.3847656 L 21.701172 15.783203 L 14.291016 15.783203 L 17.996094 6.3847656 z M 12.304688 20.822266 L 23.6875 20.822266 L 25.367188 25.083984 L 10.625 25.083984 L 12.304688 20.822266 z "></path></svg>`;
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <!-- Toast Notification -->
-    {#if showToast}
-        <div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 z-50">
-            Transaction hash copied to clipboard!
-        </div>
-    {/if}
-
-    <h1 class="text-3xl font-bold mb-8">Recent Transactions</h1>
-
-    {#if isErrorData(data)}
-         <div class="alert alert-error mb-4">
-            <span>{data.body?.error || 'Unknown error loading transactions.'}</span>
-        </div>
-    {:else}
-        <!-- Remove top pagination controls -->
-        {#if !data.txs || data.txs.length === 0}
-             <div class="alert alert-info mb-4">
-                <span>No transactions found.</span>
+<section class="py-8 px-4 md:px-6 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        
+        {#if showToast}
+            <div class="fixed bottom-6 right-6 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-xl flex items-center gap-2 z-50 animate-fade-up">
+                <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span class="font-medium text-sm">Copied to clipboard</span>
             </div>
-        {:else}
-        <div class="flex justify-end mt-4 mb-4">
+        {/if}
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold mb-1">Recent Transactions</h1>
+            </div>
+
+            <form on:submit|preventDefault={handleSearch} class="w-full md:w-[400px] relative">
+                <input 
+                    type="text" 
+                    bind:value={searchQuery}
+                    placeholder="Search Tx Hash or Address..." 
+                    class="input input-bordered w-full bg-white text-black pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-shadow"
+                    spellcheck="false"
+                />
+                <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        {#if !isErrorData(data) && data.txs && data.txs.length > 0}
+            <div class="flex justify-end mt-4 mb-4">
                 <div class="join">
-                    <button 
-                        class="join-item btn btn-sm"
-                        on:click={() => goToPage(currentPage - 1)}
-                        disabled={currentPage == 1 || loading}
-                    >
-                        «
-                    </button>
-                    <button class="join-item btn btn-sm">
-                        Page {currentPage}
-                    </button>
-                    <button 
-                        class="join-item btn btn-sm"
-                        on:click={() => goToPage(currentPage + 1)}
-                        disabled={!hasMore || loading}
-                    >
-                        »
-                    </button>
+                    <button class="join-item btn btn-sm" on:click={() => goToPage(currentPage - 1)} disabled={currentPage <= 1 || loading}>«</button>
+                    <button class="join-item btn btn-sm">Page {currentPage}</button>
+                    <button class="join-item btn btn-sm" on:click={() => goToPage(currentPage + 1)} disabled={!hasMore || loading}>»</button>
                 </div>
             </div>
-            <div class="bg-white shadow-md rounded-lg overflow-hidden relative">
-                 {#if loading}
-                     <!-- Loading Overlay -->
-                     <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
-                         <span class="loading loading-spinner loading-lg"></span>
-                     </div>
-                 {/if}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Hash</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block / Slot</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Output (ADA)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fee (ADA)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Output Addresses</th>
+        {/if}
+
+        {#if isErrorData(data)}
+            <div class="alert alert-error bg-red-50 text-red-600 border border-red-200 mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>{data.body?.error || 'Failed to load transactions. Please check your connection to the Yaci node.'}</span>
+            </div>
+        {:else if !data.txs || data.txs.length === 0}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center mt-4">
+                <h3 class="text-lg font-medium text-gray-900">No transactions found</h3>
+                <p class="mt-1 text-sm text-gray-500">Waiting for new transactions to be produced...</p>
+            </div>
+        {:else}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 relative">
+                
+                {#if loading}
+                    <div class="absolute inset-0 bg-white/60 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl">
+                        <span class="loading loading-spinner loading-lg text-blue-600"></span>
+                    </div>
+                {/if}
+
+                <div class="hidden lg:block overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/80 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <th class="py-4 px-6">Tx Hash</th>
+                                <th class="py-4 px-6">Block / Slot</th>
+                                <th class="py-4 px-6">Total Output</th>
+                                <th class="py-4 px-6">Fee</th>
+                                <th class="py-4 px-6">Addresses</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {#each data.txs as tx (tx.tx_hash)} 
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-2 align-middle">
-                                        <a href="/transactions/{tx.tx_hash}">{truncate(tx.tx_hash, 15)}</a>
-                                        <button 
-                                            class="text-gray-400 hover:text-gray-600" 
-                                            on:click={() => copyToClipboard(tx.tx_hash)}
-                                            title="Copy transaction hash"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                            </svg>
-                                        </button>
+                        <tbody class="divide-y divide-gray-100">
+                            {#each data.txs as tx (tx.tx_hash)}
+                                <tr class="hover:bg-gray-50/50 transition-colors group">
+                                    <td class="py-4 px-6 align-middle">
+                                        <div class="flex items-center gap-2">
+                                            <a href="/transactions/{tx.tx_hash}" class="font-mono text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                                                {truncate(tx.tx_hash, 24, "...")}
+                                            </a>
+                                            <button 
+                                                class="text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" 
+                                                on:click={() => copyToClipboard(tx.tx_hash)} title="Copy Hash">
+                                                {@html iconCopy}
+                                            </button>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                         <a href="/blocks/{tx.block_number}" class="text-blue-500 hover:underline">{tx.block_number}</a> / {tx.slot}
+                                    <td class="py-4 px-6 align-middle">
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-gray-400">{@html iconCube}</span>
+                                            <a href="/blocks/{tx.block_number}" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                                {tx.block_number}
+                                            </a> <div  class="text-sm font-medium text-gray-500">/ {tx.slot}</div>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" title="{tx.total_output} lovelace">
-                                        {formatAda(tx.total_output)}
+                                    <td class="py-4 px-6 align-middle">
+                                        <div class="flex items-center gap-2">
+                                            <div class="bg-emerald-100 p-1.5 rounded-full text-emerald-600">
+                                                {@html iconCardano}
+                                            </div>
+                                            <div class="text-sm font-semibold text-gray-900" title="{tx.total_output} lovelace">
+                                                {formatAda(tx.total_output)} <span class="text-xs text-gray-500 font-normal">ADA</span>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" title="{tx.fee} lovelace">
-                                        {formatAda(tx.fee)}
+                                    <td class="py-4 px-6 align-middle">
+                                        <div class="flex items-center gap-2">
+                                            <div class="bg-rose-100 p-1.5 rounded-full text-rose-500">
+                                                {@html iconCardano}
+                                            </div>
+                                            <div class="text-sm font-medium text-gray-700" title="{tx.fee} lovelace">
+                                                {formatAda(tx.fee)} <span class="text-xs text-gray-400 font-normal">ADA</span>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 break-all">
-                                        {#if tx.output_addresses}
-                                            {#each tx.output_addresses as address, i (address + i)}
-                                                <div class="whitespace-nowrap"><AddressLink {address} maxLength={25} /></div>
-                                            {/each}
-                                        {/if}
+                                    <td class="py-4 px-6 align-top max-w-xs">
+                                        <div class="max-h-20 overflow-y-auto pr-2 scrollbar-thin text-sm font-mono text-gray-500">
+                                            {#if tx.output_addresses && tx.output_addresses.length > 0}
+                                                {#each tx.output_addresses as address, i (address + i)}
+                                                    <div class="mb-1 truncate hover:text-gray-800 transition-colors" title={address}>
+                                                        <AddressLink {address} maxLength={22} />
+                                                    </div>
+                                                {/each}
+                                            {:else}
+                                                <span class="text-gray-400 italic">No outputs</span>
+                                            {/if}
+                                        </div>
                                     </td>
                                 </tr>
                             {/each}
                         </tbody>
                     </table>
                 </div>
+
+                <div class="lg:hidden divide-y divide-gray-100">
+                    {#each data.txs as tx (tx.tx_hash)}
+                        <div class="p-4 hover:bg-gray-50/50 transition-colors">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tx Hash</div>
+                                    <a href="/transactions/{tx.tx_hash}" class="font-mono text-sm text-blue-600 hover:underline break-all block pr-4">
+                                        {tx.tx_hash}
+                                    </a>
+                                </div>
+                                <button class="p-2 bg-gray-100 text-gray-600 rounded-md active:bg-gray-200 shrink-0 mt-4" on:click={() => copyToClipboard(tx.tx_hash)}>
+                                    {@html iconCopy}
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                    <div class="text-xs text-gray-500 mb-1 flex items-center gap-1">{@html iconCube} Block</div>
+                                    <a href="/blocks/{tx.block_number}" class="text-sm font-medium text-blue-600">{tx.block_number}</a>
+                                    <span class="text-xs text-gray-400 ml-1">(Slot {tx.slot})</span>
+                                </div>
+                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col justify-center">
+                                    <div class="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                                        <div class="text-emerald-500">{@html iconCardano}</div> Output
+                                    </div>
+                                    <div class="text-sm font-semibold text-gray-900">{formatAda(tx.total_output)}</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center text-xs text-gray-500 border-t border-gray-100 pt-3">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="text-rose-500">{@html iconCardano}</div> 
+                                    Fee: <span class="font-medium text-gray-700">{formatAda(tx.fee)} ADA</span>
+                                </div>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
             </div>
 
-            <!-- Updated Bottom Pagination Controls -->
             <div class="flex justify-end mt-4 mb-4">
                 <div class="join">
-                    <button 
-                        class="join-item btn btn-sm"
-                        on:click={() => goToPage(currentPage - 1)}
-                        disabled={currentPage == 1 || loading}
-                    >
-                        «
-                    </button>
-                    <button class="join-item btn btn-sm">
-                        Page {currentPage}
-                    </button>
-                    <button 
-                        class="join-item btn btn-sm"
-                        on:click={() => goToPage(currentPage + 1)}
-                        disabled={!hasMore || loading}
-                    >
-                        »
-                    </button>
+                    <button class="join-item btn btn-sm" on:click={() => goToPage(currentPage - 1)} disabled={currentPage <= 1 || loading}>«</button>
+                    <button class="join-item btn btn-sm">Page {currentPage}</button>
+                    <button class="join-item btn btn-sm" on:click={() => goToPage(currentPage + 1)} disabled={!hasMore || loading}>»</button>
                 </div>
             </div>
         {/if}
-    {/if}
-</div>
+    </div>
+</section>
 
 <style>
-    /* Add transition for smooth appearance/disappearance */
-    .fixed {
-        transition: opacity 0.3s ease-in-out;
-        z-index: 50;
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
+    .animate-fade-up {
+        animation: fadeUp 0.3s ease-out forwards;
+    }
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 4px; }
+    .scrollbar-thin:hover::-webkit-scrollbar-thumb { background-color: #d1d5db; }
 </style>
