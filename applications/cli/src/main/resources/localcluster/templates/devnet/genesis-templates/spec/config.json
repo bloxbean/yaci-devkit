@@ -3,6 +3,7 @@
   "ShelleyGenesisFile": "shelley-genesis.json",
   "AlonzoGenesisFile": "alonzo-genesis.json",
   "ConwayGenesisFile": "conway-genesis.json",
+  "DijkstraGenesisFile": "dijkstra-genesis.json",
   "ApplicationName": "cardano-sl",
   "ApplicationVersion": 0,
   "LastKnownBlockVersion-Alt": 0,

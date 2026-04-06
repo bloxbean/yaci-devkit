@@ -1,5 +1,14 @@
 VERSION 0.8
 
+wallet-ui-build:
+  FROM node:20-slim
+  WORKDIR /app
+  COPY wallet-ui/package.json wallet-ui/package-lock.json ./
+  RUN npm ci
+  COPY wallet-ui/ ./
+  RUN npx vite build --outDir dist
+  SAVE ARTIFACT dist /wallet
+
 cli-java:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
@@ -7,6 +16,7 @@ cli-java:
 
   FROM eclipse-temurin:21
   COPY . .
+  COPY +wallet-ui-build/wallet src/main/resources/static/wallet
   RUN echo git.commit.id.abbrev=${EARTHLY_GIT_SHORT_HASH} > src/main/resources/git.properties
 
   RUN cat src/main/resources/git.properties
@@ -22,6 +32,7 @@ cli-native:
 
   FROM ghcr.io/graalvm/graalvm-community:21
   COPY . .
+  COPY +wallet-ui-build/wallet src/main/resources/static/wallet
   RUN echo git.commit.id.abbrev=${EARTHLY_GIT_SHORT_HASH} > src/main/resources/git.properties
 
   RUN cat src/main/resources/git.properties
@@ -49,8 +60,8 @@ java-setup:
 docker-build:
     FROM ubuntu:22.04
     ENV JAVA_HOME=/opt/java/openjdk
-    ENV STORE_VERSION=0.1.0
-    ENV STORE_NATIVE_BRANCH=release/2.0.0-beta3
+    ENV STORE_VERSION=2.0.0
+    ENV STORE_NATIVE_BRANCH=release/2.0.x
 
     ARG TARGETOS
     ARG TARGETARCH
@@ -94,7 +105,9 @@ docker-build:
     RUN mkdir -p /app/store/config
     COPY docker/store-application.properties /app/store/config/application.properties
 
-    RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-all-${STORE_VERSION}.jar -O /app/store/yaci-store.jar
+    RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-${STORE_VERSION}.zip -O /app/store/yaci-store.zip
+    RUN unzip /app/store/yaci-store.zip -d /app/store/
+    RUN cp /app/store/yaci-store-${STORE_VERSION}/yaci-store.jar /app/store/yaci-store.jar
 
     RUN echo ${APP_VERSION} > /app/version
 
@@ -116,6 +129,8 @@ docker-build:
 
     RUN mkdir -p /app/config
     COPY docker/application.properties /app/config/
+    COPY docker/plutus-costmodels-v10.json /app/config/
+    COPY docker/plutus-costmodels-v11.json /app/config/
 
     ENV PATH="$PATH:/app/cardano-bin"
     ENV CARDANO_NODE_SOCKET_PATH=/clusters/nodes/default/node/node.sock

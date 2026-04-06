@@ -34,7 +34,7 @@ dependencies {
 	implementation 'org.springframework.shell:spring-shell-starter'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'
     implementation 'org.springframework.boot:spring-boot-starter-mustache'
 
@@ -102,6 +102,7 @@ tasks.register('walletUiInstall', Exec) {
     commandLine 'bash', '-c', 'npm install'
     inputs.file('wallet-ui/package.json')
     outputs.dir('wallet-ui/node_modules')
+    onlyIf { !file('src/main/resources/static/wallet/index.html').exists() }
 }
 
 tasks.register('walletUiBuild', Exec) {
@@ -114,6 +115,7 @@ tasks.register('walletUiBuild', Exec) {
     inputs.file('wallet-ui/vite.config.ts')
     inputs.file('wallet-ui/tailwind.config.cjs')
     outputs.dir('src/main/resources/static/wallet')
+    onlyIf { !file('src/main/resources/static/wallet/index.html').exists() }
 }
 
 processResources {
@@ -137,7 +139,7 @@ task cliZip(type: Zip) {
 
     from('config') {
         into(configDir)
-        include '**/*.properties'
+        include '**/*.properties', '**/*.json'
     }
 
     include 'yaci-cli*'

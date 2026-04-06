@@ -247,6 +247,12 @@ public class GenesisConfig {
     );
 
 
+    //Dijkstra
+    private long maxRefScriptSizePerBlock = 1048576;
+    private long maxRefScriptSizePerTx = 204800;
+    private long refScriptCostStride = 25600;
+    private double refScriptCostMultiplier = 1.2;
+
     //Introduced for the issue https://github.com/bloxbean/yaci-devkit/issues/65
     private int conwayHardForkAtEpoch = 0;
     private boolean shiftStartTimeBehind = false;
@@ -437,6 +443,12 @@ public class GenesisConfig {
         map.put("conwayHardForkAtEpoch", conwayHardForkAtEpoch);
         map.put("shiftStartTimeBehind", shiftStartTimeBehind);
 
+        //Dijkstra
+        map.put("maxRefScriptSizePerBlock", maxRefScriptSizePerBlock);
+        map.put("maxRefScriptSizePerTx", maxRefScriptSizePerTx);
+        map.put("refScriptCostStride", refScriptCostStride);
+        map.put("refScriptCostMultiplier", refScriptCostMultiplier);
+
         return map;
     }
 
@@ -528,6 +540,12 @@ public class GenesisConfig {
 
         genesisConfig.setConwayHardForkAtEpoch(conwayHardForkAtEpoch);
         genesisConfig.setShiftStartTimeBehind(shiftStartTimeBehind);
+
+        //Dijkstra
+        genesisConfig.setMaxRefScriptSizePerBlock(maxRefScriptSizePerBlock);
+        genesisConfig.setMaxRefScriptSizePerTx(maxRefScriptSizePerTx);
+        genesisConfig.setRefScriptCostStride(refScriptCostStride);
+        genesisConfig.setRefScriptCostMultiplier(refScriptCostMultiplier);
 
         return genesisConfig;
     }
@@ -639,6 +657,16 @@ public class GenesisConfig {
                 shiftStartTimeBehind = Boolean.parseBoolean(updatedValues.get("shiftStartTimeBehind"));
             if (updatedValues.get("conwayHardForkAtEpoch") != null && !updatedValues.get("conwayHardForkAtEpoch").isEmpty())
                 conwayHardForkAtEpoch = Integer.parseInt(updatedValues.get("conwayHardForkAtEpoch"));
+
+            //Dijkstra
+            if (updatedValues.get("maxRefScriptSizePerBlock") != null && !updatedValues.get("maxRefScriptSizePerBlock").isEmpty())
+                maxRefScriptSizePerBlock = Long.parseLong(updatedValues.get("maxRefScriptSizePerBlock"));
+            if (updatedValues.get("maxRefScriptSizePerTx") != null && !updatedValues.get("maxRefScriptSizePerTx").isEmpty())
+                maxRefScriptSizePerTx = Long.parseLong(updatedValues.get("maxRefScriptSizePerTx"));
+            if (updatedValues.get("refScriptCostStride") != null && !updatedValues.get("refScriptCostStride").isEmpty())
+                refScriptCostStride = Long.parseLong(updatedValues.get("refScriptCostStride"));
+            if (updatedValues.get("refScriptCostMultiplier") != null && !updatedValues.get("refScriptCostMultiplier").isEmpty())
+                refScriptCostMultiplier = Double.parseDouble(updatedValues.get("refScriptCostMultiplier"));
         }
     }
 

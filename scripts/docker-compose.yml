@@ -13,6 +13,8 @@ services:
     volumes:
       - cluster-data:/clusters
       - ../config/node.properties:/app/config/node.properties
+      - ../config/plutus-costmodels-v10.json:/app/config/plutus-costmodels-v10.json
+      - ../config/plutus-costmodels-v11.json:/app/config/plutus-costmodels-v11.json
     env_file:
       - ../config/env
       - ../config/node.properties
