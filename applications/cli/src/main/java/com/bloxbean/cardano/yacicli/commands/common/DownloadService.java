@@ -483,10 +483,22 @@ public class DownloadService {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
         }
 
+        String arch = System.getProperty("os.arch");
+        String cpuArch = null;
+        if (arch.startsWith("aarch") || arch.startsWith("arm")) {
+            cpuArch = "arm64";
+        } else{
+            cpuArch = "amd64";
+        }
+
+        //Just a workaround, as 10.6.2 macos arm binary is not working.
+        if (osPrefix.equals("macos"))
+            cpuArch = "amd64";
+
         if (osPrefix == null)
             return null;
 
-        String url = NODE_DOWNLOAD_URL + "/" + nodeVersion + "/cardano-node-" + nodeVersion + "-" + osPrefix + ".tar.gz";
+        String url = NODE_DOWNLOAD_URL + "/" + nodeVersion + "/cardano-node-" + nodeVersion + "-" + osPrefix + "-" + cpuArch + ".tar.gz";
         return url;
     }
 

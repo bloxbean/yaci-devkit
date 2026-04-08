@@ -43,6 +43,8 @@ public class ClusterInfo {
     @Builder.Default
     private int prometheusPort=12798;
 
+    private int protocolMajorVer;
+
     private boolean localMultiNodeEnabled;
     private int localMultiNodeStakeRatioFactor;
 }

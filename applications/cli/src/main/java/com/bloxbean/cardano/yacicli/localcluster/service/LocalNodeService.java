@@ -2,9 +2,11 @@ package com.bloxbean.cardano.yacicli.localcluster.service;
 
 import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.address.AddressProvider;
+import com.bloxbean.cardano.client.address.Credential;
 import com.bloxbean.cardano.client.api.ProtocolParamsSupplier;
 import com.bloxbean.cardano.client.api.UtxoSupplier;
 import com.bloxbean.cardano.client.api.model.Amount;
+import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.client.cip.cip20.MessageMetadata;
 import com.bloxbean.cardano.client.common.model.Networks;
@@ -19,14 +21,30 @@ import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
+import com.bloxbean.cardano.client.api.impl.StaticTransactionEvaluator;
+import com.bloxbean.cardano.client.plutus.spec.CostMdls;
+import com.bloxbean.cardano.client.plutus.spec.CostModel;
+import com.bloxbean.cardano.client.plutus.spec.ExUnits;
+import com.bloxbean.cardano.client.plutus.spec.Language;
 import com.bloxbean.cardano.client.plutus.spec.PlutusData;
+import com.bloxbean.cardano.client.plutus.spec.PlutusV3Script;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.ScriptTx;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
+import com.bloxbean.cardano.client.transaction.spec.ProtocolParamUpdate;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
+import com.bloxbean.cardano.client.transaction.spec.governance.Anchor;
+import com.bloxbean.cardano.client.transaction.spec.governance.DRep;
+import com.bloxbean.cardano.client.transaction.spec.governance.Vote;
+import com.bloxbean.cardano.client.transaction.spec.governance.Voter;
+import com.bloxbean.cardano.client.transaction.spec.governance.VoterType;
+import com.bloxbean.cardano.client.transaction.spec.governance.actions.GovActionId;
+import com.bloxbean.cardano.client.transaction.spec.governance.actions.ParameterChangeAction;
 import com.bloxbean.cardano.client.transaction.spec.script.ScriptPubkey;
 import com.bloxbean.cardano.client.transaction.util.TransactionUtil;
 import com.bloxbean.cardano.client.util.HexUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.bloxbean.cardano.yaci.core.common.TxBodyType;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
@@ -262,6 +280,201 @@ public class LocalNodeService {
             writer.accept(info("Txn# : " + result.getValue()));
             return waitForTx(receiver, result.getValue(), writer);
         }
+    }
+
+    public boolean updateCostModels(Path costModelsFile, Consumer<String> writer) {
+        try {
+            // 1. Find a funded UTXO key (same pattern as topUp)
+            BigInteger minBalance = BigInteger.valueOf(2_000_000_000L); // 2000 ADA to cover deposit + fees
+            String senderAddress = null;
+            SecretKey senderSkey = null;
+
+            int i = 0;
+            for (Map.Entry<String, List<Utxo>> entry : getFundsAtGenesisKeys().entrySet()) {
+                String address = entry.getKey();
+                Optional<Amount> amountOptional = entry.getValue().stream()
+                        .flatMap(utxo -> utxo.getAmount().stream())
+                        .filter(amt -> LOVELACE.equals(amt.getUnit()) && amt.getQuantity().compareTo(minBalance) > 0)
+                        .findAny();
+                if (amountOptional.isPresent()) {
+                    senderAddress = address;
+                    senderSkey = utxoKeys.get(i)._2;
+                    break;
+                }
+                i++;
+            }
+
+            if (senderAddress == null) {
+                writer.accept(error("No funded UTXO key found for governance proposal"));
+                return false;
+            }
+
+            // 2. Load cost models from external config file
+            Map<String, long[]> costModelMap = loadCostModels(costModelsFile);
+
+            // 3. Build the ProtocolParamUpdate with all available cost models
+            CostMdls costMdls = new CostMdls();
+            Map<String, Language> languageMap = Map.of(
+                    "PlutusV1", Language.PLUTUS_V1,
+                    "PlutusV2", Language.PLUTUS_V2,
+                    "PlutusV3", Language.PLUTUS_V3
+            );
+            for (Map.Entry<String, long[]> entry2 : costModelMap.entrySet()) {
+                Language language = languageMap.get(entry2.getKey());
+                if (language != null) {
+                    costMdls.add(new CostModel(language, entry2.getValue()));
+                } else {
+                    writer.accept(error("Unknown Plutus version in cost models file: " + entry2.getKey()));
+                }
+            }
+
+            ProtocolParamUpdate protocolParamUpdate = ProtocolParamUpdate.builder()
+                    .costModels(costMdls)
+                    .build();
+
+            // 4. Build the always-true PlutusV3 guardrail script
+            // CBOR hex: 46450101002499 -> script hash: 186e32faa80a26810392fda6d559c7ed4721a65ce1c9d4ef3e1c87b4
+            PlutusV3Script guardrailScript = PlutusV3Script.builder()
+                    .type("PlutusScriptV3")
+                    .cborHex("46450101002499")
+                    .build();
+
+            // 5. Build the ParameterChangeAction
+            ParameterChangeAction paramChangeAction = ParameterChangeAction.builder()
+                    .prevGovActionId(null)
+                    .protocolParamUpdate(protocolParamUpdate)
+                    .policyHash(guardrailScript.getScriptHash())
+                    .build();
+
+            // 6. Build dummy anchor
+            Anchor anchor = Anchor.builder()
+                    .anchorUrl("https://devkit.yaci.xyz/plutus-costmodel-update.json")
+                    .anchorDataHash(new byte[32]) // zeroed hash for devnet
+                    .build();
+
+            // 7. Build a reward address from the sender's verification key for deposit return
+            var senderVkey = KeyGenUtil.getPublicKeyFromPrivateKey(senderSkey);
+            HdPublicKey hdPublicKey = new HdPublicKey();
+            hdPublicKey.setKeyData(senderVkey.getBytes());
+            Address rewardAddr = AddressProvider.getRewardAddress(hdPublicKey, Networks.testnet());
+            String rewardAccount = rewardAddr.toBech32();
+
+            // 7a. Register stake credential for the reward address
+            writer.accept("Registering stake credential for governance proposal...");
+            var regProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.CONWAY);
+            Tx regTx = new Tx()
+                    .registerStakeAddress(rewardAddr)
+                    .from(senderAddress);
+            Result<String> regResult = new QuickTxBuilder(utxoSupplier, protocolParamsSupplier, regProcessor)
+                    .compose(regTx)
+                    .withSigner(SignerProviders.signerFrom(senderSkey))
+                    .complete();
+
+            if (!regResult.isSuccessful()) {
+                writer.accept(error("Stake credential registration failed: " + regResult.getResponse()));
+                return false;
+            }
+            writer.accept(success("Stake credential registered. Tx# : " + regResult.getValue()));
+            waitForTx(senderAddress, regResult.getValue(), writer);
+
+            // 7b. Register DRep and delegate voting power for governance voting
+            writer.accept("Registering DRep and delegating voting power...");
+            byte[] credHash = rewardAddr.getDelegationCredentialHash()
+                    .orElseThrow(() -> new RuntimeException("Failed to get delegation credential hash"));
+            String credHashHex = HexUtil.encodeHexString(credHash);
+            Credential drepCredential = Credential.fromKey(credHashHex);
+
+            var drepProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.CONWAY);
+            Tx drepTx = new Tx()
+                    .registerDRep(drepCredential)
+                    .delegateVotingPowerTo(rewardAddr, DRep.addrKeyHash(credHashHex))
+                    .from(senderAddress);
+            Result<String> drepResult = new QuickTxBuilder(utxoSupplier, protocolParamsSupplier, drepProcessor)
+                    .compose(drepTx)
+                    .withSigner(SignerProviders.signerFrom(senderSkey))
+                    .complete();
+
+            if (!drepResult.isSuccessful()) {
+                writer.accept(error("DRep registration failed: " + drepResult.getResponse()));
+                return false;
+            }
+            writer.accept(success("DRep registered and voting power delegated. Tx# : " + drepResult.getValue()));
+            waitForTx(senderAddress, drepResult.getValue(), writer);
+
+            // 8. Build and submit the governance proposal using ScriptTx
+            var transactionProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.CONWAY);
+
+            ScriptTx scriptTx = new ScriptTx()
+                    .createProposal(paramChangeAction, rewardAccount, anchor, PlutusData.unit())
+                    .attachProposingValidator(guardrailScript);
+
+            // Use StaticTransactionEvaluator with fixed ex units for the always-true guardrail script
+            // since LocalTransactionProcessor doesn't support evaluateTx
+            var staticEvaluator = new StaticTransactionEvaluator(
+                    List.of(ExUnits.builder()
+                            .mem(BigInteger.valueOf(500000))
+                            .steps(BigInteger.valueOf(200000000))
+                            .build()));
+
+            Result<String> result = new QuickTxBuilder(utxoSupplier, protocolParamsSupplier, transactionProcessor)
+                    .compose(scriptTx)
+                    .feePayer(senderAddress)
+                    .withSigner(SignerProviders.signerFrom(senderSkey))
+                    .withTxEvaluator(staticEvaluator)
+                    .complete();
+
+            if (!result.isSuccessful()) {
+                writer.accept(error("Plutus cost models governance proposal failed: " + result.getResponse()));
+                return false;
+            }
+
+            writer.accept(success("Plutus cost models governance proposal submitted. Tx# : " + result.getValue()));
+
+            // 9. Vote YES on the proposal as DRep
+            writer.accept("Voting YES on Plutus cost models proposal...");
+            waitForTx(senderAddress, result.getValue(), writer);
+
+            Voter voter = Voter.builder()
+                    .type(VoterType.DREP_KEY_HASH)
+                    .credential(drepCredential)
+                    .build();
+            GovActionId govActionId = GovActionId.builder()
+                    .transactionId(result.getValue())
+                    .govActionIndex(0)
+                    .build();
+
+            var voteProcessor = new LocalTransactionProcessor(localClientProvider.getTxSubmissionClient(), TxBodyType.CONWAY);
+            Tx voteTx = new Tx()
+                    .createVote(voter, govActionId, Vote.YES)
+                    .from(senderAddress);
+            Result<String> voteResult = new QuickTxBuilder(utxoSupplier, protocolParamsSupplier, voteProcessor)
+                    .compose(voteTx)
+                    .withSigner(SignerProviders.signerFrom(senderSkey))
+                    .complete();
+
+            if (!voteResult.isSuccessful()) {
+                writer.accept(error("DRep vote on proposal failed: " + voteResult.getResponse()));
+                return false;
+            }
+            writer.accept(success("DRep voted YES on Plutus cost models proposal. Tx# : " + voteResult.getValue()));
+            writer.accept(info("Plutus cost models will be enacted at the next epoch boundary."));
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to submit Plutus cost models governance proposal", e);
+            writer.accept(error("Plutus cost models update failed: " + e.getMessage()));
+            return false;
+        }
+    }
+
+    private Map<String, long[]> loadCostModels(Path costModelsFile) throws IOException {
+        Map<String, List<Long>> raw = objectMapper.readValue(costModelsFile.toFile(),
+                new TypeReference<Map<String, List<Long>>>() {});
+        Map<String, long[]> result = new HashMap<>();
+        for (Map.Entry<String, List<Long>> entry : raw.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().stream().mapToLong(Long::longValue).toArray());
+        }
+        return result;
     }
 
     private boolean waitForTx(String receiver, String txHash, Consumer<String> writer) {
