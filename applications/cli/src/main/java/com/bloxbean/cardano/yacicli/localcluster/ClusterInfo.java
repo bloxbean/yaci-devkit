@@ -44,6 +44,12 @@ public class ClusterInfo {
     private int prometheusPort=12798;
 
     private int protocolMajorVer;
+    private String nodeMode;
+
+    @Builder.Default
+    private int yanoServerPort = 14447;
+    @Builder.Default
+    private int yanoHttpPort = 6666;
 
     private boolean localMultiNodeEnabled;
     private int localMultiNodeStakeRatioFactor;

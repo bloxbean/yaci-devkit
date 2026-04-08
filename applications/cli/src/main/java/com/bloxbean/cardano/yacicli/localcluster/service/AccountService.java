@@ -5,6 +5,7 @@ import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.common.GenesisUtil;
 import com.bloxbean.cardano.yacicli.localcluster.common.LocalClientProviderHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,11 +43,7 @@ public class AccountService {
 
     private Path resolveCostModelsFile(String clusterName) throws IOException {
         var clusterInfo = clusterService.getClusterInfo(clusterName);
-        int protocolMajorVer = clusterInfo.getProtocolMajorVer();
-        String fileName = protocolMajorVer >= 11
-                ? "plutus-costmodels-v11.json"
-                : "plutus-costmodels-v10.json";
-        return plutusCostModelsBasePath.resolve(fileName);
+        return GenesisUtil.resolveCostModelsFile(plutusCostModelsBasePath, clusterInfo.getProtocolMajorVer());
     }
 
     public boolean topup(String clusterName, Era era, String address, double adaValue, Consumer<String> writer) {
