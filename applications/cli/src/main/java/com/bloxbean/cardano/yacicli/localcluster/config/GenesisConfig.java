@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.config;
 
 import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.util.HexUtil;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import jakarta.annotation.PostConstruct;
 import lombok.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -252,6 +253,10 @@ public class GenesisConfig {
     private long maxRefScriptSizePerTx = 204800;
     private long refScriptCostStride = 25600;
     private double refScriptCostMultiplier = 1.2;
+
+    // Node mode: yano-primary (Yano BP + Haskell relay), companion (Yano bootstraps + Haskell takes over),
+    // yano-only (Yano only, fastest), haskell-only (legacy, Haskell node only)
+    private NodeMode nodeMode = NodeMode.HASKELL_ONLY;
 
     //Introduced for the issue https://github.com/bloxbean/yaci-devkit/issues/65
     private int conwayHardForkAtEpoch = 0;
@@ -538,6 +543,7 @@ public class GenesisConfig {
         genesisConfig.setGenesisDelegs(new ArrayList<>(genesisDelegs));
         genesisConfig.setNonAvvmBalances(new ArrayList<>(nonAvvmBalances));
 
+        genesisConfig.setNodeMode(nodeMode);
         genesisConfig.setConwayHardForkAtEpoch(conwayHardForkAtEpoch);
         genesisConfig.setShiftStartTimeBehind(shiftStartTimeBehind);
 
@@ -653,6 +659,8 @@ public class GenesisConfig {
             if (updatedValues.get("constitutionScript") != null && !updatedValues.get("constitutionScript").trim().isEmpty())
                 constitutionScript = updatedValues.get("constitutionScript");
 
+            if (updatedValues.get("nodeMode") != null && !updatedValues.get("nodeMode").isEmpty())
+                nodeMode = NodeMode.fromValue(updatedValues.get("nodeMode"));
             if (updatedValues.get("shiftStartTimeBehind") != null && !updatedValues.get("shiftStartTimeBehind").isEmpty())
                 shiftStartTimeBehind = Boolean.parseBoolean(updatedValues.get("shiftStartTimeBehind"));
             if (updatedValues.get("conwayHardForkAtEpoch") != null && !updatedValues.get("conwayHardForkAtEpoch").isEmpty())

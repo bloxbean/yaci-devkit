@@ -51,6 +51,9 @@ public class ClusterConfig {
     @Value("${kupo.folder:#{null}}")
     private String kupoFolder;
 
+    @Value("${yano.folder:#{null}}")
+    private String yanoFolder;
+
     @Value("${jre.folder:#{null}}")
     private String jreFolder;
 
@@ -133,6 +136,13 @@ public class ClusterConfig {
 
     public Path getGenesisKeysFolder(String clusterName) {
         return Path.of(getGenesisKeysHome(), clusterName);
+    }
+
+    public String getYanoHome() {
+        if (yanoFolder == null || !StringUtils.hasLength(yanoFolder.trim()))
+            return Path.of(getYaciCliHome(), COMPONENTS, "yano").toAbsolutePath().toString();
+        else
+            return Path.of(yanoFolder).toAbsolutePath().toString();
     }
 
     public String getJreHome() {

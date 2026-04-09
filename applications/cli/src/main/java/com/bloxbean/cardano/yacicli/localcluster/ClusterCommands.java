@@ -168,6 +168,7 @@ public class ClusterCommands {
                     .yaciStorePort(yaciStorePort)
                     .socatPort(socatPort)
                     .prometheusPort(prometheusPort)
+                    .nodeMode(genesisConfig.getNodeMode())
                     .localMultiNodeEnabled(enableMultiNode)
                     .localMultiNodeStakeRatioFactor(stakeRatioFactor)
                     .build();

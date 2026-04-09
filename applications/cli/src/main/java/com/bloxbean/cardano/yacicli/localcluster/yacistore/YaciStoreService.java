@@ -7,6 +7,7 @@ import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterStartService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
@@ -116,13 +117,27 @@ public class YaciStoreService {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
-        if (yaciStoreMode == null || yaciStoreMode.equals("java")) {
+        boolean yanoOnly = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
+
+        // In yano-only mode, force Java mode if jar is available.
+        // The native binary bakes in the n2c profile at compile time, making it impossible
+        // to disable LocalEpochController at runtime. Java mode respects runtime config.
+        String effectiveMode = yaciStoreMode;
+        if (yanoOnly && "native".equals(effectiveMode)) {
+            Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
+            if (yaciStoreJar.toFile().exists()) {
+                effectiveMode = "java";
+                writeLn(info("Yano-only mode: using Yaci Store JAR (N2C disabled)"));
+            }
+        }
+
+        if (effectiveMode == null || effectiveMode.equals("java")) {
             Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
             if (!yaciStoreJar.toFile().exists()) {
                 writeLn(error("yaci-store.jar is not found at " + clusterConfig.getYaciStoreBinPath()));
                 return null;
             }
-        } else if (yaciStoreMode != null && yaciStoreMode.equals("native")) {
+        } else if (effectiveMode.equals("native")) {
             Path yaciStoreBin = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store");
             if (!yaciStoreBin.toFile().exists()) {
                 writeLn(error("yaci-store binary is not found at " + clusterConfig.getYaciStoreBinPath()));
@@ -134,7 +149,7 @@ public class YaciStoreService {
             yaciStoreConfigBuilder.build(clusterInfo);
         }
 
-        if (yaciStoreMode != null && yaciStoreMode.equals("native")) {
+        if (effectiveMode != null && effectiveMode.equals("native")) {
             builder.environment().put("STORE_CARDANO_N2C_ERA", era.name());
             builder.environment().put("STORE_CARDANO_PROTOCOL_MAGIC", String.valueOf(clusterInfo.getProtocolMagic()));
             if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
@@ -145,11 +160,18 @@ public class YaciStoreService {
         } else {
             String javaExecPath = jreResolver.getJavaCommand();
 
-            if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-                builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
-            } else {
-                builder.command(javaExecPath, "-Dstore.cardano.n2c-era=" + era.name(), "-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic(), "-jar", clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            List<String> cmd = new ArrayList<>();
+            cmd.add(javaExecPath);
+            if (!yanoOnly) {
+                cmd.add("-Dstore.cardano.n2c-era=" + era.name());
             }
+            cmd.add("-Dstore.cardano.protocol-magic=" + clusterInfo.getProtocolMagic());
+            if (yanoOnly) {
+                cmd.add("-Dstore.epoch.endpoints.epoch.local.enabled=false");
+            }
+            cmd.add("-jar");
+            cmd.add(clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.jar");
+            builder.command(cmd);
 
             writeLn(info("Java Path: " + javaExecPath));
         }
