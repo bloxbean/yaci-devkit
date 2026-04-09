@@ -90,7 +90,7 @@ public class YanoCompanionService {
 
         // 6. Sync shifted genesis files back to Haskell node
         try {
-            syncShiftedGenesisToHaskellNode(clusterInfo, clusterFolder, writer);
+            syncYanoGenesisToHaskellNode(clusterInfo, clusterFolder, writer);
         } catch (IOException e) {
             writer.accept(error("Failed to sync genesis: " + e.getMessage()));
             yanoService.stop();
@@ -119,7 +119,7 @@ public class YanoCompanionService {
 
         // 8. Update topology so Haskell node peers with Yano
         try {
-            updateTopologyForCompanionMode(clusterInfo, clusterFolder, writer);
+            updateTopologyForYanoPeering(clusterInfo, clusterFolder, writer);
         } catch (IOException e) {
             writer.accept(error("Failed to update topology: " + e.getMessage()));
             yanoService.stop();
@@ -134,7 +134,7 @@ public class YanoCompanionService {
      * Copy Yano's shifted shelley-genesis.json back to the Haskell node's genesis dir,
      * and update byron-genesis.json startTime to match.
      */
-    private void syncShiftedGenesisToHaskellNode(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
+    public void syncYanoGenesisToHaskellNode(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
         Path yanoConfigDir = clusterFolder.resolve("yano-config").resolve("network").resolve("devnet");
         Path haskellGenesisDir = clusterFolder.resolve("node").resolve("genesis");
 
@@ -168,7 +168,7 @@ public class YanoCompanionService {
      * Update the Haskell node's topology.json to peer with Yano.
      * Backs up original topology first.
      */
-    private void updateTopologyForCompanionMode(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
+    public void updateTopologyForYanoPeering(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
         Path topologyPath = clusterFolder.resolve("node").resolve("topology.json");
         Path topologyBackup = clusterFolder.resolve("node").resolve("topology-original.json");
 

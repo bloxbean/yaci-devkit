@@ -44,7 +44,7 @@ public class ClusterInfo {
     private int prometheusPort=12798;
 
     private int protocolMajorVer;
-    private String nodeMode;
+    private NodeMode nodeMode;
 
     @Builder.Default
     private int yanoServerPort = 14447;

@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.events.listeners;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
@@ -34,7 +35,13 @@ public class FirstRunTopupAccounts {
             String clusterName = firstRunDone.getCluster();
             var clusterInfo = localClusterService.getClusterInfo(clusterName);
             if (clusterInfo != null && !clusterInfo.isMasterNode()) {
-                //Return if it's a peer node, not the master node
+                return;
+            }
+
+            if (clusterInfo != null && NodeMode.YANO_ONLY == clusterInfo.getNodeMode()) {
+                // In yano-only mode, no Haskell node socket — topup via local protocol not possible.
+                // Genesis UTXO keys already have funds. Custom topup can use Yano's HTTP API.
+                defaultAddressService.printDefaultAddresses(true);
                 return;
             }
 

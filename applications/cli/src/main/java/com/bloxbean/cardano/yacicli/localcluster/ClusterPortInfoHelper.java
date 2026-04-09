@@ -38,8 +38,8 @@ public class ClusterPortInfoHelper {
         writeLn(infoLabel("Epoch Length", String.valueOf(clusterInfo.getEpochLength())));
         writeLn(infoLabel("Security Param", String.valueOf(clusterInfo.getSecurityParam())));
         writeLn(infoLabel("SlotsPerKESPeriod", String.valueOf(clusterInfo.getSlotsPerKESPeriod())));
-        String nodeMode = clusterInfo.getNodeMode() != null ? clusterInfo.getNodeMode() : "haskell-only";
-        writeLn(infoLabel("Node Mode", nodeMode));
+        NodeMode nodeMode = clusterInfo.getNodeMode() != null ? clusterInfo.getNodeMode() : NodeMode.HASKELL_ONLY;
+        writeLn(infoLabel("Node Mode", nodeMode.getValue()));
 
         if (clusteName == null || !"default".equals(clusteName))
             return;

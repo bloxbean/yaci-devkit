@@ -6,6 +6,7 @@ import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfoService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.common.Tuple;
@@ -28,6 +29,17 @@ public class ClusterUtilService {
     private final ClusterInfoService clusterInfoService;
     private final LocalClientProviderHelper localQueryClientUtil;
     private final RootLogService rootLogService;
+    private final YanoHttpNodeService yanoHttpNodeService;
+
+    private boolean isYanoOnlyMode() {
+        try {
+            String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+            var info = clusterInfoService.getClusterInfo(clusterName);
+            return NodeMode.YANO_ONLY == info.getNodeMode();
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     public Tuple<Long, Point> getTip(Consumer<String> writer) {
         return getTip(writer, null);
@@ -35,6 +47,11 @@ public class ClusterUtilService {
 
     public Tuple<Long, Point> getTip(Consumer<String> writer, String nodeName) {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+
+        if (isYanoOnlyMode()) {
+            return yanoHttpNodeService.getTip(clusterName);
+        }
+
         Era era = CommandContext.INSTANCE.getEra();
 
         LocalNodeService localNodeService = null;

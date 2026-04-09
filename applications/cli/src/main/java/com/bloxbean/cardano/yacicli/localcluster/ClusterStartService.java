@@ -8,9 +8,13 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.localcluster.peer.LocalPeerService;
+import com.bloxbean.cardano.yacicli.localcluster.yano.YanoBootstrapService;
 import com.bloxbean.cardano.yacicli.localcluster.yano.YanoCompanionService;
+import com.bloxbean.cardano.yacicli.localcluster.yano.YanoGovernanceService;
+import com.bloxbean.cardano.yacicli.localcluster.yano.YanoService;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
+import org.apache.commons.io.FileUtils;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.LongNode;
@@ -49,6 +53,9 @@ public class ClusterStartService {
     private final CustomGenesisConfig customGenesisConfig;
     private final LocalPeerService localPeerService;
     private final YanoCompanionService yanoCompanionService;
+    private final YanoService yanoService;
+    private final YanoBootstrapService yanoBootstrapService;
+    private final YanoGovernanceService yanoGovernanceService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Process> processes = new ArrayList<>();
@@ -71,8 +78,9 @@ public class ClusterStartService {
 
         try {
             boolean firstRun = checkIfFirstRun(clusterFolder);
-            boolean companionMode = "companion".equals(clusterInfo.getNodeMode());
-            boolean yanoOnlyMode = "yano-only".equals(clusterInfo.getNodeMode());
+            boolean companionMode = NodeMode.COMPANION == clusterInfo.getNodeMode();
+            boolean yanoOnlyMode = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
+            boolean yanoPrimaryMode = NodeMode.YANO_PRIMARY == clusterInfo.getNodeMode();
             boolean companionBootstrapDone = false;
 
             if (clusterInfo.isMasterNode() && firstRun)
@@ -87,9 +95,67 @@ public class ClusterStartService {
             }
 
             if (yanoOnlyMode) {
-                // Yano-only: start Yano without past-time-travel, skip Haskell node entirely
-                // TODO: Full yano-only mode implementation (start Yano, fund, update cost models)
-                writer.accept(warn("yano-only mode is not yet fully implemented. Falling back to haskell-only."));
+                // Yano-only: Yano is the sole block producer, no Haskell node
+                boolean yanoStarted = yanoService.start(clusterInfo, clusterFolder, false, writer);
+                if (!yanoStarted) {
+                    writer.accept(error("Failed to start Yano."));
+                    return new RunStatus(false, firstRun);
+                }
+
+                if (firstRun) {
+                    int httpPort = clusterInfo.getYanoHttpPort();
+                    if (!yanoBootstrapService.waitForReady(httpPort, writer)) {
+                        writer.accept(error("Yano HTTP API not ready."));
+                        yanoService.stop();
+                        return new RunStatus(false, firstRun);
+                    }
+
+                    // Submit governance proposals via Yano's HTTP API
+                    writer.accept(info("Submitting governance proposals via Yano..."));
+                    yanoGovernanceService.submitCostModelGovernance(clusterInfo, clusterFolder, writer);
+                }
+
+                // No Haskell node, no submit-api, no handover
+                return new RunStatus(true, firstRun);
+            }
+
+            if (yanoPrimaryMode) {
+                // Like companion bootstrap but Yano stays as BP, Haskell stays as relay (no handover)
+                if (firstRun) {
+                    boolean bootstrapDone = yanoCompanionService.bootstrap(clusterInfo, clusterFolder, writer);
+                    if (!bootstrapDone) {
+                        writer.accept(error("Yano bootstrap failed."));
+                        return new RunStatus(false, firstRun);
+                    }
+                } else {
+                    boolean yanoStarted = yanoService.start(clusterInfo, clusterFolder, false, writer);
+                    if (!yanoStarted) {
+                        writer.accept(error("Failed to start Yano."));
+                        return new RunStatus(false, firstRun);
+                    }
+                    if (!yanoBootstrapService.waitForReady(clusterInfo.getYanoHttpPort(), writer)) {
+                        writer.accept(error("Yano HTTP API not ready."));
+                        yanoService.stop();
+                        return new RunStatus(false, firstRun);
+                    }
+                }
+
+                Process nodeProcess = startNode(clusterFolder, clusterInfo, true, writer);
+                if (nodeProcess == null) {
+                    writer.accept(error("Node process could not be started."));
+                    yanoService.stop();
+                    return new RunStatus(false, firstRun);
+                }
+                processes.add(nodeProcess);
+
+                Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
+                if (submitApiProcess != null) processes.add(submitApiProcess);
+
+                // Relay needs time to chain-sync from Yano before N2C queries work
+                writer.accept(info("Waiting for Haskell relay to sync from Yano..."));
+                Thread.sleep(5000);
+
+                return new RunStatus(true, firstRun);
             }
 
             if (clusterInfo.isLocalMultiNodeEnabled()) {
@@ -407,6 +473,56 @@ public class ClusterStartService {
         relayScript.toFile().setExecutable(true);
     }
 
+    //Not used currently
+    /**
+     * Restart the Haskell relay node process after a Yano rollback.
+     * The chain-sync protocol stalls on deep rollbacks, so we kill the relay,
+     * delete the stale socket, and start a fresh relay that re-syncs from Yano's new tip.
+     */
+    public void restartRelayNode(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        writer.accept(info("Restarting Haskell relay to re-sync after rollback..."));
+
+        // Find and kill the node process (first in the list, identified by NODE_PROCESS_NAME pid file)
+        Process oldNodeProcess = null;
+        for (Process p : processes) {
+            if (p != null && p.isAlive()) {
+                // Check if this is the node process (not submit-api)
+                String cmdLine = p.info().commandLine().orElse("");
+                if (cmdLine.contains("cardano-node")) {
+                    oldNodeProcess = p;
+                    break;
+                }
+            }
+        }
+
+        if (oldNodeProcess != null) {
+            oldNodeProcess.descendants().forEach(ProcessHandle::destroyForcibly);
+            oldNodeProcess.destroyForcibly();
+            oldNodeProcess.waitFor(15, TimeUnit.SECONDS);
+            processes.remove(oldNodeProcess);
+        }
+
+        // Delete relay's DB and socket so it syncs fresh from Yano's new chain.
+        // The old DB has blocks from the pre-rollback fork that conflict with Yano's new chain.
+        Path nodeDir = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX);
+        Path dbPath = nodeDir.resolve("db");
+        if (dbPath.toFile().exists()) {
+            FileUtils.deleteDirectory(dbPath.toFile());
+            writer.accept(info("Cleared relay DB for fresh sync."));
+        }
+        Path socketPath = nodeDir.resolve("node.sock");
+        Files.deleteIfExists(socketPath);
+
+        // Start a fresh relay
+        Process nodeProcess = startNode(clusterFolder, clusterInfo, true, writer);
+        if (nodeProcess != null) {
+            processes.add(nodeProcess);
+            writer.accept(success("Haskell relay restarted."));
+        } else {
+            writer.accept(error("Failed to restart Haskell relay."));
+        }
+    }
+
     public boolean checkIfFirstRun(Path clusterFolder) {
         String node1Folder = ClusterConfig.NODE_FOLDER_PREFIX;
         Path db = clusterFolder.resolve(node1Folder).resolve("db");
@@ -424,6 +540,7 @@ public class ClusterStartService {
                 }
             }
         }
-        return false;
+        // In yano-only mode, the cluster is running if Yano is running
+        return yanoService.isRunning();
     }
 }

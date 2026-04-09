@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.events.listeners;
 
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
@@ -36,8 +37,9 @@ public class FirstRunPlutusV3CostModelUpdate {
                 return;
             }
 
-            if (clusterInfo != null && "companion".equals(clusterInfo.getNodeMode())) {
-                writeLn(info("Skipping Plutus cost models update - already submitted via Yano companion bootstrap"));
+            NodeMode nodeMode = clusterInfo != null ? clusterInfo.getNodeMode() : null;
+            if (NodeMode.COMPANION == nodeMode || NodeMode.YANO_ONLY == nodeMode || NodeMode.YANO_PRIMARY == nodeMode) {
+                writeLn(info("Skipping Plutus cost models update - already submitted via Yano bootstrap"));
                 return;
             }
 

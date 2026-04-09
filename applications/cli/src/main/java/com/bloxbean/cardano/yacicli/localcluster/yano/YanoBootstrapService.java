@@ -173,6 +173,32 @@ public class YanoBootstrapService {
         return null;
     }
 
+    public boolean rollback(int httpPort, long blocks, Consumer<String> writer) {
+        String url = "http://localhost:" + httpPort + "/api/v1/devnet/rollback";
+        try {
+            String body = objectMapper.writeValueAsString(Map.of("count", blocks));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                writer.accept(success("Rollback of %d blocks completed successfully", blocks));
+                log.debug("Rollback response: {}", response.body());
+                return true;
+            } else {
+                writer.accept(error("Failed to rollback: HTTP %d - %s", response.statusCode(), response.body()));
+                return false;
+            }
+        } catch (Exception e) {
+            writer.accept(error("Error during rollback: " + e.getMessage()));
+            return false;
+        }
+    }
+
     public JsonNode getChainTip(int httpPort) {
         String url = "http://localhost:" + httpPort + "/api/v1/blocks/latest";
         try {

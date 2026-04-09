@@ -32,6 +32,13 @@ public class RollbackCommands {
         rollbackService.rollbackToLastDBSnapshot(msg -> writeLn(msg));
     }
 
+    @ShellMethod(value = "Rollback N blocks (yano-primary mode only)", key = "rollback")
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void rollback(
+            @ShellOption(value = {"--blocks"}, help = "Number of blocks to rollback") long blocks) {
+        rollbackService.rollback(blocks, msg -> writeLn(msg));
+    }
+
     @ShellMethod(value = "Create forks for rollback", key = "create-forks")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void createForks(
