@@ -123,34 +123,34 @@
                     </button>
                 </div>
             </div>
-            <div class="bg-white shadow-md rounded-lg overflow-hidden relative">
+            <div class="bg-base-100 shadow-md rounded-lg overflow-hidden relative">
                 <!-- Loading Overlay -->
                 {#if loading}
-                    <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+                    <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                         <span class="loading loading-spinner loading-lg"></span>
                     </div>
                 {/if}
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-base-300">
+                        <thead class="bg-base-200">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slot</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size (kb)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"># of Txs</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Slot</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Size (kb)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider"># of Txs</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-base-100 divide-y divide-base-300">
                             {#each data.blocks as block (block.number)}
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-base-200">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800">
                                         <a href="/blocks/{block.number}">{block.number}</a>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{block.slot}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{truncate(block.slot_leader, 15)}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(block.size / 1024).toFixed(2)}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{block.tx_count}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{block.slot}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(block.slot_leader, 15)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{(block.size / 1024).toFixed(2)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{block.tx_count}</td>
                                 </tr>
                             {/each}
                         </tbody>

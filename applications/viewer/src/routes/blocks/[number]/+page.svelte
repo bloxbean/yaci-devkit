@@ -46,14 +46,14 @@
 <section class="py-10 px-4 md:px-6 min-h-screen">
     <div class="container mx-auto max-w-6xl">
         
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-base-200">
                 <div class="p-6">
-                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Block Hash</h2>
+                    <h2 class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-2">Block Hash</h2>
                     <div class="flex items-center justify-between gap-3">
-                        <span class="font-mono text-sm md:text-base text-gray-800 break-all">{block.hash}</span>
+                        <span class="font-mono text-sm md:text-base text-base-content break-all">{block.hash}</span>
                         <button 
-                            class="p-2 hover:bg-gray-100 rounded-md transition-colors duration-200 shrink-0" 
+                            class="p-2 hover:bg-base-200 rounded-md transition-colors duration-200 shrink-0" 
                             on:click={() => copyToClipboard(block.hash, 'hash')}
                             title="Copy Hash">
                             {@html copiedHash ? iconCheck : iconCopy}
@@ -61,15 +61,15 @@
                     </div>
                 </div>
 
-                <div class="p-6 bg-gray-50/50">
-                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Previous Hash</h2>
+                <div class="p-6 bg-base-200/50">
+                    <h2 class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-2">Previous Hash</h2>
                     <div class="flex items-center justify-between gap-3">
-                        <span class="font-mono text-sm md:text-base text-gray-500 break-all">
+                        <span class="font-mono text-sm md:text-base text-base-content/60 break-all">
                             {block.previous_block ? block.previous_block : 'Genesis Block'}
                         </span>
                         {#if block.previous_block}
                             <button 
-                                class="p-2 hover:bg-gray-200 rounded-md transition-colors duration-200 shrink-0" 
+                                class="p-2 hover:bg-base-300 rounded-md transition-colors duration-200 shrink-0" 
                                 on:click={() => copyToClipboard(block.previous_block, 'prev')}
                                 title="Copy Previous Hash">
                                 {@html copiedPrevHash ? iconCheck : iconCopy}
@@ -80,44 +80,44 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-10">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-100 border-b border-gray-100">
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Number</div>
-                    <div class="text-gray-900 font-medium text-xl">{block.number}</div>
+        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-base-200 border-b border-base-200">
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Number</div>
+                    <div class="text-base-content font-medium text-xl">{block.number}</div>
                 </div>
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Epoch</div>
-                    <div class="text-gray-900 font-medium text-xl">{block.epoch}</div>
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Epoch</div>
+                    <div class="text-base-content font-medium text-xl">{block.epoch}</div>
                 </div>
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Slot</div>
-                    <div class="text-gray-900 font-medium text-xl">{block.slot}</div>
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Slot</div>
+                    <div class="text-base-content font-medium text-xl">{block.slot}</div>
                 </div>
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Era</div>
-                    <div class="text-gray-900 font-medium text-xl capitalize">{block.era}</div>
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Era</div>
+                    <div class="text-base-content font-medium text-xl capitalize">{block.era}</div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1"># of Txs</div>
-                    <div class="text-gray-900 font-medium text-xl">{block.tx_count}</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-base-200">
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1"># of Txs</div>
+                    <div class="text-base-content font-medium text-xl">{block.tx_count}</div>
                 </div>
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Size</div>
-                    <div class="text-gray-900 font-medium text-xl">{block.size} <span class="text-sm font-normal text-gray-500">bytes</span></div>
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Size</div>
+                    <div class="text-base-content font-medium text-xl">{block.size} <span class="text-sm font-normal text-base-content/60">bytes</span></div>
                 </div>
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Protocol Version</div>
-                    <div class="text-gray-900 font-medium text-xl">{block.protocol_version}</div>
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Protocol Version</div>
+                    <div class="text-base-content font-medium text-xl">{block.protocol_version}</div>
                 </div>
-                <div class="p-6 hover:bg-gray-50/50 transition-colors">
-                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Timestamp</div>
-                    <div class="text-gray-900 font-medium text-sm mt-1">
+                <div class="p-6 hover:bg-base-200/50 transition-colors">
+                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Timestamp</div>
+                    <div class="text-base-content font-medium text-sm mt-1">
                         {getDate(block.time)}
-                        <span class="block text-gray-500 text-xs mt-1">{moment(block.time * 1000).fromNow()}</span>
+                        <span class="block text-base-content/60 text-xs mt-1">{moment(block.time * 1000).fromNow()}</span>
                     </div>
                 </div>
             </div>
@@ -125,36 +125,36 @@
 
         {#if txs && txs.length > 0}
             <div class="mt-8">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 px-1">Transactions in this Block</h3>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <h3 class="text-lg font-bold text-base-content mb-4 px-1">Transactions in this Block</h3>
+                <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-gray-50/80 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
+                                <tr class="bg-base-200/80 border-b border-base-200 text-xs uppercase tracking-wider text-base-content/60">
                                     <th class="py-4 px-6 font-semibold">Tx Hash</th>
                                     <th class="py-4 px-6 font-semibold">Total Output (ADA)</th>
                                     <th class="py-4 px-6 font-semibold">Fee (ADA)</th>
                                     <th class="py-4 px-6 font-semibold">Output Addresses</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100">
+                            <tbody class="divide-y divide-base-200">
                                 {#each txs as tx}
-                                    <tr class="hover:bg-gray-50/50 transition-colors group">
+                                    <tr class="hover:bg-base-200/50 transition-colors group">
                                         <td class="py-4 px-6 align-top">
                                             <a href="/transactions/{tx.tx_hash}" class="text-blue-600 hover:text-blue-800 hover:underline font-mono text-sm">
                                                 {truncate(tx.tx_hash, 20, "...")}
                                             </a>
                                         </td>
-                                        <td class="py-4 px-6 align-top font-medium text-gray-900">
+                                        <td class="py-4 px-6 align-top font-medium text-base-content">
                                             {lovelaceToAda(tx.total_output)}
                                         </td>
-                                        <td class="py-4 px-6 align-top font-medium text-gray-900">
+                                        <td class="py-4 px-6 align-top font-medium text-base-content">
                                             {lovelaceToAda(tx.fee)}
                                         </td>
-                                        <td class="py-4 px-6 align-top text-sm text-gray-500 font-mono">
+                                        <td class="py-4 px-6 align-top text-sm text-base-content/60 font-mono">
                                             <div class="max-h-24 overflow-y-auto pr-2 scrollbar-thin">
                                                 {#each tx.output_addresses as address}
-                                                    <div class="mb-1 last:mb-0 hover:text-gray-800 transition-colors" title="{address}">
+                                                    <div class="mb-1 last:mb-0 hover:text-base-content transition-colors" title="{address}">
                                                         {truncate(address, 25, "...")}
                                                     </div>
                                                 {/each}
@@ -175,18 +175,18 @@
 {#if txs.length > 0}
     <section class="container mx-auto text-sm mt-10 mb-10">
         <div class="overflow-x-auto">
-            <table class="w-full bg-white border border-gray-300">
+            <table class="w-full bg-base-100 border border-gray-300">
                 <thead>
                 <tr>
-                    <th class="py-2 px-4 bg-gray-100 font-bold">Tx Hash</th>
-                    <th class="py-2 px-4 bg-gray-100 font-bold text-center">Total Output (Ada)</th>
-                    <th class="py-2 px-4 bg-gray-100 font-bold text-center">Fee (Ada)</th>
-                    <th class="py-2 px-4 bg-gray-100 font-bold">Output Addresses</th>
+                    <th class="py-2 px-4 bg-base-200 font-bold">Tx Hash</th>
+                    <th class="py-2 px-4 bg-base-200 font-bold text-center">Total Output (Ada)</th>
+                    <th class="py-2 px-4 bg-base-200 font-bold text-center">Fee (Ada)</th>
+                    <th class="py-2 px-4 bg-base-200 font-bold">Output Addresses</th>
                 </tr>
                 </thead>
                 <tbody>
                 {#each txs as tx, index}
-                    <tr class="{index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                    <tr class="{index % 2 === 0 ? 'bg-base-200' : 'bg-base-100'}">
                         <td class="py-2 px-4">
                             <a href="/transactions/{tx.tx_hash}" class="text-blue-500">{tx.tx_hash}</a>
                         </td>

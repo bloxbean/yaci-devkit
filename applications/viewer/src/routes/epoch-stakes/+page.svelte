@@ -134,10 +134,10 @@
     <h1 class="text-2xl font-bold mb-6">Epoch Stakes</h1>
 
     <!-- Search Section -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6">
         <div class="flex items-end gap-2">
             <div class="w-48">
-                <label for="epoch" class="block text-sm font-medium text-gray-700 mb-2">Epoch Number</label>
+                <label for="epoch" class="block text-sm font-medium text-base-content/80 mb-2">Epoch Number</label>
                 <div class="flex gap-2">
                     <input
                         type="number"
@@ -168,8 +168,8 @@
 
     <!-- Total Stake Display -->
     {#if totalStake !== null}
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-2">Total Active Stake</h2>
+        <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-lg font-semibold text-base-content mb-2">Total Active Stake</h2>
             <p class="text-3xl font-bold text-primary">
                 {formatAda(totalStake.active_stake)} ₳
             </p>
@@ -177,14 +177,14 @@
     {/if}
 
     <!-- Stakes Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="bg-base-100 rounded-lg shadow-md overflow-hidden">
         {#if loading}
             <div class="flex justify-center items-center h-32">
                 <span class="loading loading-spinner loading-lg"></span>
             </div>
         {:else if stakes.length === 0}
             <div class="text-center py-8">
-                <p class="text-gray-600">No stake data available for this epoch.</p>
+                <p class="text-base-content/70">No stake data available for this epoch.</p>
             </div>
         {:else}
         <!-- Pagination -->
@@ -219,7 +219,7 @@
                     </thead>
                     <tbody>
                         {#each stakes as stake}
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-base-200">
                                 <td class="text-sm">
                                     <a 
                                         href="/epoch-stakes/accounts?address={stake.address}&epoch={searchEpoch}" 

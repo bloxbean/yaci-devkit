@@ -180,7 +180,7 @@
             >
                 &lt; Previous
             </button>
-            <span class="text-sm text-gray-700">Page {currentPage}</span>
+            <span class="text-sm text-base-content/80">Page {currentPage}</span>
             <button 
                 class="btn btn-outline btn-sm"
                 on:click={() => goToPage(currentPage + 1)}
@@ -192,7 +192,7 @@
     {/if}
 
     <!-- Content Area -->
-    <div class="bg-white shadow-md rounded-lg p-4 min-h-[400px]">
+    <div class="bg-base-100 shadow-md rounded-lg p-4 min-h-[400px]">
         {#if loading}
             <div class="flex justify-center items-center h-64">
                  <span class="loading loading-spinner loading-lg"></span>
@@ -200,28 +200,28 @@
         {:else if currentTab === 'pool'}
              <h2 class="text-xl font-semibold mb-4">Pool Rewards</h2>
              {#if !poolRewards || poolRewards.length === 0}
-                 <p class="text-gray-500">No pool rewards found for this epoch.</p>
+                 <p class="text-base-content/60">No pool rewards found for this epoch.</p>
              {:else}
                  <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-base-300">
+                        <thead class="bg-base-200">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stake Address</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earned Epoch</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spendable Epoch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Stake Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Earned Epoch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Spendable Epoch</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-base-100 divide-y divide-base-300">
                             {#each poolRewards as reward (reward.pool_id + reward.address + reward.earned_epoch)} 
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-base-200">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex items-center gap-2">
                                             <a href="/pools/{reward.pool_id}" class="text-blue-500 hover:underline">{truncate(reward.pool_id, 20, '...')}</a>
                                             <button 
-                                                class="text-gray-400 hover:text-gray-600" 
+                                                class="text-base-content/50 hover:text-base-content/70" 
                                                 on:click={() => copyToClipboard(reward.pool_id, 'Pool ID copied to clipboard!')}
                                                 title="Copy pool ID"
                                             >
@@ -231,11 +231,11 @@
                                             </button>
                                         </div>
                                     </td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                          <div class="flex items-center gap-2">
                                              <a href="/rewards/account/{reward.address}" class="text-blue-500 hover:underline">{truncate(reward.address, 20, '...')}</a>
                                              <button 
-                                                 class="text-gray-400 hover:text-gray-600" 
+                                                 class="text-base-content/50 hover:text-base-content/70" 
                                                  on:click={() => copyToClipboard(reward.address, 'Stake address copied to clipboard!')}
                                                  title="Copy stake address"
                                              >
@@ -245,12 +245,12 @@
                                              </button>
                                          </div>
                                     </td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{reward.type}</td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 tooltip" data-tip={formatLovelace(reward.amount)}>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{reward.type}</td>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(reward.amount)}>
                                         {formatAda(reward.amount)}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.earned_epoch}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.spendable_epoch}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.earned_epoch}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.spendable_epoch}</td>
                                 </tr>
                             {/each}
                         </tbody>
@@ -260,27 +260,27 @@
         {:else if currentTab === 'rest'}
              <h2 class="text-xl font-semibold mb-4">Other Rewards (Treasury, Reserves, etc.)</h2>
              {#if !restRewards || restRewards.length === 0}
-                 <p class="text-gray-500">No other rewards found for this epoch.</p>
+                 <p class="text-base-content/60">No other rewards found for this epoch.</p>
              {:else}
                  <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-base-300">
+                        <thead class="bg-base-200">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stake Address</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earned Epoch</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spendable Epoch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Stake Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Earned Epoch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Spendable Epoch</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-base-100 divide-y divide-base-300">
                             {#each restRewards as reward, i (reward.address + reward.type + reward.earned_epoch + i)} 
-                                <tr class="hover:bg-gray-50">
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <tr class="hover:bg-base-200">
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                          <div class="flex items-center gap-2">
                                              <a href="/rewards/account/{reward.address}" class="text-blue-500 hover:underline">{truncate(reward.address, 20, '...')}</a>
                                              <button 
-                                                 class="text-gray-400 hover:text-gray-600" 
+                                                 class="text-base-content/50 hover:text-base-content/70" 
                                                  on:click={() => copyToClipboard(reward.address, 'Stake address copied to clipboard!')}
                                                  title="Copy stake address"
                                              >
@@ -290,12 +290,12 @@
                                              </button>
                                          </div>
                                     </td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{reward.type}</td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 tooltip" data-tip={formatLovelace(reward.amount)}>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{reward.type}</td>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(reward.amount)}>
                                         {formatAda(reward.amount)}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.earned_epoch}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.spendable_epoch}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.earned_epoch}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.spendable_epoch}</td>
                                 </tr>
                             {/each}
                         </tbody>
@@ -305,27 +305,27 @@
         {:else if currentTab === 'unclaimed'}
              <h2 class="text-xl font-semibold mb-4">Unclaimed Other Rewards</h2>
              {#if !unclaimedRewards || unclaimedRewards.length === 0}
-                 <p class="text-gray-500">No unclaimed rewards found for this epoch.</p>
+                 <p class="text-base-content/60">No unclaimed rewards found for this epoch.</p>
              {:else}
                  <div class="overflow-x-auto">
-                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                     <table class="min-w-full divide-y divide-base-300">
+                        <thead class="bg-base-200">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stake Address</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earned Epoch</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spendable Epoch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Stake Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Earned Epoch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Spendable Epoch</th>
                             </tr>
                         </thead>
-                         <tbody class="bg-white divide-y divide-gray-200">
+                         <tbody class="bg-base-100 divide-y divide-base-300">
                             {#each unclaimedRewards as reward, i (reward.address + reward.type + reward.earned_epoch + i)} 
-                                <tr class="hover:bg-gray-50">
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <tr class="hover:bg-base-200">
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                          <div class="flex items-center gap-2">
                                              <a href="/rewards/account/{reward.address}" class="text-blue-500 hover:underline">{truncate(reward.address, 20, '...')}</a>
                                              <button 
-                                                 class="text-gray-400 hover:text-gray-600" 
+                                                 class="text-base-content/50 hover:text-base-content/70" 
                                                  on:click={() => copyToClipboard(reward.address, 'Stake address copied to clipboard!')}
                                                  title="Copy stake address"
                                              >
@@ -335,12 +335,12 @@
                                              </button>
                                          </div>
                                     </td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{reward.type}</td>
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 tooltip" data-tip={formatLovelace(reward.amount)}>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{reward.type}</td>
+                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(reward.amount)}>
                                         {formatAda(reward.amount)}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.earned_epoch}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.spendable_epoch}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.earned_epoch}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.spendable_epoch}</td>
                                 </tr>
                             {/each}
                         </tbody>
@@ -359,7 +359,7 @@
                 >
                     &lt; Previous
                 </button>
-                <span class="text-sm text-gray-700">Page {currentPage}</span>
+                <span class="text-sm text-base-content/80">Page {currentPage}</span>
                 <button 
                     class="btn btn-outline btn-sm"
                     on:click={() => goToPage(currentPage + 1)}

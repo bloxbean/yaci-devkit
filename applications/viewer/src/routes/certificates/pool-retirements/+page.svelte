@@ -58,7 +58,7 @@
 </script>
 
 <section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Pool Retirements</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">Pool Retirements</h2>
     <div class="flex justify-end mt-6">
         <div class="join">
             <button 
@@ -78,29 +78,29 @@
             </button>
         </div>
     </div>
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Retirement Epoch</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Retirement Epoch</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             {#each data.retirements as retirement: PoolRetirement, index}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{truncate(retirement.pool_id_bech32, 35, "...")}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{retirement.epoch}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{retirement.retirement_epoch}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">{truncate(retirement.pool_id_bech32, 35, "...")}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{retirement.epoch}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{retirement.retirement_epoch}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                         <a href="/blocks/{retirement.block_number}" class="text-blue-500 hover:underline">
                             {retirement.block_number}
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <a href="/transactions/{retirement.tx_hash}" class="text-blue-500 hover:underline">
                             <span>{truncate(retirement.tx_hash, 30)}</span>
                         </a>

@@ -111,11 +111,11 @@
     </div>
     <h1 class="text-3xl font-bold mb-1">Rewards for Pool in Epoch {epoch}</h1>
     <div class="mb-6 flex items-center gap-2">
-        <span class="text-gray-600">Pool ID:</span>
+        <span class="text-base-content/70">Pool ID:</span>
         <div class="flex items-center gap-2">
             <a href="/pools/{poolId}" class="text-blue-500 hover:underline break-all">{poolId}</a>
             <button 
-                class="text-gray-400 hover:text-gray-600" 
+                class="text-base-content/50 hover:text-base-content/70" 
                 on:click={() => copyToClipboard(poolId, 'Pool ID copied to clipboard!')}
                 title="Copy pool ID"
             >
@@ -146,7 +146,7 @@
             >
                 &lt; Previous
             </button>
-            <span class="text-sm text-gray-700">Page {currentPage}</span>
+            <span class="text-sm text-base-content/80">Page {currentPage}</span>
             <button 
                 class="btn btn-outline btn-sm"
                 on:click={() => goToPage(currentPage + 1)}
@@ -158,32 +158,32 @@
     {/if}
 
     <!-- Content Area -->
-    <div class="bg-white shadow-md rounded-lg p-4 min-h-[400px]">
+    <div class="bg-base-100 shadow-md rounded-lg p-4 min-h-[400px]">
         {#if loading}
              <div class="flex justify-center items-center h-64">
                  <span class="loading loading-spinner loading-lg"></span>
             </div>
         {:else if !rewards || rewards.length === 0}
-            <p class="text-gray-500">No rewards found for this pool in this epoch.</p>
+            <p class="text-base-content/60">No rewards found for this pool in this epoch.</p>
         {:else}
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-base-300">
+                    <thead class="bg-base-200">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stake Address</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
-                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earned Epoch</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Stake Address</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
+                             <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Earned Epoch</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-base-100 divide-y divide-base-300">
                         {#each rewards as item (item.address + item.earned_epoch)} 
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <tr class="hover:bg-base-200">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                                     <div class="flex items-center gap-2">
                                         <a href="/rewards/account/{item.address}" class="text-blue-500 hover:underline">{truncate(item.address, 60, '...')}</a>
                                         <button 
-                                            class="text-gray-400 hover:text-gray-600" 
+                                            class="text-base-content/50 hover:text-base-content/70" 
                                             on:click={() => copyToClipboard(item.address, 'Stake address copied to clipboard!')}
                                             title="Copy stake address"
                                         >
@@ -193,11 +193,11 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{item.type}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 tooltip" data-tip={formatLovelace(item.reward)}>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{item.type}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(item.reward)}>
                                     {formatAda(item.reward)}
                                 </td>
-                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.earned_epoch}</td>
+                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{item.earned_epoch}</td>
                             </tr>
                         {/each}
                     </tbody>
@@ -215,7 +215,7 @@
                 >
                     &lt; Previous
                 </button>
-                <span class="text-sm text-gray-700">Page {currentPage}</span>
+                <span class="text-sm text-base-content/80">Page {currentPage}</span>
                 <button 
                     class="btn btn-outline btn-sm"
                     on:click={() => goToPage(currentPage + 1)}

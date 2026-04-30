@@ -61,7 +61,7 @@
 
 
 <section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Stake Key De-registrations</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">Stake Key De-registrations</h2>
     <div class="flex justify-end mt-6">
         <div class="join">
             <button 
@@ -81,27 +81,27 @@
             </button>
         </div>
     </div>
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Address</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             {#each data.deregistrations as deregistration: StakeDeRegistration, index}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{deregistration.address}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{deregistration.address}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                         <a href="/blocks/{deregistration.block_number}" class="text-blue-500 hover:underline">
                             {deregistration.block_number}
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getDate(deregistration.block_time)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{getDate(deregistration.block_time)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <a href="/transactions/{deregistration.tx_hash}" class="text-blue-500 hover:underline">
                             <span>{truncate(deregistration.tx_hash, 30, "...")}</span>
                         </a>

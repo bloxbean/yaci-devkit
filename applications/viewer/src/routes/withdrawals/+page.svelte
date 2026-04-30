@@ -55,26 +55,26 @@
             </div>
         </div>
 
-        <div class="bg-white shadow-md rounded-lg overflow-hidden relative">
+        <div class="bg-base-100 shadow-md rounded-lg overflow-hidden relative">
             {#if loading}
-                <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+                <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                     <span class="loading loading-spinner loading-lg"></span>
                 </div>
             {/if}
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-base-300">
+                    <thead class="bg-base-200">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Hash</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Address</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Time</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-base-100 divide-y divide-base-300">
                         {#each data.withdrawals as w, i (w.tx_hash + w.address + i)}
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-base-200">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <a href="/transactions/{w.tx_hash}" class="text-blue-600 hover:underline">
                                         <TruncateCopy text={w.tx_hash} max={16} />
@@ -83,13 +83,13 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <AddressLink address={w.address} maxLength={25} />
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" title="{w.amount} lovelace">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60" title="{w.amount} lovelace">
                                     {lovelaceToAda(w.amount, 2)}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     <a href="/blocks/{w.block_number}" class="text-blue-500 hover:underline">{w.block_number}</a>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                     {getDate(w.block_time)}
                                 </td>
                             </tr>

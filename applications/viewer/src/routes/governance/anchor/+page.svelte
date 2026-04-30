@@ -139,7 +139,7 @@
                     {#if anchorMetadata.abstract}
                         <div class="mt-4">
                             <h3 class="font-semibold mb-2">Abstract</h3>
-                            <p class="text-gray-700">{sanitizeText(anchorMetadata.abstract)}</p>
+                            <p class="text-base-content/80">{sanitizeText(anchorMetadata.abstract)}</p>
                         </div>
                     {/if}
                 </div>
