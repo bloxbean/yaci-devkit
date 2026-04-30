@@ -1,59 +1,24 @@
 <script lang="ts">
     import { formatAda, formatLovelace } from '$lib/util';
-    import { onMount } from 'svelte';
-    import { env } from '$env/dynamic/public';
+    import type { PageData } from './$types';
 
-    interface AdaPotData {
-        epoch: number;
-        totalAmount: number;
+    export let data: PageData;
+
+    $: raw = data.adapot;
+    $: error = data.error;
+    $: adapot = raw ? {
+        epoch: raw.epoch,
+        totalAmount: raw.rewards_pot ?? 0,
         details: {
-            fees: number;
-            treasury: number;
-            reserves: number;
-            circulation: number;
-            distributedRewards: number;
-            undistributedRewards: number;
-            poolRewardsPot: number;
-        };
-    }
-
-    let adapot: AdaPotData | null = null;
-    let loading = true;
-    let error: string | null = null;
-
-    async function loadCurrentAdapot() {
-        loading = true;
-        error = null;
-        try {
-            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
-            const response = await fetch(`${baseUrl}/adapot`); 
-            if (!response.ok) {
-                throw new Error('Failed to fetch current AdaPot');
-            }
-            const data = await response.json();
-            adapot = {
-                epoch: data.epoch,
-                totalAmount: data.rewards_pot,
-                details: {
-                    fees: data.fees,
-                    treasury: data.treasury,
-                    reserves: data.reserves,
-                    circulation: data.circulation,
-                    distributedRewards: data.distributed_rewards,
-                    undistributedRewards: data.undistributed_rewards,
-                    poolRewardsPot: data.pool_rewards_pot
-                }
-            };
-        } catch (e) {
-            error = e instanceof Error ? e.message : 'An error occurred while loading AdaPot';
-        } finally {
-            loading = false;
+            fees: raw.fees ?? 0,
+            treasury: raw.treasury ?? 0,
+            reserves: raw.reserves ?? 0,
+            circulation: raw.circulation ?? 0,
+            distributedRewards: raw.distributed_rewards ?? 0,
+            undistributedRewards: raw.undistributed_rewards ?? 0,
+            poolRewardsPot: raw.pool_rewards_pot ?? 0
         }
-    }
-
-    onMount(() => {
-        loadCurrentAdapot();
-    });
+    } : null;
 </script>
 
 <div class="container mx-auto px-4 py-8">
@@ -71,11 +36,7 @@
         </div>
     {/if}
 
-    {#if loading}
-        <div class="flex justify-center items-center py-8">
-            <span class="loading loading-spinner loading-lg text-primary"></span>
-        </div>
-    {:else if adapot}
+    {#if adapot}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Epoch Card -->
             <div class="card bg-base-100 shadow-xl">
