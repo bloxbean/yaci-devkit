@@ -128,7 +128,7 @@
         </div>
     {/if}
 
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Delegations</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">Delegations</h2>
     <div class="flex justify-end mt-6">
         <div class="join">
             <button 
@@ -150,32 +150,32 @@
             </button>
         </div>
     </div>
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4 relative">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4 relative">
         {#if loading}
-            <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+            <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                 <span class="loading loading-spinner loading-lg"></span>
             </div>
         {/if}
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stake Address</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool ID</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Stake Address</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             {#each data.delegations as delegation}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <div class="flex items-center gap-2">
                             <a href="/rewards/account/{delegation.address}" class="text-blue-500 hover:underline">
                                 <span>{truncateAddress(delegation.address)}</span>
                             </a>
                             {#if delegation.address}
                                 <button
-                                    class="text-gray-400 hover:text-gray-600"
+                                    class="text-base-content/50 hover:text-base-content/70"
                                     on:click={() => {
                                         copyToClipboard(delegation.address, 'Stake address copied to clipboard');
                                     }}
@@ -188,14 +188,14 @@
                             {/if}
                         </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                         <div class="flex items-center gap-2">
                             <a href="/pools/{delegation.pool_id}" class="text-blue-500 hover:underline">
                                 <span>{truncateHash(delegation.pool_id)}</span>
                             </a>
                             {#if delegation.pool_id}
                                 <button
-                                    class="text-gray-400 hover:text-gray-600"
+                                    class="text-base-content/50 hover:text-base-content/70"
                                     on:click={() => {
                                         copyToClipboard(delegation.pool_id, 'Pool ID copied to clipboard');
                                     }}
@@ -208,19 +208,19 @@
                             {/if}
                         </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                         <a href="/blocks/{delegation.block_number}" class="text-blue-500 hover:underline">
                             {delegation.block_number}
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <div class="flex items-center gap-2">
                             <a href="/transactions/{delegation.tx_hash}" class="text-blue-500 hover:underline">
                                 <span>{truncateHash(delegation.tx_hash)}</span>
                             </a>
                             {#if delegation.tx_hash}
                                 <button
-                                    class="text-gray-400 hover:text-gray-600"
+                                    class="text-base-content/50 hover:text-base-content/70"
                                     on:click={() => {
                                         copyToClipboard(delegation.tx_hash, 'Transaction hash copied to clipboard');
                                     }}

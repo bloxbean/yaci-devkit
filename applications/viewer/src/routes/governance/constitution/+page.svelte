@@ -31,7 +31,7 @@
                                     {data.constitution.anchor_url}
                                 </a>
                             {:else}
-                                <span class="text-gray-400">None</span>
+                                <span class="text-base-content/50">None</span>
                             {/if}
                         </span>
                     </div>
@@ -41,7 +41,7 @@
                         {#if data.constitution.anchor_hash}
                             <TruncateCopy text={data.constitution.anchor_hash} max={48} />
                         {:else}
-                            <span class="text-gray-400">None</span>
+                            <span class="text-base-content/50">None</span>
                         {/if}
                     </div>
 
@@ -50,7 +50,7 @@
                         {#if data.constitution.script}
                             <TruncateCopy text={data.constitution.script} max={48} />
                         {:else}
-                            <span class="text-gray-400">None</span>
+                            <span class="text-base-content/50">None</span>
                         {/if}
                     </div>
                 </div>

@@ -70,9 +70,9 @@
 <section class="py-8 px-4 md:px-6 min-h-screen">
     <div class="container mx-auto max-w-6xl">
         <!-- Header -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-            <div class="bg-gray-50/50 p-6 border-b border-gray-100">
-                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
+            <div class="bg-base-200/50 p-6 border-b border-base-200">
+                <h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
                     Stake Address
                 </h2>
                 <div class="flex items-center gap-3">
@@ -82,50 +82,50 @@
         </div>
 
         <!-- Tabs -->
-        <div class="mb-6 bg-gray-50 rounded-xl p-2">
-            <div class="flex flex-wrap gap-2 border-b border-gray-200">
+        <div class="mb-6 bg-base-200 rounded-xl p-2">
+            <div class="flex flex-wrap gap-2 border-b border-base-300">
                 <button
                     class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === REWARDS_TAB
                         ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
                     on:click={() => switchTab(REWARDS_TAB)}
                 >
                     Rewards
                     {#if rewards.length > 0}
-                        <span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">{rewards.length}</span>
+                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{rewards.length}</span>
                     {/if}
                 </button>
 
                 <button
                     class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === OTHER_REWARDS_TAB
                         ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
                     on:click={() => switchTab(OTHER_REWARDS_TAB)}
                 >
                     Other Rewards
                     {#if rewardRest.length > 0}
-                        <span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">{rewardRest.length}</span>
+                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{rewardRest.length}</span>
                     {/if}
                 </button>
 
                 <button
                     class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === WITHDRAWALS_TAB
                         ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
                     on:click={() => switchTab(WITHDRAWALS_TAB)}
                 >
                     Withdrawals
                     {#if withdrawals.length > 0}
-                        <span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">{withdrawals.length}</span>
+                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{withdrawals.length}</span>
                     {/if}
                 </button>
             </div>
         </div>
 
         <!-- Tab Content -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px] relative">
+        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px] relative">
             {#if loading}
-                <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+                <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                     <span class="loading loading-spinner loading-lg"></span>
                 </div>
             {/if}
@@ -137,19 +137,19 @@
                         <EmptyState title="No Rewards" message="No pool rewards found for this stake address." />
                     {:else}
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="min-w-full divide-y divide-base-300">
+                                <thead class="bg-base-200">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool ID</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-base-100 divide-y divide-base-300">
                                     {#each rewards as reward}
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-4 text-sm text-gray-900 font-medium">
+                                        <tr class="hover:bg-base-200">
+                                            <td class="px-4 py-4 text-sm text-base-content font-medium">
                                                 {reward.epoch}
                                             </td>
                                             <td class="px-4 py-4 text-sm">
@@ -166,8 +166,8 @@
                                                     <span class="badge badge-ghost badge-sm">{reward.type}</span>
                                                 {/if}
                                             </td>
-                                            <td class="px-4 py-4 text-sm text-right font-medium text-gray-900">
-                                                {lovelaceToAda(reward.amount, 6)} <span class="text-gray-500">ADA</span>
+                                            <td class="px-4 py-4 text-sm text-right font-medium text-base-content">
+                                                {lovelaceToAda(reward.amount, 6)} <span class="text-base-content/60">ADA</span>
                                             </td>
                                         </tr>
                                     {/each}
@@ -185,25 +185,25 @@
                         <EmptyState title="No Other Rewards" message="No treasury or reserve rewards found for this stake address." />
                     {:else}
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="min-w-full divide-y divide-base-300">
+                                <thead class="bg-base-200">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-base-100 divide-y divide-base-300">
                                     {#each rewardRest as reward}
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-4 py-4 text-sm text-gray-900 font-medium">
+                                        <tr class="hover:bg-base-200">
+                                            <td class="px-4 py-4 text-sm text-base-content font-medium">
                                                 {reward.epoch}
                                             </td>
                                             <td class="px-4 py-4 text-sm">
                                                 <span class="badge badge-ghost badge-sm">{reward.type}</span>
                                             </td>
-                                            <td class="px-4 py-4 text-sm text-right font-medium text-gray-900">
-                                                {lovelaceToAda(reward.amount, 6)} <span class="text-gray-500">ADA</span>
+                                            <td class="px-4 py-4 text-sm text-right font-medium text-base-content">
+                                                {lovelaceToAda(reward.amount, 6)} <span class="text-base-content/60">ADA</span>
                                             </td>
                                         </tr>
                                     {/each}
@@ -221,24 +221,24 @@
                         <EmptyState title="No Withdrawals" message="No withdrawals found for this stake address." />
                     {:else}
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+                            <table class="min-w-full divide-y divide-base-300">
+                                <thead class="bg-base-200">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tx Hash</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
+                                <tbody class="bg-base-100 divide-y divide-base-300">
                                     {#each withdrawals as w}
-                                        <tr class="hover:bg-gray-50">
+                                        <tr class="hover:bg-base-200">
                                             <td class="px-4 py-4 text-sm">
                                                 <a href="/transactions/{w.tx_hash}" class="text-blue-600 hover:underline">
                                                     {truncate(w.tx_hash, 20, '...')}
                                                 </a>
                                             </td>
-                                            <td class="px-4 py-4 text-sm text-gray-900">
+                                            <td class="px-4 py-4 text-sm text-base-content">
                                                 {w.epoch}
                                             </td>
                                             <td class="px-4 py-4 text-sm">
@@ -246,8 +246,8 @@
                                                     {w.block_number}
                                                 </a>
                                             </td>
-                                            <td class="px-4 py-4 text-sm text-right font-medium text-gray-900">
-                                                {lovelaceToAda(w.amount, 6)} <span class="text-gray-500">ADA</span>
+                                            <td class="px-4 py-4 text-sm text-right font-medium text-base-content">
+                                                {lovelaceToAda(w.amount, 6)} <span class="text-base-content/60">ADA</span>
                                             </td>
                                         </tr>
                                     {/each}
@@ -268,7 +268,7 @@
                     >
                         &lt; Previous
                     </button>
-                    <span class="text-sm text-gray-700">Page {currentPage}</span>
+                    <span class="text-sm text-base-content/80">Page {currentPage}</span>
                     <button
                         class="btn btn-outline btn-sm"
                         on:click={() => goToPage(currentPage + 1)}

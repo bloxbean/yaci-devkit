@@ -22,7 +22,7 @@
 <div>
     {#each outputs as output}
         <div class="mt-4">
-            <div class="text-sm font-medium text-gray-700 md:ml-2 break-words"><AddressLink address={output.address} maxLength={45} /></div>
+            <div class="text-sm font-medium text-base-content/80 md:ml-2 break-words"><AddressLink address={output.address} maxLength={45} /></div>
             <div class="flex justify-end mt-2">
                 <div class="space-x-2">
                     <AmountBadges amounts={output.amount}></AmountBadges>
@@ -39,7 +39,7 @@
                 </div>
             {/if}
         </div>
-        <hr class="my-4 border-gray-100">
+        <hr class="my-4 border-base-200">
     {/each}
 </div>
 

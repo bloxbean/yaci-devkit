@@ -227,6 +227,6 @@
             </div>
         </div>
     {:else}
-        <div class="text-center py-8 text-gray-500">No AdaPot data available</div>
+        <div class="text-center py-8 text-base-content/60">No AdaPot data available</div>
     {/if}
 </div> 

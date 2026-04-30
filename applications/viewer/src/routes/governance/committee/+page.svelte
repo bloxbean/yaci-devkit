@@ -44,20 +44,20 @@
 
         <!-- Members Table -->
         {#if data.committee.members && data.committee.members.length > 0}
-            <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
                 <table class="table w-full">
                     <thead>
-                        <tr class="bg-gray-50">
-                            <th class="font-semibold text-gray-700">Hash</th>
-                            <th class="font-semibold text-gray-700">Credential Type</th>
-                            <th class="font-semibold text-gray-700">Start Epoch</th>
-                            <th class="font-semibold text-gray-700">Expiry Epoch</th>
-                            <th class="font-semibold text-gray-700">Status</th>
+                        <tr class="bg-base-200">
+                            <th class="font-semibold text-base-content/80">Hash</th>
+                            <th class="font-semibold text-base-content/80">Credential Type</th>
+                            <th class="font-semibold text-base-content/80">Start Epoch</th>
+                            <th class="font-semibold text-base-content/80">Expiry Epoch</th>
+                            <th class="font-semibold text-base-content/80">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.committee.members as member}
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-base-200">
                                 <td>
                                     <TruncateCopy text={member.hash} max={38} />
                                 </td>

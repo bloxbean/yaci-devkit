@@ -76,7 +76,7 @@
 
 
 <section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Votes</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">Votes</h2>
     <div class="flex justify-end mt-6">
         <div class="join">
             <button 
@@ -98,50 +98,50 @@
             </button>
         </div>
     </div>
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4 relative">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4 relative">
         {#if loading}
-            <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+            <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                 <span class="loading loading-spinner loading-lg"></span>
             </div>
         {/if}
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gov Action Id</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voter Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vote</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voter Hash</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor URL</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Gov Action Id</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Voter Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Vote</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Voter Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Anchor URL</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Anchor Hash</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             {#each data.votes as vote: Vote, index}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <a href="/transactions/{vote.tx_hash}" class="text-blue-500 hover:underline">
                             <span>{truncate(vote.tx_hash, 30, "...")}</span>
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                         <a href="/blocks/{vote.block_number}" class="text-blue-500 hover:underline">
                             {vote.block_number}
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{truncate(vote.gov_action_tx_hash, 10, "...")}#{vote.gov_action_index}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{vote.voter_type}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{vote.vote}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{truncate(vote.voter_hash, 30, "...")}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(vote.gov_action_tx_hash, 10, "...")}#{vote.gov_action_index}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{vote.voter_type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{vote.vote}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(vote.voter_hash, 30, "...")}</td>
                     {#if vote.anchor_url}
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-500">
                             <a href="{vote.anchor_url}" target="_blank" class="hover:underline">{truncate(vote.anchor_url, 20, "...")}</a>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{truncate(vote.anchor_hash, 20, "...")}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(vote.anchor_hash, 20, "...")}</td>
                     {:else }
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">-</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">-</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 text-center">-</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 text-center">-</td>
                     {/if}
                 </tr>
             {/each}
