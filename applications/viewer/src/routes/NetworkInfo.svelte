@@ -29,6 +29,7 @@
     let error: string | null = null;
     let lastFetchedEpoch: number = 0;
     let store: any;
+    let unsubscribe: (() => void) | null = null;
 
     async function fetchEpochData() {
         try {
@@ -84,12 +85,12 @@
     onMount(async () => {
         const importedStore = await import('./blocks/store.js');
         store = importedStore;
-        store.blocksStore.subscribe(handleStoreMessage);
+        unsubscribe = store.blocksStore.subscribe(handleStoreMessage);
     });
 
     onDestroy(() => {
-        if (store) {
-            store.blocksStore.subscribe(() => {})();
+        if (unsubscribe) {
+            unsubscribe();
         }
     });
 </script>

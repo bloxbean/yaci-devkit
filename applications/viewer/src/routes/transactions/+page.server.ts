@@ -28,7 +28,7 @@ export const load: PageLoad = async ({params, url}) => {
 
     return {
         status: 404,
-        body: { error: 'Can not fetch recepie.' }
+        body: { error: 'Can not fetch transactions.' }
     };
 
 }
