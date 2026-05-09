@@ -1,5 +1,5 @@
 <div align="center">
-<img src="static/DevKit.png" width="300">
+<img src="static/DevKit-logo.svg" >
 
 <h4>Complete Cardano development environment with instant local devnet</h4>
 
