@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.yano;
 
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
@@ -318,6 +319,25 @@ public class YanoService {
     @EventListener
     public void handleClusterStopped(ClusterStopped clusterStopped) {
         stop();
+    }
+
+    @EventListener
+    public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
+        Path clusterFolder = Path.of(clusterConfig.getClusterHome(), clusterDeleted.getClusterName());
+        deleteIfPresent(clusterFolder.resolve("node").resolve("yano"), "Yano data");
+        deleteIfPresent(clusterFolder.resolve("yano-config"), "Yano config");
+    }
+
+    private void deleteIfPresent(Path path, String label) {
+        if (path.toFile().exists()) {
+            try {
+                FileUtils.deleteDirectory(path.toFile());
+                writeLn(success(label + " folder deleted: " + path.toAbsolutePath()));
+            } catch (IOException e) {
+                writeLn(error(label + " folder could not be deleted: " + path.toAbsolutePath()
+                        + " — " + e.getMessage()));
+            }
+        }
     }
 
     public boolean stop() {
