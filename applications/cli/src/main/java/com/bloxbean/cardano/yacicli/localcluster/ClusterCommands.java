@@ -235,6 +235,18 @@ public class ClusterCommands {
         if (!runStatus.stared())
             return;
 
+        // Ensure CommandContext.era is populated for downstream listeners and the
+        // waitForNextBlocks call below (both read CommandContext.INSTANCE.getEra()).
+        // The HTTP /devnet/reset path does not set era anywhere otherwise.
+        try {
+            ClusterInfo clusterInfo = localClusterService.getClusterInfo(clusterName);
+            if (clusterInfo != null && clusterInfo.getEra() != null) {
+                CommandContext.INSTANCE.setEra(clusterInfo.getEra());
+            }
+        } catch (IOException e) {
+            log.warn("Could not load cluster info to set era for {}", clusterName, e);
+        }
+
         if (runStatus.isFirstRun()) {
             publisher.publishEvent(new FirstRunDone(clusterName));
             publisher.publishEvent(new ClusterStarted(clusterName));

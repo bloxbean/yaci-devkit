@@ -1,8 +1,11 @@
 package com.bloxbean.cardano.yacicli.localcluster.yacistore;
 
+import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.commands.common.JreResolver;
+import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
@@ -13,15 +16,21 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.localcluster.events.RollbackDone;
+import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +53,7 @@ public class YaciStoreService {
     private final ClusterService clusterService;
     private final ClusterStartService clusterStartService;
     private final ClusterConfig clusterConfig;
+    private final ClusterUtilService clusterUtilService;
     private final JreResolver jreResolver;
     private final YaciStoreConfigBuilder yaciStoreConfigBuilder;
     private final YaciStoreCustomDbHelper customDBHelper;
@@ -88,9 +98,17 @@ public class YaciStoreService {
                 return false;
 
             Era era = clusterInfo.getEra();
-            Process process = startStoreApp(clusterInfo, era);
-            if (process != null)
-                processes.add(process);
+            StoreStartResult result = startStoreApp(clusterInfo, era);
+            // Always track a live process so it can be cleaned up by stop(), even when
+            // the boot log wasn't observed (the process may still recover).
+            if (result.process() != null)
+                processes.add(result.process());
+
+            // Wait for indexer to catch up to chain tip — only if boot was actually
+            // observed, otherwise we'd burn the 60s deadline on a stuck process.
+            if (result.bootObserved() && result.process() != null && result.process().isAlive()) {
+                waitForSyncToTip(clusterInfo, writer);
+            }
 
 //            Process viewerProcess = startViewerApp(clusterStarted.getClusterName());
 //                processes.add(viewerProcess);
@@ -100,6 +118,10 @@ public class YaciStoreService {
 
         return true;
     }
+
+    /** Result of an attempt to spawn Yaci Store: the process (may be null) and
+     *  whether the "Started YaciStoreApplication" boot log line was observed. */
+    private record StoreStartResult(Process process, boolean bootObserved) {}
 
     private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
         boolean yaciPortAvailable = PortUtil.isPortAvailable(clusterInfo.getYaciStorePort());
@@ -113,7 +135,89 @@ public class YaciStoreService {
             return true;
     }
 
-    private Process startStoreApp(ClusterInfo clusterInfo, Era era) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private static final long SYNC_WAIT_DEADLINE_MS = 60_000L;
+
+    /**
+     * Block until Yaci Store's latest indexed block height is within {@code slackBlocks}
+     * of the cardano-node tip. Used to keep callers (notably {@code /devnet/reset}) from
+     * returning before integration-test workloads can rely on the indexer.
+     *
+     * Slack is derived from the cluster's block-time so fast devnets (e.g. 0.2-0.3s)
+     * don't fail the check on a single in-flight block:
+     *   1s  -> 1 block
+     *   0.3s -> 4 blocks
+     *   0.2s -> 5 blocks (cap)
+     *
+     * Returns silently after a soft 60s deadline; matches existing "warn + continue" pattern.
+     */
+    private void waitForSyncToTip(ClusterInfo clusterInfo, Consumer<String> writer) {
+        // ClusterUtilService.getTip reads CommandContext.INSTANCE.getEra(); the primary
+        // fix lives in ClusterCommands.startLocalCluster() but set here too as defense
+        // against alternate call paths.
+        if (clusterInfo.getEra() != null) {
+            CommandContext.INSTANCE.setEra(clusterInfo.getEra());
+        }
+
+        double blockTime = Math.max(clusterInfo.getBlockTime(), 0.1);
+        final long maxLagBlocks = Math.min(5L, Math.max(1L, (long) Math.ceil(1.0 / blockTime)));
+
+        String url = "http://localhost:" + clusterInfo.getYaciStorePort() + "/api/v1/blocks/latest";
+        RestTemplate restTemplate = new RestTemplate();
+        ObjectMapper mapper = new ObjectMapper();
+
+        long deadlineMs = System.currentTimeMillis() + SYNC_WAIT_DEADLINE_MS;
+        writer.accept(info("Waiting for Yaci Store to sync to chain tip (lag tolerance " + maxLagBlocks + " blocks)..."));
+
+        while (true) {
+            long remaining = deadlineMs - System.currentTimeMillis();
+            if (remaining <= 0) {
+                writer.accept(warn("Yaci Store did not reach chain tip within 60s. Proceeding anyway."));
+                return;
+            }
+
+            Tuple<Long, Point> nodeTip = clusterUtilService.getTip(msg -> {}); // re-queried each iteration
+            Long indexerHeight = fetchIndexerHeight(restTemplate, mapper, url);
+
+            if (nodeTip != null && nodeTip._1 != null && indexerHeight != null) {
+                long nodeHeight = nodeTip._1;
+                long lag = nodeHeight - indexerHeight;
+                // Non-negative guard: if indexer is ahead of node (stale DB / aborted reset),
+                // don't false-pass — keep waiting until the indexer's height makes sense.
+                if (lag >= 0 && lag <= maxLagBlocks) {
+                    writer.accept(success("Yaci Store synced to chain tip (indexer height "
+                            + indexerHeight + ", node height " + nodeHeight + ", lag " + lag + ")"));
+                    return;
+                }
+            }
+            // null/negative-lag cases fall through to the sleep + retry within the deadline.
+
+            remaining = deadlineMs - System.currentTimeMillis();
+            if (remaining <= 0) continue; // loop top will emit the timeout warn
+            try {
+                Thread.sleep(Math.min(1000L, remaining));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    private Long fetchIndexerHeight(RestTemplate restTemplate, ObjectMapper mapper, String url) {
+        try {
+            ResponseEntity<String> resp = restTemplate.getForEntity(url, String.class);
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) return null;
+            JsonNode body = mapper.readTree(resp.getBody());
+            JsonNode height = body.get("height");
+            return (height == null || height.isNull()) ? null : height.asLong();
+        } catch (RestClientException e) {
+            // indexer HTTP not ready, or 404 because no blocks indexed yet — retry
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private StoreStartResult startStoreApp(ClusterInfo clusterInfo, Era era) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
@@ -135,13 +239,13 @@ public class YaciStoreService {
             Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
             if (!yaciStoreJar.toFile().exists()) {
                 writeLn(error("yaci-store.jar is not found at " + clusterConfig.getYaciStoreBinPath()));
-                return null;
+                return new StoreStartResult(null, false);
             }
         } else if (effectiveMode.equals("native")) {
             Path yaciStoreBin = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store");
             if (!yaciStoreBin.toFile().exists()) {
                 writeLn(error("yaci-store binary is not found at " + clusterConfig.getYaciStoreBinPath()));
-                return null;
+                return new StoreStartResult(null, false);
             }
         }
 
@@ -221,7 +325,7 @@ public class YaciStoreService {
             writeLn("Waiting for Yaci Store to start ...");
         }
 
-        if (counter == 40) {
+        if (!started.get()) {
             writeLn(error("Waited too long. Could not start Yaci Store. Something is wrong.."));
             writeLn(error("Use \"yaci-store-logs\" to see the logs"));
             writeLn(error("Please verify if another yaci-store in running in the same port. " +
@@ -241,7 +345,7 @@ public class YaciStoreService {
 
         processUtil.createProcessId(STORE_PROCESS_NAME, process);
 
-        return process;
+        return new StoreStartResult(process, started.get());
     }
 
     private Process startViewerApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {
