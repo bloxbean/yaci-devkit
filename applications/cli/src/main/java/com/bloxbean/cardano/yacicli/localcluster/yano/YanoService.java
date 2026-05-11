@@ -252,21 +252,21 @@ public class YanoService {
         // Keep them for runtime guarantee with native binaries
         var env = builder.environment();
         env.put("QUARKUS_PROFILE", "devnet");
-        env.put("YACI_NODE_REMOTE_PROTOCOL_MAGIC", String.valueOf(clusterInfo.getProtocolMagic()));
-        env.put("YACI_NODE_SERVER_PORT", String.valueOf(clusterInfo.getYanoServerPort()));
+        env.put("YANO_REMOTE_PROTOCOL_MAGIC", String.valueOf(clusterInfo.getProtocolMagic()));
+        env.put("YANO_SERVER_PORT", String.valueOf(clusterInfo.getYanoServerPort()));
         env.put("QUARKUS_HTTP_PORT", String.valueOf(clusterInfo.getYanoHttpPort()));
-        env.put("YACI_NODE_GENESIS_SHELLEY_GENESIS_FILE", yanoConfigDir.resolve("shelley-genesis.json").toAbsolutePath().toString());
-        env.put("YACI_NODE_GENESIS_BYRON_GENESIS_FILE", yanoConfigDir.resolve("byron-genesis.json").toAbsolutePath().toString());
-        env.put("YACI_NODE_GENESIS_ALONZO_GENESIS_FILE", yanoConfigDir.resolve("alonzo-genesis.json").toAbsolutePath().toString());
-        env.put("YACI_NODE_GENESIS_CONWAY_GENESIS_FILE", yanoConfigDir.resolve("conway-genesis.json").toAbsolutePath().toString());
-        env.put("YACI_NODE_GENESIS_PROTOCOL_PARAMETERS_FILE", yanoConfigDir.resolve("protocol-param.json").toAbsolutePath().toString());
-        env.put("YACI_NODE_BLOCK_PRODUCER_VRF_SKEY_FILE", yanoConfigDir.resolve("vrf.skey").toAbsolutePath().toString());
-        env.put("YACI_NODE_BLOCK_PRODUCER_KES_SKEY_FILE", yanoConfigDir.resolve("kes.skey").toAbsolutePath().toString());
-        env.put("YACI_NODE_BLOCK_PRODUCER_OPCERT_FILE", yanoConfigDir.resolve("opcert.cert").toAbsolutePath().toString());
-        env.put("YACI_NODE_STORAGE_PATH", yanoDataDir.toAbsolutePath().toString());
+        env.put("YANO_GENESIS_SHELLEY_GENESIS_FILE", yanoConfigDir.resolve("shelley-genesis.json").toAbsolutePath().toString());
+        env.put("YANO_GENESIS_BYRON_GENESIS_FILE", yanoConfigDir.resolve("byron-genesis.json").toAbsolutePath().toString());
+        env.put("YANO_GENESIS_ALONZO_GENESIS_FILE", yanoConfigDir.resolve("alonzo-genesis.json").toAbsolutePath().toString());
+        env.put("YANO_GENESIS_CONWAY_GENESIS_FILE", yanoConfigDir.resolve("conway-genesis.json").toAbsolutePath().toString());
+        env.put("YANO_GENESIS_PROTOCOL_PARAMETERS_FILE", yanoConfigDir.resolve("protocol-param.json").toAbsolutePath().toString());
+        env.put("YANO_BLOCK_PRODUCER_VRF_SKEY_FILE", yanoConfigDir.resolve("vrf.skey").toAbsolutePath().toString());
+        env.put("YANO_BLOCK_PRODUCER_KES_SKEY_FILE", yanoConfigDir.resolve("kes.skey").toAbsolutePath().toString());
+        env.put("YANO_BLOCK_PRODUCER_OPCERT_FILE", yanoConfigDir.resolve("opcert.cert").toAbsolutePath().toString());
+        env.put("YANO_STORAGE_PATH", yanoDataDir.toAbsolutePath().toString());
 
         if (pastTimeTravelMode) {
-            env.put("YACI_NODE_BLOCK_PRODUCER_PAST_TIME_TRAVEL_MODE", "true");
+            env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_MODE", "true");
         }
 
         builder.command(yanoBin.toAbsolutePath().toString());

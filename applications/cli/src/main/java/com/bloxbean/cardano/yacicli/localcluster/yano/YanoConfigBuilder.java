@@ -46,27 +46,27 @@ public class YanoConfigBuilder {
         props.put("quarkus.http.port", String.valueOf(clusterInfo.getYanoHttpPort()));
 
         // Network
-        props.put("yaci.node.remote.protocol-magic", String.valueOf(clusterInfo.getProtocolMagic()));
-        props.put("yaci.node.server.port", String.valueOf(clusterInfo.getYanoServerPort()));
+        props.put("yano.remote.protocol-magic", String.valueOf(clusterInfo.getProtocolMagic()));
+        props.put("yano.server.port", String.valueOf(clusterInfo.getYanoServerPort()));
 
         // Genesis files
-        props.put("yaci.node.genesis.shelley-genesis-file", yanoConfigDir.resolve("shelley-genesis.json").toAbsolutePath().toString());
-        props.put("yaci.node.genesis.byron-genesis-file", yanoConfigDir.resolve("byron-genesis.json").toAbsolutePath().toString());
-        props.put("yaci.node.genesis.alonzo-genesis-file", yanoConfigDir.resolve("alonzo-genesis.json").toAbsolutePath().toString());
-        props.put("yaci.node.genesis.conway-genesis-file", yanoConfigDir.resolve("conway-genesis.json").toAbsolutePath().toString());
-        props.put("yaci.node.genesis.protocol-parameters-file", yanoConfigDir.resolve("protocol-param.json").toAbsolutePath().toString());
+        props.put("yano.genesis.shelley-genesis-file", yanoConfigDir.resolve("shelley-genesis.json").toAbsolutePath().toString());
+        props.put("yano.genesis.byron-genesis-file", yanoConfigDir.resolve("byron-genesis.json").toAbsolutePath().toString());
+        props.put("yano.genesis.alonzo-genesis-file", yanoConfigDir.resolve("alonzo-genesis.json").toAbsolutePath().toString());
+        props.put("yano.genesis.conway-genesis-file", yanoConfigDir.resolve("conway-genesis.json").toAbsolutePath().toString());
+        props.put("yano.genesis.protocol-parameters-file", yanoConfigDir.resolve("protocol-param.json").toAbsolutePath().toString());
 
         // Block producer keys
-        props.put("yaci.node.block-producer.vrf-skey-file", yanoConfigDir.resolve("vrf.skey").toAbsolutePath().toString());
-        props.put("yaci.node.block-producer.kes-skey-file", yanoConfigDir.resolve("kes.skey").toAbsolutePath().toString());
-        props.put("yaci.node.block-producer.opcert-file", yanoConfigDir.resolve("opcert.cert").toAbsolutePath().toString());
+        props.put("yano.block-producer.vrf-skey-file", yanoConfigDir.resolve("vrf.skey").toAbsolutePath().toString());
+        props.put("yano.block-producer.kes-skey-file", yanoConfigDir.resolve("kes.skey").toAbsolutePath().toString());
+        props.put("yano.block-producer.opcert-file", yanoConfigDir.resolve("opcert.cert").toAbsolutePath().toString());
 
         // Storage — inside the node folder so it gets cleaned up with create-node -o
-        props.put("yaci.node.storage.path", yanoDataDir.toAbsolutePath().toString());
+        props.put("yano.storage.path", yanoDataDir.toAbsolutePath().toString());
 
         // Past-time-travel mode
         if (pastTimeTravelMode) {
-            props.put("yaci.node.block-producer.past-time-travel-mode", "true");
+            props.put("yano.block-producer.past-time-travel-mode", "true");
         }
 
         // Write to {yanoHome}/config/application.properties
