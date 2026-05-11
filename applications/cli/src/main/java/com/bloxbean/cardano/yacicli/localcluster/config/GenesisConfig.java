@@ -43,7 +43,7 @@ public class GenesisConfig {
     private BigInteger minUTxOValue = BigInteger.valueOf(1000000);
     private int nOpt = 100;
     private BigInteger poolDeposit = BigInteger.valueOf(500000000);
-    private int protocolMajorVer = 8;
+    private int protocolMajorVer = 11;
     private int protocolMinorVer = 0;
     private float monetaryExpansionRate = 0.003f;
     private float treasuryGrowthRate = 0.20f;
@@ -109,7 +109,7 @@ public class GenesisConfig {
     private long maxBlockExUnitsMem = 62000000;
     private long maxBlockExUnitsSteps = 20000000000L;
     private int maxCollateralInputs = 3;
-    private long maxTxExUnitsMem = 14000000;
+    private long maxTxExUnitsMem = 16500000;
     private long maxTxExUnitsSteps = 10000000000L;
     private int maxValueSize = 5000;
 
