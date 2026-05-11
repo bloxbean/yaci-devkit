@@ -1,6 +1,9 @@
 package com.bloxbean.cardano.yacicli.localcluster.yano;
 
+import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
+import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import com.bloxbean.cardano.client.crypto.Blake2bUtil;
@@ -40,6 +44,10 @@ public class YanoCompanionService {
     private final YanoService yanoService;
     private final YanoBootstrapService yanoBootstrapService;
     private final YanoGovernanceService yanoGovernanceService;
+    // ObjectProvider to break the constructor cycle:
+    //   ClusterService -> ClusterStartService -> YanoCompanionService -> ClusterUtilService -> ClusterService.
+    // The bean is resolved lazily at call time (see performHandover).
+    private final ObjectProvider<ClusterUtilService> clusterUtilServiceProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -219,12 +227,44 @@ public class YanoCompanionService {
                 Thread.sleep(1000);
             }
 
-            // Wait for Haskell relay to sync Yano's chain.
-            // With epoch-length 600 and 3 epoch shift, Yano produces ~1800 blocks.
-            // Syncing locally typically takes 10-20 seconds.
-            // Stability window = 3k/f = 300 slots, so we have ~300s of margin.
-            writer.accept(info("Waiting 30s for relay to sync Yano's chain..."));
-            Thread.sleep(30000);
+            // Wait for Haskell relay to sync past Yano's shifted bootstrap region (~3 epochs).
+            // Poll the relay's tip every ~1s and exit early once epoch >= BOOTSTRAP_EPOCH_SHIFT.
+            // Soft 30s deadline — getTip itself can block up to ~10s on a stuck socket, so
+            // wall-clock worst case is ~40s; on healthy runs this exits in ~10-20s.
+            long epochLength = clusterInfo.getEpochLength();
+            writer.accept(info("Waiting up to 30s for relay to sync past epoch %d...", BOOTSTRAP_EPOCH_SHIFT));
+
+            final long deadlineMs = System.currentTimeMillis() + 30_000L;
+            final ClusterUtilService clusterUtilService = clusterUtilServiceProvider.getObject();
+            boolean synced = false;
+
+            while (true) {
+                long remaining = deadlineMs - System.currentTimeMillis();
+                if (remaining <= 0) break;
+
+                // ClusterUtilService.getTip prints "Find tip error ..." directly via static
+                // ConsoleWriter on exception (bypassing the consumer); transient noise during
+                // the first one or two polls after the socket appears is expected.
+                Tuple<Long, Point> tip = clusterUtilService.getTip(msg -> {});
+                if (tip != null && tip._2 != null && epochLength > 0) {
+                    long slot = tip._2.getSlot();
+                    long epoch = slot / epochLength;
+                    if (epoch >= BOOTSTRAP_EPOCH_SHIFT) {
+                        writer.accept(success("Relay synced to epoch " + epoch
+                                + " (slot " + slot + ", height " + tip._1 + ")"));
+                        synced = true;
+                        break;
+                    }
+                }
+
+                remaining = deadlineMs - System.currentTimeMillis();
+                if (remaining <= 0) break;
+                Thread.sleep(Math.min(1000L, remaining));
+            }
+            if (!synced) {
+                writer.accept(warn("Relay sync did not reach epoch "
+                        + BOOTSTRAP_EPOCH_SHIFT + " within 30s. Proceeding anyway."));
+            }
 
             // Stop Yano — relay has synced the chain to its db
             writer.accept(info("Stopping Yano..."));
