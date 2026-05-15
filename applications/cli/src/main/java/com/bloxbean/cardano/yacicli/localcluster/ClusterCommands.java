@@ -97,7 +97,7 @@ public class ClusterCommands {
                               @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
                               @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
-                              @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
+                              @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (0.1 - 20)", defaultValue = "1") double blockTime,
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "600") int epochLength,
                               @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing node directory. default: false") boolean overwrite,
                               @ShellOption(value = {"--start"}, defaultValue = "false", help = "Automatically start the node after create. default: false") boolean start,
@@ -114,6 +114,11 @@ public class ClusterCommands {
             if (blockTime > 20) {
                 writeLn(error("Block time should not be more than 20"));
                 return;
+            }
+
+            if (blockTime < 1 && slotLength > blockTime) {
+                slotLength = blockTime;
+                writeLn(info("Slot length adjusted to " + slotLength + " sec to match block time"));
             }
 
             if (slotLength > blockTime) {
