@@ -105,6 +105,79 @@ public class YanoBootstrapService {
         }
     }
 
+    public boolean waitForProtocolParams(int httpPort, Duration timeout, Consumer<String> writer) {
+        String url = "http://localhost:" + httpPort + "/api/v1/epochs/latest/parameters";
+        long deadlineMs = System.currentTimeMillis() + timeout.toMillis();
+        writer.accept(info("Waiting for Yano protocol parameters to become available..."));
+
+        while (System.currentTimeMillis() < deadlineMs) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(5))
+                        .GET()
+                        .build();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    writer.accept(success("Yano protocol parameters are available"));
+                    return true;
+                }
+                log.debug("Protocol parameters not ready: HTTP {} - {}", response.statusCode(), response.body());
+            } catch (Exception e) {
+                log.debug("Error checking Yano protocol parameters: {}", e.getMessage());
+            }
+
+            long remaining = deadlineMs - System.currentTimeMillis();
+            if (remaining <= 0) break;
+            try {
+                Thread.sleep(Math.min(1000L, remaining));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        writer.accept(warn("Yano protocol parameters did not become available within "
+                + timeout.toSeconds() + "s."));
+        return false;
+    }
+
+    public boolean waitForTipEpoch(int httpPort, long epochLength, int targetEpoch,
+                                   Duration timeout, Consumer<String> writer) {
+        if (epochLength <= 0) {
+            writer.accept(warn("Cannot wait for Yano tip epoch because epoch length is not configured."));
+            return false;
+        }
+
+        long deadlineMs = System.currentTimeMillis() + timeout.toMillis();
+        writer.accept(info("Waiting for Yano to produce a block at or past epoch %d...", targetEpoch));
+
+        while (System.currentTimeMillis() < deadlineMs) {
+            JsonNode tip = getChainTip(httpPort);
+            if (tip != null && tip.has("slot")) {
+                long slot = tip.get("slot").asLong(-1);
+                long epoch = slot / epochLength;
+                if (epoch >= targetEpoch) {
+                    writer.accept(success("Yano tip reached epoch " + epoch + " (slot " + slot + ")"));
+                    return true;
+                }
+            }
+
+            long remaining = deadlineMs - System.currentTimeMillis();
+            if (remaining <= 0) break;
+            try {
+                Thread.sleep(Math.min(1000L, remaining));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        writer.accept(warn("Yano tip did not reach epoch " + targetEpoch
+                + " within " + timeout.toSeconds() + "s."));
+        return false;
+    }
+
     public boolean fundAddress(int httpPort, String address, BigDecimal ada, Consumer<String> writer) {
         String url = "http://localhost:" + httpPort + "/api/v1/devnet/fund";
         try {

@@ -82,6 +82,7 @@ public class ClusterStartService {
             boolean yanoOnlyMode = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
             boolean yanoPrimaryMode = NodeMode.YANO_PRIMARY == clusterInfo.getNodeMode();
             boolean companionBootstrapDone = false;
+            String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
 
             if (clusterInfo.isMasterNode() && firstRun)
                 setupFirstRun(clusterInfo, clusterFolder, writer);
@@ -158,8 +159,7 @@ public class ClusterStartService {
                 return new RunStatus(true, firstRun);
             }
 
-            if (clusterInfo.isLocalMultiNodeEnabled()) {
-                String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+            if (clusterInfo.isLocalMultiNodeEnabled() && !companionBootstrapDone) {
                 if (firstRun) {
                     localPeerService.handleFirstRun(new FirstRunDone(clusterName));
                 }
@@ -203,10 +203,18 @@ public class ClusterStartService {
                 Path socketPath = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock");
                 Files.deleteIfExists(socketPath);
 
+                if (clusterInfo.isLocalMultiNodeEnabled()) {
+                    localPeerService.preparePeersAfterCompanionHandover(clusterName, writer);
+                }
+
                 nodeProcess = startNode(clusterFolder, clusterInfo, false, writer);
                 if (nodeProcess != null) {
                     processes.add(nodeProcess);
                     writer.accept(success("Haskell node restarted as block producer."));
+                    if (clusterInfo.isLocalMultiNodeEnabled()) {
+                        localPeerService.startLocalPeersAfterCompanionHandover(clusterName, writer);
+                        yanoCompanionService.waitForPostHandoverBlock(writer);
+                    }
                 } else {
                     writer.accept(error("Failed to restart node as block producer."));
                 }

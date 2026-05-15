@@ -6,6 +6,7 @@ import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
+import com.bloxbean.cardano.yacicli.localcluster.yano.YanoGovernanceService;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class FirstRunPlutusV3CostModelUpdate {
     private final ClusterService localClusterService;
     private final ClusterUtilService clusterUtilService;
     private final AccountService accountService;
+    private final YanoGovernanceService yanoGovernanceService;
 
     @EventListener
     @Order(100) // Run after FirstRunTopupAccounts
@@ -38,9 +40,16 @@ public class FirstRunPlutusV3CostModelUpdate {
             }
 
             NodeMode nodeMode = clusterInfo != null ? clusterInfo.getNodeMode() : null;
-            if (NodeMode.COMPANION == nodeMode || NodeMode.YANO_ONLY == nodeMode || NodeMode.YANO_PRIMARY == nodeMode) {
-                writeLn(info("Skipping Plutus cost models update - already submitted via Yano bootstrap"));
+            if (NodeMode.YANO_ONLY == nodeMode || NodeMode.YANO_PRIMARY == nodeMode) {
+                writeLn(info("Skipping Plutus cost models update - handled by Yano mode"));
                 return;
+            }
+            if (NodeMode.COMPANION == nodeMode) {
+                if (yanoGovernanceService.wasCostModelGovernanceSubmitted(clusterName)) {
+                    writeLn(info("Skipping Plutus cost models update - already submitted via Yano bootstrap"));
+                    return;
+                }
+                writeLn(warn("Yano bootstrap did not submit Plutus cost models. Submitting via Haskell node."));
             }
 
             Era era = CommandContext.INSTANCE.getEra();

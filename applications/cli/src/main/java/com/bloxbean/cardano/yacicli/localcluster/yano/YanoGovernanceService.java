@@ -38,7 +38,9 @@ import org.springframework.stereotype.Component;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
@@ -54,6 +56,7 @@ public class YanoGovernanceService {
     private final YanoBootstrapService yanoBootstrapService;
     private final Path plutusCostModelsBasePath;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Set<String> successfulGovernanceClusters = ConcurrentHashMap.newKeySet();
 
     public YanoGovernanceService(YanoBootstrapService yanoBootstrapService,
                                  @Value("${yaci.cli.plutus-costmodels-path:./config}") String plutusCostModelsBasePath) {
@@ -67,8 +70,16 @@ public class YanoGovernanceService {
      * All done before Yano catches up to wall clock, so the proposal is enacted by epoch 2.
      */
     public boolean submitCostModelGovernance(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
+        String clusterName = clusterFolder.getFileName().toString();
+        successfulGovernanceClusters.remove(clusterName);
+
         try {
             int httpPort = clusterInfo.getYanoHttpPort();
+            if (!yanoBootstrapService.waitForProtocolParams(httpPort, Duration.ofSeconds(60), writer)) {
+                writer.accept(error("Yano protocol parameters are not available; cannot submit governance proposals yet."));
+                return false;
+            }
+
             String yanoUrl = "http://localhost:" + httpPort + "/api/v1/";
             BackendService backendService = new BFBackendService(yanoUrl, "dummy_key");
             UtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
@@ -247,6 +258,7 @@ public class YanoGovernanceService {
             }
 
             writer.accept(info("Plutus cost models will be enacted at the next epoch boundary."));
+            successfulGovernanceClusters.add(clusterName);
             return true;
 
         } catch (Exception e) {
@@ -254,6 +266,10 @@ public class YanoGovernanceService {
             writer.accept(error("Governance proposal via Yano failed: " + e.getMessage()));
             return false;
         }
+    }
+
+    public boolean wasCostModelGovernanceSubmitted(String clusterName) {
+        return successfulGovernanceClusters.contains(clusterName);
     }
 
     /**

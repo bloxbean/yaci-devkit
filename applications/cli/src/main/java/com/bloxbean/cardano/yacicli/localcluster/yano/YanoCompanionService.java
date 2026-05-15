@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.HexFormat;
 import java.util.function.Consumer;
 
@@ -40,6 +41,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class YanoCompanionService {
     private static final int BOOTSTRAP_EPOCH_SHIFT = 3;
+    private static final String TOPOLOGY_BEFORE_YANO = "topology-before-yano.json";
 
     private final YanoService yanoService;
     private final YanoBootstrapService yanoBootstrapService;
@@ -117,12 +119,23 @@ public class YanoCompanionService {
             log.debug("Could not query Yano epoch nonce: {}", e.getMessage());
         }
 
-        // 7. Wait for a few blocks so Yano has a tip for Haskell to sync from
-        writer.accept(info("Waiting for Yano to produce a few blocks at wall-clock time..."));
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        // 7. Wait until Yano has an actual tip past the bootstrap boundary.
+        // In multi-node mode Yano skips slots where node-1 is not leader, so
+        // catch-up can scan to wall-clock while the produced tip is still sparse.
+        if (clusterInfo.isLocalMultiNodeEnabled()) {
+            if (!yanoBootstrapService.waitForTipEpoch(httpPort, clusterInfo.getEpochLength(),
+                    BOOTSTRAP_EPOCH_SHIFT, Duration.ofSeconds(60), writer)) {
+                writer.accept(error("Yano did not produce a bootstrap-boundary block. Falling back to haskell-only mode."));
+                yanoService.stop();
+                return false;
+            }
+        } else {
+            writer.accept(info("Waiting for Yano to produce a few blocks at wall-clock time..."));
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
 
         // 8. Update topology so Haskell node peers with Yano
@@ -178,7 +191,7 @@ public class YanoCompanionService {
      */
     public void updateTopologyForYanoPeering(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
         Path topologyPath = clusterFolder.resolve("node").resolve("topology.json");
-        Path topologyBackup = clusterFolder.resolve("node").resolve("topology-original.json");
+        Path topologyBackup = clusterFolder.resolve("node").resolve(TOPOLOGY_BEFORE_YANO);
 
         if (!Files.exists(topologyBackup) && Files.exists(topologyPath)) {
             Files.copy(topologyPath, topologyBackup, StandardCopyOption.REPLACE_EXISTING);
@@ -280,13 +293,26 @@ public class YanoCompanionService {
         }
     }
 
+    public void waitForPostHandoverBlock(Consumer<String> writer) {
+        try {
+            writer.accept(info("Waiting for Haskell network to produce a post-handover block..."));
+            boolean blockProduced = clusterUtilServiceProvider.getObject().waitForNextBlocks(1, writer);
+            if (!blockProduced) {
+                writer.accept(warn("No post-handover Haskell block observed within timeout. The network may still be waiting for a leader slot."));
+            }
+        } catch (Exception e) {
+            log.warn("Error waiting for post-handover Haskell block", e);
+            writer.accept(warn("Could not verify post-handover Haskell block production: " + e.getMessage()));
+        }
+    }
+
     /**
      * Restore the original topology.json (before Yano peering was added).
      */
     private void restoreOriginalTopology(Path clusterFolder, Consumer<String> writer) {
         try {
             Path topologyPath = clusterFolder.resolve("node").resolve("topology.json");
-            Path topologyBackup = clusterFolder.resolve("node").resolve("topology-original.json");
+            Path topologyBackup = clusterFolder.resolve("node").resolve(TOPOLOGY_BEFORE_YANO);
 
             if (Files.exists(topologyBackup)) {
                 Files.copy(topologyBackup, topologyPath, StandardCopyOption.REPLACE_EXISTING);

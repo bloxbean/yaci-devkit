@@ -268,6 +268,9 @@ public class YanoService {
 
         if (pastTimeTravelMode) {
             env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_MODE", "true");
+            if (clusterInfo.isLocalMultiNodeEnabled()) {
+                env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_SLOT_LEADER_MODE", "true");
+            }
         }
 
         builder.command(yanoBin.toAbsolutePath().toString());

@@ -118,21 +118,48 @@ public class LocalPeerService {
     }
 
     public void handleFirstRun(FirstRunDone firstRunDone) {
-        var clusterName = firstRunDone.getCluster();
-        Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
-        Path primaryNodeFolder = clusterFolder.resolve("node");
-        Path node2Folder = clusterFolder.resolve("node-2");
-        Path node3Folder = clusterFolder.resolve("node-3");
+        copyPrimaryGenesisToPeers(firstRunDone.getCluster(), msg -> writeLn(msg));
+    }
 
-        //Copy the primary node genesis file to node-2 and node-2's genesis folders
+    /**
+     * Companion mode shifts genesis while Yano is bootstrapping. In multi-node
+     * mode, peer nodes must start only after node-1 has synced that shifted
+     * history and restored its normal multi-node topology.
+     */
+    public void startLocalPeersAfterCompanionHandover(String clusterName, Consumer<String> writer) {
         try {
-            //Copy genesis file
-            Path primaryGenesisFolder = primaryNodeFolder.resolve("genesis");
-            FileUtils.copyDirectory(primaryGenesisFolder.toFile(), node2Folder.resolve("genesis").toFile());
-            FileUtils.copyDirectory(primaryGenesisFolder.toFile(), node3Folder.resolve("genesis").toFile());
+            ClusterInfo clusterInfo = clusterInfoService.getClusterInfo(clusterName);
+            if (clusterInfo == null || !clusterInfo.isLocalMultiNodeEnabled()) {
+                return;
+            }
         } catch (Exception e) {
-            writeLn(error("Failed to copy genesis files: " + e.getMessage()));
+            writer.accept(error("Unable to get cluster info for " + clusterName + ": " + e.getMessage()));
+            return;
         }
+
+        startLocalPeersWithProxiesFirst(clusterName, writer);
+    }
+
+    /**
+     * Prepare peer nodes for companion handover while node-1 is stopped.
+     * Copying cardano-node DBs while a node process is live is unsafe, so this
+     * must be called after the relay process has been stopped and before node-1
+     * is restarted as a block producer.
+     */
+    public void preparePeersAfterCompanionHandover(String clusterName, Consumer<String> writer) {
+        try {
+            ClusterInfo clusterInfo = clusterInfoService.getClusterInfo(clusterName);
+            if (clusterInfo == null || !clusterInfo.isLocalMultiNodeEnabled()) {
+                return;
+            }
+        } catch (Exception e) {
+            writer.accept(error("Unable to get cluster info for " + clusterName + ": " + e.getMessage()));
+            return;
+        }
+
+        copyPrimaryGenesisToPeers(clusterName, writer);
+        restoreMultiNodeTopology(clusterName, writer);
+        seedPeerDatabasesFromPrimary(clusterName, writer);
     }
 
     public void handleClusterStarted(ClusterStarted clusterStarted) {
@@ -143,8 +170,13 @@ public class LocalPeerService {
         } catch (IOException e) {
             writeLn(error("Unable to get cluster info for " + clusterName + ": " + e.getMessage()));
         }
-        if (!clusterInfo.isLocalMultiNodeEnabled())
+        if (clusterInfo == null || !clusterInfo.isLocalMultiNodeEnabled())
             return;
+
+        if (processes.stream().anyMatch(process -> process != null && process.isAlive())) {
+            writeLn(info("Local peer nodes are already running."));
+            return;
+        }
 
         Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
         Path node2Folder = clusterFolder.resolve("node-2");
@@ -197,6 +229,130 @@ public class LocalPeerService {
         } catch (IOException e) {
             writeLn(error("Failed to start proxy for main node: " + e.getMessage()));
             return;
+        }
+    }
+
+    private void startLocalPeersWithProxiesFirst(String clusterName, Consumer<String> writer) {
+        ClusterInfo clusterInfo = null;
+        try {
+            clusterInfo = clusterInfoService.getClusterInfo(clusterName);
+        } catch (IOException e) {
+            writer.accept(error("Unable to get cluster info for " + clusterName + ": " + e.getMessage()));
+        }
+        if (clusterInfo == null || !clusterInfo.isLocalMultiNodeEnabled()) {
+            return;
+        }
+
+        if (processes.stream().anyMatch(process -> process != null && process.isAlive())) {
+            writer.accept(info("Local peer nodes are already running."));
+            return;
+        }
+
+        Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
+        Path node2Folder = clusterFolder.resolve("node-2");
+        Path node3Folder = clusterFolder.resolve("node-3");
+
+        boolean proxyPort1Available = PortUtil.isPortAvailable(4001);
+        boolean proxyPort2Available = PortUtil.isPortAvailable(4002);
+        boolean proxyPort3Available = PortUtil.isPortAvailable(4003);
+        boolean node2PortAvailable = PortUtil.isPortAvailable(3002);
+        boolean node3PortAvailable = PortUtil.isPortAvailable(3003);
+
+        if (!proxyPort1Available || !proxyPort2Available || !proxyPort3Available ||
+                !node2PortAvailable || !node3PortAvailable) {
+            writer.accept(error("Not all required ports are not available to start peer nodes and proxies for rollback." +
+                    " Please check the following ports: " +
+                    "4001, 4002, 4003, 3002, 3003"));
+            return;
+        }
+
+        try {
+            tcpProxyManager.startProxy(4001, "127.0.0.1", 3001);
+            tcpProxyManager.startProxy(4002, "127.0.0.1", 3002);
+            tcpProxyManager.startProxy(4003, "127.0.0.1", 3003);
+        } catch (IOException e) {
+            writer.accept(error("Failed to start peer proxies: " + e.getMessage()));
+            return;
+        }
+
+        try {
+            var node2Process = startNode("node-2", node2Folder, node2Logs, writer);
+            if (node2Process == null) {
+                writer.accept(error("Failed to start node-2. Please check the logs for more details."));
+                return;
+            }
+            processes.add(node2Process);
+        } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            writer.accept(error("Error starting node-2: " + e.getMessage()));
+        }
+
+        try {
+            var node3Process = startNode("node-3", node3Folder, node3Logs, writer);
+            if (node3Process == null) {
+                writer.accept(error("Failed to start node-3. Please check the logs for more details."));
+                return;
+            }
+            processes.add(node3Process);
+        } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
+            writer.accept(error("Error starting node-3: " + e.getMessage()));
+        }
+    }
+
+    private void copyPrimaryGenesisToPeers(String clusterName, Consumer<String> writer) {
+        Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
+        Path primaryNodeFolder = clusterFolder.resolve("node");
+        Path node2Folder = clusterFolder.resolve("node-2");
+        Path node3Folder = clusterFolder.resolve("node-3");
+
+        try {
+            Path primaryGenesisFolder = primaryNodeFolder.resolve("genesis");
+            FileUtils.copyDirectory(primaryGenesisFolder.toFile(), node2Folder.resolve("genesis").toFile());
+            FileUtils.copyDirectory(primaryGenesisFolder.toFile(), node3Folder.resolve("genesis").toFile());
+        } catch (Exception e) {
+            writer.accept(error("Failed to copy genesis files: " + e.getMessage()));
+        }
+    }
+
+    private void seedPeerDatabasesFromPrimary(String clusterName, Consumer<String> writer) {
+        Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
+        Path primaryDb = clusterFolder.resolve("node").resolve("db");
+
+        if (!Files.exists(primaryDb)) {
+            writer.accept(error("Primary node DB is not available for peer seeding: " + primaryDb.toAbsolutePath()));
+            return;
+        }
+
+        seedPeerDatabase(primaryDb, clusterFolder.resolve("node-2"), writer);
+        seedPeerDatabase(primaryDb, clusterFolder.resolve("node-3"), writer);
+    }
+
+    private void seedPeerDatabase(Path primaryDb, Path peerFolder, Consumer<String> writer) {
+        Path peerDb = peerFolder.resolve("db");
+        try {
+            FileUtils.deleteDirectory(peerDb.toFile());
+            FileUtils.copyDirectory(primaryDb.toFile(), peerDb.toFile());
+            Files.deleteIfExists(peerDb.resolve("lock"));
+            Files.deleteIfExists(peerFolder.resolve("node.sock"));
+            writer.accept(success("Seeded " + peerFolder.getFileName() + " DB from node-1 handover chain"));
+        } catch (IOException e) {
+            writer.accept(error("Failed to seed " + peerFolder.getFileName() + " DB: " + e.getMessage()));
+        }
+    }
+
+    private void restoreMultiNodeTopology(String clusterName, Consumer<String> writer) {
+        Path clusterFolder = clusterConfig.getClusterFolder(clusterName);
+        Path primaryNodeFolder = clusterFolder.resolve("node");
+        Path multiNodeTopology = primaryNodeFolder.resolve("topology-multinode.json");
+        Path topology = primaryNodeFolder.resolve("topology.json");
+
+        if (!Files.exists(multiNodeTopology)) {
+            return;
+        }
+
+        try {
+            FileUtils.copyFile(multiNodeTopology.toFile(), topology.toFile());
+        } catch (IOException e) {
+            writer.accept(error("Failed to restore multi-node topology: " + e.getMessage()));
         }
     }
 

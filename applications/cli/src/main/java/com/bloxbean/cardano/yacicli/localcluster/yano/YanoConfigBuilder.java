@@ -67,6 +67,9 @@ public class YanoConfigBuilder {
         // Past-time-travel mode
         if (pastTimeTravelMode) {
             props.put("yano.block-producer.past-time-travel-mode", "true");
+            if (clusterInfo.isLocalMultiNodeEnabled()) {
+                props.put("yano.block-producer.past-time-travel-slot-leader-mode", "true");
+            }
         }
 
         // Write to {yanoHome}/config/application.properties
