@@ -1,16 +1,11 @@
-file=cardano-11_0_1-aarch64-static-musl-ghc_9122.tar.zst
-dir=cardano-11_0_1-aarch64-static-musl-ghc_9122
-wget https://github.com/armada-alliance/cardano-node-binaries/raw/main/static-binaries/$file?raw=true -O - | tar -I zstd -xv
+file=cardano-node-11.0.1-linux-arm64.tar.gz
+wget https://github.com/IntersectMBO/cardano-node/releases/download/11.0.1/cardano-node-11.0.1-linux-arm64.tar.gz
 
-#unzip $file
-mv $dir cardano-node
-mv cardano-node /app/cardano-bin/
-#rm $file
+mkdir /app/cardano-bin
 
-#submit_api_file=cardano-submit-api-3_2_2.zip
-#wget https://github.com/armada-alliance/cardano-node-binaries/raw/main/static-binaries/cardano-submit-api/$submit_api_file
-#
-#unzip $submit_api_file
-#mv cardano-submit-api /app/cardano-bin/
-#
-#rm $submit_api_file
+tar zxvf $file -C /app/cardano-bin
+
+mv /app/cardano-bin/bin/* /app/cardano-bin/
+rm -rf /app/cardano-bin/bin
+
+rm $file

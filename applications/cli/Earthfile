@@ -60,8 +60,9 @@ java-setup:
 docker-build:
     FROM ubuntu:22.04
     ENV JAVA_HOME=/opt/java/openjdk
-    ENV STORE_VERSION=2.0.0
-    ENV STORE_NATIVE_BRANCH=release/2.0.x
+    ENV STORE_VERSION=2.0.1-rc1
+    ENV STORE_NATIVE_BRANCH=v2.0.1-rc1
+    ENV YANO_BRANCH=fix/devkit_fix
 
     ARG TARGETOS
     ARG TARGETARCH
@@ -69,6 +70,7 @@ docker-build:
     ARG APP_VERSION
     ARG REGISTRY_ORG
     ARG COMMIT_ID
+    ARG YANO_BRANCH
 
     COPY --dir +java-setup/openjdk /opt/java/
     ENV PATH="${JAVA_HOME}/bin:${PATH}"
@@ -115,6 +117,13 @@ docker-build:
     COPY (../store-build/+store-native/yaci-store* --APP_VERSION=${APP_VERSION} --STORE_BRANCH=${STORE_NATIVE_BRANCH}) /app/store/
     END
 
+    # Yano native binary (always included; Yano is native-only in docker)
+    RUN mkdir -p /app/yano
+    COPY (../yano-build/+yano-native/yano --APP_VERSION=${APP_VERSION} --YANO_BRANCH=${YANO_BRANCH}) /app/yano/yano
+    COPY (../yano-build/+yano-native/config --APP_VERSION=${APP_VERSION} --YANO_BRANCH=${YANO_BRANCH}) /app/yano/config
+    COPY (../yano-build/+yano-native/yano.git.properties --APP_VERSION=${APP_VERSION} --YANO_BRANCH=${YANO_BRANCH}) /app/yano/yano.git.properties
+    RUN chmod +x /app/yano/yano
+
     RUN echo "Build type: $BUILD_TYPE"
     IF [ "$BUILD_TYPE" = "native" ]
     COPY (+cli-native/yaci-cli* --APP_VERSION=${APP_VERSION}) /app/
@@ -129,8 +138,8 @@ docker-build:
 
     RUN mkdir -p /app/config
     COPY docker/application.properties /app/config/
-    COPY docker/plutus-costmodels-v10.json /app/config/
-    COPY docker/plutus-costmodels-v11.json /app/config/
+    COPY config/plutus-costmodels-v10.json /app/config/
+    COPY config/plutus-costmodels-v11.json /app/config/
 
     ENV PATH="$PATH:/app/cardano-bin"
     ENV CARDANO_NODE_SOCKET_PATH=/clusters/nodes/default/node/node.sock
@@ -143,6 +152,8 @@ docker-build:
     EXPOSE 8080
     EXPOSE 1337
     EXPOSE 1442
+    EXPOSE 6060
+    EXPOSE 14447
 
     ENTRYPOINT ["sh", "/app/yaci-cli.sh"]
 
