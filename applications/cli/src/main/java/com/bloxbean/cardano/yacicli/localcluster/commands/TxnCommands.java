@@ -31,8 +31,8 @@ public class TxnCommands {
 
     @ShellMethod(value = "Topup account", key = "topup")
     @ShellMethodAvailability("localClusterCmdAvailability")
-    public void mintToken(@ShellOption(value = {"-a", "--address"}, help = "Receiver address") String address,
-                          @ShellOption(value = {"-v", "--value"}, help = "Ada value") double adaValue) {
+    public void topup(@ShellOption(value = {"-a", "--address"}, help = "Receiver address") String address,
+                      @ShellOption(value = {"-v", "--value"}, help = "Ada value") double adaValue) {
         String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();
 
@@ -82,9 +82,9 @@ public class TxnCommands {
 
     @ShellMethod(value = "Mint tokens using faucet account with default policy", key = "mint")
     @ShellMethodAvailability("localClusterCmdAvailability")
-    public void mintToken(@ShellOption(value = {"-n", "--asset-name"}, help = "Asset Name") String assetName,
-                          @ShellOption(value = {"-q", "--quantity"}, help = "Quantity") BigInteger quantity,
-                          @ShellOption(value = {"-r", "--receiver"}, help = "Reciever Address") String receiver
+    public void topup(@ShellOption(value = {"-n", "--asset-name"}, help = "Asset Name") String assetName,
+                      @ShellOption(value = {"-q", "--quantity"}, help = "Quantity") BigInteger quantity,
+                      @ShellOption(value = {"-r", "--receiver"}, help = "Reciever Address") String receiver
     ) {
         String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         Era era = CommandContext.INSTANCE.getEra();

@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster.yano;
 
 import com.bloxbean.cardano.yacicli.common.Tuple;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
@@ -46,6 +47,7 @@ public class YanoCompanionService {
     private final YanoService yanoService;
     private final YanoBootstrapService yanoBootstrapService;
     private final YanoGovernanceService yanoGovernanceService;
+    private final ClusterConfig clusterConfig;
     // ObjectProvider to break the constructor cycle:
     //   ClusterService -> ClusterStartService -> YanoCompanionService -> ClusterUtilService -> ClusterService.
     // The bean is resolved lazily at call time (see performHandover).

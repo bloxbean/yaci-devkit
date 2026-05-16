@@ -1,5 +1,5 @@
 yaci_store_enabled=true
-ogmios_enabled=true
+ogmios_enabled=false
 kupo_enabled=false
 
 node=node1
@@ -17,6 +17,8 @@ HOST_CLUSTER_API_PORT=10000
 HOST_SUBMIT_API_PORT=8090
 HOST_OGMIOS_PORT=1337
 HOST_KUPO_PORT=1442
+HOST_YANO_HTTP_PORT=6060
+HOST_YANO_N2N_PORT=14447
 
 #######################################################
 # Viewer Config - DON'T CHANGE

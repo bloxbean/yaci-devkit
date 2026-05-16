@@ -175,16 +175,7 @@ public class ClusterStartService {
                 writer.accept(error("Node process could not be started."));
                 return new RunStatus(false, firstRun);
             }
-
-            Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
-            if (submitApiProcess == null) {
-                writer.accept(error("Submit API process could not be started."));
-                return new RunStatus(false, firstRun);
-            }
-
             processes.add(nodeProcess);
-            if (submitApiProcess != null)
-                processes.add(submitApiProcess);
 
             // Companion mode handover: sync as relay, stop Yano, restart as block producer
             if (companionBootstrapDone) {
@@ -219,6 +210,14 @@ public class ClusterStartService {
                     writer.accept(error("Failed to restart node as block producer."));
                 }
             }
+
+            Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
+            if (submitApiProcess == null) {
+                writer.accept(error("Submit API process could not be started."));
+                return new RunStatus(false, firstRun);
+            }
+
+            processes.add(submitApiProcess);
 
             // In companion mode, still report firstRun=true so FirstRunDone fires
             // (topup + cost model governance proposals run against the Haskell node).

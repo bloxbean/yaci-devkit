@@ -16,6 +16,7 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.localcluster.events.RollbackDone;
+import com.bloxbean.cardano.yacicli.localcluster.ogmios.OgmiosService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
@@ -27,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -49,6 +51,9 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class YaciStoreService {
     private static final String STORE_PROCESS_NAME = "yaci-store";
+    private static final String TX_EVALUATOR_MODE_OGMIOS = "ogmios";
+    private static final String TX_EVALUATOR_MODE_SCALUS = "scalus";
+
     private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
     private final ClusterStartService clusterStartService;
@@ -58,6 +63,7 @@ public class YaciStoreService {
     private final YaciStoreConfigBuilder yaciStoreConfigBuilder;
     private final YaciStoreCustomDbHelper customDBHelper;
     private final ProcessUtil processUtil;
+    private final OgmiosService ogmiosService;
 
     private List<Process> processes = new ArrayList<>();
 
@@ -67,6 +73,7 @@ public class YaciStoreService {
     private Queue<String> logs = EvictingQueue.create(300);
 
     @EventListener
+    @Order(1)
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         String clusterName = clusterStarted.getClusterName();
 
@@ -98,7 +105,7 @@ public class YaciStoreService {
                 return false;
 
             Era era = clusterInfo.getEra();
-            StoreStartResult result = startStoreApp(clusterInfo, era);
+            StoreStartResult result = startStoreApp(clusterInfo, era, writer);
             // Always track a live process so it can be cleaned up by stop(), even when
             // the boot log wasn't observed (the process may still recover).
             if (result.process() != null)
@@ -217,11 +224,14 @@ public class YaciStoreService {
         }
     }
 
-    private StoreStartResult startStoreApp(ClusterInfo clusterInfo, Era era) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    private StoreStartResult startStoreApp(ClusterInfo clusterInfo, Era era, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
         boolean yanoOnly = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
+        String txEvaluatorMode = resolveTxEvaluatorMode(writer);
+        builder.environment().put("STORE_SUBMIT_TX_EVALUATOR_MODE", txEvaluatorMode);
+        writer.accept(info("Yaci Store tx evaluator mode: " + txEvaluatorMode));
 
         // In yano-only mode, force Java mode if jar is available.
         // The native binary bakes in the n2c profile at compile time, making it impossible
@@ -250,7 +260,7 @@ public class YaciStoreService {
         }
 
         if (!appConfig.isDocker()) {
-            yaciStoreConfigBuilder.build(clusterInfo);
+            yaciStoreConfigBuilder.build(clusterInfo, txEvaluatorMode);
         }
 
         if (effectiveMode != null && effectiveMode.equals("native")) {
@@ -346,6 +356,17 @@ public class YaciStoreService {
         processUtil.createProcessId(STORE_PROCESS_NAME, process);
 
         return new StoreStartResult(process, started.get());
+    }
+
+    private String resolveTxEvaluatorMode(Consumer<String> writer) {
+        if (appConfig.isOgmiosEnabled() && ogmiosService.isOgmiosRunning())
+            return TX_EVALUATOR_MODE_OGMIOS;
+
+        if (appConfig.isOgmiosEnabled()) {
+            writer.accept(warn("Ogmios is enabled but not running. Using Scalus tx evaluator for Yaci Store."));
+        }
+
+        return TX_EVALUATOR_MODE_SCALUS;
     }
 
     private Process startViewerApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {

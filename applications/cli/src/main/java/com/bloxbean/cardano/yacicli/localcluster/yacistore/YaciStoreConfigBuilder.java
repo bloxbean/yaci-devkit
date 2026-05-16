@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
 
@@ -26,11 +25,11 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
 public class YaciStoreConfigBuilder {
     private final ClusterConfig clusterConfig;
 
-    public boolean build(ClusterInfo clusterInfo) {
+    public boolean build(ClusterInfo clusterInfo, String txEvaluatorMode) {
         Path nodeSocketPath = Path.of(clusterInfo.getSocketPath());
         String nodeFolder = nodeSocketPath.getParent().toFile().getAbsolutePath();
 
-        Map<String, String> storeProperties = new LinkedHashMap();
+        Map<String, String> storeProperties = new LinkedHashMap<>();
         storeProperties.put("server.port", String.valueOf(clusterInfo.getYaciStorePort()));
 
         boolean yanoOnly = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
@@ -52,6 +51,7 @@ public class YaciStoreConfigBuilder {
             storeProperties.put("store.cardano.submit-api-url", "http://localhost:" + clusterInfo.getSubmitApiPort() + "/api/submit/tx");
         }
         storeProperties.put("store.cardano.ogmios-url", "http://localhost:" + clusterInfo.getOgmiosPort());
+        storeProperties.put("store.submit.tx-evaluator-mode", txEvaluatorMode);
         storeProperties.put("spring.datasource.url", "jdbc:h2:file:" + nodeFolder + "/yaci_store/storedb;MV_STORE=TRUE;AUTO_SERVER=TRUE;AUTO_RECONNECT=TRUE;LOCK_TIMEOUT=120000");
         storeProperties.put("spring.datasource.username", "sa");
         storeProperties.put("spring.datasource.password", "password");
@@ -124,6 +124,8 @@ public class YaciStoreConfigBuilder {
             Path n2cOverridePath = configFolder.resolve("application-n2c.properties");
             try (BufferedWriter writer = Files.newBufferedWriter(n2cOverridePath)) {
                 writer.write("store.epoch.endpoints.epoch.local.enabled=false");
+                writer.newLine();
+                writer.write("store.submit.tx-evaluator-mode=" + txEvaluatorMode);
                 writer.newLine();
             } catch (IOException e) {
                 e.printStackTrace();
