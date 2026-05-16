@@ -146,8 +146,8 @@ public class GenesisConfig {
     private String constitutionScript = "186e32faa80a26810392fda6d559c7ed4721a65ce1c9d4ef3e1c87b4";
 
     private List<CCMember> ccMembers = new ArrayList<>();
-    private int ccThresholdNumerator = 2;
-    private int ccThresholdDenominator = 3;
+    private int ccThresholdNumerator = 0;
+    private int ccThresholdDenominator = 1;
 
     private boolean disableFaucet = false;
     private boolean disableShelleyInitialFunds = false;
