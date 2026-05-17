@@ -5,6 +5,8 @@ import com.bloxbean.cardano.client.api.model.Utxo;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yacicli.commands.common.RootLogService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
+import com.bloxbean.cardano.yacicli.localcluster.common.GenesisUtil;
 import com.bloxbean.cardano.yacicli.localcluster.common.LocalClientProviderHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,28 +30,40 @@ public class AccountService {
     private final ClusterService clusterService;
     private final LocalClientProviderHelper localQueryClientUtil;
     private final RootLogService rootLogService;
+    private final YanoHttpNodeService yanoHttpNodeService;
     private final Path plutusCostModelsBasePath;
 
     public AccountService(ClusterService clusterService,
                           LocalClientProviderHelper localQueryClientUtil,
                           RootLogService rootLogService,
+                          YanoHttpNodeService yanoHttpNodeService,
                           @Value("${yaci.cli.plutus-costmodels-path:./config}") String plutusCostModelsBasePath) {
         this.clusterService = clusterService;
         this.localQueryClientUtil = localQueryClientUtil;
         this.rootLogService = rootLogService;
+        this.yanoHttpNodeService = yanoHttpNodeService;
         this.plutusCostModelsBasePath = Paths.get(plutusCostModelsBasePath);
+    }
+
+    private boolean isYanoOnlyMode(String clusterName) {
+        try {
+            var info = clusterService.getClusterInfo(clusterName);
+            return NodeMode.YANO_ONLY == info.getNodeMode();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private Path resolveCostModelsFile(String clusterName) throws IOException {
         var clusterInfo = clusterService.getClusterInfo(clusterName);
-        int protocolMajorVer = clusterInfo.getProtocolMajorVer();
-        String fileName = protocolMajorVer >= 11
-                ? "plutus-costmodels-v11.json"
-                : "plutus-costmodels-v10.json";
-        return plutusCostModelsBasePath.resolve(fileName);
+        return GenesisUtil.resolveCostModelsFile(plutusCostModelsBasePath, clusterInfo.getProtocolMajorVer());
     }
 
     public boolean topup(String clusterName, Era era, String address, double adaValue, Consumer<String> writer) {
+        if (isYanoOnlyMode(clusterName)) {
+            return yanoHttpNodeService.topUp(clusterName, address, adaValue, writer);
+        }
+
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
@@ -74,6 +88,10 @@ public class AccountService {
 
     public boolean mint(String clusterName, Era era, String assetName, BigInteger quantity, String receiver,
                         Consumer<String> writer) {
+        if (isYanoOnlyMode(clusterName)) {
+            return yanoHttpNodeService.mint(clusterName, assetName, quantity, receiver, writer);
+        }
+
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
@@ -120,6 +138,10 @@ public class AccountService {
     }
 
     public Map<String, List<Utxo>> getUtxosAtDefaultAccounts(String clusterName, Era era, Consumer<String> writer) {
+        if (isYanoOnlyMode(clusterName)) {
+            return yanoHttpNodeService.getFundsAtGenesisKeys(clusterName);
+        }
+
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);
@@ -144,6 +166,10 @@ public class AccountService {
     }
 
     public List<Utxo> getUtxos(String clusterName, Era era, String address, Consumer<String> writer) {
+        if (isYanoOnlyMode(clusterName)) {
+            return yanoHttpNodeService.getUtxos(clusterName, address);
+        }
+
         Level orgLevel = rootLogService.getLogLevel();
         if (!rootLogService.isDebugLevel())
             rootLogService.setLogLevel(Level.OFF);

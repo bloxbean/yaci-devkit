@@ -10,5 +10,6 @@ Args = --static --libc=musl -march=compatibility --initialize-at-run-time=io.net
 --initialize-at-run-time=io.netty.channel.unix.IovArray \
 --initialize-at-run-time=io.netty.channel.unix.Limits \
 --initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger \
+--initialize-at-run-time=io.netty.util.internal.shaded.org.jctools \
 --initialize-at-run-time=io.netty.channel.kqueue.KQueue \
 --initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils

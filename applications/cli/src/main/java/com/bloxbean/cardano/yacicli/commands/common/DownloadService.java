@@ -31,6 +31,7 @@ public class DownloadService {
     private final static String YACI_STORE_DOWNLOAD_URL = "https://github.com/bloxbean/yaci-store/releases/download";
     private final static String OGMIOS_DOWNLOAD_URL = "https://github.com/CardanoSolutions/ogmios/releases/download";
     private final static String KUPO_DOWNLOAD_URL = "https://github.com/CardanoSolutions/kupo/releases/download";
+    private final static String YANO_DOWNLOAD_URL = "https://github.com/bloxbean/yano/releases/download";
 
     private final ClusterConfig clusterConfig;
 
@@ -66,6 +67,15 @@ public class DownloadService {
 
     @Value("${kupo.url:#{null}}")
     private String kupoUrl;
+
+    @Value("${yano.version:#{null}}")
+    private String yanoVersion;
+
+    @Value("${yano.tag:#{null}}")
+    private String yanoTag;
+
+    @Value("${yano.url:#{null}}")
+    private String yanoUrl;
 
     public boolean downloadNode(boolean overwrite) {
         String downloadPath = resolveNodeDownloadPath();
@@ -347,6 +357,80 @@ public class DownloadService {
         return false;
     }
 
+    public boolean downloadYano(boolean overwrite) {
+        String downloadPath = resolveYanoDownloadPath();
+
+        if (downloadPath == null) {
+            writeLn(error("Download URL for Yano is not set. Please set the download URL in download.properties"));
+            return false;
+        }
+
+        Path yanoExec = Path.of(clusterConfig.getYanoHome(), "yano");
+
+        if (yanoExec.toFile().exists()) {
+            if (!overwrite) {
+                writeLn(info("Yano already exists in %s", yanoExec.toFile().getAbsolutePath()));
+                writeLn(info("Use --overwrite to overwrite the existing yano"));
+                return false;
+            } else {
+                deleteExistingDir("yano", clusterConfig.getYanoHome());
+            }
+        }
+
+        String targetDir = clusterConfig.getYanoHome();
+        var downloadedFile = download("yano", downloadPath, targetDir, "yano-native.zip");
+        if (downloadedFile != null) {
+            try {
+                // Extract full zip to a temp folder, then move contents to yanoHome
+                var tmpFolder = Paths.get(clusterConfig.getYanoHome(), "tmp");
+                extractZip(downloadedFile.toFile().getAbsolutePath(), tmpFolder.toFile().getAbsolutePath());
+
+                // The zip contains a single folder (e.g. yano-native-0.1.0-pre1-macos-arm64/)
+                // Move all its contents to yanoHome
+                File[] extractedItems = tmpFolder.toFile().listFiles();
+                File extractedRoot = null;
+                if (extractedItems != null) {
+                    for (File f : extractedItems) {
+                        if (f.isDirectory() && f.getName().startsWith("yano")) {
+                            extractedRoot = f;
+                            break;
+                        }
+                    }
+                }
+
+                if (extractedRoot != null) {
+                    // Copy entire contents (binary, config, scripts) to yanoHome
+                    File[] contents = extractedRoot.listFiles();
+                    if (contents != null) {
+                        Path yanoHome = Path.of(clusterConfig.getYanoHome());
+                        for (File item : contents) {
+                            Path dest = yanoHome.resolve(item.getName());
+                            if (item.isDirectory()) {
+                                FileUtils.copyDirectory(item, dest.toFile());
+                            } else {
+                                Files.copy(item.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+                            }
+                        }
+                    }
+                    writeLn(success("Extracted yano to " + clusterConfig.getYanoHome()));
+                } else {
+                    writeLn(error("yano folder not found in the extracted archive"));
+                }
+
+                setExecutablePermission(yanoExec.toFile().getAbsolutePath());
+                FileUtils.deleteDirectory(tmpFolder.toFile());
+                Files.deleteIfExists(downloadedFile);
+                return true;
+            } catch (IOException e) {
+                writeLn(error("Error extracting yano: " + e.getMessage()));
+            }
+        } else {
+            writeLn(error("Download failed for yano"));
+        }
+
+        return false;
+    }
+
     private void setExecutablePermission(String path) {
         File file = new File(path);
         if (!file.exists()) return;
@@ -618,6 +702,40 @@ public class DownloadService {
 
         String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-v" + kupoVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
         return url;
+    }
+
+    private String resolveYanoDownloadPath() {
+        if (!StringUtils.isEmpty(yanoUrl)) {
+            return yanoUrl;
+        }
+
+        if (StringUtils.isEmpty(yanoVersion) || StringUtils.isEmpty(yanoTag)) {
+            writeLn(error("Yano version/tag is not set. Please set yano.version and yano.tag or yano.url in download.properties"));
+            return null;
+        }
+
+        String osPrefix = null;
+        if (SystemUtils.IS_OS_MAC) {
+            osPrefix = "macos";
+        } else if (SystemUtils.IS_OS_LINUX) {
+            osPrefix = "linux";
+        } else {
+            writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
+        }
+
+        String arch = System.getProperty("os.arch");
+        String cpuArch;
+        if (arch.startsWith("aarch") || arch.startsWith("arm")) {
+            cpuArch = "arm64";
+        } else {
+            cpuArch = "x64";
+        }
+
+        if (osPrefix == null)
+            return null;
+
+        // Release asset pattern: yano-native-{version}-{os}-{arch}.zip
+        return YANO_DOWNLOAD_URL + "/" + yanoTag + "/yano-native-" + yanoVersion + "-" + osPrefix + "-" + cpuArch + ".zip";
     }
 
     private void deleteExistingDir(String componentName, String componentHome) {

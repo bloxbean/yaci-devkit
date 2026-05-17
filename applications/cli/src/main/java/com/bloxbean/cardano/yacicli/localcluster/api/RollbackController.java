@@ -51,6 +51,27 @@ public class RollbackController {
         return sb.toString();
     }
 
+    @PostMapping("/rollback")
+    @Operation(summary = "Rollback N blocks (yano-primary mode only)",
+            description = "Rollback the chain by the specified number of blocks via Yano's rollback API. " +
+                    "Only available in yano-primary mode. Number of blocks must not exceed securityParam.")
+    public ResponseEntity<String> rollback(@RequestBody RollbackRequest request) {
+        StringBuilder sb = new StringBuilder();
+        boolean status = rollbackService.rollback(request.blocks(), msg -> sb.append(msg));
+
+        writeLn(sb.toString());
+        if (status) {
+            return ResponseEntity.ok(sb.toString());
+        } else {
+            return ResponseEntity.badRequest().body(sb.toString());
+        }
+    }
+
+    record RollbackRequest(
+        @Schema(description = "Number of blocks to rollback")
+        long blocks
+    ) {}
+
     @PostMapping("/create-forks")
     @Operation(summary = "Create forks for rollback",
             description = "Create forks for rollback. This will detach the main node from the peer nodes and create" +

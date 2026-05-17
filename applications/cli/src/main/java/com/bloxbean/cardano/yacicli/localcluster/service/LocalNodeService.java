@@ -54,6 +54,7 @@ import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgAcceptTx;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.messages.MsgRejectTx;
 import com.bloxbean.cardano.yaci.core.protocol.localtx.model.TxSubmissionRequest;
 import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
+import com.bloxbean.cardano.yacicli.localcluster.common.GenesisUtil;
 import com.bloxbean.cardano.yacicli.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -113,17 +114,7 @@ public class LocalNodeService {
 
     private void loadUtxoKeys(Path clusterFolder) throws IOException {
         utxoKeys.clear();
-        Path utxoFolder = clusterFolder.resolve(UTXO_KEYS_FOLDER);
-
-        for (int i = 1; i <= 3; i++) {
-            Path skeyPath = utxoFolder.resolve("utxo" + i + ".skey");
-            SecretKey skey = objectMapper.readValue(skeyPath.toFile(), SecretKey.class);
-
-            Path vkeyPath = utxoFolder.resolve("utxo" + i + ".vkey");
-            VerificationKey vkey = objectMapper.readValue(vkeyPath.toFile(), VerificationKey.class);
-            utxoKeys.add(new Tuple<>(vkey, skey));
-        }
-
+        utxoKeys.addAll(GenesisUtil.loadUtxoKeys(clusterFolder));
     }
 
     public Map<String, List<Utxo>> getFundsAtGenesisKeys() {
@@ -468,13 +459,7 @@ public class LocalNodeService {
     }
 
     private Map<String, long[]> loadCostModels(Path costModelsFile) throws IOException {
-        Map<String, List<Long>> raw = objectMapper.readValue(costModelsFile.toFile(),
-                new TypeReference<Map<String, List<Long>>>() {});
-        Map<String, long[]> result = new HashMap<>();
-        for (Map.Entry<String, List<Long>> entry : raw.entrySet()) {
-            result.put(entry.getKey(), entry.getValue().stream().mapToLong(Long::longValue).toArray());
-        }
-        return result;
+        return GenesisUtil.loadCostModels(costModelsFile);
     }
 
     private boolean waitForTx(String receiver, String txHash, Consumer<String> writer) {

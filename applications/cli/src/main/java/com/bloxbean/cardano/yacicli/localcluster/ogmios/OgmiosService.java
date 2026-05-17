@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -41,11 +42,13 @@ public class OgmiosService {
     private final ProcessUtil processUtil;
 
     private List<Process> processes = new ArrayList<>();
+    private Process ogmiosProcess;
 
     private Queue<String> ogmiosLogs = EvictingQueue.create(300);
     private Queue<String> kupoLogs = EvictingQueue.create(300);
 
     @EventListener
+    @Order(0)
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         String clusterName = clusterStarted.getClusterName();
 
@@ -80,8 +83,10 @@ public class OgmiosService {
                     return false;
 
                 Process process = startOgmios(clusterName, clusterInfo);
-                if (process != null)
+                if (process != null) {
+                    ogmiosProcess = process;
                     processes.add(process);
+                }
             }
 
             if (appConfig.isKupoEnabled()) {
@@ -97,6 +102,10 @@ public class OgmiosService {
         }
 
         return true;
+    }
+
+    public boolean isOgmiosRunning() {
+        return ogmiosProcess != null && ogmiosProcess.isAlive();
     }
 
     private static boolean ogmiosPortAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
@@ -217,6 +226,7 @@ public class OgmiosService {
                 //clean pid files
                 processUtil.deletePidFile(OGMIOS_PROCESS_NAME);
                 processUtil.deletePidFile(KUPO_PROCESS_NAME);
+                ogmiosProcess = null;
             }
 
             ogmiosLogs.clear();

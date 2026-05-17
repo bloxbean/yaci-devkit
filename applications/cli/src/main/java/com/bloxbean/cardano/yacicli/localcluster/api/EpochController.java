@@ -7,8 +7,11 @@ import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQuery;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.queries.EpochNoQueryResult;
 import com.bloxbean.cardano.yaci.helper.LocalClientProvider;
 import com.bloxbean.cardano.yaci.helper.LocalStateQueryClient;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterInfoService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.common.LocalClientProviderHelper;
 import com.bloxbean.cardano.yacicli.localcluster.service.LocalProtocolParamSupplier;
+import com.bloxbean.cardano.yacicli.localcluster.service.YanoHttpNodeService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,15 +30,38 @@ import java.time.Duration;
 public class EpochController {
 
     private LocalClientProviderHelper localQueryClientUtil;
+    private YanoHttpNodeService yanoHttpNodeService;
+    private ClusterInfoService clusterInfoService;
 
-    public EpochController(LocalClientProviderHelper localQueryClientUtil) {
+    public EpochController(LocalClientProviderHelper localQueryClientUtil,
+                           YanoHttpNodeService yanoHttpNodeService,
+                           ClusterInfoService clusterInfoService) {
         this.localQueryClientUtil = localQueryClientUtil;
+        this.yanoHttpNodeService = yanoHttpNodeService;
+        this.clusterInfoService = clusterInfoService;
+    }
+
+    private boolean isYanoOnlyMode() {
+        try {
+            String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+            var info = clusterInfoService.getClusterInfo(clusterName);
+            return NodeMode.YANO_ONLY == info.getNodeMode();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Operation(summary = "Retrieve the latest epoch.")
     @GetMapping("latest")
     public EpochContent getLatestEpoch() {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+
+        if (isYanoOnlyMode()) {
+            EpochContent result = yanoHttpNodeService.getLatestEpoch(clusterName);
+            if (result != null) return result;
+            throw new RuntimeException("Failed to get latest epoch from Yano");
+        }
+
         Era era = CommandContext.INSTANCE.getEra();
 
         LocalClientProvider localClientProvider = null;
@@ -59,6 +85,13 @@ public class EpochController {
     @GetMapping("parameters")
     ProtocolParams getProtocolParameters() {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+
+        if (isYanoOnlyMode()) {
+            ProtocolParams result = yanoHttpNodeService.getProtocolParams(clusterName);
+            if (result != null) return result;
+            throw new RuntimeException("Failed to get protocol parameters from Yano");
+        }
+
         Era era = CommandContext.INSTANCE.getEra();
 
         LocalClientProvider localClientProvider = null;
