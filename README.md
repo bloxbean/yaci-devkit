@@ -24,7 +24,7 @@
 - **🌐 Multi-node Support** - Enable multiple nodes specifically for rollback testing scenarios
 - **📊 Built-in Indexer** - Integrated Yaci Store with Blockfrost-compatible APIs
 - **🎯 Developer Tools** - Browser-based viewer, CLI management, and extensive APIs
-- **🔗 SDK Integration** - Seamless integration with popular Cardano SDKs (Mesh, CCL, Lucid Evolution)
+- **🔗 SDK Integration** - Seamless integration with popular Cardano SDKs (Mesh, CCL, Lucid Evolution, Sutra)
 
 ## 🏗️ Architecture
 
