@@ -1,0 +1,84 @@
+## Configuration
+
+```elixir
+config :sutra, :yaci,
+  yaci_general_api_url: "http://localhost:8080", # Defaults to http://localhost:8080
+  yaci_admin_api_url: "http://localhost:10000" # Defaults to http://localhost:10000
+```
+
+## Privnet Testing
+
+Sutra SDK includes a dedicated testing module `Sutra.PrivnetTest` to simplify integration testing against a private network (like Yaci DevKit).
+
+## Setup
+
+Ensure you have a local Yaci DevKit instance running.
+
+In your test file, `use Sutra.PrivnetTest`:
+
+```elixir
+defmodule MyProject.MyTest do
+  use Sutra.PrivnetTest
+  
+  test "test something" do
+    # ...
+  end
+end
+```
+
+This automatically checks if Yaci is running and sets up the provider configuration.
+
+## Managing Wallets
+
+### Default Wallets
+
+Access pre-funded default wallets from the Yaci DevKit (indices 0-20):
+
+```elixir
+test "uses default wallet" do
+  with_default_wallet(0, fn %{address: address, signing_key: key} ->
+    # Test logic here
+    IO.puts("Wallet Address: #{address}")
+  end)
+end
+```
+
+The wallet is automatically topped up if its balance is zero.
+
+### New Ephemeral Wallets
+
+Create a fresh wallet for isolation:
+
+```elixir
+test "uses fresh wallet" do
+  with_new_wallet(fn %{address: address, signing_key: key} ->
+    # This wallet is funded with 100 ADA by default
+  end)
+end
+```
+
+## Loading Funds
+
+You can explicitly load funds into an address:
+
+```elixir
+# Load 1000 ADA
+load_ada(address, 1000)
+
+# Load multiple UTxOs
+load_ada(address, [1000, 500]) 
+```
+
+## Waiting for Transactions
+
+Since blockchain operations are asynchronous, use `await_tx` to wait for a transaction to be confirmed:
+
+```elixir
+tx_id = submit_some_transaction()
+
+# detailed info
+tx_info = await_tx(tx_id) 
+
+# or assert success
+assert Sutra.PrivnetTest.await_tx(tx_id)
+```
