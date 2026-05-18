@@ -343,10 +343,13 @@ public class ClusterService {
             srcConwayGenesisFile = clusterFolder.resolve("genesis-templates").resolve("conway-genesis.json");
         }
 
+        Path srcDijkstraGenesisFile = clusterFolder.resolve("genesis-templates").resolve("dijkstra-genesis.json");
+
         Path destByronGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("byron-genesis.json");
         Path destShelleyGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("shelley-genesis.json");
         Path destAlonzoGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("alonzo-genesis.json");
         Path destConwayGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("conway-genesis.json");
+        Path destDijkstraGenesisFile = clusterFolder.resolve("node").resolve("genesis").resolve("dijkstra-genesis.json");
 
         GenesisConfig genesisConfigCopy = genesisConfig.copy();
         genesisConfigCopy.merge(customGenesisConfig.getMap());
@@ -375,11 +378,14 @@ public class ClusterService {
         values.put("activeSlotsCoeff", String.valueOf(activeSlotsCoeff));
         values.put("epochLength", String.valueOf(epochLength));
 
-        //Check if protocol version should be minimun 9 and it's conway era
-        if (era == Era.Conway && genesisConfigCopy.getProtocolMajorVer() < 9) {
-            values.put("protocolMajorVer", 10);
-            values.put("protocolMinorVer", 2);
+        //Check if protocol version should be minimum 9 and it's conway era
+        int resolvedProtocolMajorVer = genesisConfigCopy.getProtocolMajorVer();
+        if (era == Era.Conway && resolvedProtocolMajorVer < 9) {
+            resolvedProtocolMajorVer = 10;
+            values.put("protocolMajorVer", resolvedProtocolMajorVer);
+            values.put("protocolMinorVer", 0);
         }
+        clusterInfo.setProtocolMajorVer(resolvedProtocolMajorVer);
 
         //Derive security param
         long securityParam = genesisConfigCopy.getSecurityParam();
@@ -407,6 +413,7 @@ public class ClusterService {
             templateEngineHelper.replaceValues(srcShelleyGenesisFile, destShelleyGenesisFile, values);
             templateEngineHelper.replaceValues(srcAlonzoGenesisFile, destAlonzoGenesisFile, values);
             templateEngineHelper.replaceValues(srcConwayGenesisFile, destConwayGenesisFile, values);
+            templateEngineHelper.replaceValues(srcDijkstraGenesisFile, destDijkstraGenesisFile, values);
         } catch (Exception e) {
             throw new IOException(e);
         }

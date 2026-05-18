@@ -2,10 +2,13 @@ package com.bloxbean.cardano.yacicli.localcluster.service;
 
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterInfoService;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.RollbackDone;
 import com.bloxbean.cardano.yacicli.localcluster.peer.LocalPeerService;
 import com.bloxbean.cardano.yacicli.localcluster.proxy.TcpProxyManager;
+import com.bloxbean.cardano.yacicli.localcluster.yano.YanoBootstrapService;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,10 +29,12 @@ public class RollbackService {
     public static final String DB = "db";
     public static final String DB_ROLLBACK_POINT_FOLDER = "db_rollback_point";
     private final ClusterService clusterService;
+    private final ClusterInfoService clusterInfoService;
     private final LocalPeerService localPeerService;
     private final ClusterUtilService clusterUtilService;
     private final ApplicationEventPublisher publisher;
     private final TcpProxyManager tcpProxyManager;
+    private final YanoBootstrapService yanoBootstrapService;
 
     public void takeDBSnapshot(Consumer<String> writer) {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
@@ -101,6 +106,49 @@ public class RollbackService {
         } catch (Exception e) {
             writer.accept(error("Failed to rollback. Error: " + e.getMessage()));
             log.error("Error during rollback", e);
+            return false;
+        }
+    }
+
+    public boolean rollback(long blocks, Consumer<String> writer) {
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        if (clusterName != null && !clusterName.equals("default")) {
+            writer.accept(error("Rollback cannot be performed in a non-default cluster."));
+            return false;
+        }
+
+        try {
+            var clusterInfo = clusterInfoService.getClusterInfo(clusterName);
+            if (NodeMode.YANO_PRIMARY != clusterInfo.getNodeMode()) {
+                writer.accept(error("The 'rollback' command is only available in yano-primary mode. Use 'rollback-to-db-snapshot' for other modes."));
+                return false;
+            }
+
+            if (blocks <= 0) {
+                writer.accept(error("Number of blocks must be positive."));
+                return false;
+            }
+
+            long securityParam = clusterInfo.getSecurityParam();
+            if (blocks > securityParam) {
+                writer.accept(error("Cannot rollback more than %d blocks (securityParam). Requested: %d", securityParam, blocks));
+                return false;
+            }
+
+            int httpPort = clusterInfo.getYanoHttpPort();
+            boolean success = yanoBootstrapService.rollback(httpPort, blocks, writer);
+            if (success) {
+                // Yano propagates the rollback via N2N to the Haskell relay.
+                // For deep rollbacks, the relay's chain-sync may stall, requiring a relay restart.
+               // Path clusterFolder = clusterInfoService.getClusterFolder(clusterName);
+                //clusterStartService.restartRelayNode(clusterInfo, clusterFolder, writer);
+                // Yaci Store re-syncs from the restarted relay
+                //publisher.publishEvent(new RollbackDone(clusterName));
+            }
+            return success;
+        } catch (Exception e) {
+            writer.accept(error("Rollback failed: " + e.getMessage()));
+            log.error("Error during Yano rollback", e);
             return false;
         }
     }

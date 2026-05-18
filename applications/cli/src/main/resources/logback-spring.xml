@@ -37,6 +37,9 @@
         <appender-ref ref="FILE"/>
     </logger>
 
+    <!-- JDK DEBUG logs include a synthetic stack trace for every started process. -->
+    <logger name="java.lang.ProcessBuilder" level="INFO"/>
+
     <root level="WARN">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>

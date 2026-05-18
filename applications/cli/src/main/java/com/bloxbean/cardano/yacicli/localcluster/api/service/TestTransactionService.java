@@ -13,6 +13,7 @@ import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.localcluster.service.DefaultAddressService;
 import lombok.RequiredArgsConstructor;
@@ -136,9 +137,12 @@ public class TestTransactionService {
                 return Optional.empty();
             }
 
-            var yaciStorePort = clusterInfo.getYaciStorePort();
-
-            String backendUrl = "http://localhost:" + yaciStorePort + "/api/v1/";
+            String backendUrl;
+            if (NodeMode.YANO_ONLY == clusterInfo.getNodeMode()) {
+                backendUrl = "http://localhost:" + clusterInfo.getYanoHttpPort() + "/api/v1/";
+            } else {
+                backendUrl = "http://localhost:" + clusterInfo.getYaciStorePort() + "/api/v1/";
+            }
             return Optional.of(new BFBackendService(backendUrl, "dummy_key"));
         } catch (Exception e) {
             log.error("Error getting backend service", e);

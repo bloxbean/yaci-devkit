@@ -2,6 +2,7 @@
   "AlonzoGenesisFile": "./genesis/alonzo-genesis.json",
   "ByronGenesisFile": "./genesis/byron-genesis.json",
   "ConwayGenesisFile": "./genesis/conway-genesis.json",
+  "DijkstraGenesisFile": "./genesis/dijkstra-genesis.json",
   "EnableP2P": {{enableP2P}},
   "LastKnownBlockVersion-Alt": 0,
   "LastKnownBlockVersion-Major": {{#mainnet}}2{{/mainnet}}{{^mainnet}}2{{/mainnet}},
