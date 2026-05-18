@@ -19,7 +19,7 @@
                     </h3>
                     <p class="text-sm text-gray-600"><span class="font-bold">Slot</span> {block.slot}</p>
                     <p class="text-sm text-gray-600"><span class="font-bold">Txs</span> {block.ntx}</p>
-                    <p class="text-sm text-gray-600"><span class="font-bold">Size</span> {block.size / 1000}</p>
+                    <p class="text-sm text-gray-600"><span class="font-bold">Size</span> {(block.size / 1024).toFixed(2)} kb</p>
                     <p class="text-sm text-gray-600 break-words"><span class="font-bold">Pool</span> {block.slot_leader}</p>
                     <p class="text-sm text-gray-600">
                         <span class="text-xs text-gray-500">
