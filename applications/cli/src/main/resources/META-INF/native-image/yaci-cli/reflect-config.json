@@ -18,6 +18,99 @@
     "allPublicFields" : true
   },
   {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueueProducerIndexField",
+    "allDeclaredFields":true
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueueProducerLimitField",
+    "allDeclaredFields":true
+  },
+  {
+    "name":"io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueueConsumerIndexField",
+    "allDeclaredFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$Pool",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$Delegator",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$MapItem",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$HeavyDelegation",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$GenesisDeleg",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$NonAvvmBalances",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$InitialAddress",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
+    "name":"com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig$CCMember",
+    "allDeclaredFields":true,
+    "allDeclaredMethods":true,
+    "allDeclaredConstructors":true,
+    "allPublicConstructors":true,
+    "allPublicMethods":true,
+    "allPublicFields":true
+  },
+  {
     "name":"com.bloxbean.cardano.client.crypto.SecretKey",
     "allDeclaredFields":true,
     "queryAllDeclaredMethods":true,
@@ -124,4 +217,3 @@
     "name":"org.postgresql.util.PGobject"
   }
 ]
-

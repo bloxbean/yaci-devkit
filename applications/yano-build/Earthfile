@@ -1,0 +1,38 @@
+VERSION 0.8
+
+yano-native:
+  LOCALLY
+  ARG YANO_BRANCH
+  ARG APP_VERSION
+
+  WORKDIR .
+  RUN rm -rf tmp
+  RUN mkdir tmp
+  WORKDIR tmp
+  RUN git clone --depth 1 --branch ${YANO_BRANCH} https://github.com/bloxbean/yano.git yano
+
+  RUN git --git-dir yano/.git rev-parse --short HEAD > yano/yano.git.properties
+
+  FROM ghcr.io/graalvm/graalvm-community:25
+
+  COPY tmp/yano yano
+
+  WORKDIR yano
+
+  # Build native binary with Quarkus + GraalVM Community 25.
+  # The --initialize-at-run-time flags defer aiken-java-binding's JNA classes:
+  # the linux-aarch64 .so isn't published, and even on linux-amd64 we don't want
+  # build-time class init to load a native lib. Default tx evaluator is Scalus
+  # so the deferred classes are never touched at runtime in normal use.
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i \
+      -Pversion=${APP_VERSION} \
+      :app:quarkusBuild \
+      -Dquarkus.native.enabled=true \
+      -Dquarkus.package.jar.enabled=false \
+      -PskipSigning=true \
+      -Dquarkus.native.additional-build-args="--initialize-at-run-time=com.bloxbean.cardano.aiken,--initialize-at-run-time=com.bloxbean.cardano.yano.ledgerrules.impl.AikenTxEvaluator"
+
+  # Save artifacts
+  SAVE ARTIFACT app/build/yano yano
+  SAVE ARTIFACT app/config config
+  SAVE ARTIFACT yano.git.properties yano.git.properties

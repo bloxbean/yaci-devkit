@@ -78,7 +78,7 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
         LinkedHashMap<String, Long> plutusV2CostModel
                 = cborToCostModel(protocolParamUpdate.getCostModels().get(1), PlutusOps.getOperations(2));
         LinkedHashMap<String, Long> plutusV3CostModel = null;
-        if (era == Era.Conway) {
+        if (era.getValue() >= Era.Conway.getValue()) {
             plutusV3CostModel = cborToCostModel(protocolParamUpdate.getCostModels().get(2), PlutusOps.getOperations(3));
         }
 
@@ -100,6 +100,17 @@ public class LocalProtocolParamSupplier implements ProtocolParamsSupplier {
         protocolParams.setCollateralPercent(BigDecimal.valueOf(protocolParamUpdate.getCollateralPercent()));
         protocolParams.setMaxCollateralInputs(protocolParamUpdate.getMaxCollateralInputs());
         protocolParams.setCoinsPerUtxoSize(String.valueOf(protocolParamUpdate.getAdaPerUtxoByte()));
+
+        // Conway governance parameters
+        if (era.getValue() >= Era.Conway.getValue()) {
+            protocolParams.setGovActionDeposit(protocolParamUpdate.getGovActionDeposit());
+            protocolParams.setDrepDeposit(protocolParamUpdate.getDrepDeposit());
+            protocolParams.setDrepActivity(protocolParamUpdate.getDrepActivity());
+            protocolParams.setCommitteeMinSize(protocolParamUpdate.getCommitteeMinSize());
+            protocolParams.setCommitteeMaxTermLength(protocolParamUpdate.getCommitteeMaxTermLength());
+            protocolParams.setGovActionLifetime(protocolParamUpdate.getGovActionLifetime());
+        }
+
         return protocolParams;
     }
 

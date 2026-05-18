@@ -10,9 +10,13 @@ services:
       - "${HOST_CLUSTER_API_PORT}:10000"
       - "${HOST_OGMIOS_PORT}:1337"
       - "${HOST_KUPO_PORT}:1442"
+      - "${HOST_YANO_HTTP_PORT}:6060"
+      - "${HOST_YANO_N2N_PORT}:14447"
     volumes:
       - cluster-data:/clusters
       - ../config/node.properties:/app/config/node.properties
+      - ../config/plutus-costmodels-v10.json:/app/config/plutus-costmodels-v10.json
+      - ../config/plutus-costmodels-v11.json:/app/config/plutus-costmodels-v11.json
     env_file:
       - ../config/env
       - ../config/node.properties

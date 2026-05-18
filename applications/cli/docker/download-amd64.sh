@@ -1,5 +1,5 @@
-file=cardano-node-10.5.0-linux.tar.gz
-wget https://github.com/IntersectMBO/cardano-node/releases/download/10.5.0/cardano-node-10.5.0-linux.tar.gz
+file=cardano-node-11.0.1-linux-amd64.tar.gz
+wget https://github.com/IntersectMBO/cardano-node/releases/download/11.0.1/cardano-node-11.0.1-linux-amd64.tar.gz
 
 mkdir /app/cardano-bin
 

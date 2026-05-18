@@ -5,6 +5,7 @@ ARG --global tag="dev"
 ARG --global local="true"
 ARG --global REGISTRY_ORG = "bloxbean"
 ARG --global build_type="native"
+ARG --global YANO_BRANCH="fix/devkit_fix"
 
 build:
   LOCALLY
@@ -22,7 +23,7 @@ cli-docker:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
 
-  BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH}
+  BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} --YANO_BRANCH=${YANO_BRANCH}
 
 viewer:
   ARG EARTHLY_TARGET_NAME
@@ -44,6 +45,8 @@ zip:
   RUN echo "revision=${EARTHLY_GIT_SHORT_HASH}" >> /app/yaci-devkit-${tag}/config/version
   COPY  config/env /app/yaci-devkit-${tag}/config/
   COPY  config/node.properties /app/yaci-devkit-${tag}/config/
+  COPY  config/plutus-costmodels-v10.json /app/yaci-devkit-${tag}/config/
+  COPY  config/plutus-costmodels-v11.json /app/yaci-devkit-${tag}/config/
 
   COPY  bin/devkit.sh /app/yaci-devkit-${tag}/bin/
 

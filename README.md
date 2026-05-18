@@ -1,5 +1,5 @@
 <div align="center">
-<img src="static/DevKit.png" width="300">
+<p align="center"><img src="static/DevKit-logo.svg" alt="Yaci DevKit logo"></p>
 
 <h4>Complete Cardano development environment with instant local devnet</h4>
 

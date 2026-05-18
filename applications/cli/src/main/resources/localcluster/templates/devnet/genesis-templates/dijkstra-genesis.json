@@ -1,0 +1,6 @@
+{
+  "maxRefScriptSizePerBlock": {{maxRefScriptSizePerBlock}},
+  "maxRefScriptSizePerTx": {{maxRefScriptSizePerTx}},
+  "refScriptCostStride": {{refScriptCostStride}},
+  "refScriptCostMultiplier": {{refScriptCostMultiplier}}
+}

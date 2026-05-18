@@ -25,7 +25,7 @@ public class DownloadCommand {
     @ShellMethod(value = "Download", key = "download")
     @ShellMethodAvailability({"nonDockerCommandAvailability"})
     public boolean download(
-            @ShellOption(value = {"--component", "-c"}, defaultValue = "all",  help = "Provide list of components separated by space. Components: node,ogmios,kupo,yaci-store,yaci-store-jar") String[] components,
+            @ShellOption(value = {"--component", "-c"}, defaultValue = "all",  help = "Provide list of components separated by space. Components: node,ogmios,kupo,yaci-store,yaci-store-jar,yano") String[] components,
             @ShellOption(value = {"-o", "--overwrite"}, defaultValue = "false", help = "Overwrite existing installation. default: false") boolean overwrite
             ) {
 
@@ -63,6 +63,11 @@ public class DownloadCommand {
                 validComponent = true;
             }
 
+            if (componentList.contains("all") || componentList.contains("yano")) {
+                downloadService.downloadYano(overwrite);
+                validComponent = true;
+            }
+
             if (!validComponent) {
                 writeLn(error("Invalid components : " + componentList));
                 return false;
@@ -85,11 +90,11 @@ public class DownloadCommand {
             @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
             @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
             @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
-            @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (1 - 20)", defaultValue = "1") double blockTime,
+            @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (0.1 - 20)", defaultValue = "1") double blockTime,
             @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "600") int epochLength,
             @ShellOption(value = {"--genesis-profile"}, defaultValue = ShellOption.NULL,
                     help = "Use a pre-defined genesis profile (Options: zero_fee, zero_min_utxo_value, zero_fee_and_min_utxo_value)") GenesisProfile genesisProfile,
-            @ShellOption(value = {"--enable-yaci-store"}, defaultValue = "false", help = "Enable Yaci Store. This will also enable Ogmios for Tx Evaluation") boolean enableYaciStore,
+            @ShellOption(value = {"--enable-yaci-store"}, defaultValue = "false", help = "Enable Yaci Store") boolean enableYaciStore,
             @ShellOption(value = {"--enable-kupomios"}, defaultValue = "false", help= "Enable Ogmios and Kupo") boolean enableKupomios,
             @ShellOption(value = {"--interactive"}, defaultValue="false", help="To start in interactive mode when 'up' command is passed as an arg to yaci-cli") boolean interactive,
             @ShellOption(value = {"--tail"}, defaultValue="false", help="To tail the network when 'up' command is passed as an arg to yaci-cli. Only works in non-interactive mode.") boolean tail,
@@ -104,7 +109,7 @@ public class DownloadCommand {
 
         if (enableYaciStore) {
             applicationConfig.setYaciStoreEnabled(true);
-            applicationConfig.setOgmiosEnabled(true);
+            applicationConfig.setOgmiosEnabled(false); //TODO -- Temporarily till Ogmios is ready
         } else if (enableKupomios){
             applicationConfig.setOgmiosEnabled(true);
             applicationConfig.setKupoEnabled(true);

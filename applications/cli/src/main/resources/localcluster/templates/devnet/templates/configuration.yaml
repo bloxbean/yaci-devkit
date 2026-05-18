@@ -9,6 +9,7 @@ ByronGenesisFile: ./genesis/byron-genesis.json
 ShelleyGenesisFile: ./genesis/shelley-genesis.json
 AlonzoGenesisFile: ./genesis/alonzo-genesis.json
 ConwayGenesisFile: ./genesis/conway-genesis.json
+DijkstraGenesisFile: ./genesis/dijkstra-genesis.json
 
 SocketPath: db/node.socket
 EnableP2P: {{enableP2P}}
