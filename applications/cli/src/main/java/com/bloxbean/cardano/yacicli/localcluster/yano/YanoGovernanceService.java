@@ -252,9 +252,12 @@ public class YanoGovernanceService {
             writer.accept(success("DRep voted YES on Plutus cost models proposal. Tx# : " + voteResult.getValue()));
 
             // Wait for vote TX to be confirmed in a block BEFORE catchUpToWallClock.
-            // All governance TXs must be in epoch 0 blocks so they're enacted by epoch 2.
+            // All governance TXs must be in epoch 0 blocks so they're enacted by epoch 2. If the
+            // vote isn't confirmed in time, cost models may not enact — treat as failure so the
+            // caller can react (fatal for yano-only, which has no fallback).
             if (!waitForNextBlock(httpPort, voteResult.getValue(), utxoSupplier, senderAddress, writer)) {
-                writer.accept(warn("Vote TX not confirmed in a block within timeout"));
+                writer.accept(error("Vote TX not confirmed in a block within timeout; cost models may not enact."));
+                return false;
             }
 
             writer.accept(info("Plutus cost models will be enacted at the next epoch boundary."));
