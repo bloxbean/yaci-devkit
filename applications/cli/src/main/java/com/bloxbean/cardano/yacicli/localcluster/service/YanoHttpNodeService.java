@@ -22,6 +22,8 @@ import com.bloxbean.cardano.client.crypto.bip32.key.HdPublicKey;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
+import com.bloxbean.cardano.client.quicktx.TxResult;
+import com.bloxbean.cardano.client.quicktx.TxStatus;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
 import com.bloxbean.cardano.client.transaction.spec.script.ScriptPubkey;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
@@ -144,17 +146,20 @@ public class YanoHttpNodeService {
                     .attachMetadata(MessageMetadata.create().add("Topup Fund"))
                     .from(senderAddress);
 
-            Result<String> result = quickTxBuilder.compose(tx)
+            TxResult result = quickTxBuilder.compose(tx)
                     .withSigner(SignerProviders.signerFrom(senderSkey))
-                    .complete();
+                    .completeAndWait(msg -> log.debug(msg));
 
-            if (!result.isSuccessful()) {
-                writer.accept(error("Topup TX failed: " + result.getResponse()));
+            // Wait for confirmation (not just submission). Returning before the tx is
+            // included in a block lets a subsequent topup re-select the same genesis
+            // UTXO and double-spend it, silently dropping the second topup.
+            if (result.getTxStatus() != TxStatus.CONFIRMED) {
+                writer.accept(error("Topup TX not confirmed (status=" + result.getTxStatus() + "): " + result.getResponse()));
                 return false;
             }
 
-            writer.accept(success("Transaction submitted successfully"));
-            writer.accept(infoLabel("Txn# : ", result.getValue()));
+            writer.accept(success("Transaction confirmed successfully"));
+            writer.accept(infoLabel("Txn# : ", result.getTxHash()));
             return true;
         } catch (Exception e) {
             log.error("Error during topup via Yano HTTP", e);
@@ -209,17 +214,19 @@ public class YanoHttpNodeService {
                     .payToAddress(senderAddress, Amount.ada(1))
                     .from(senderAddress);
 
-            Result<String> result = quickTxBuilder.compose(tx)
+            TxResult result = quickTxBuilder.compose(tx)
                     .withSigner(SignerProviders.signerFrom(senderSkey))
-                    .complete();
+                    .completeAndWait(msg -> log.debug(msg));
 
-            if (!result.isSuccessful()) {
-                writer.accept(error("Mint TX failed: " + result.getResponse()));
+            // Wait for confirmation (not just submission) so consecutive mint/topup
+            // calls don't race on the same genesis UTXO and double-spend it.
+            if (result.getTxStatus() != TxStatus.CONFIRMED) {
+                writer.accept(error("Mint TX not confirmed (status=" + result.getTxStatus() + "): " + result.getResponse()));
                 return false;
             }
 
-            writer.accept(success("Transaction submitted successfully"));
-            writer.accept(info("Txn# : " + result.getValue()));
+            writer.accept(success("Transaction confirmed successfully"));
+            writer.accept(info("Txn# : " + result.getTxHash()));
             return true;
         } catch (Exception e) {
             log.error("Error during mint via Yano HTTP", e);

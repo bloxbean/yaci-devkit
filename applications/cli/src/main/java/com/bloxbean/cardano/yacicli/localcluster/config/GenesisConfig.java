@@ -106,7 +106,7 @@ public class GenesisConfig {
     private String prStepsNumerator = "721";
     private String prStepsDenominator ="10000000";
     private long lovelacePerUTxOWord = 34482;
-    private long maxBlockExUnitsMem = 62000000;
+    private long maxBlockExUnitsMem = 72000000;
     private long maxBlockExUnitsSteps = 20000000000L;
     private int maxCollateralInputs = 3;
     private long maxTxExUnitsMem = 16500000;

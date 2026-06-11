@@ -16,9 +16,9 @@ import java.util.Map;
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.error;
 
 /**
- * This class is used to build Yaci Store configuration
- * It's currently used for non-docker mode to build the configuration. For docker mode, store-application.properties in the docker folder
- * is used.
+ * This class builds the Yaci Store configuration (config/application.properties next to the store
+ * binary) at cluster start. It is used for both non-docker and docker modes so the correct node
+ * endpoints (Yano vs Haskell), submit URL and epoch settings are applied per node mode.
  */
 @Component
 @RequiredArgsConstructor
@@ -115,21 +115,44 @@ public class YaciStoreConfigBuilder {
             return false;
         }
 
-        // In yano-only mode, write a profile-specific override to disable N2C local epoch endpoint.
-        // The n2c profile (baked into Yaci Store binary) bundles application-n2c.properties which sets
-        // store.epoch.endpoints.epoch.local.enabled=true. Profile-specific properties inside the binary
-        // override non-profile application.properties. An external application-n2c.properties in the
-        // config/ folder takes precedence over the bundled one.
+        // yano-only runs the "all" native variant (the "all" Spring profile is active), which derives
+        // protocol params via the epoch-aggr module. Write an external application-all.properties to
+        // override the bundled one: the default epoch-aggr calculation interval (14400s = 4h) is far
+        // too slow for short devnet epochs, so /epochs/latest/parameters would go stale after the first
+        // couple of epochs. An external profile-specific file takes precedence over the bundled one.
+        Path n2cOverridePath = configFolder.resolve("application-n2c.properties");
+        Path allOverridePath = configFolder.resolve("application-all.properties");
         if (yanoOnly) {
-            Path n2cOverridePath = configFolder.resolve("application-n2c.properties");
-            try (BufferedWriter writer = Files.newBufferedWriter(n2cOverridePath)) {
-                writer.write("store.epoch.endpoints.epoch.local.enabled=false");
+            try (BufferedWriter writer = Files.newBufferedWriter(allOverridePath)) {
+                writer.write("store.epoch-aggr.epoch-calculation-interval=1");
                 writer.newLine();
                 writer.write("store.submit.tx-evaluator-mode=" + txEvaluatorMode);
                 writer.newLine();
             } catch (IOException e) {
                 e.printStackTrace();
-                error("Error creating N2C override config: " + e.getMessage());
+                // Fatal: without this override the all binary would run with bundled defaults
+                // (4h epoch-aggr interval), leaving /epochs/parameters stale on a devnet.
+                error("Error creating all-profile override config: " + e.getMessage());
+                return false;
+            }
+            // The n2c profile is not active for the all binary; drop any stale n2c override.
+            try {
+                Files.deleteIfExists(n2cOverridePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+                error("Error removing stale n2c override config: " + e.getMessage());
+                return false;
+            }
+        } else {
+            // n2c modes: remove any stale yano-only overrides so they don't leak into the n2c profile
+            // (e.g. after switching yano-only -> haskell-only without --overwrite).
+            try {
+                Files.deleteIfExists(allOverridePath);
+                Files.deleteIfExists(n2cOverridePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+                error("Error removing stale Yano override config: " + e.getMessage());
+                return false;
             }
         }
 

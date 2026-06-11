@@ -3,7 +3,9 @@ package com.bloxbean.cardano.yacicli.commands.general;
 import com.bloxbean.cardano.yacicli.commands.common.DownloadService;
 import com.bloxbean.cardano.yacicli.commands.common.Groups;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterCommands;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
+import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.profiles.GenesisProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.Availability;
@@ -21,6 +23,7 @@ public class DownloadCommand {
     private final ApplicationConfig applicationConfig;
     private final DownloadService downloadService;
     private final ClusterCommands clusterCommands;
+    private final GenesisConfig genesisConfig;
 
     @ShellMethod(value = "Download", key = "download")
     @ShellMethodAvailability({"nonDockerCommandAvailability"})
@@ -126,6 +129,13 @@ public class DownloadCommand {
                 componentList.add("ogmios");
             if (!componentList.contains("kupo"))
                 componentList.add("kupo");
+        }
+
+        // Yano-fronted modes (yano-only/yano-primary/companion) require the Yano binary.
+        NodeMode nodeMode = genesisConfig.getNodeMode();
+        if (nodeMode == NodeMode.YANO_ONLY || nodeMode == NodeMode.YANO_PRIMARY || nodeMode == NodeMode.COMPANION) {
+            if (!componentList.contains("yano"))
+                componentList.add("yano");
         }
 
         var status = download(componentList.toArray(new String[0]), overwrite);

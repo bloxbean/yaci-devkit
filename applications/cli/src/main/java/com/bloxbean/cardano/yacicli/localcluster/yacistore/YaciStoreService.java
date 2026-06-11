@@ -1,5 +1,8 @@
 package com.bloxbean.cardano.yacicli.localcluster.yacistore;
 
+import com.bloxbean.cardano.client.api.model.ProtocolParams;
+import com.bloxbean.cardano.client.api.model.Result;
+import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
@@ -38,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
@@ -53,6 +57,7 @@ public class YaciStoreService {
     private static final String STORE_PROCESS_NAME = "yaci-store";
     private static final String TX_EVALUATOR_MODE_OGMIOS = "ogmios";
     private static final String TX_EVALUATOR_MODE_SCALUS = "scalus";
+    private static final String PLUTUS_V3 = "PlutusV3";
 
     private final ApplicationConfig appConfig;
     private final ClusterService clusterService;
@@ -106,15 +111,23 @@ public class YaciStoreService {
 
             Era era = clusterInfo.getEra();
             StoreStartResult result = startStoreApp(clusterInfo, era, writer);
-            // Always track a live process so it can be cleaned up by stop(), even when
-            // the boot log wasn't observed (the process may still recover).
-            if (result.process() != null)
-                processes.add(result.process());
+            // No process means the Store could not be launched (e.g. the required native variant
+            // was missing or config generation failed). Surface that as a start failure.
+            if (result.process() == null) {
+                writer.accept(error("Yaci Store failed to start."));
+                return false;
+            }
+            // Track the live process so it can be cleaned up by stop(), even when the boot log
+            // wasn't observed (the process may still recover).
+            processes.add(result.process());
 
             // Wait for indexer to catch up to chain tip — only if boot was actually
             // observed, otherwise we'd burn the 60s deadline on a stuck process.
-            if (result.bootObserved() && result.process() != null && result.process().isAlive()) {
+            if (result.bootObserved() && result.process().isAlive()) {
                 waitForSyncToTip(clusterInfo, writer);
+                if (NodeMode.YANO_ONLY == clusterInfo.getNodeMode() && !waitForYanoOnlyProtocolParamsReady(clusterInfo, writer)) {
+                    throw new IllegalStateException("Yaci Store protocol parameters did not become ready.");
+                }
             }
 
 //            Process viewerProcess = startViewerApp(clusterStarted.getClusterName());
@@ -224,6 +237,144 @@ public class YaciStoreService {
         }
     }
 
+    /**
+     * Yano-only Store derives epoch protocol params from indexed epoch/adapot state.
+     * Blocks may be caught up before /epochs/latest/parameters has advanced to the
+     * post-bootstrap params, so wait for the exact data CCL uses for script hashes.
+     */
+    private boolean waitForYanoOnlyProtocolParamsReady(ClusterInfo clusterInfo, Consumer<String> writer) {
+        String adapotUrl = "http://localhost:" + clusterInfo.getYaciStorePort() + "/api/v1/adapot";
+        BFBackendService storeBackendService = new BFBackendService(blockfrostBaseUrl(clusterInfo.getYaciStorePort()), "dummy_key");
+        BFBackendService yanoBackendService = new BFBackendService(blockfrostBaseUrl(clusterInfo.getYanoHttpPort()), "dummy_key");
+        int targetAdapotEpoch = ClusterConfig.YANO_BOOTSTRAP_EPOCH_SHIFT;
+
+        RestTemplate restTemplate = new RestTemplate();
+        ObjectMapper mapper = new ObjectMapper();
+        long deadlineMs = System.currentTimeMillis() + SYNC_WAIT_DEADLINE_MS;
+        String lastStatus = null;
+
+        writer.accept(info("Waiting for Yaci Store protocol parameters to match Yano..."));
+
+        while (true) {
+            long remaining = deadlineMs - System.currentTimeMillis();
+            if (remaining <= 0) {
+                writer.accept(error("Yaci Store protocol parameters did not match Yano within 60s."));
+                return false;
+            }
+
+            Long adapotEpoch = fetchLatestAdapotEpoch(restTemplate, mapper, adapotUrl);
+            ProtocolParamsProbe yanoParams = fetchProtocolParamsProbe(yanoBackendService, targetAdapotEpoch);
+            ProtocolParamsProbe storeParams = fetchProtocolParamsProbe(storeBackendService);
+
+            boolean adapotReady = adapotEpoch != null && adapotEpoch >= targetAdapotEpoch;
+            boolean paramsReady = protocolParamsMatch(yanoParams, storeParams);
+            if (adapotReady && paramsReady) {
+                writer.accept(success("Yaci Store protocol parameters are ready "
+                        + "(adapot epoch " + adapotEpoch + ", PlutusV3 cost model size "
+                        + storeParams.plutusV3CostModelSize() + ")"));
+                return true;
+            }
+
+            String status = "Waiting for Yaci Store protocol params: adapot epoch "
+                    + (adapotEpoch == null ? "?" : adapotEpoch)
+                    + "/" + targetAdapotEpoch
+                    + ", Store V3 size " + storeParams.plutusV3CostModelSize()
+                    + ", Yano epoch " + targetAdapotEpoch + " V3 size " + yanoParams.plutusV3CostModelSize();
+            if (!status.equals(lastStatus)) {
+                writer.accept(info(status));
+                lastStatus = status;
+            }
+
+            remaining = deadlineMs - System.currentTimeMillis();
+            if (remaining <= 0) continue;
+            try {
+                Thread.sleep(Math.min(1000L, remaining));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+    }
+
+    private String blockfrostBaseUrl(int port) {
+        return "http://localhost:" + port + "/api/v1/";
+    }
+
+    private boolean protocolParamsMatch(ProtocolParamsProbe yanoParams, ProtocolParamsProbe storeParams) {
+        return yanoParams.isComplete()
+                && storeParams.isComplete()
+                && yanoParams.protocolMajorVer().equals(storeParams.protocolMajorVer())
+                && Arrays.equals(yanoParams.plutusV3CostModel(), storeParams.plutusV3CostModel());
+    }
+
+    private Long fetchLatestAdapotEpoch(RestTemplate restTemplate, ObjectMapper mapper, String url) {
+        try {
+            ResponseEntity<String> resp = restTemplate.getForEntity(url, String.class);
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) return null;
+            JsonNode body = mapper.readTree(resp.getBody());
+            JsonNode epoch = body.get("epoch");
+            return epoch == null || epoch.isNull() ? null : epoch.asLong();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private ProtocolParamsProbe fetchProtocolParamsProbe(BFBackendService backendService) {
+        try {
+            Result<ProtocolParams> result = backendService.getEpochService().getProtocolParameters();
+            return protocolParamsProbe(result);
+        } catch (Exception e) {
+            return ProtocolParamsProbe.empty();
+        }
+    }
+
+    private ProtocolParamsProbe fetchProtocolParamsProbe(BFBackendService backendService, int epoch) {
+        try {
+            Result<ProtocolParams> result = backendService.getEpochService().getProtocolParameters(epoch);
+            return protocolParamsProbe(result);
+        } catch (Exception e) {
+            return ProtocolParamsProbe.empty();
+        }
+    }
+
+    private ProtocolParamsProbe protocolParamsProbe(Result<ProtocolParams> result) {
+        if (!result.isSuccessful() || result.getValue() == null)
+            return ProtocolParamsProbe.empty();
+
+        ProtocolParams protocolParams = result.getValue();
+        return new ProtocolParamsProbe(
+                protocolParams.getProtocolMajorVer(),
+                plutusV3RawCostModel(protocolParams)
+        );
+    }
+
+    private long[] plutusV3RawCostModel(ProtocolParams protocolParams) {
+        if (protocolParams.getCostModelsRaw() == null) return new long[0];
+
+        List<Long> plutusV3 = protocolParams.getCostModelsRaw().get(PLUTUS_V3);
+        if (plutusV3 == null || plutusV3.isEmpty()) return new long[0];
+
+        long[] values = new long[plutusV3.size()];
+        for (int i = 0; i < plutusV3.size(); i++) {
+            values[i] = plutusV3.get(i);
+        }
+        return values;
+    }
+
+    private record ProtocolParamsProbe(Integer protocolMajorVer, long[] plutusV3CostModel) {
+        static ProtocolParamsProbe empty() {
+            return new ProtocolParamsProbe(null, new long[0]);
+        }
+
+        boolean isComplete() {
+            return protocolMajorVer != null && plutusV3CostModel.length > 0;
+        }
+
+        int plutusV3CostModelSize() {
+            return plutusV3CostModel.length;
+        }
+    }
+
     private StoreStartResult startStoreApp(ClusterInfo clusterInfo, Era era, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
@@ -233,49 +384,62 @@ public class YaciStoreService {
         builder.environment().put("STORE_SUBMIT_TX_EVALUATOR_MODE", txEvaluatorMode);
         writer.accept(info("Yaci Store tx evaluator mode: " + txEvaluatorMode));
 
-        // In yano-only mode, force Java mode if jar is available.
-        // The native binary bakes in the n2c profile at compile time, making it impossible
-        // to disable LocalEpochController at runtime. Java mode respects runtime config.
+        // Select the native Store binary by node mode (no legacy/JAR fallback):
+        //   yano-only  -> yaci-store-all (no N2C; derives protocol params from epoch_param)
+        //   all others -> yaci-store-n2c (N2C local-state-query against the Haskell node)
+        String storeVariant = yanoOnly ? "all" : "n2c";
+        String nativeBinName = "yaci-store-" + storeVariant;
+
         String effectiveMode = yaciStoreMode;
-        if (yanoOnly && "native".equals(effectiveMode)) {
-            Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
-            if (yaciStoreJar.toFile().exists()) {
-                effectiveMode = "java";
-                writeLn(info("Yano-only mode: using Yaci Store JAR (N2C disabled)"));
-            }
-        }
 
         if (effectiveMode == null || effectiveMode.equals("java")) {
+            // Explicit Java mode is an advanced/external-DB opt-in. No JAR is bundled in Docker.
             Path yaciStoreJar = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store.jar");
             if (!yaciStoreJar.toFile().exists()) {
-                writeLn(error("yaci-store.jar is not found at " + clusterConfig.getYaciStoreBinPath()));
+                if (appConfig.isDocker()) {
+                    writeLn(error("yaci.store.mode=java is unsupported in Docker: no yaci-store.jar is bundled. "
+                            + "Mount a jar at " + clusterConfig.getYaciStoreBinPath() + "/yaci-store.jar, or use native mode."));
+                } else {
+                    writeLn(error("yaci-store.jar not found at " + clusterConfig.getYaciStoreBinPath()
+                            + ". Run: download --component yaci-store-jar --overwrite, or use native mode (yaci.store.mode=native)."));
+                }
                 return new StoreStartResult(null, false);
             }
         } else if (effectiveMode.equals("native")) {
-            Path yaciStoreBin = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store");
+            Path yaciStoreBin = Path.of(clusterConfig.getYaciStoreBinPath(), nativeBinName);
             if (!yaciStoreBin.toFile().exists()) {
-                writeLn(error("yaci-store binary is not found at " + clusterConfig.getYaciStoreBinPath()));
+                writeLn(error("Yaci Store binary for " + clusterInfo.getNodeMode().getValue()
+                        + " mode was not found: " + nativeBinName + "."));
+                writeLn(error("Please run: download --component yaci-store --overwrite"));
                 return new StoreStartResult(null, false);
             }
         }
 
-        if (!appConfig.isDocker()) {
-            yaciStoreConfigBuilder.build(clusterInfo, txEvaluatorMode);
+        // Generate Store config for BOTH Docker and non-Docker so the correct node endpoints
+        // (Yano vs Haskell), submit URL and epoch settings are applied per mode. Abort before
+        // launching the process if config generation fails (otherwise Store starts with stale config).
+        if (!yaciStoreConfigBuilder.build(clusterInfo, txEvaluatorMode)) {
+            writeLn(error("Failed to generate Yaci Store configuration."));
+            return new StoreStartResult(null, false);
         }
 
         if (effectiveMode != null && effectiveMode.equals("native")) {
-            builder.environment().put("STORE_CARDANO_N2C_ERA", era.name());
+            // N2C era only applies to the n2c variant; the yano-only (-all) binary has no N2C.
+            if (!yanoOnly) {
+                builder.environment().put("STORE_CARDANO_N2C_ERA", era.name());
+            }
             builder.environment().put("STORE_CARDANO_PROTOCOL_MAGIC", String.valueOf(clusterInfo.getProtocolMagic()));
             if (OSUtil.getOperatingSystem() == OSUtil.OS.WINDOWS) {
-                builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store.exe");
+                builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + nativeBinName + ".exe");
             } else {
-                builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + "yaci-store");
+                builder.command(clusterConfig.getYaciStoreBinPath() + File.separator + nativeBinName);
             }
         } else {
             String javaExecPath = jreResolver.getJavaCommand();
 
             List<String> cmd = new ArrayList<>();
             cmd.add(javaExecPath);
+            // N2C era only for the n2c path; yano-only Java mode must omit it.
             if (!yanoOnly) {
                 cmd.add("-Dstore.cardano.n2c-era=" + era.name());
             }
