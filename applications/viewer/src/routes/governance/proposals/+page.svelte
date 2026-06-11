@@ -202,7 +202,7 @@
         </div>
     {:else if proposals.length === 0}
         <div class="text-center py-8">
-            <p class="text-gray-600">No proposals available for this page.</p>
+            <p class="text-base-content/70">No proposals available for this page.</p>
         </div>
     {:else}
         <div class="flex justify-end mt-6">
@@ -224,23 +224,23 @@
                 </button>
             </div>
         </div>
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
             <table class="table w-full">
                 <thead>
-                    <tr class="bg-gray-50">
-                        <th class="font-semibold text-gray-700">Transaction Hash</th>
-                        <th class="font-semibold text-gray-700">Type</th>
-                        <th class="font-semibold text-gray-700">Status</th>
-                        <th class="font-semibold text-gray-700">Deposit (ADA)</th>
-                        <th class="font-semibold text-gray-700">Epoch</th>
-                        <th class="font-semibold text-gray-700">Block</th>
-                        <th class="font-semibold text-gray-700">Time</th>
-                        <th class="font-semibold text-gray-700">Details</th>
+                    <tr class="bg-base-200">
+                        <th class="font-semibold text-base-content/80">Transaction Hash</th>
+                        <th class="font-semibold text-base-content/80">Type</th>
+                        <th class="font-semibold text-base-content/80">Status</th>
+                        <th class="font-semibold text-base-content/80">Deposit (ADA)</th>
+                        <th class="font-semibold text-base-content/80">Epoch</th>
+                        <th class="font-semibold text-base-content/80">Block</th>
+                        <th class="font-semibold text-base-content/80">Time</th>
+                        <th class="font-semibold text-base-content/80">Details</th>
                     </tr>
                 </thead>
                 <tbody>
                     {#each proposals as proposal}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-base-200">
                             <td>
                                 <a href="/transactions/{proposal.tx_hash}" class="link link-primary hover:underline" target="_blank">
                                     {truncateHash(proposal.tx_hash)}
@@ -260,7 +260,7 @@
                             <td>{formatDate(proposal.block_time)}</td>
                             <td>
                                 <button 
-                                    class="btn btn-ghost btn-sm hover:bg-gray-100"
+                                    class="btn btn-ghost btn-sm hover:bg-base-200"
                                     on:click={() => showProposalDetails(proposal.tx_hash, proposal.index)}
                                 >
                                     <EyeIcon size="16" />

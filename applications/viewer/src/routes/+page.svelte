@@ -52,10 +52,10 @@
 
 {#if blocks.length == 0 || (blocks.length > 0 && Object.keys(blocks[0]).length === 0)}
     <section class="flex flex-col items-center mt-24">
-        <div class="card bg-white shadow-xl w-96">
+        <div class="card bg-base-100 shadow-xl w-96">
             <div class="card-body items-center text-center">
-                <span class="text-xl font-bold mb-2 text-gray-800">Waiting for live data</span>
-                <span class="loading loading-ring loading-lg text-gray-900"></span>
+                <span class="text-xl font-bold mb-2 text-base-content">Waiting for live data</span>
+                <span class="loading loading-ring loading-lg text-base-content"></span>
             </div>
         </div>
     </section>
@@ -66,26 +66,26 @@
     <section class="container mx-auto px-4 py-12">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Recent Blocks -->
-            <div class="bg-white rounded-lg">
+            <div class="bg-base-100 rounded-lg">
                 <div class="p-6">
                     <div class="flex items-center mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
-                        <h2 class="text-2xl font-bold text-gray-900">Recent Blocks</h2>
+                        <h2 class="text-2xl font-bold text-base-content">Recent Blocks</h2>
                     </div>
                     <Blocks></Blocks>
                 </div>
             </div>
 
             <!-- Recent Transactions -->
-            <div class="bg-white rounded-lg">
+            <div class="bg-base-100 rounded-lg">
                 <div class="p-6">
                     <div class="flex items-center mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
-                        <h2 class="text-2xl font-bold text-gray-900">Recent Transactions</h2>
+                        <h2 class="text-2xl font-bold text-base-content">Recent Transactions</h2>
                     </div>
                     <Transactions></Transactions>
                 </div>

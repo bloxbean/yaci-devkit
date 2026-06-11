@@ -84,11 +84,11 @@
 
 <div class="container mx-auto px-4 py-8">
     {#if !hasRequiredParams}
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6 max-w-2xl mx-auto">
+        <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6 max-w-2xl mx-auto">
             <h2 class="text-2xl font-semibold mb-6">Search Pool Stakes</h2>
             <form id="searchForm" on:submit={handleSearch} class="space-y-4">
                 <div>
-                    <label for="poolId" class="block text-sm font-medium text-gray-700 mb-2">Pool ID</label>
+                    <label for="poolId" class="block text-sm font-medium text-base-content/80 mb-2">Pool ID</label>
                     <input
                         type="text"
                         id="poolId"
@@ -99,7 +99,7 @@
                     />
                 </div>
                 <div>
-                    <label for="epoch" class="block text-sm font-medium text-gray-700 mb-2">Epoch Number</label>
+                    <label for="epoch" class="block text-sm font-medium text-base-content/80 mb-2">Epoch Number</label>
                     <div class="flex gap-2 items-center">
                         <input
                             type="number"
@@ -122,11 +122,11 @@
             </form>
         </div>
     {:else}
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-2xl font-semibold mb-4">Pool Epoch Stakes</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <p class="text-sm text-gray-600">Pool ID</p>
+                    <p class="text-sm text-base-content/70">Pool ID</p>
                     <div class="flex items-center gap-2">
                         <p class="font-medium max-w-full overflow-hidden" title={poolId || ''}>
                             {#if poolId}
@@ -146,11 +146,11 @@
                     </div>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600">Epoch</p>
+                    <p class="text-sm text-base-content/70">Epoch</p>
                     <p class="font-medium">{epoch}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600">Total Stake</p>
+                    <p class="text-sm text-base-content/70">Total Stake</p>
                     <p class="font-medium">{formatAmount(totalStake)} ₳</p>
                 </div>
             </div>
@@ -214,7 +214,7 @@
                                                     </svg>
                                                 </button>
                                             {:else}
-                                                <span class="text-gray-400">No stake address</span>
+                                                <span class="text-base-content/50">No stake address</span>
                                             {/if}
                                         </div>
                                     </td>

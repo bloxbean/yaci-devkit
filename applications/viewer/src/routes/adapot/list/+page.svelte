@@ -155,67 +155,67 @@
         </div>
     {:else if adapots.length === 0}
         <div class="text-center py-8">
-            <p class="text-gray-600">No AdaPot data available for this page.</p>
+            <p class="text-base-content/70">No AdaPot data available for this page.</p>
         </div>
     {:else}
 
         <div class="overflow-x-auto">
-            <table class="min-w-full bg-white border border-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full bg-base-100 border border-base-300">
+                <thead class="bg-base-200">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Treasury</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reserves</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Circulation</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fees</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Rewards</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distributed</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Undistributed</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool Rewards</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Treasury</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Reserves</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Circulation</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Fees</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Total Rewards</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Distributed</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Undistributed</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool Rewards</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-base-100 divide-y divide-base-300">
                     {#each adapots as adapot}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <tr class="hover:bg-base-200">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                                 {adapot.epoch}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.treasury)}>
                                     {formatAda(adapot.details.treasury)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.reserves)}>
                                     {formatAda(adapot.details.reserves)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.circulation)}>
                                     {formatAda(adapot.details.circulation)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.fees)}>
                                     {formatAda(adapot.details.fees)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.totalAmount)}>
                                     {formatAda(adapot.totalAmount)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.distributedRewards)}>
                                     {formatAda(adapot.details.distributedRewards)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.undistributedRewards)}>
                                     {formatAda(adapot.details.undistributedRewards)}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                                 <div class="tooltip" data-tip={formatLovelace(adapot.details.poolRewardsPot)}>
                                     {formatAda(adapot.details.poolRewardsPot)}
                                 </div>

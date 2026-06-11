@@ -87,7 +87,7 @@
 
 
 <section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">DRep Registrations</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">DRep Registrations</h2>
     <div class="flex justify-end mt-6">
         <div class="join">
             <button 
@@ -109,33 +109,33 @@
             </button>
         </div>
     </div>
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4 relative">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4 relative">
         {#if loading}
-            <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+            <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                 <span class="loading loading-spinner loading-lg"></span>
             </div>
         {/if}
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DRep Id</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Txn Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">DRep Id</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Txn Hash</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             <!-- Iterate over stake registrations data -->
             {#each data.registrations as registration, index}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <a href="#" class="text-blue-500">
                             <span on:click={() => {toggleDRep(registration); }}>{registration.drep_id}</span>
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{registration.cred_type}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><a href="/blocks/{registration.block_number}" class="text-blue-500 hover:underline">{registration.block_number}</a></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><a href="/transactions/{registration.tx_hash}" class="text-blue-500 hover:underline">{registration.tx_hash}</a></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{registration.cred_type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60"><a href="/blocks/{registration.block_number}" class="text-blue-500 hover:underline">{registration.block_number}</a></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60"><a href="/transactions/{registration.tx_hash}" class="text-blue-500 hover:underline">{registration.tx_hash}</a></td>
                 </tr>
             {/each}
             </tbody>

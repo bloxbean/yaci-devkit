@@ -122,7 +122,7 @@
         </div>
     {/if}
 
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-6">Pool Registrations</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-6">Pool Registrations</h2>
 
     {#if error}
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -150,20 +150,20 @@
         </div>
     </div>
 
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pledge (ADA)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost (ADA)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Margin (%)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner(s)</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pledge (ADA)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Cost (ADA)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Margin (%)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Owner(s)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             {#if loading}
                 <tr>
                     <td colspan="7" class="px-6 py-4 text-center">
@@ -177,20 +177,20 @@
                 </tr>
             {:else if data.registrations.length === 0}
                 <tr>
-                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="7" class="px-6 py-4 text-center text-base-content/60">
                         No pool registrations found
                     </td>
                 </tr>
             {:else}
                 {#each data.registrations as registration: PoolRegistration, index}
-                    <tr class="hover:bg-gray-50 transition-colors duration-150">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr class="hover:bg-base-200 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                             <div class="flex items-center gap-2">
                                 <a href="/pools/{registration.pool_id_bech32}" class="text-blue-500 hover:underline" title="View pool details">
                                     <span>{truncate(registration.pool_id_bech32, 35, "...")}</span>
                                 </a>
                                 <button 
-                                    class="text-gray-400 hover:text-gray-600 transition-colors duration-150" 
+                                    class="text-base-content/50 hover:text-base-content/70 transition-colors duration-150" 
                                     on:click={() => copyToClipboard(registration.pool_id_bech32, 'Pool ID copied to clipboard!')}
                                     title="Copy pool ID"
                                 >
@@ -200,21 +200,21 @@
                                 </button>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" title="{registration.pledge} lovelace">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60" title="{registration.pledge} lovelace">
                             {lovelaceToAda(registration.pledge, 2)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" title="{registration.cost} lovelace">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60" title="{registration.cost} lovelace">
                             {lovelaceToAda(registration.cost, 0)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                             {(registration.margin * 100).toFixed(2)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                             {#each registration.pool_owners as owner}
                                 <div class="flex items-center gap-2 mb-1 last:mb-0">
                                     <span>{truncate(owner, 20, "...")}</span>
                                     <button 
-                                        class="text-gray-400 hover:text-gray-600 transition-colors duration-150" 
+                                        class="text-base-content/50 hover:text-base-content/70 transition-colors duration-150" 
                                         on:click={() => copyToClipboard(owner, 'Stake address copied to clipboard!')}
                                         title="Copy stake address"
                                     >
@@ -225,18 +225,18 @@
                                 </div>
                             {/each}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                             <a href="/blocks/{registration.block_number}" class="text-blue-500 hover:underline" title="View block details">
                                 {registration.block_number}
                             </a>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                             <div class="flex items-center gap-2">
                                 <a href="/transactions/{registration.tx_hash}" class="text-blue-500 hover:underline" title="View transaction details">
                                     <span>{truncate(registration.tx_hash, 20)}</span>
                                 </a>
                                 <button 
-                                    class="text-gray-400 hover:text-gray-600 transition-colors duration-150" 
+                                    class="text-base-content/50 hover:text-base-content/70 transition-colors duration-150" 
                                     on:click={() => copyToClipboard(registration.tx_hash, 'Transaction hash copied to clipboard!')}
                                     title="Copy transaction hash"
                                 >

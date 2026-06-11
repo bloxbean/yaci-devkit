@@ -91,7 +91,7 @@
 
 
 <section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-gray-500 mb-4">Proposals</h2>
+    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">Proposals</h2>
     <div class="flex justify-end mt-6">
         <div class="join">
             <button 
@@ -113,40 +113,40 @@
             </button>
         </div>
     </div>
-    <div class="overflow-x-auto bg-white shadow-md rounded-lg mb-4 relative">
+    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4 relative">
         {#if loading}
-            <div class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10">
+            <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
                 <span class="loading loading-spinner loading-lg"></span>
             </div>
         {/if}
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-base-300">
+            <thead class="bg-base-200">
             <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Hash</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Index</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Address</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Index</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Action Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Return Address</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Details</th>
             </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-base-100 divide-y divide-base-300">
             {#each data.govactions as govaction: GovAction, index}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                         <a href="/transactions/{govaction.tx_hash}" class="text-blue-500 hover:underline">
                             <span>{truncate(govaction.tx_hash, 30, "...")}</span>
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{govaction.index}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{govaction.index}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
                         <a href="/blocks/{govaction.block_number}" class="text-blue-500 hover:underline">
                             {govaction.block_number}
                         </a>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{govaction.type}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><AddressLink address={govaction.return_address} maxLength={30} /></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{govaction.type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60"><AddressLink address={govaction.return_address} maxLength={30} /></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 text-center">
                          <a href="/governance/govactions/{govaction.tx_hash}_{govaction.index}" target="_blank" title="View Details">
                              <EyeIcon size="1.2x" class="inline-block"/>
                          </a>

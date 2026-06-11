@@ -69,64 +69,64 @@
     {/if}
 
     <!-- Contract Section -->
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+    <div class="bg-base-100 rounded-lg shadow-sm p-4 mb-4">
         <div class="flex flex-col">
-            <div class="text-sm font-medium text-gray-500 mb-2">Contract {index + 1}</div>
+            <div class="text-sm font-medium text-base-content/60 mb-2">Contract {index + 1}</div>
             <div class="flex items-center gap-2">
                 <a href="/scripts/{contract.script_hash}" class="text-sm text-blue-600 hover:underline break-all">{contract.script_hash}</a>
-                <span class="text-sm text-gray-500">({contract.type})</span>
+                <span class="text-sm text-base-content/60">({contract.type})</span>
             </div>
         </div>
     </div>
 
     <!-- Redeemer Section -->
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+    <div class="bg-base-100 rounded-lg shadow-sm p-4 mb-4">
         <div class="flex flex-col">
-            <div class="text-sm font-medium text-gray-500 mb-2">Redeemer</div>
+            <div class="text-sm font-medium text-base-content/60 mb-2">Redeemer</div>
             {#if contract.redeemer && typeof contract.redeemer === 'object'}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col">
-                        <span class="text-xs text-gray-500">Tag</span>
-                        <span class="text-sm text-gray-900">{contract.redeemer.tag}</span>
+                        <span class="text-xs text-base-content/60">Tag</span>
+                        <span class="text-sm text-base-content">{contract.redeemer.tag}</span>
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-xs text-gray-500">Index</span>
-                        <span class="text-sm text-gray-900">{contract.redeemer.index}</span>
+                        <span class="text-xs text-base-content/60">Index</span>
+                        <span class="text-sm text-base-content">{contract.redeemer.index}</span>
                     </div>
                     {#if contract.redeemer.data}
                         <div class="flex flex-col">
-                            <span class="text-xs text-gray-500">Data</span>
-                            <span class="text-sm text-gray-900 break-all">{contract.redeemer.data}</span>
+                            <span class="text-xs text-base-content/60">Data</span>
+                            <span class="text-sm text-base-content break-all">{contract.redeemer.data}</span>
                         </div>
                     {/if}
                     {#if contract.redeemer.ex_units}
                         <div class="grid grid-cols-2 gap-4">
                             <div class="flex flex-col">
-                                <span class="text-xs text-gray-500">Memory</span>
-                                <span class="text-sm text-gray-900">{contract.redeemer.ex_units.mem.toLocaleString()}</span>
+                                <span class="text-xs text-base-content/60">Memory</span>
+                                <span class="text-sm text-base-content">{contract.redeemer.ex_units.mem.toLocaleString()}</span>
                             </div>
                             <div class="flex flex-col">
-                                <span class="text-xs text-gray-500">Steps</span>
-                                <span class="text-sm text-gray-900">{contract.redeemer.ex_units.steps.toLocaleString()}</span>
+                                <span class="text-xs text-base-content/60">Steps</span>
+                                <span class="text-sm text-base-content">{contract.redeemer.ex_units.steps.toLocaleString()}</span>
                             </div>
                         </div>
                     {/if}
                 </div>
             {:else}
-                <div class="text-sm text-gray-900 break-all">{formatRedeemer(contract.redeemer)}</div>
+                <div class="text-sm text-base-content break-all">{formatRedeemer(contract.redeemer)}</div>
             {/if}
         </div>
     </div>
 
     <!-- Datum Hash Section -->
     {#if contract.datum_hash}
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div class="bg-base-100 rounded-lg shadow-sm p-4 mb-4">
             <div class="flex flex-col">
-                <div class="text-sm font-medium text-gray-500 mb-2">Datum Hash</div>
+                <div class="text-sm font-medium text-base-content/60 mb-2">Datum Hash</div>
                 <div class="flex items-start gap-2">
                     <a href="/datums/{contract.datum_hash}" class="text-sm text-blue-600 hover:underline break-all flex-grow">{contract.datum_hash}</a>
                     <button 
-                        class="text-gray-400 hover:text-gray-600 flex-shrink-0" 
+                        class="text-base-content/50 hover:text-base-content/70 flex-shrink-0" 
                         on:click={() => copyToClipboard(contract.datum_hash, 'Datum Hash copied to clipboard')}
                         title="Copy datum hash"
                     >
@@ -141,13 +141,13 @@
 
     <!-- Datum Section -->
     {#if contract.datum}
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+        <div class="bg-base-100 rounded-lg shadow-sm p-4 mb-4">
             <div class="flex flex-col">
-                <div class="text-sm font-medium text-gray-500 mb-2">Datum</div>
+                <div class="text-sm font-medium text-base-content/60 mb-2">Datum</div>
                 <div class="flex items-start gap-2">
-                    <div class="text-sm text-gray-900 break-all flex-grow">{contract.datum}</div>
+                    <div class="text-sm text-base-content break-all flex-grow">{contract.datum}</div>
                     <button 
-                        class="text-gray-400 hover:text-gray-600 flex-shrink-0" 
+                        class="text-base-content/50 hover:text-base-content/70 flex-shrink-0" 
                         on:click={() => copyToClipboard(contract.datum, 'Datum copied to clipboard')}
                         title="Copy datum value"
                     >
@@ -161,13 +161,13 @@
     {/if}
 
     <!-- Contract Body Section -->
-    <div class="bg-white rounded-lg shadow-sm p-4">
+    <div class="bg-base-100 rounded-lg shadow-sm p-4">
         <div class="flex flex-col">
-            <div class="text-sm font-medium text-gray-500 mb-2">Contract Body</div>
+            <div class="text-sm font-medium text-base-content/60 mb-2">Contract Body</div>
             <div class="flex items-start gap-2">
                 <textarea {...textareaprops} value={contract.script_content} class="w-full h-max font-mono text-sm"></textarea>
                 <button 
-                    class="text-gray-400 hover:text-gray-600 flex-shrink-0" 
+                    class="text-base-content/50 hover:text-base-content/70 flex-shrink-0" 
                     on:click={() => copyToClipboard(contract.script_content, 'Contract Body copied to clipboard')}
                     title="Copy contract body"
                 >

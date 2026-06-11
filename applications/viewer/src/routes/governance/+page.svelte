@@ -35,12 +35,12 @@
         <!-- Committee Card -->
         <a href="/governance/committee" class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
             <div class="card-body p-4">
-                <h2 class="card-title text-sm text-gray-500">Committee</h2>
+                <h2 class="card-title text-sm text-base-content/60">Committee</h2>
                 {#if data.committee}
                     <p class="text-2xl font-bold">{data.activeCommitteeCount}</p>
-                    <p class="text-xs text-gray-400">active members ({data.committee.threshold_numerator}/{data.committee.threshold_denominator} threshold)</p>
+                    <p class="text-xs text-base-content/50">active members ({data.committee.threshold_numerator}/{data.committee.threshold_denominator} threshold)</p>
                 {:else}
-                    <p class="text-sm text-gray-400">No data</p>
+                    <p class="text-sm text-base-content/50">No data</p>
                 {/if}
             </div>
         </a>
@@ -48,12 +48,12 @@
         <!-- Constitution Card -->
         <a href="/governance/constitution" class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
             <div class="card-body p-4">
-                <h2 class="card-title text-sm text-gray-500">Constitution</h2>
+                <h2 class="card-title text-sm text-base-content/60">Constitution</h2>
                 {#if data.constitution}
                     <p class="text-sm font-medium">Epoch {data.constitution.active_epoch}</p>
-                    <p class="text-xs text-gray-400 truncate">{data.constitution.anchor_url || 'No anchor'}</p>
+                    <p class="text-xs text-base-content/50 truncate">{data.constitution.anchor_url || 'No anchor'}</p>
                 {:else}
-                    <p class="text-sm text-gray-400">No data</p>
+                    <p class="text-sm text-base-content/50">No data</p>
                 {/if}
             </div>
         </a>
@@ -67,20 +67,20 @@
         </div>
 
         {#if data.proposals && data.proposals.length > 0}
-            <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
                 <table class="table w-full">
                     <thead>
-                        <tr class="bg-gray-50">
-                            <th class="font-semibold text-gray-700">Tx Hash</th>
-                            <th class="font-semibold text-gray-700">Type</th>
-                            <th class="font-semibold text-gray-700">Status</th>
-                            <th class="font-semibold text-gray-700">Deposit (ADA)</th>
-                            <th class="font-semibold text-gray-700">Epoch</th>
+                        <tr class="bg-base-200">
+                            <th class="font-semibold text-base-content/80">Tx Hash</th>
+                            <th class="font-semibold text-base-content/80">Type</th>
+                            <th class="font-semibold text-base-content/80">Status</th>
+                            <th class="font-semibold text-base-content/80">Deposit (ADA)</th>
+                            <th class="font-semibold text-base-content/80">Epoch</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.proposals as proposal}
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-base-200">
                                 <td>
                                     <a href="/transactions/{proposal.tx_hash}" class="link link-primary">
                                         {truncateHash(proposal.tx_hash)}
