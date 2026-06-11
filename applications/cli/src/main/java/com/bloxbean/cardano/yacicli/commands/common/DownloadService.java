@@ -119,30 +119,51 @@ public class DownloadService {
     }
 
     public boolean downloadYaciStoreNative(boolean overwrite) {
-        String downloadPath = resolveYaciStoreNativeDownloadPath();
+        // Download BOTH native variants so the runtime can select by nodeMode:
+        //   yaci-store-n2c -> haskell-only / companion / yano-primary (N2C local-state-query)
+        //   yaci-store-all -> yano-only (no N2C; derives protocol params from epoch_param)
+        if (overwrite) {
+            // Clear the store dir once so the per-variant downloads below start clean.
+            // (Store config under config/ is regenerated at cluster start.)
+            deleteExistingDir("store", clusterConfig.getYaciStoreBinPath());
+        }
 
-        if ( downloadPath == null) {
-            writeLn(error("Download URL for yaci-store is not set. Please set the download URL in download.properties"));
+        boolean n2c = downloadYaciStoreNativeVariant("n2c", overwrite);
+        boolean all = downloadYaciStoreNativeVariant("all", overwrite);
+
+        if (!n2c && !all) {
+            writeLn(error("Failed to download any yaci-store native variant."));
+            return false;
+        }
+        if (!n2c)
+            writeLn(warn("yaci-store-n2c variant not available (needed for haskell-only/companion/yano-primary modes)."));
+        if (!all)
+            writeLn(warn("yaci-store-all variant not available (needed for yano-only mode)."));
+        return true;
+    }
+
+    private boolean downloadYaciStoreNativeVariant(String variant, boolean overwrite) {
+        String downloadPath = resolveYaciStoreNativeDownloadPath(variant);
+
+        if (downloadPath == null) {
+            writeLn(error("Download URL for yaci-store (%s) is not set. Please set the download URL in download.properties", variant));
             return false;
         }
 
-        Path yaciStoreExec = Path.of(clusterConfig.getYaciStoreBinPath(), "yaci-store");
+        String binName = "yaci-store-" + variant;
+        Path yaciStoreExec = Path.of(clusterConfig.getYaciStoreBinPath(), binName);
 
-        if (yaciStoreExec.toFile().exists()) {
-            if (!overwrite) {
-                writeLn(info("yaci-store already exists in %s", yaciStoreExec.toFile().getAbsolutePath()));
-                writeLn(info("Use --overwrite to overwrite the existing yaci-store"));
-                return false;
-            } else {
-                deleteExistingDir("store", clusterConfig.getYaciStoreBinPath());
-            }
+        if (yaciStoreExec.toFile().exists() && !overwrite) {
+            writeLn(info("%s already exists in %s", binName, yaciStoreExec.toFile().getAbsolutePath()));
+            writeLn(info("Use --overwrite to overwrite the existing yaci-store"));
+            return true;
         }
 
         String targetDir = clusterConfig.getYaciStoreBinPath();
-        var downloadedFile = download("yaci-store", downloadPath, targetDir, "yaci-store.zip");
+        var downloadedFile = download(binName, downloadPath, targetDir, binName + ".zip");
         if (downloadedFile != null) {
             try {
-                var tmpFolder = Paths.get(clusterConfig.getYaciStoreBinPath(), "tmp");
+                var tmpFolder = Paths.get(clusterConfig.getYaciStoreBinPath(), "tmp-" + variant);
                 extractZip(downloadedFile.toFile().getAbsolutePath(), tmpFolder.toFile().getAbsolutePath());
 
                 File[] files = tmpFolder.toFile().listFiles();
@@ -153,27 +174,30 @@ public class DownloadService {
                     }
                 }
 
-                //Move the file yaci-store inside yaci-store folder to yaciStoreBinPath. Then remove the tmpFolder
+                //Move the yaci-store binary inside the extracted folder to yaci-store-<variant>. Then remove the tmpFolder
                 Path yaciStoreBinFile = Paths.get(tmpFolder.toFile().getAbsolutePath(), "yaci-store-files", "yaci-store");
 
+                boolean copied = false;
                 if(yaciStoreBinFile.toFile().exists()) {
                     writeLn(info("Copying yaci-store binary to " + yaciStoreExec.toFile().getAbsolutePath()));
-                    Files.copy(yaciStoreBinFile, yaciStoreExec.toFile().toPath());
+                    Files.deleteIfExists(yaciStoreExec);
+                    Files.copy(yaciStoreBinFile, yaciStoreExec);
+                    setExecutablePermission(yaciStoreExec.toFile().getAbsolutePath());
                     writeLn(success("Copied"));
+                    copied = true;
                 } else {
                     writeLn(error("yaci-store binary not found in the extracted folder : " + yaciStoreBinFile.toFile().getAbsolutePath()));
                 }
 
-                setExecutablePermission(yaciStoreExec.toFile().getAbsolutePath());
-
                 FileUtils.deleteDirectory(tmpFolder.toFile());
-                return true;
+                Files.deleteIfExists(downloadedFile.toFile().toPath());
+                return copied;
             } catch (IOException e) {
                 e.printStackTrace();
-                writeLn(error("Error extracting yaci-store" + e.getMessage()));
+                writeLn(error("Error extracting yaci-store " + variant + " : " + e.getMessage()));
             }
         } else {
-            writeLn(error("Download failed for yaci-store native binary"));
+            writeLn(error("Download failed for yaci-store %s native binary (variant may not exist for this platform)", variant));
         }
 
         return false;
@@ -586,9 +610,10 @@ public class DownloadService {
         return url;
     }
 
-    private String resolveYaciStoreNativeDownloadPath() {
+    private String resolveYaciStoreNativeDownloadPath(String variant) {
         if (!StringUtils.isEmpty(yaciStoreUrl)) {
-            return yaciStoreUrl;
+            // Explicit url override applies to the n2c variant only; -all has no override hook.
+            return "all".equals(variant) ? null : yaciStoreUrl;
         }
 
         if (StringUtils.isEmpty(yaciStoreVersion)) {
@@ -618,8 +643,10 @@ public class DownloadService {
             cpuArch = "x64";
         }
 
+        if (osPrefix == null)
+            return null;
 
-        String url = YACI_STORE_DOWNLOAD_URL + "/" + yaciStoreTag + "/yaci-store-" + yaciStoreVersion + "-" + osPrefix + "-" + cpuArch +"-n2c.zip";
+        String url = YACI_STORE_DOWNLOAD_URL + "/" + yaciStoreTag + "/yaci-store-" + yaciStoreVersion + "-" + osPrefix + "-" + cpuArch + "-" + variant + ".zip";
         return url;
     }
 

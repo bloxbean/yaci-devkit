@@ -13,17 +13,26 @@ store-native:
 
   RUN git --git-dir yaci-store/.git rev-parse --short HEAD > yaci-store/store.git.properties
 
-  RUN cp ../store.build.application.properties yaci-store/applications/all/src/main/resources/application.properties
-
   FROM ghcr.io/graalvm/graalvm-community:21
 
   COPY tmp/yaci-store yaci-store
+  COPY store.build.n2c.application.properties store.build.n2c.application.properties
+  COPY store.build.all.application.properties store.build.all.application.properties
 
   WORKDIR yaci-store
+  RUN mkdir -p output
 
-  # Build with Gradle
-  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} clean build nativeCompile
+  # Build the n2c variant (N2C local-state-query; used for haskell-only/companion/yano-primary)
+  RUN cp ../store.build.n2c.application.properties applications/all/src/main/resources/application.properties
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} -Pprofile=n2c clean nativeCompile
+  RUN cp applications/all/build/native/nativeCompile/yaci-store output/yaci-store-n2c
 
-  # Save artifacts
-  SAVE ARTIFACT applications/all/build/native/nativeCompile/yaci-store yaci-store
+  # Build the all variant (no N2C; derives protocol params via epoch-aggr; used for yano-only)
+  RUN cp ../store.build.all.application.properties applications/all/src/main/resources/application.properties
+  RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon -i -Pversion=${APP_VERSION} -Pprofile=all clean nativeCompile
+  RUN cp applications/all/build/native/nativeCompile/yaci-store output/yaci-store-all
+
+  # Save artifacts (both native variants + git properties)
+  SAVE ARTIFACT output/yaci-store-n2c yaci-store-n2c
+  SAVE ARTIFACT output/yaci-store-all yaci-store-all
   SAVE ARTIFACT store.git.properties yaci-store.git.properties

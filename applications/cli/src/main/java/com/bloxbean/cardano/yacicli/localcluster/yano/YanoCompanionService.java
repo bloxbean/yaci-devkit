@@ -3,7 +3,10 @@ package com.bloxbean.cardano.yacicli.localcluster.yano;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.localcluster.ClusterInfoService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
+import com.bloxbean.cardano.yacicli.localcluster.yano.bootstrap.ChainBootstrapContext;
+import com.bloxbean.cardano.yacicli.localcluster.yano.bootstrap.ChainBootstrapRunner;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,17 +44,18 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @RequiredArgsConstructor
 @Slf4j
 public class YanoCompanionService {
-    private static final int BOOTSTRAP_EPOCH_SHIFT = 3;
+    private static final int BOOTSTRAP_EPOCH_SHIFT = ClusterConfig.YANO_BOOTSTRAP_EPOCH_SHIFT;
     private static final String TOPOLOGY_BEFORE_YANO = "topology-before-yano.json";
 
     private final YanoService yanoService;
     private final YanoBootstrapService yanoBootstrapService;
-    private final YanoGovernanceService yanoGovernanceService;
+    private final ChainBootstrapRunner chainBootstrapRunner;
     private final ClusterConfig clusterConfig;
     // ObjectProvider to break the constructor cycle:
     //   ClusterService -> ClusterStartService -> YanoCompanionService -> ClusterUtilService -> ClusterService.
     // The bean is resolved lazily at call time (see performHandover).
     private final ObjectProvider<ClusterUtilService> clusterUtilServiceProvider;
+    private final ClusterInfoService clusterInfoService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -85,11 +89,11 @@ public class YanoCompanionService {
             return false;
         }
 
-        // 4. Submit governance proposals (cost model update) via Yano
-        writer.accept(info("Submitting governance proposals via Yano..."));
-        boolean governanceDone = yanoGovernanceService.submitCostModelGovernance(clusterInfo, clusterFolder, writer);
-        if (!governanceDone) {
-            writer.accept(warn("Governance proposals failed. Cost models will need manual update after startup."));
+        // 4. Run initial chainstate bootstrap steps (cost-model governance, etc.) via Yano
+        boolean bootstrapStepsOk = chainBootstrapRunner.runAll(
+                new ChainBootstrapContext(clusterInfo, clusterFolder, httpPort), writer);
+        if (!bootstrapStepsOk) {
+            writer.accept(warn("One or more chain bootstrap steps did not complete. Chain state may need manual setup after startup."));
         }
 
         // 5. Catch up to wall-clock time
@@ -100,9 +104,9 @@ public class YanoCompanionService {
             return false;
         }
 
-        // 6. Sync shifted genesis files back to Haskell node
+        // 6. Sync shifted genesis files into the cluster node/genesis dir (read by Haskell + the store)
         try {
-            syncYanoGenesisToHaskellNode(clusterInfo, clusterFolder, writer);
+            syncShiftedGenesisToClusterNodeDir(clusterInfo, clusterFolder, writer);
         } catch (IOException e) {
             writer.accept(error("Failed to sync genesis: " + e.getMessage()));
             yanoService.stop();
@@ -154,10 +158,12 @@ public class YanoCompanionService {
     }
 
     /**
-     * Copy Yano's shifted shelley-genesis.json back to the Haskell node's genesis dir,
-     * and update byron-genesis.json startTime to match.
+     * Copy Yano's shifted shelley-genesis.json into the cluster {@code node/genesis} dir and update
+     * byron-genesis.json startTime to match. This dir is read by both the Haskell node (companion/
+     * yano-primary) and Yaci Store (all modes), so the store's slot/epoch/time math agrees with
+     * Yano's shifted systemStart after a time-travel bootstrap.
      */
-    public void syncYanoGenesisToHaskellNode(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
+    public void syncShiftedGenesisToClusterNodeDir(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException {
         Path yanoConfigDir = clusterFolder.resolve("yano-config").resolve("network").resolve("devnet");
         Path haskellGenesisDir = clusterFolder.resolve("node").resolve("genesis");
 
@@ -176,14 +182,19 @@ public class YanoCompanionService {
         byronJson.put("startTime", epochSeconds);
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), byronJson);
 
-        // 3. Update ClusterInfo with the shifted start time
+        // 3. Update ClusterInfo with the shifted start time and persist so the
+        //    /admin/devnet API reports the same systemStart as the genesis files.
+        //    Without this save, cluster-info.json keeps the wall-clock value written
+        //    by ClusterStartService.setupFirstRun() and drifts ~bootstrap-window
+        //    minutes ahead of shelley-genesis.json#systemStart.
         clusterInfo.setStartTime(epochSeconds);
+        clusterInfoService.saveClusterInfo(clusterFolder, clusterInfo);
 
         // 4. Compute and log the genesis hash (= initial epoch nonce)
         byte[] genesisBytes = Files.readAllBytes(haskellShelley);
         byte[] genesisHash = Blake2bUtil.blake2bHash256(genesisBytes);
         String genesisHashHex = HexFormat.of().formatHex(genesisHash);
-        writer.accept(info("Synced shifted genesis to Haskell node (systemStart: %s)", systemStart));
+        writer.accept(info("Synced shifted genesis to cluster node dir (systemStart: %s)", systemStart));
         writer.accept(info("Shelley genesis hash (epoch nonce): %s", genesisHashHex));
     }
 

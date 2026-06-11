@@ -60,9 +60,6 @@ java-setup:
 docker-build:
     FROM ubuntu:22.04
     ENV JAVA_HOME=/opt/java/openjdk
-    ENV STORE_VERSION=2.0.1-rc1
-    ENV STORE_NATIVE_BRANCH=v2.0.1-rc1
-    ENV YANO_BRANCH=fix/devkit_fix
 
     ARG TARGETOS
     ARG TARGETARCH
@@ -70,7 +67,8 @@ docker-build:
     ARG APP_VERSION
     ARG REGISTRY_ORG
     ARG COMMIT_ID
-    ARG YANO_BRANCH
+    ARG STORE_NATIVE_BRANCH="release/2.0.1_devkit"
+    ARG YANO_BRANCH="v0.1.0-pre6"
 
     COPY --dir +java-setup/openjdk /opt/java/
     ENV PATH="${JAVA_HOME}/bin:${PATH}"
@@ -105,17 +103,15 @@ docker-build:
     RUN echo "I'm building for $TARGETOS/$TARGETARCH"
 
     RUN mkdir -p /app/store/config
-    COPY docker/store-application.properties /app/store/config/application.properties
-
-    RUN wget https://github.com/bloxbean/yaci-store/releases/download/v${STORE_VERSION}/yaci-store-${STORE_VERSION}.zip -O /app/store/yaci-store.zip
-    RUN unzip /app/store/yaci-store.zip -d /app/store/
-    RUN cp /app/store/yaci-store-${STORE_VERSION}/yaci-store.jar /app/store/yaci-store.jar
 
     RUN echo ${APP_VERSION} > /app/version
 
-    IF [ "$BUILD_TYPE" = "native" ]
+    # Yaci Store native variants (always included). The Store config is generated at
+    # runtime by the CLI (YaciStoreConfigBuilder), so no static config is bundled.
+    #   yaci-store-n2c -> haskell-only / companion / yano-primary (N2C local-state-query)
+    #   yaci-store-all -> yano-only (no N2C; derives protocol params from epoch_param)
     COPY (../store-build/+store-native/yaci-store* --APP_VERSION=${APP_VERSION} --STORE_BRANCH=${STORE_NATIVE_BRANCH}) /app/store/
-    END
+    RUN chmod +x /app/store/yaci-store-n2c /app/store/yaci-store-all
 
     # Yano native binary (always included; Yano is native-only in docker)
     RUN mkdir -p /app/yano

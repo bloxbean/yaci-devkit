@@ -10,8 +10,8 @@ import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.localcluster.peer.LocalPeerService;
 import com.bloxbean.cardano.yacicli.localcluster.yano.YanoBootstrapService;
 import com.bloxbean.cardano.yacicli.localcluster.yano.YanoCompanionService;
-import com.bloxbean.cardano.yacicli.localcluster.yano.YanoGovernanceService;
 import com.bloxbean.cardano.yacicli.localcluster.yano.YanoService;
+import com.bloxbean.cardano.yacicli.localcluster.yano.YanoTimeTravelBootstrap;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import org.apache.commons.io.FileUtils;
@@ -55,7 +55,7 @@ public class ClusterStartService {
     private final YanoCompanionService yanoCompanionService;
     private final YanoService yanoService;
     private final YanoBootstrapService yanoBootstrapService;
-    private final YanoGovernanceService yanoGovernanceService;
+    private final YanoTimeTravelBootstrap yanoTimeTravelBootstrap;
 
     private ObjectMapper objectMapper = new ObjectMapper();
     private List<Process> processes = new ArrayList<>();
@@ -77,7 +77,7 @@ public class ClusterStartService {
             return new RunStatus(false, false);
 
         try {
-            boolean firstRun = checkIfFirstRun(clusterFolder);
+            boolean firstRun = checkIfFirstRun(clusterFolder, clusterInfo.getNodeMode());
             boolean companionMode = NodeMode.COMPANION == clusterInfo.getNodeMode();
             boolean yanoOnlyMode = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
             boolean yanoPrimaryMode = NodeMode.YANO_PRIMARY == clusterInfo.getNodeMode();
@@ -97,23 +97,21 @@ public class ClusterStartService {
 
             if (yanoOnlyMode) {
                 // Yano-only: Yano is the sole block producer, no Haskell node
-                boolean yanoStarted = yanoService.start(clusterInfo, clusterFolder, false, writer);
-                if (!yanoStarted) {
-                    writer.accept(error("Failed to start Yano."));
-                    return new RunStatus(false, firstRun);
-                }
-
                 if (firstRun) {
-                    int httpPort = clusterInfo.getYanoHttpPort();
-                    if (!yanoBootstrapService.waitForReady(httpPort, writer)) {
-                        writer.accept(error("Yano HTTP API not ready."));
-                        yanoService.stop();
+                    // Time-travel bootstrap: start Yano in the past, run the chain bootstrap steps
+                    // (cost-model governance, future customizations), and catch up to wall-clock so
+                    // protocol params are enacted instantly regardless of epoch length.
+                    if (!yanoTimeTravelBootstrap.bootstrapYanoOnly(clusterInfo, clusterFolder, writer)) {
+                        writer.accept(error("Yano-only bootstrap failed."));
                         return new RunStatus(false, firstRun);
                     }
-
-                    // Submit governance proposals via Yano's HTTP API
-                    writer.accept(info("Submitting governance proposals via Yano..."));
-                    yanoGovernanceService.submitCostModelGovernance(clusterInfo, clusterFolder, writer);
+                } else {
+                    // Restart: resume the existing chain at wall-clock; no shift/bootstrap.
+                    boolean yanoStarted = yanoService.start(clusterInfo, clusterFolder, false, writer);
+                    if (!yanoStarted) {
+                        writer.accept(error("Failed to start Yano."));
+                        return new RunStatus(false, firstRun);
+                    }
                 }
 
                 // No Haskell node, no submit-api, no handover
@@ -236,6 +234,12 @@ public class ClusterStartService {
     }
 
     private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
+        // yano-only uses neither the Haskell node port nor the submit-api port; Yano checks its own
+        // n2n/http ports in YanoService.start. Skip the Haskell port checks so they can't block a
+        // valid yano-only startup.
+        if (NodeMode.YANO_ONLY == clusterInfo.getNodeMode())
+            return true;
+
         boolean nodePortAvailable = PortUtil.isPortAvailable(clusterInfo.getNodePort());
         if (!nodePortAvailable) {
             writer.accept(info("Node Port %s is not available. Waiting for 2 seconds and try again", clusterInfo.getNodePort()));
@@ -530,13 +534,18 @@ public class ClusterStartService {
         }
     }
 
-    public boolean checkIfFirstRun(Path clusterFolder) {
+    public boolean checkIfFirstRun(Path clusterFolder, NodeMode nodeMode) {
         String node1Folder = ClusterConfig.NODE_FOLDER_PREFIX;
+        // yano-only never starts a Haskell node, so node/db is never created. Detect a completed
+        // first run via a marker written only after the time-travel bootstrap fully succeeds.
+        // (node/yano alone is unreliable: Yano creates it early, so an interrupted/failed first-run
+        // bootstrap would otherwise be mistaken for a restart and skip the bootstrap entirely.)
+        if (NodeMode.YANO_ONLY == nodeMode) {
+            Path marker = clusterFolder.resolve(node1Folder).resolve(ClusterConfig.YANO_BOOTSTRAP_COMPLETE_MARKER);
+            return !Files.exists(marker);
+        }
         Path db = clusterFolder.resolve(node1Folder).resolve("db");
-        if (Files.exists(db))
-            return false;
-        else
-            return true;
+        return !Files.exists(db);
     }
 
     public boolean isClusterRunning() {

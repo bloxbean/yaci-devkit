@@ -23,6 +23,12 @@ public class ClusterConfig {
     public final static String NODE_RELAY_SCRIPT = "node-relay";
     public final static String NODE_BP_SCRIPT = "node-bp";
     public final static String COMPONENTS = "components";
+    // Marker written under node/ only after a yano-only time-travel bootstrap fully succeeds.
+    // Used for first-run detection so an interrupted/failed bootstrap re-runs instead of being
+    // mistaken for a restart (node/yano alone is created early by Yano and is not a reliable signal).
+    public final static String YANO_BOOTSTRAP_COMPLETE_MARKER = "yano-bootstrap.complete";
+    // Epochs Yano shifts genesis back during a time-travel bootstrap (companion / yano-primary / yano-only).
+    public final static int YANO_BOOTSTRAP_EPOCH_SHIFT = 3;
 
     @Value("${yaci.cli.home:#{null}}")
     private String yaciCliHome;

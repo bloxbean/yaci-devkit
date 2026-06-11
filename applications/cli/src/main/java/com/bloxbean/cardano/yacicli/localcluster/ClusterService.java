@@ -594,7 +594,15 @@ public class ClusterService {
     }
 
     public boolean isFirstRunt(String clusterName) {
-        return clusterStartService.checkIfFirstRun(getClusterFolder(clusterName));
+        NodeMode nodeMode = null;
+        try {
+            ClusterInfo clusterInfo = getClusterInfo(clusterName);
+            if (clusterInfo != null)
+                nodeMode = clusterInfo.getNodeMode();
+        } catch (IOException e) {
+            log.warn("Could not resolve node mode for first-run check: {}", e.getMessage());
+        }
+        return clusterStartService.checkIfFirstRun(getClusterFolder(clusterName), nodeMode);
     }
 
 }

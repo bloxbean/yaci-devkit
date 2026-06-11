@@ -3,6 +3,7 @@ package com.bloxbean.cardano.yacicli.localcluster.socat;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterPortInfoHelper;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterCreated;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
@@ -68,6 +69,12 @@ public class SocatService {
             if (clusterInfo == null)
                 throw new IllegalStateException("Cluster info not found for cluster: " + clusterStarted.getClusterName()
                         + ". Please check if the cluster is created.");
+
+            // yano-only has no Haskell node and therefore no node.sock for socat to proxy.
+            if (NodeMode.YANO_ONLY == clusterInfo.getNodeMode()) {
+                writeLn("Skipping socat in yano-only mode (no n2c node socket).");
+                return;
+            }
 
             if (!portAvailabilityCheck(clusterInfo, (msg) -> writeLn(msg)))
                 return;

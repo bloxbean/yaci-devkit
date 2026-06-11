@@ -329,6 +329,17 @@ public class YanoService {
         Path clusterFolder = Path.of(clusterConfig.getClusterHome(), clusterDeleted.getClusterName());
         deleteIfPresent(clusterFolder.resolve("node").resolve("yano"), "Yano data");
         deleteIfPresent(clusterFolder.resolve("yano-config"), "Yano config");
+        deleteBootstrapMarker(clusterFolder);
+    }
+
+    private void deleteBootstrapMarker(Path clusterFolder) {
+        Path marker = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX)
+                .resolve(ClusterConfig.YANO_BOOTSTRAP_COMPLETE_MARKER);
+        try {
+            Files.deleteIfExists(marker);
+        } catch (IOException e) {
+            log.warn("Could not delete yano bootstrap marker {}: {}", marker, e.getMessage());
+        }
     }
 
     private void deleteIfPresent(Path path, String label) {
