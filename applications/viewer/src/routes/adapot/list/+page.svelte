@@ -1,9 +1,6 @@
 <script lang="ts">
     import { formatAda, formatLovelace } from '$lib/util';
-    import { page } from '$app/stores';
-    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { env } from '$env/dynamic/public';
 
     interface AdaPotData {
         epoch: number;
@@ -21,137 +18,34 @@
         };
     }
 
-    interface ApiResponse {
-        epoch: number;
-        rewards_pot: number;
-        deposits_stake: number;
-        fees: number;
-        treasury: number;
-        reserves: number;
-        circulation: number;
-        distributed_rewards: number;
-        undistributed_rewards: number;
-        pool_rewards_pot: number;
-    }
+    export let data;
 
     let adapots: AdaPotData[] = [];
     let currentPage = 1;
-    let itemsPerPage = 20;
-    let totalPages = 1;
-    let loading = true;
+    let itemsPerPage = 15;
     let error: string | null = null;
-    let initialLoad = true;
 
-    // Initialize from URL parameters
-    $: {
-        const params = new URLSearchParams($page.url.search);
-        const pageParam = parseInt(params.get('page') || '1');
-        const countParam = parseInt(params.get('count') || '15');
-        
-        // Only update and reload if the parameters have actually changed
-        if (pageParam !== currentPage || countParam !== itemsPerPage) {
-            currentPage = pageParam;
-            itemsPerPage = countParam;
-            if (!initialLoad) {
-                // Use a small timeout to prevent multiple rapid reloads
-                setTimeout(() => loadAdapots(currentPage), 0);
-            }
-        }
-    }
-
-    onMount(() => {
-        // Load initial data
-        loadAdapots(currentPage);
-        initialLoad = false;
-    });
-
-    function validateApiResponse(data: any[]): data is ApiResponse[] {
-        if (!Array.isArray(data)) return false;
-        return data.every(item => 
-            typeof item === 'object' &&
-            typeof item.epoch === 'number' &&
-            typeof item.rewards_pot === 'number' &&
-            typeof item.deposits_stake === 'number' &&
-            typeof item.fees === 'number' &&
-            typeof item.treasury === 'number' &&
-            typeof item.reserves === 'number' &&
-            typeof item.circulation === 'number' &&
-            typeof item.distributed_rewards === 'number' &&
-            typeof item.undistributed_rewards === 'number' &&
-            typeof item.pool_rewards_pot === 'number'
-        );
-    }
-
-    async function loadAdapots(page: number) {
-        loading = true;
-        error = null;
-        try {
-            console.log('Loading page:', page);
-            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
-            const response = await fetch(`${baseUrl}/adapot/list?page=${page}&count=${itemsPerPage}`);
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-                console.error('Error response:', errorData);
-                throw new Error(errorData.error || `Failed to fetch AdaPot list (Status: ${response.status})`);
-            }
-            
-            const data = await response.json();
-            console.log('Received data:', data);
-
-            if (!validateApiResponse(data)) {
-                throw new Error('Invalid data format received from server');
-            }
-
-            adapots = data.map((item: ApiResponse) => ({
-                epoch: item.epoch,
-                totalAmount: item.rewards_pot,
-                currentEpoch: item.epoch,
-                details: {
-                    depositsStake: item.deposits_stake,
-                    fees: item.fees,
-                    treasury: item.treasury,
-                    reserves: item.reserves,
-                    circulation: item.circulation,
-                    distributedRewards: item.distributed_rewards,
-                    undistributedRewards: item.undistributed_rewards,
-                    poolRewardsPot: item.pool_rewards_pot
-                }
-            }));
-            currentPage = page;
-        } catch (e) {
-            console.error('Error loading AdaPots:', e);
-            error = e instanceof Error ? e.message : 'An error occurred while loading AdaPots';
-            adapots = [];
-        } finally {
-            loading = false;
-        }
-    }
+    $: adapots = data.adapots ?? [];
+    $: currentPage = parseInt(data.page || '1');
+    $: itemsPerPage = parseInt(data.count || '15');
+    $: error = data.error ?? null;
 
     function goToPage(page: number) {
         if (page < 1 || (page > currentPage && adapots.length < itemsPerPage)) return;
         const params = new URLSearchParams();
         params.set('page', page.toString());
         params.set('count', itemsPerPage.toString());
-        goto(`?${params.toString()}`);
+        goto(`/adapot/list?${params.toString()}`);
     }
 </script>
 
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold mb-6">AdaPot History</h1>
 
-    {#if loading}
-        <div class="flex justify-center items-center h-32">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </div>
-    {:else if error}
+    {#if error}
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong class="font-bold">Error: </strong>
             <span class="block sm:inline">{error}</span>
-            <button class="bg-red-500 text-white px-4 py-2 rounded mt-2" on:click={() => loadAdapots(currentPage)}>
-                Retry
-            </button>
         </div>
     {:else if adapots.length === 0}
         <div class="text-center py-8">
@@ -232,7 +126,7 @@
             <button 
                 class="join-item btn btn-sm"
                 on:click={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1 || loading}
+                disabled={currentPage <= 1}
             >
                 «
             </button>
@@ -240,7 +134,7 @@
             <button 
                 class="join-item btn btn-sm"
                 on:click={() => goToPage(currentPage + 1)}
-                disabled={adapots.length < itemsPerPage || loading} 
+                disabled={adapots.length < itemsPerPage} 
             >
                 »
             </button>
