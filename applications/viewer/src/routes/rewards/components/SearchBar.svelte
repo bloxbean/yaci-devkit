@@ -19,11 +19,11 @@
     }
 </script>
 
-<div class="bg-white rounded-lg shadow p-6 mb-6">
+<div class="bg-base-100 rounded-lg shadow p-6 mb-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Stake Address Search -->
         <div>
-            <label for="stakeAddress" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="stakeAddress" class="block text-sm font-medium text-base-content/80 mb-1">
                 Stake Address
             </label>
             <input
@@ -37,7 +37,7 @@
         
         <!-- Epoch Filter -->
         <div>
-            <label for="epoch" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="epoch" class="block text-sm font-medium text-base-content/80 mb-1">
                 Epoch
             </label>
             <input
@@ -54,7 +54,7 @@
         <button
             type="button"
             on:click={handleReset}
-            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-base-content/80 bg-base-100 hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
             Reset
         </button>

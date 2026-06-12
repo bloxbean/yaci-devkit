@@ -48,7 +48,7 @@
                         </span>
                     {/if}
                     <button
-                        class="text-gray-400 hover:text-gray-600"
+                        class="text-base-content/50 hover:text-base-content/70"
                         on:click={() => copyToClipboard(amount.asset_name)}
                         title="Copy asset name"
                     >

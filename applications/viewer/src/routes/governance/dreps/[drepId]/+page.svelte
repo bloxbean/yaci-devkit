@@ -69,7 +69,7 @@
                         {#if data.drep.drep_hash}
                             <TruncateCopy text={data.drep.drep_hash} max={38} />
                         {:else}
-                            <span class="text-gray-400">None</span>
+                            <span class="text-base-content/50">None</span>
                         {/if}
                     </div>
 
@@ -103,26 +103,26 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto bg-white rounded-lg shadow mb-4">
+            <div class="overflow-x-auto bg-base-100 rounded-lg shadow mb-4">
                 <table class="table w-full">
                     <thead>
-                        <tr class="bg-gray-50">
-                            <th class="font-semibold text-gray-700">Address</th>
-                            <th class="font-semibold text-gray-700">Tx Hash</th>
-                            <th class="font-semibold text-gray-700">Block</th>
-                            <th class="font-semibold text-gray-700">Slot</th>
+                        <tr class="bg-base-200">
+                            <th class="font-semibold text-base-content/80">Address</th>
+                            <th class="font-semibold text-base-content/80">Tx Hash</th>
+                            <th class="font-semibold text-base-content/80">Block</th>
+                            <th class="font-semibold text-base-content/80">Slot</th>
                         </tr>
                     </thead>
                     <tbody>
                         {#each data.delegations as delegation}
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-base-200">
                                 <td>
                                     {#if delegation.address}
                                         <a href="/addresses/{delegation.address}" class="link link-primary">
                                             <TruncateCopy text={delegation.address} max={30} />
                                         </a>
                                     {:else}
-                                        <span class="text-gray-400">-</span>
+                                        <span class="text-base-content/50">-</span>
                                     {/if}
                                 </td>
                                 <td>
@@ -131,7 +131,7 @@
                                             {truncateHash(delegation.tx_hash)}
                                         </a>
                                     {:else}
-                                        <span class="text-gray-400">-</span>
+                                        <span class="text-base-content/50">-</span>
                                     {/if}
                                 </td>
                                 <td>
@@ -140,7 +140,7 @@
                                             {delegation.block_number}
                                         </a>
                                     {:else}
-                                        <span class="text-gray-400">-</span>
+                                        <span class="text-base-content/50">-</span>
                                     {/if}
                                 </td>
                                 <td>{delegation.slot ?? '-'}</td>

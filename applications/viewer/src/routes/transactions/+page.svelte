@@ -113,10 +113,10 @@
                     type="text" 
                     bind:value={searchQuery}
                     placeholder="Search Tx Hash or Address..." 
-                    class="input input-bordered w-full bg-white text-black pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-shadow"
+                    class="input input-bordered w-full bg-base-100 text-black pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-shadow"
                     spellcheck="false"
                 />
-                <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors" aria-label="Search">
+                <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-blue-600 transition-colors" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
@@ -140,15 +140,15 @@
                 <span>{data.body?.error || 'Failed to load transactions. Please check your connection to the Yaci node.'}</span>
             </div>
         {:else if !data.txs || data.txs.length === 0}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center mt-4">
-                <h3 class="text-lg font-medium text-gray-900">No transactions found</h3>
-                <p class="mt-1 text-sm text-gray-500">Waiting for new transactions to be produced...</p>
+            <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-12 text-center mt-4">
+                <h3 class="text-lg font-medium text-base-content">No transactions found</h3>
+                <p class="mt-1 text-sm text-base-content/60">Waiting for new transactions to be produced...</p>
             </div>
         {:else}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 relative">
+            <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 relative">
                 
                 {#if loading}
-                    <div class="absolute inset-0 bg-white/60 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl">
+                    <div class="absolute inset-0 bg-base-100/60 backdrop-blur-sm flex justify-center items-center z-10 rounded-xl">
                         <span class="loading loading-spinner loading-lg text-blue-600"></span>
                     </div>
                 {/if}
@@ -156,7 +156,7 @@
                 <div class="hidden lg:block overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50/80 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <tr class="bg-base-200/80 border-b border-base-200 text-xs font-bold text-base-content/60 uppercase tracking-wider">
                                 <th class="py-4 px-6">Tx Hash</th>
                                 <th class="py-4 px-6">Block / Slot</th>
                                 <th class="py-4 px-6">Total Output</th>
@@ -164,16 +164,16 @@
                                 <th class="py-4 px-6">Addresses</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody class="divide-y divide-base-200">
                             {#each data.txs as tx (tx.tx_hash)}
-                                <tr class="hover:bg-gray-50/50 transition-colors group">
+                                <tr class="hover:bg-base-200/50 transition-colors group">
                                     <td class="py-4 px-6 align-middle">
                                         <div class="flex items-center gap-2">
                                             <a href="/transactions/{tx.tx_hash}" class="font-mono text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium">
                                                 {truncate(tx.tx_hash, 24, "...")}
                                             </a>
                                             <button 
-                                                class="text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" 
+                                                class="text-base-content/50 hover:text-base-content/80 opacity-0 group-hover:opacity-100 transition-opacity" 
                                                 on:click={() => copyToClipboard(tx.tx_hash)} title="Copy Hash">
                                                 {@html iconCopy}
                                             </button>
@@ -181,10 +181,10 @@
                                     </td>
                                     <td class="py-4 px-6 align-middle">
                                         <div class="flex items-center gap-1">
-                                            <span class="text-gray-400">{@html iconCube}</span>
+                                            <span class="text-base-content/50">{@html iconCube}</span>
                                             <a href="/blocks/{tx.block_number}" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
                                                 {tx.block_number}
-                                            </a> <div  class="text-sm font-medium text-gray-500">/ {tx.slot}</div>
+                                            </a> <div  class="text-sm font-medium text-base-content/60">/ {tx.slot}</div>
                                         </div>
                                     </td>
                                     <td class="py-4 px-6 align-middle">
@@ -192,8 +192,8 @@
                                             <div class="bg-emerald-100 p-1.5 rounded-full text-emerald-600">
                                                 {@html iconCardano}
                                             </div>
-                                            <div class="text-sm font-semibold text-gray-900" title="{tx.total_output} lovelace">
-                                                {formatAda(tx.total_output)} <span class="text-xs text-gray-500 font-normal">ADA</span>
+                                            <div class="text-sm font-semibold text-base-content" title="{tx.total_output} lovelace">
+                                                {formatAda(tx.total_output)} <span class="text-xs text-base-content/60 font-normal">ADA</span>
                                             </div>
                                         </div>
                                     </td>
@@ -202,21 +202,21 @@
                                             <div class="bg-rose-100 p-1.5 rounded-full text-rose-500">
                                                 {@html iconCardano}
                                             </div>
-                                            <div class="text-sm font-medium text-gray-700" title="{tx.fee} lovelace">
-                                                {formatAda(tx.fee)} <span class="text-xs text-gray-400 font-normal">ADA</span>
+                                            <div class="text-sm font-medium text-base-content/80" title="{tx.fee} lovelace">
+                                                {formatAda(tx.fee)} <span class="text-xs text-base-content/50 font-normal">ADA</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="py-4 px-6 align-top max-w-xs">
-                                        <div class="max-h-20 overflow-y-auto pr-2 scrollbar-thin text-sm font-mono text-gray-500">
+                                        <div class="max-h-20 overflow-y-auto pr-2 scrollbar-thin text-sm font-mono text-base-content/60">
                                             {#if tx.output_addresses && tx.output_addresses.length > 0}
                                                 {#each tx.output_addresses as address, i (address + i)}
-                                                    <div class="mb-1 truncate hover:text-gray-800 transition-colors" title={address}>
+                                                    <div class="mb-1 truncate hover:text-base-content transition-colors" title={address}>
                                                         <AddressLink {address} maxLength={22} />
                                                     </div>
                                                 {/each}
                                             {:else}
-                                                <span class="text-gray-400 italic">No outputs</span>
+                                                <span class="text-base-content/50 italic">No outputs</span>
                                             {/if}
                                         </div>
                                     </td>
@@ -226,39 +226,39 @@
                     </table>
                 </div>
 
-                <div class="lg:hidden divide-y divide-gray-100">
+                <div class="lg:hidden divide-y divide-base-200">
                     {#each data.txs as tx (tx.tx_hash)}
-                        <div class="p-4 hover:bg-gray-50/50 transition-colors">
+                        <div class="p-4 hover:bg-base-200/50 transition-colors">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tx Hash</div>
+                                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Tx Hash</div>
                                     <a href="/transactions/{tx.tx_hash}" class="font-mono text-sm text-blue-600 hover:underline break-all block pr-4">
                                         {tx.tx_hash}
                                     </a>
                                 </div>
-                                <button class="p-2 bg-gray-100 text-gray-600 rounded-md active:bg-gray-200 shrink-0 mt-4" on:click={() => copyToClipboard(tx.tx_hash)}>
+                                <button class="p-2 bg-base-200 text-base-content/70 rounded-md active:bg-base-300 shrink-0 mt-4" on:click={() => copyToClipboard(tx.tx_hash)}>
                                     {@html iconCopy}
                                 </button>
                             </div>
 
                             <div class="grid grid-cols-2 gap-3 mb-4">
-                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                    <div class="text-xs text-gray-500 mb-1 flex items-center gap-1">{@html iconCube} Block</div>
+                                <div class="bg-base-200 p-3 rounded-lg border border-base-200">
+                                    <div class="text-xs text-base-content/60 mb-1 flex items-center gap-1">{@html iconCube} Block</div>
                                     <a href="/blocks/{tx.block_number}" class="text-sm font-medium text-blue-600">{tx.block_number}</a>
-                                    <span class="text-xs text-gray-400 ml-1">(Slot {tx.slot})</span>
+                                    <span class="text-xs text-base-content/50 ml-1">(Slot {tx.slot})</span>
                                 </div>
-                                <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col justify-center">
-                                    <div class="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                                <div class="bg-base-200 p-3 rounded-lg border border-base-200 flex flex-col justify-center">
+                                    <div class="text-xs text-base-content/60 mb-1 flex items-center gap-1">
                                         <div class="text-emerald-500">{@html iconCardano}</div> Output
                                     </div>
-                                    <div class="text-sm font-semibold text-gray-900">{formatAda(tx.total_output)}</div>
+                                    <div class="text-sm font-semibold text-base-content">{formatAda(tx.total_output)}</div>
                                 </div>
                             </div>
 
-                            <div class="flex justify-between items-center text-xs text-gray-500 border-t border-gray-100 pt-3">
+                            <div class="flex justify-between items-center text-xs text-base-content/60 border-t border-base-200 pt-3">
                                 <div class="flex items-center gap-1.5">
                                     <div class="text-rose-500">{@html iconCardano}</div> 
-                                    Fee: <span class="font-medium text-gray-700">{formatAda(tx.fee)} ADA</span>
+                                    Fee: <span class="font-medium text-base-content/80">{formatAda(tx.fee)} ADA</span>
                                 </div>
                             </div>
                         </div>

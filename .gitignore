@@ -1,4 +1,5 @@
 scripts/scala/*.sc
+.claude/
 /docs/node_modules/
 /docs/.next
 /docs/out

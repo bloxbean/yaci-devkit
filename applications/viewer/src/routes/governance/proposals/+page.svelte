@@ -1,96 +1,35 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { page } from "$app/stores";
     import { goto } from '$app/navigation';
     import { formatAda } from '$lib/util';
     import type { Proposal } from "./types";
     import { EyeIcon, CopyIcon, InfoIcon } from 'svelte-feather-icons';
-    import { env } from '$env/dynamic/public';
+
+    export let data;
 
     let proposals: Proposal[] = [];
     let currentPage = 1;
     let itemsPerPage = 10;
-    let totalPages = 1;
-    let loading = true;
+    let hasMore = false;
     let error: string | null = null;
-    let initialLoad = true;
     let selectedProposal: Proposal | null = null;
     let showModal = false;
-    let modalLoading = false;
     let modalError: string | null = null;
     let showToast = false;
     let toastMessage = '';
 
-    // Initialize from URL parameters
-    $: {
-        const params = new URLSearchParams($page.url.search);
-        const pageParam = parseInt(params.get('page') || '1');
-        const countParam = parseInt(params.get('count') || '10');
-        
-        // Only update and reload if the parameters have actually changed
-        if (pageParam !== currentPage || countParam !== itemsPerPage) {
-            currentPage = pageParam;
-            itemsPerPage = countParam;
-            if (!initialLoad) {
-                // Use a small timeout to prevent multiple rapid reloads
-                setTimeout(() => loadProposals(currentPage), 0);
-            }
-        }
-    }
-
-    onMount(() => {
-        // Load initial data
-        loadProposals(currentPage);
-        initialLoad = false;
-    });
-
-    async function loadProposals(page: number) {
-        loading = true;
-        error = null;
-        try {
-            console.log('Fetching proposals from API...');
-            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
-            console.log('Base URL:', baseUrl);
-            const apiUrl = `${baseUrl}/governance-state/proposals?page=${page}&count=${itemsPerPage}&order=desc`;
-            console.log('Full API URL:', apiUrl);
-            const response = await fetch(apiUrl);
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch proposals (Status: ${response.status})`);
-            }
-            
-            const data = await response.json();
-            console.log('API Response:', data);
-            
-            // Check if data is in the expected format
-            if (!data || !Array.isArray(data)) {
-                console.error('Unexpected data format:', data);
-                throw new Error('Invalid data format received from server');
-            }
-            
-            proposals = data;
-            // If we get a full page of results, assume there are more pages
-            totalPages = data.length === itemsPerPage ? page + 1 : page;
-            currentPage = page;
-            
-            console.log('Processed proposals:', proposals);
-            console.log('Total pages:', totalPages);
-        } catch (e) {
-            console.error('Error loading proposals:', e);
-            error = e instanceof Error ? e.message : 'An error occurred while loading proposals';
-            proposals = [];
-        } finally {
-            loading = false;
-        }
-    }
+    $: proposals = data.proposals ?? [];
+    $: currentPage = parseInt(data.page || '1');
+    $: itemsPerPage = parseInt(data.count || '10');
+    $: hasMore = proposals.length === itemsPerPage;
+    $: error = data.error ?? null;
 
     function goToPage(page: number) {
-        if (page < 1 || page > totalPages) return;
+        if (page < 1 || (page > currentPage && !hasMore)) return;
         const params = new URLSearchParams();
         params.set('page', page.toString());
         params.set('count', itemsPerPage.toString());
-        goto(`?${params.toString()}`);
+        params.set('order', data.order || 'desc');
+        goto(`/governance/proposals?${params.toString()}`);
     }
 
     function getStatusClass(status: string | undefined): string {
@@ -131,28 +70,10 @@
         return address.substring(0, 8) + '...' + address.substring(address.length - 8);
     }
 
-    async function showProposalDetails(txHash: string, index: number) {
-        modalLoading = true;
+    function showProposalDetails(proposal: Proposal) {
         modalError = null;
+        selectedProposal = proposal;
         showModal = true;
-        try {
-            const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
-            console.log('Base URL for details:', baseUrl);
-            const apiUrl = `${baseUrl}/governance-state/proposals/${txHash}/${index}`;
-            console.log('Full API URL for details:', apiUrl);
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch proposal details (Status: ${response.status})`);
-            }
-            const data = await response.json();
-            selectedProposal = data;
-        } catch (e) {
-            console.error('Error loading proposal details:', e);
-            modalError = e instanceof Error ? e.message : 'An error occurred while loading proposal details';
-            selectedProposal = null;
-        } finally {
-            modalLoading = false;
-        }
     }
 
     function formatGovActionDetails(govAction: any): string {
@@ -196,13 +117,9 @@
         </div>
     {/if}
 
-    {#if loading}
-        <div class="flex justify-center items-center h-64">
-            <span class="loading loading-spinner loading-lg"></span>
-        </div>
-    {:else if proposals.length === 0}
+    {#if proposals.length === 0}
         <div class="text-center py-8">
-            <p class="text-gray-600">No proposals available for this page.</p>
+            <p class="text-base-content/70">No proposals available for this page.</p>
         </div>
     {:else}
         <div class="flex justify-end mt-6">
@@ -217,30 +134,30 @@
                 <button class="join-item btn btn-sm">Page {currentPage}</button>
                 <button 
                     class="join-item btn btn-sm" 
-                    disabled={currentPage >= totalPages}
+                    disabled={!hasMore}
                     on:click={() => goToPage(currentPage + 1)}
                 >
                     »
                 </button>
             </div>
         </div>
-        <div class="overflow-x-auto bg-white rounded-lg shadow">
+        <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
             <table class="table w-full">
                 <thead>
-                    <tr class="bg-gray-50">
-                        <th class="font-semibold text-gray-700">Transaction Hash</th>
-                        <th class="font-semibold text-gray-700">Type</th>
-                        <th class="font-semibold text-gray-700">Status</th>
-                        <th class="font-semibold text-gray-700">Deposit (ADA)</th>
-                        <th class="font-semibold text-gray-700">Epoch</th>
-                        <th class="font-semibold text-gray-700">Block</th>
-                        <th class="font-semibold text-gray-700">Time</th>
-                        <th class="font-semibold text-gray-700">Details</th>
+                    <tr class="bg-base-200">
+                        <th class="font-semibold text-base-content/80">Transaction Hash</th>
+                        <th class="font-semibold text-base-content/80">Type</th>
+                        <th class="font-semibold text-base-content/80">Status</th>
+                        <th class="font-semibold text-base-content/80">Deposit (ADA)</th>
+                        <th class="font-semibold text-base-content/80">Epoch</th>
+                        <th class="font-semibold text-base-content/80">Block</th>
+                        <th class="font-semibold text-base-content/80">Time</th>
+                        <th class="font-semibold text-base-content/80">Details</th>
                     </tr>
                 </thead>
                 <tbody>
                     {#each proposals as proposal}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-base-200">
                             <td>
                                 <a href="/transactions/{proposal.tx_hash}" class="link link-primary hover:underline" target="_blank">
                                     {truncateHash(proposal.tx_hash)}
@@ -260,8 +177,8 @@
                             <td>{formatDate(proposal.block_time)}</td>
                             <td>
                                 <button 
-                                    class="btn btn-ghost btn-sm hover:bg-gray-100"
-                                    on:click={() => showProposalDetails(proposal.tx_hash, proposal.index)}
+                                    class="btn btn-ghost btn-sm hover:bg-base-200"
+                                    on:click={() => showProposalDetails(proposal)}
                                 >
                                     <EyeIcon size="16" />
                                 </button>
@@ -284,7 +201,7 @@
                 <button class="join-item btn btn-sm">Page {currentPage}</button>
                 <button 
                     class="join-item btn btn-sm" 
-                    disabled={currentPage >= totalPages}
+                    disabled={!hasMore}
                     on:click={() => goToPage(currentPage + 1)}
                 >
                     »
@@ -300,11 +217,7 @@
         <div class="modal-box max-w-4xl">
             <h3 class="font-bold text-lg mb-4">Proposal Details</h3>
             
-            {#if modalLoading}
-                <div class="flex justify-center items-center h-32">
-                    <span class="loading loading-spinner loading-lg"></span>
-                </div>
-            {:else if modalError}
+            {#if modalError}
                 <div class="alert alert-error mb-4">
                     <span>{modalError}</span>
                 </div>

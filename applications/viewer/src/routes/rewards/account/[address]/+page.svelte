@@ -146,7 +146,7 @@
         <a href="/rewards" class="btn btn-sm btn-outline btn-primary">&larr; Back to Rewards Explorer</a>
     </div>
     <h1 class="text-3xl font-bold mb-1">Account Rewards History</h1>
-    <p class="mb-6 text-gray-600 break-all">For: {address}</p>
+    <p class="mb-6 text-base-content/70 break-all">For: {address}</p>
 
     {#if error}
         <div class="alert alert-error mb-4 shadow-lg">
@@ -182,7 +182,7 @@
 
     <!-- Sorting Controls -->
     <div class="mb-4 text-right">
-        <span class="mr-2 text-sm text-gray-600">Sort by Epoch:</span>
+        <span class="mr-2 text-sm text-base-content/70">Sort by Epoch:</span>
         <button 
             class="btn btn-sm {order === 'desc' ? 'btn-primary' : 'btn-outline'}" 
             on:click={() => changeOrder('desc')}
@@ -199,31 +199,31 @@
         </div>
     {:else}
         <!-- Content Area -->
-        <div class="bg-white shadow-md rounded-lg p-4 min-h-[400px]">
+        <div class="bg-base-100 shadow-md rounded-lg p-4 min-h-[400px]">
             {#if currentTab === 'pool'}
                 <h2 class="text-xl font-semibold mb-4">Pool Rewards History</h2>
                 {#if !poolRewards || poolRewards.length === 0}
-                    <p class="text-gray-500">No pool rewards found for this account.</p>
+                    <p class="text-base-content/60">No pool rewards found for this account.</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                        <table class="min-w-full divide-y divide-base-300">
+                            <thead class="bg-base-200">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="bg-base-100 divide-y divide-base-300">
                                 {#each poolRewards as reward (reward.epoch + reward.pool_id)} 
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.epoch}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <tr class="hover:bg-base-200">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.epoch}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
                                             <div class="flex items-center gap-2">
                                                 <a href="/pools/{reward.pool_id}" class="text-blue-500 hover:underline">{truncate(reward.pool_id, 40, '...')}</a>
                                                 <button 
-                                                    class="text-gray-400 hover:text-gray-600" 
+                                                    class="text-base-content/50 hover:text-base-content/70" 
                                                     on:click={() => copyToClipboard(reward.pool_id, 'Pool ID copied to clipboard!')}
                                                     title="Copy pool ID"
                                                 >
@@ -233,8 +233,8 @@
                                                 </button>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{reward.type}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 tooltip" data-tip={formatLovelace(reward.amount)}>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{reward.type}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(reward.amount)}>
                                             {formatAda(reward.amount)}
                                         </td>
                                     </tr>
@@ -247,23 +247,23 @@
             {:else if currentTab === 'rest'}
                 <h2 class="text-xl font-semibold mb-4">Other Rewards History</h2>
                 {#if !restRewards || restRewards.length === 0}
-                    <p class="text-gray-500">No other rewards found for this account.</p>
+                    <p class="text-base-content/60">No other rewards found for this account.</p>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                        <table class="min-w-full divide-y divide-base-300">
+                            <thead class="bg-base-200">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Epoch</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (ADA)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="bg-base-100 divide-y divide-base-300">
                                 {#each restRewards as reward, i (reward.epoch + reward.type + reward.amount + i)} 
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{reward.epoch}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{reward.type}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 tooltip" data-tip={formatLovelace(reward.amount)}>
+                                    <tr class="hover:bg-base-200">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{reward.epoch}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{reward.type}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(reward.amount)}>
                                             {formatAda(reward.amount)}
                                         </td>
                                     </tr>
@@ -283,7 +283,7 @@
                 >
                     &lt; Previous
                 </button>
-                <span class="text-sm text-gray-700">Page {currentPage}</span>
+                <span class="text-sm text-base-content/80">Page {currentPage}</span>
                 <button 
                     class="btn btn-outline"
                     on:click={() => goToPage(currentPage + 1)}

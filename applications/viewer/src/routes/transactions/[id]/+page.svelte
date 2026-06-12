@@ -37,15 +37,15 @@
 
 <section class="py-12 px-4 md:px-6 min-h-screen">
 	<div class="container mx-auto max-w-6xl">
-		<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-			<div class="bg-gray-50/50 p-6 border-b border-gray-100">
-				<h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+		<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
+			<div class="bg-base-200/50 p-6 border-b border-base-200">
+				<h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
 					Transaction Hash
 				</h2>
 				<div class="flex items-center gap-3">
-					<span class="font-mono text-lg text-gray-800 break-all">{tx.hash}</span>
+					<span class="font-mono text-lg text-base-content break-all">{tx.hash}</span>
 					<button
-						class="p-2 hover:bg-gray-200 rounded-md transition-colors duration-200"
+						class="p-2 hover:bg-base-300 rounded-md transition-colors duration-200"
 						on:click={() => copyToClipboard(tx.hash)}
 						title="Copy Hash"
 					>
@@ -55,54 +55,54 @@
 			</div>
 
 			<div
-				class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-100"
+				class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-base-200"
 			>
 				<div class="p-6">
-					<div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
 						Block / Slot
 					</div>
-					<div class="text-gray-900 font-medium text-lg">
+					<div class="text-base-content font-medium text-lg">
 						<a
 							href="/blocks/{tx.block_height}"
 							class="text-blue-600 hover:text-blue-800 hover:underline"
 						>
 							{tx.block_height}
 						</a>
-						<span class="text-gray-400 mx-1">/</span>
+						<span class="text-base-content/50 mx-1">/</span>
 						<span>{tx.slot}</span>
 					</div>
 				</div>
 
 				<div class="p-6">
-					<div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Fee</div>
-					<div class="text-gray-900 font-medium text-lg">
-						{lovelaceToAda(tx.fees, 4)} <span class="text-sm text-gray-500">ADA</span>
+					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Fee</div>
+					<div class="text-base-content font-medium text-lg">
+						{lovelaceToAda(tx.fees, 4)} <span class="text-sm text-base-content/60">ADA</span>
 					</div>
 				</div>
 
 				<div class="p-6">
-					<div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
 						Total Output
 					</div>
-					<div class="text-gray-900 font-medium text-lg">
-						{lovelaceToAda(tx.total_output, 2)} <span class="text-sm text-gray-500">ADA</span>
+					<div class="text-base-content font-medium text-lg">
+						{lovelaceToAda(tx.total_output, 2)} <span class="text-sm text-base-content/60">ADA</span>
 					</div>
 				</div>
 
 				<div class="p-6">
-					<div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">TTL</div>
-					<div class="text-gray-900 font-medium text-lg">{tx.ttl}</div>
+					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">TTL</div>
+					<div class="text-base-content font-medium text-lg">{tx.ttl}</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="mb-6 bg-gray-50 rounded-xl p-2">
-			<div class="flex flex-wrap gap-2 border-b border-gray-200">
+		<div class="mb-6 bg-base-200 rounded-xl p-2">
+			<div class="flex flex-wrap gap-2 border-b border-base-300">
 				<button
 					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					INPUT_TAB
 						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 					on:click={() => (activeTabIndex = INPUT_TAB)}
 				>
 					UTXOs (I/O)
@@ -112,12 +112,12 @@
 					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					CONTRACT_TAB
 						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 					on:click={() => (activeTabIndex = CONTRACT_TAB)}
 				>
 					Contracts
 					{#if contracts.length > 0}
-						<span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs"
+						<span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs"
 							>{contracts.length}</span
 						>
 					{/if}
@@ -127,7 +127,7 @@
 					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					COLLATERAL_TAB
 						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 					on:click={() => (activeTabIndex = COLLATERAL_TAB)}
 				>
 					Collaterals
@@ -137,7 +137,7 @@
 					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					METADATA_TAB
 						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 					on:click={() => (activeTabIndex = METADATA_TAB)}
 				>
 					Metadata
@@ -147,7 +147,7 @@
 					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					REFERENCE_INPUT_TAB
 						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 					on:click={() => (activeTabIndex = REFERENCE_INPUT_TAB)}
 				>
 					Reference Inputs
@@ -158,11 +158,11 @@
 						class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 						WITHDRAWALS_TAB
 							? 'border-blue-600 text-blue-600'
-							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+							: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 						on:click={() => (activeTabIndex = WITHDRAWALS_TAB)}
 					>
 						Withdrawals
-						<span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs"
+						<span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs"
 							>{withdrawals.length}</span
 						>
 					</button>
@@ -173,11 +173,11 @@
 						class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 						MINTS_TAB
 							? 'border-blue-600 text-blue-600'
-							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+							: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 						on:click={() => (activeTabIndex = MINTS_TAB)}
 					>
 						Mints
-						<span class="ml-1 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs"
+						<span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs"
 							>{mints.length}</span
 						>
 					</button>
@@ -187,7 +187,7 @@
 					class="ml-auto px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
 					JSON_TAB
 						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
 					on:click={() => (activeTabIndex = JSON_TAB)}
 				>
 					Raw JSON
@@ -195,7 +195,7 @@
 			</div>
 		</div>
 
-		<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[300px]">
+		<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px]">
 			{#if activeTabIndex == INPUT_TAB}
 				<div class="w-full animate-fade-in">
 					<InputOutput {tx}></InputOutput>
@@ -205,13 +205,13 @@
 			{#if activeTabIndex == CONTRACT_TAB}
 				<div class="w-full animate-fade-in">
 					{#if contracts.length === 0}
-						<div class="text-center py-10 text-gray-400">
+						<div class="text-center py-10 text-base-content/50">
 							No contracts found in this transaction.
 						</div>
 					{:else}
 						{#each contracts as contract, index}
 							<div class="mb-8 last:mb-0">
-								{#if index > 0}<div class="border-b border-gray-100 mb-6"></div>{/if}
+								{#if index > 0}<div class="border-b border-base-200 mb-6"></div>{/if}
 								<Contract {contract} {index}></Contract>
 							</div>
 						{/each}
@@ -228,7 +228,7 @@
 			{#if activeTabIndex == METADATA_TAB}
 				<div class="w-full animate-fade-in">
 					{#if !metadata}
-						<div class="text-center py-10 text-gray-400">No metadata available.</div>
+						<div class="text-center py-10 text-base-content/50">No metadata available.</div>
 					{:else}
 						<JsonContent text={metadata} customStyle="bg-black text-gray-100"></JsonContent>
 					{/if}
@@ -247,21 +247,21 @@
 						<EmptyState title="No Withdrawals" message="No withdrawals found in this transaction." />
 					{:else}
 						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-200">
-								<thead class="bg-gray-50">
+							<table class="min-w-full divide-y divide-base-300">
+								<thead class="bg-base-200">
 									<tr>
-										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Address</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
 									</tr>
 								</thead>
-								<tbody class="bg-white divide-y divide-gray-200">
+								<tbody class="bg-base-100 divide-y divide-base-300">
 									{#each withdrawals as w}
-										<tr class="hover:bg-gray-50">
+										<tr class="hover:bg-base-200">
 											<td class="px-4 py-4 text-sm">
 												<AddressLink address={w.address} maxLength={40} />
 											</td>
-											<td class="px-4 py-4 text-sm font-medium text-gray-900">
-												{lovelaceToAda(w.amount, 6)} <span class="text-sm text-gray-500">ADA</span>
+											<td class="px-4 py-4 text-sm font-medium text-base-content">
+												{lovelaceToAda(w.amount, 6)} <span class="text-sm text-base-content/60">ADA</span>
 											</td>
 										</tr>
 									{/each}
@@ -278,20 +278,20 @@
 						<EmptyState title="No Mints" message="No mint or burn events found in this transaction." />
 					{:else}
 						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-gray-200">
-								<thead class="bg-gray-50">
+							<table class="min-w-full divide-y divide-base-300">
+								<thead class="bg-base-200">
 									<tr>
-										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy ID</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Asset</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Policy ID</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
+										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Quantity</th>
 									</tr>
 								</thead>
-								<tbody class="bg-white divide-y divide-gray-200">
+								<tbody class="bg-base-100 divide-y divide-base-300">
 									{#each mints as mint}
 										{@const unit = mint.unit || (mint.policy + (mint.asset_name || ''))}
 										{@const parsed = parseUnit(unit)}
-										<tr class="hover:bg-gray-50">
+										<tr class="hover:bg-base-200">
 											<td class="px-4 py-4 text-sm">
 												<a href="/assets/unit/{unit}" class="text-blue-600 hover:underline">
 													{parsed.assetNameUtf8 || parsed.assetNameHex || '(empty name)'}
@@ -309,7 +309,7 @@
 													<span class="badge badge-error badge-sm">BURN</span>
 												{/if}
 											</td>
-											<td class="px-4 py-4 text-sm font-medium text-gray-900">
+											<td class="px-4 py-4 text-sm font-medium text-base-content">
 												{mint.quantity}
 											</td>
 										</tr>
