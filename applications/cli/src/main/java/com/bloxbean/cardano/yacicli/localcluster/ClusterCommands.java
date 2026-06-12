@@ -62,6 +62,12 @@ public class ClusterCommands {
     @Value("${prometheus.port:12798}")
     private int prometheusPort;
 
+    @Value("${yano.server.port:14447}")
+    private int yanoServerPort;
+
+    @Value("${yano.http.port:6060}")
+    private int yanoHttpPort;
+
     @ShellMethod(value = "List devnet nodes. Use `list-nodes`. Deprecated: `list-clusters`", key = {"list-nodes", "list-clusters"})
     public void listLocalClusters() {
         try {
@@ -173,6 +179,8 @@ public class ClusterCommands {
                     .yaciStorePort(yaciStorePort)
                     .socatPort(socatPort)
                     .prometheusPort(prometheusPort)
+                    .yanoServerPort(yanoServerPort)
+                    .yanoHttpPort(yanoHttpPort)
                     .nodeMode(genesisConfig.getNodeMode())
                     .localMultiNodeEnabled(enableMultiNode)
                     .localMultiNodeStakeRatioFactor(stakeRatioFactor)
