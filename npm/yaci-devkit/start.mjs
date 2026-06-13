@@ -89,6 +89,7 @@ const costModelsPathArg = "-Dyaci.cli.plutus-costmodels-path=" + configPath;
 const child = spawn(binPath, [additionalConfigArg, costModelsPathArg, ...process.argv.slice(2)], {
     stdio: "inherit",
     env: {
+        ...process.env // Inherit parent environment. Additional env vars below.
         // YACI_CLI_HOME: yaciCLIHome
     },
 
