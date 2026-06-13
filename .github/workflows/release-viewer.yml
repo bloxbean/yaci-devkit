@@ -8,14 +8,20 @@ on:
 jobs:
   npm-publish:
     runs-on: "ubuntu-22.04"
+    permissions:
+      contents: read
+      id-token: write
     env:
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
 
       - name: Get Tag from version file
         run: |
@@ -26,10 +32,6 @@ jobs:
         working-directory: applications/viewer
         run: npm version ${{ env.TAG }} --no-git-tag-version
 
-      - name: Configure npm for scoped package
-        run: |
-          echo "@my-org:registry=https://registry.npmjs.org/" >> ~/.npmrc
-
       - name: NPM Build
         working-directory: applications/viewer
         run: |
@@ -38,8 +40,6 @@ jobs:
 
       - name: Publish to npm
         working-directory: applications/viewer
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [[ "${{ env.TAG }}" == *"-preview"* ]]; then            
             npm publish --access public --tag preview
