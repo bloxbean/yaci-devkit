@@ -180,18 +180,16 @@ public class WalletApiController {
             }
     )
     @PostMapping("/sign-tx")
-    public ResponseEntity<?> signTransaction(@Valid @RequestBody SignTxRequest request) {
+    public ResponseEntity<SignTxResponse> signTransaction(@Valid @RequestBody SignTxRequest request) {
         Optional<SignTxResponse> response = walletSigningService.signTransaction(
                 request.getTxCbor(),
                 request.getAccountId()
         );
 
         return response
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.badRequest().body(Map.of(
-                        "code", 1,
-                        "info", "Failed to sign transaction. Account not found or signing error."
-                )));
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Failed to sign transaction. Account not found or signing error."));
     }
 
     @Operation(
@@ -208,7 +206,7 @@ public class WalletApiController {
             }
     )
     @PostMapping("/sign-data")
-    public ResponseEntity<?> signData(@Valid @RequestBody SignDataRequest request) {
+    public ResponseEntity<SignDataResponse> signData(@Valid @RequestBody SignDataRequest request) {
         Optional<SignDataResponse> response = walletSigningService.signData(
                 request.getPayload(),
                 request.getAddress(),
@@ -216,11 +214,9 @@ public class WalletApiController {
         );
 
         return response
-                .<ResponseEntity<?>>map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.badRequest().body(Map.of(
-                        "code", 1,
-                        "info", "Failed to sign data. Account not found or signing error."
-                )));
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Failed to sign data. Account not found or signing error."));
     }
 
     @Operation(
