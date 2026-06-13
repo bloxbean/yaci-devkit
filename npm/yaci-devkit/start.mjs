@@ -84,8 +84,9 @@ const additionalConfig = "optional:file:" + configPath + "/application.propertie
     + "optional:file:" + configPath + "/node.properties"
 
 const additionalConfigArg = "-Dspring.config.import=" + additionalConfig;
+const costModelsPathArg = "-Dyaci.cli.plutus-costmodels-path=" + configPath;
 
-const child = spawn(binPath, [additionalConfigArg, ...process.argv.slice(2)], {
+const child = spawn(binPath, [additionalConfigArg, costModelsPathArg, ...process.argv.slice(2)], {
     stdio: "inherit",
     env: {
         // YACI_CLI_HOME: yaciCLIHome
