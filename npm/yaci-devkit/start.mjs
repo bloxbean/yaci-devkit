@@ -88,6 +88,7 @@ const additionalConfigArg = "-Dspring.config.import=" + additionalConfig;
 const child = spawn(binPath, [additionalConfigArg, ...process.argv.slice(2)], {
     stdio: "inherit",
     env: {
+        ...process.env // Inherit parent environment. Additional env vars below.
         // YACI_CLI_HOME: yaciCLIHome
     },
 
