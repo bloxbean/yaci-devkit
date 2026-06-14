@@ -135,6 +135,7 @@ task cliZip(type: Zip) {
 
     from('build/native/nativeCompile') {
         into(zipDirName)
+        include 'yaci-cli*'
     }
 
     from('config') {
@@ -142,7 +143,16 @@ task cliZip(type: Zip) {
         include '**/*.properties', '**/*.json'
     }
 
-    include 'yaci-cli*'
+    from('../../examples') {
+        into(zipDirName + "/examples")
+        exclude '**/node_modules/**',
+                '**/dist/**',
+                '**/build/**',
+                '**/test-results/**',
+                '**/.playwright/**',
+                '**/.DS_Store'
+    }
+
     archiveFileName = "yaci-cli-${project.version}.zip"
     destinationDirectory = file("build")
 }

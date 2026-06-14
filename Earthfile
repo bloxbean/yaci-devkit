@@ -58,6 +58,11 @@ zip:
 
   COPY  scripts/*.*  /app/yaci-devkit-${tag}/scripts/
 
+  COPY  examples /app/yaci-devkit-${tag}/examples
+  RUN find /app/yaci-devkit-${tag}/examples \
+        \( -name node_modules -o -name dist -o -name build -o -name test-results -o -name .playwright \) \
+        -type d -prune -exec rm -rf {} +
+
   RUN cd /app && zip -r yaci-devkit-${tag}.zip .
   SAVE ARTIFACT yaci-devkit-${tag}.zip AS LOCAL build/yaci-devkit-${tag}.zip
 
