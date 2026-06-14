@@ -68,7 +68,8 @@ docker-build:
     ARG REGISTRY_ORG
     ARG COMMIT_ID
     ARG STORE_NATIVE_BRANCH="release/2.0.1_devkit"
-    ARG YANO_BRANCH="v0.1.0-pre6"
+    ARG YANO_TAG="v0.1.0-pre6"
+    ARG YANO_VERSION="0.1.0-pre6"
 
     COPY --dir +java-setup/openjdk /opt/java/
     ENV PATH="${JAVA_HOME}/bin:${PATH}"
@@ -113,12 +114,11 @@ docker-build:
     COPY (../store-build/+store-native/yaci-store* --APP_VERSION=${APP_VERSION} --STORE_BRANCH=${STORE_NATIVE_BRANCH}) /app/store/
     RUN chmod +x /app/store/yaci-store-n2c /app/store/yaci-store-all
 
-    # Yano native binary (always included; Yano is native-only in docker)
-    RUN mkdir -p /app/yano
-    COPY (../yano-build/+yano-native/yano --APP_VERSION=${APP_VERSION} --YANO_BRANCH=${YANO_BRANCH}) /app/yano/yano
-    COPY (../yano-build/+yano-native/config --APP_VERSION=${APP_VERSION} --YANO_BRANCH=${YANO_BRANCH}) /app/yano/config
-    COPY (../yano-build/+yano-native/yano.git.properties --APP_VERSION=${APP_VERSION} --YANO_BRANCH=${YANO_BRANCH}) /app/yano/yano.git.properties
-    RUN chmod +x /app/yano/yano
+    # Yano native binary (always included; Yano is native-only in docker).
+    # Docker intentionally uses the published Yano release artifact instead of
+    # ../yano-build so the image gets the same portable binary tested upstream.
+    COPY docker/download-yano.sh .
+    RUN bash download-yano.sh $TARGETARCH ${YANO_VERSION} ${YANO_TAG}
 
     RUN echo "Build type: $BUILD_TYPE"
     IF [ "$BUILD_TYPE" = "native" ]

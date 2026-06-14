@@ -6,7 +6,8 @@ ARG --global local="true"
 ARG --global REGISTRY_ORG = "bloxbean"
 ARG --global build_type="native"
 ARG --global STORE_NATIVE_BRANCH="release/2.0.1_devkit"
-ARG --global YANO_BRANCH="v0.1.0-pre6"
+ARG --global YANO_TAG="v0.1.0-pre6"
+ARG --global YANO_VERSION="0.1.0-pre6"
 
 build:
   LOCALLY
@@ -24,7 +25,7 @@ cli-docker:
   ARG EARTHLY_TARGET_NAME
   ARG EARTHLY_GIT_SHORT_HASH
 
-  BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} --STORE_NATIVE_BRANCH=${STORE_NATIVE_BRANCH} --YANO_BRANCH=${YANO_BRANCH}
+  BUILD ./applications/cli+docker-build --BUILD_TYPE=${build_type} --REGISTRY_ORG=${REGISTRY_ORG} --APP_VERSION=${tag} --COMMIT_ID=${EARTHLY_GIT_SHORT_HASH} --STORE_NATIVE_BRANCH=${STORE_NATIVE_BRANCH} --YANO_TAG=${YANO_TAG} --YANO_VERSION=${YANO_VERSION}
 
 viewer:
   ARG EARTHLY_TARGET_NAME
