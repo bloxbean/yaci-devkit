@@ -91,13 +91,18 @@ docker-build:
     COPY docker/download-$TARGETARCH.sh .
     RUN sh download-$TARGETARCH.sh
 
+    # PV11 Ogmios/Kupo IntersectMBO artifacts are Linux x86_64-only for now.
+    # The arm64 image bundles those x86_64 binaries as a temporary Apple Silicon
+    # Docker Desktop workaround; native Linux arm64 hosts may fail at runtime
+    # unless x86_64 binfmt/qemu emulation is available.
+
     #Ogmios download
     COPY docker/download-ogmios.sh .
-    RUN sh download-ogmios.sh $TARGETARCH
+    RUN bash download-ogmios.sh $TARGETARCH
 
     #Kupo download
     COPY docker/download-kupo.sh .
-    RUN sh download-kupo.sh $TARGETARCH
+    RUN bash download-kupo.sh $TARGETARCH
 
     #RUN apk --no-cache add curl
 

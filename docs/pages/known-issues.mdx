@@ -6,6 +6,26 @@ This page documents known issues, workarounds, and frequently asked questions ab
 
 ## Known Issues
 
+### PV11 Ogmios/Kupo Docker arm64 Compatibility
+
+<Callout type="warning">
+**Issue**: PV11-compatible (Cardano node 11.0.1) Ogmios `v6.14.0.2` and Kupo `v2.11.0.1` are currently published by IntersectMBO only as Linux x86_64 binaries.
+</Callout>
+
+#### Current Behavior
+
+The DevKit Docker image bundles those x86_64 Ogmios/Kupo binaries in both the `linux/amd64` and `linux/arm64` images as a temporary workaround.
+
+- **Linux x86_64 Docker hosts**: Supported.
+- **Apple Silicon Docker Desktop**: Expected to work through Docker Desktop's x86_64 emulation.
+- **Native Linux arm64 Docker hosts**: May fail at runtime unless x86_64 binfmt/qemu emulation is configured on the host.
+
+#### Workaround
+
+On native Linux arm64 hosts, run the DevKit Docker image as `linux/amd64` or use a compatible native Ogmios/Kupo build when one becomes available.
+
+---
+
 ### Plutus V2 Script Data Hash Mismatch (v0.11.0-beta1+)
 
 <Callout type="warning">
