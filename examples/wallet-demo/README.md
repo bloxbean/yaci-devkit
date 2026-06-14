@@ -4,11 +4,7 @@ A sample dApp demonstrating how to connect to any CIP-30 compatible Cardano wall
 
 ## Prerequisites
 
-1. **Yaci DevKit running** with Yaci Store enabled (for local development):
-   ```bash
-   cd applications/cli
-   java -Dyaci.store.enabled=true -jar build/libs/yaci-cli.jar create-node -o --start --epoch-length 40
-   ```
+1. **Yaci DevKit running** with Yaci Store enabled
 
 2. **A local web server** to serve this demo (due to CORS restrictions)
 
@@ -21,12 +17,13 @@ cd examples/wallet-demo
 python3 -m http.server 3000
 ```
 
-Then open http://localhost:3000/cip30-wallets.html in your browser.
+Then open http://localhost:3000/index.html in your browser.
 
 ### Option 2: Using Node.js
 
 ```bash
-npx serve examples/wallet-demo -p 3000
+cd examples/wallet-demo
+npx serve -p 3000
 ```
 
 ### Option 3: Using any static file server

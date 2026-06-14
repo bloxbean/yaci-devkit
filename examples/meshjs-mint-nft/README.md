@@ -9,12 +9,7 @@ Mint an NFT on a local Yaci DevKit devnet using **MeshJS** for client-side trans
 
 ## Quick Start
 
-1. **Start the devnet** (from the repo root):
-
-   ```bash
-   cd applications/cli
-   java -Dyaci.store.enabled=true -jar build/libs/yaci-cli.jar create-node -o --start --epoch-length 40
-   ```
+1. **Start the devnet**
 
 2. **Install and run**:
 
@@ -24,7 +19,19 @@ Mint an NFT on a local Yaci DevKit devnet using **MeshJS** for client-side trans
    npm run dev
    ```
 
-3. **Open** the Vite dev server URL (default `http://localhost:5173`).
+   To use a different Vite port:
+
+   ```bash
+   npm run dev -- --port 5174
+   ```
+
+   To expose the dev server outside localhost:
+
+   ```bash
+   npm run dev -- --host 0.0.0.0 --port 5174
+   ```
+
+3. **Open** the Vite dev server URL (default `http://localhost:3000`, or your custom port).
 
 4. **Connect** the Yaci DevKit wallet, fill in the NFT details, and click **Mint NFT**.
 
