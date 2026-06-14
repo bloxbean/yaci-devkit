@@ -1,6 +1,6 @@
-# Sutra Elixir Scripts
+# Sutra Elixir Example
 
-This README explains how to install Elixir and run the example Elixir scripts in this folder.
+Example Elixir scripts for running Sutra Cardano transactions against Yaci DevKit.
 
 ## 1. Install Elixir
 
@@ -13,7 +13,7 @@ sudo apt-get install -y elixir
 
 For other platforms or the latest release, see the official instructions: https://elixir-lang.org/install.html
 
-## 2. Run Tests
+## 2. Run Examples
 
 - Native Script Minting:
 
