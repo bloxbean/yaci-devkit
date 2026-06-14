@@ -1,6 +1,6 @@
 #
-# Note: This test assumes Native script and Plutus script staking credentials are already registered on chain.
-# If not, please run  elixir register_stake.exs before running this test.
+# Note: This example assumes Native script and Plutus script staking credentials are already registered on chain.
+# If not, please run elixir register_stake.exs before running this example.
 
 alias Sutra.Cardano.Common.Drep
 alias Sutra.Cardano.Script.NativeScript

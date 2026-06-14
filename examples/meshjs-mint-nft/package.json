@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "Mint an NFT on Yaci DevKit using MeshJS + CIP-30 wallet",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 3000",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@meshsdk/core": "1.9.0-beta-39"
+    "@meshsdk/core": "1.9.0"
   },
   "devDependencies": {
     "vite": "^5.4.0",

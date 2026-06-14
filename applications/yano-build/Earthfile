@@ -1,5 +1,8 @@
 VERSION 0.8
 
+# Standalone/manual fallback for building Yano from source.
+# The CLI Docker image does not depend on this target; it downloads the
+# published Yano release artifact in applications/cli/docker/download-yano.sh.
 yano-native:
   LOCALLY
   ARG YANO_BRANCH
@@ -20,7 +23,8 @@ yano-native:
   WORKDIR yano
 
   # Build native binary with Quarkus + GraalVM Community 25.
-  # The --initialize-at-run-time flags defer aiken-java-binding's JNA classes:
+  # -march=compatibility keeps the Linux native binary runnable on older x86_64
+  # hosts. The --initialize-at-run-time flags defer aiken-java-binding's JNA classes:
   # the linux-aarch64 .so isn't published, and even on linux-amd64 we don't want
   # build-time class init to load a native lib. Default tx evaluator is Scalus
   # so the deferred classes are never touched at runtime in normal use.
@@ -30,7 +34,7 @@ yano-native:
       -Dquarkus.native.enabled=true \
       -Dquarkus.package.jar.enabled=false \
       -PskipSigning=true \
-      -Dquarkus.native.additional-build-args="--initialize-at-run-time=com.bloxbean.cardano.aiken,--initialize-at-run-time=com.bloxbean.cardano.yano.ledgerrules.impl.AikenTxEvaluator"
+      -Dquarkus.native.additional-build-args="-march=compatibility,--initialize-at-run-time=com.bloxbean.cardano.aiken,--initialize-at-run-time=com.bloxbean.cardano.yano.ledgerrules.impl.AikenTxEvaluator"
 
   # Save artifacts
   SAVE ARTIFACT app/build/yano yano

@@ -467,7 +467,8 @@ public class Cip30Service {
             for (Map.Entry<String, Map<String, BigInteger>> entry : assetMap.entrySet()) {
                 List<Asset> assets = new ArrayList<>();
                 for (Map.Entry<String, BigInteger> assetEntry : entry.getValue().entrySet()) {
-                    assets.add(new Asset(assetEntry.getKey(), assetEntry.getValue()));
+                    String assetNameHex = withoutHexPrefix(assetEntry.getKey());
+                    assets.add(new Asset(assetNameHex.isEmpty() ? "" : "0x" + assetNameHex, assetEntry.getValue()));
                 }
                 multiAssets.add(MultiAsset.builder()
                         .policyId(entry.getKey())
@@ -534,13 +535,20 @@ public class Cip30Service {
             for (MultiAsset multiAsset : value.getMultiAssets()) {
                 String policyId = multiAsset.getPolicyId();
                 for (Asset asset : multiAsset.getAssets()) {
-                    String unit = policyId + asset.getName();
+                    String unit = policyId + withoutHexPrefix(asset.getNameAsHex());
                     assets.put(unit, asset.getValue());
                 }
             }
         }
 
         return assets;
+    }
+
+    private String withoutHexPrefix(String hex) {
+        if (hex == null)
+            return "";
+
+        return hex.startsWith("0x") ? hex.substring(2) : hex;
     }
 
     /**

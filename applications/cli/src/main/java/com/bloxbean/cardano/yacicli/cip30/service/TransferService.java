@@ -301,7 +301,7 @@ public class TransferService {
                 if (value.getMultiAssets() != null) {
                     for (MultiAsset ma : value.getMultiAssets()) {
                         for (Asset asset : ma.getAssets()) {
-                            amounts.add(new Amount(ma.getPolicyId() + asset.getName(), asset.getValue()));
+                            amounts.add(new Amount(ma.getPolicyId() + withoutHexPrefix(asset.getNameAsHex()), asset.getValue()));
                         }
                     }
                 }
@@ -318,6 +318,13 @@ public class TransferService {
             }
         }
         return utxos;
+    }
+
+    private String withoutHexPrefix(String hex) {
+        if (hex == null)
+            return "";
+
+        return hex.startsWith("0x") ? hex.substring(2) : hex;
     }
 
     /**

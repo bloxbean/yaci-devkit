@@ -28,6 +28,10 @@ class ClusterPortInfoHelperTest {
         assertTrue(output.contains("Node Socket Paths"));
         assertTrue(output.contains("Submit Api Port"));
         assertTrue(output.contains("Yano bootstraps the chain, then Haskell node takes over"));
+        assertTrue(output.contains("Wallet SDK / CIP-30"));
+        assertTrue(output.contains("http://localhost:10000/wallet"));
+        assertTrue(output.contains("http://localhost:10000/wallet-sdk.js"));
+        assertTrue(output.contains("window.cardano.yacidevkit"));
         assertTrue(output.contains("http://localhost:10000/mcp"));
         assertTrue(output.contains("MCP config (.mcp.json)"));
         assertFalse(output.contains("Yano Swagger UI"));
@@ -125,6 +129,9 @@ class ClusterPortInfoHelperTest {
         assertFalse(output.contains("Yaci Store Base API URL"));
         assertFalse(output.contains("Ogmios WebSocket URL"));
         assertFalse(output.contains("Kupo URL"));
+        assertFalse(output.contains("Wallet SDK / CIP-30"));
+        assertFalse(output.contains("Wallet Demo"));
+        assertFalse(output.contains("Wallet SDK JS"));
     }
 
     @Test

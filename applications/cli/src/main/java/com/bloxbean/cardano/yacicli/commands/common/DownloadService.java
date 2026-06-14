@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Locale;
 import java.util.Objects;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
@@ -31,6 +32,10 @@ public class DownloadService {
     private final static String YACI_STORE_DOWNLOAD_URL = "https://github.com/bloxbean/yaci-store/releases/download";
     private final static String OGMIOS_DOWNLOAD_URL = "https://github.com/CardanoSolutions/ogmios/releases/download";
     private final static String KUPO_DOWNLOAD_URL = "https://github.com/CardanoSolutions/kupo/releases/download";
+    private final static String INTERSECT_OGMIOS_DOWNLOAD_URL = "https://github.com/IntersectMBO/ogmios/releases/download";
+    private final static String INTERSECT_KUPO_DOWNLOAD_URL = "https://github.com/IntersectMBO/kupo/releases/download";
+    private final static String INTERSECT_OGMIOS_VERSION = "6.14.0.2";
+    private final static String INTERSECT_KUPO_VERSION = "2.11.0.1";
     private final static String YANO_DOWNLOAD_URL = "https://github.com/bloxbean/yano/releases/download";
 
     private final ClusterConfig clusterConfig;
@@ -328,10 +333,10 @@ public class DownloadService {
         }
 
         String targetDir = clusterConfig.getOgmiosHome();
-        var downloadedFile = download("ogmios", downloadPath, targetDir, "ogmios.zip");
+        var downloadedFile = download("ogmios", downloadPath, targetDir, resolveArchiveFileName("ogmios", downloadPath));
         if (downloadedFile != null) {
             try {
-                extractZip(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getOgmiosHome());
+                extractArchive(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getOgmiosHome(), downloadPath);
                 setExecutablePermission(ogmiosExec.toFile().getAbsolutePath());
                 return true;
             } catch (IOException e) {
@@ -365,10 +370,10 @@ public class DownloadService {
         }
 
         String targetDir = clusterConfig.getKupoHome();
-        var downloadedFile = download("kupo", downloadPath, targetDir, "kupo.zip");
+        var downloadedFile = download("kupo", downloadPath, targetDir, resolveArchiveFileName("kupo", downloadPath));
         if (downloadedFile != null) {
             try {
-                extractZip(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getKupoHome());
+                extractArchive(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getKupoHome(), downloadPath);
                 setExecutablePermission(kupoExec.toFile().getAbsolutePath());
                 return true;
             } catch (IOException e) {
@@ -541,6 +546,23 @@ public class DownloadService {
         }
     }
 
+    private void extractArchive(String filePath, String extractDir, String downloadPath) throws IOException {
+        if (isTarGz(downloadPath)) {
+            extractTarGz(filePath, extractDir);
+        } else {
+            extractZip(filePath, extractDir);
+        }
+    }
+
+    private String resolveArchiveFileName(String component, String downloadPath) {
+        return isTarGz(downloadPath) ? component + ".tar.gz" : component + ".zip";
+    }
+
+    private boolean isTarGz(String downloadPath) {
+        String normalized = downloadPath.toLowerCase(Locale.ROOT);
+        return normalized.contains(".tar.gz") || normalized.contains(".tgz");
+    }
+
     public void extractZip(String filePath, String extractDir) throws IOException {
         try (FileInputStream fis = new FileInputStream(filePath);
              BufferedInputStream bis = new BufferedInputStream(fis);
@@ -591,6 +613,9 @@ public class DownloadService {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
         }
 
+        if (osPrefix == null)
+            return null;
+
         String arch = System.getProperty("os.arch");
         String cpuArch = null;
         if (arch.startsWith("aarch") || arch.startsWith("arm")) {
@@ -635,6 +660,9 @@ public class DownloadService {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
         }
 
+        if (osPrefix == null)
+            return null;
+
         String arch = System.getProperty("os.arch");
         String cpuArch = null;
         if (arch.startsWith("aarch") || arch.startsWith("arm")) {
@@ -674,6 +702,15 @@ public class DownloadService {
             return null;
         }
 
+        if (INTERSECT_OGMIOS_VERSION.equals(ogmiosVersion)) {
+            if (!isLinuxX86_64()) {
+                writeLn(error("Ogmios %s is currently available from IntersectMBO only for Linux x86_64. Set ogmios.url to a compatible build or use the DevKit Docker image.", ogmiosVersion));
+                return null;
+            }
+
+            return INTERSECT_OGMIOS_DOWNLOAD_URL + "/v" + ogmiosVersion + "/ogmios-v" + ogmiosVersion + "-x86_64-linux.tar.gz";
+        }
+
         String osPrefix = null;
         if (SystemUtils.IS_OS_MAC) {
             osPrefix = "macos";
@@ -682,6 +719,9 @@ public class DownloadService {
         } else {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
         }
+
+        if (osPrefix == null)
+            return null;
 
         String arch = System.getProperty("os.arch");
         String cpuArch = null;
@@ -705,6 +745,15 @@ public class DownloadService {
             return null;
         }
 
+        if (INTERSECT_KUPO_VERSION.equals(kupoVersion)) {
+            if (!isLinuxX86_64()) {
+                writeLn(error("Kupo %s is currently available from IntersectMBO only for Linux x86_64. Set kupo.url to a compatible build or use the DevKit Docker image.", kupoVersion));
+                return null;
+            }
+
+            return INTERSECT_KUPO_DOWNLOAD_URL + "/v" + kupoVersion + "/kupo-v" + kupoVersion + "-x86_64-linux.tar.gz";
+        }
+
         String osPrefix = null;
         if (SystemUtils.IS_OS_MAC) {
             osPrefix = "macos";
@@ -713,6 +762,9 @@ public class DownloadService {
         } else {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
         }
+
+        if (osPrefix == null)
+            return null;
 
         String arch = System.getProperty("os.arch");
         String cpuArch = null;
@@ -729,6 +781,11 @@ public class DownloadService {
 
         String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-v" + kupoVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
         return url;
+    }
+
+    private boolean isLinuxX86_64() {
+        String arch = System.getProperty("os.arch");
+        return SystemUtils.IS_OS_LINUX && !arch.startsWith("aarch") && !arch.startsWith("arm");
     }
 
     private String resolveYanoDownloadPath() {

@@ -1,12 +1,21 @@
 #!/bin/bash
+set -euo pipefail
 
-# Assign the architecture based on user input and determine the correct suffix
-case $1 in
+# PV11 workaround: IntersectMBO currently publishes the cardano-node 11.0.1
+# compatible Ogmios release only as a Linux x86_64 tarball. We bundle it for
+# arm64 Docker images too so Apple Silicon Docker Desktop can run it through
+# emulation. This may fail at runtime on native Linux arm64 hosts without
+# x86_64 binfmt/qemu support. Keep the original CardanoSolutions downloader in
+# download-ogmios.sh.original for reverting once upstream publishes the needed
+# assets again.
+case "${1:-}" in
     amd64)
-        SUFFIX="x86_64"
+        ARCH="x86_64"
         ;;
     arm64)
-        SUFFIX="aarch64"
+        echo "Warning: IntersectMBO Ogmios v6.14.0.2 has no Linux arm64 asset."
+        echo "Bundling the Linux x86_64 artifact for arm64 Docker image compatibility on Docker Desktop."
+        ARCH="x86_64"
         ;;
     *)
         echo "Error: Invalid architecture specified. Use 'amd64' or 'arm64'."
@@ -14,14 +23,16 @@ case $1 in
         ;;
 esac
 
+version=v6.14.0.2
+file=ogmios-${version}-${ARCH}-linux.tar.gz
+url=https://github.com/IntersectMBO/ogmios/releases/download/${version}/${file}
 
-version=v6.14.0
-file=ogmios-${version}-${SUFFIX}-linux.zip
-wget https://github.com/CardanoSolutions/ogmios/releases/download/${version}/$file
+wget "${url}"
 
-mkdir /app/ogmios
-unzip $file -d /app/ogmios
+rm -rf /app/ogmios
+mkdir -p /app/ogmios
+tar -xzf "${file}" -C /app/ogmios
 
 chmod +x /app/ogmios/bin/ogmios
 
-rm $file
+rm "${file}"

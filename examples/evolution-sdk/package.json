@@ -1,0 +1,15 @@
+{
+  "name": "evolution-sdk-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Yaci DevKit examples for Evolution SDK",
+  "scripts": {
+    "payment": "bun payment.ts",
+    "plutus:v2": "bun plutus_v2.ts",
+    "plutus:v3": "bun plutus_v3.ts"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@evolution-sdk/evolution": "^0.5.8"
+  }
+}

@@ -15,7 +15,7 @@ async function waitForWalletReady(page: Page) {
 
 test.describe('CIP-30 Wallet Demo - Page Load', () => {
   test('page loads with title and notes', async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
 
     await expect(page.locator('h1')).toContainText('CIP-30 Wallet Connection Demo');
     await expect(page.locator('text=About CIP-30')).toBeVisible();
@@ -23,7 +23,7 @@ test.describe('CIP-30 Wallet Demo - Page Load', () => {
   });
 
   test('detects Yaci DevKit wallet when CLI is running', async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
 
     // Wait for wallet grid to render
@@ -38,7 +38,7 @@ test.describe('CIP-30 Wallet Demo - Page Load', () => {
 
 test.describe('CIP-30 Wallet Demo - Connection', () => {
   test('connects to Yaci DevKit wallet and shows info', async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
 
     // Click to connect
@@ -67,7 +67,7 @@ test.describe('CIP-30 Wallet Demo - Connection', () => {
   });
 
   test('button shows connected state after connecting', async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
 
     await page.click('[data-wallet-id="yacidevkit"]');
@@ -79,7 +79,7 @@ test.describe('CIP-30 Wallet Demo - Connection', () => {
   });
 
   test('disconnect hides all sections', async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
 
     // Connect
@@ -99,7 +99,7 @@ test.describe('CIP-30 Wallet Demo - Connection', () => {
 
 test.describe('CIP-30 Wallet Demo - API Functions', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
     await page.click('[data-wallet-id="yacidevkit"]');
     await expect(page.locator('#wallet-info')).toBeVisible({ timeout: 10000 });
@@ -152,7 +152,7 @@ test.describe('CIP-30 Wallet Demo - API Functions', () => {
 
 test.describe('CIP-30 Wallet Demo - Raw CBOR', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
     await page.click('[data-wallet-id="yacidevkit"]');
     await expect(page.locator('#wallet-info')).toBeVisible({ timeout: 10000 });
@@ -185,7 +185,7 @@ test.describe('CIP-30 Wallet Demo - Raw CBOR', () => {
 
 test.describe('CIP-30 Wallet Demo - Transfer (3-Step Flow)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/cip30-wallets.html');
+    await page.goto('/index.html');
     await waitForWalletReady(page);
     await page.click('[data-wallet-id="yacidevkit"]');
     await expect(page.locator('#wallet-info')).toBeVisible({ timeout: 10000 });

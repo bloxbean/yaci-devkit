@@ -78,6 +78,7 @@ public class ClusterPortInfoHelper {
             printKupoInfo(clusterInfo);
         }
 
+        printWalletSdkInfo();
         printMcpInfo();
     }
 
@@ -118,6 +119,15 @@ public class ClusterPortInfoHelper {
         writeLn(infoLabel("Yano n2n Port", "localhost:" + getYanoN2NPort(clusterInfo)));
         writeLn(infoLabel("Yano Swagger UI", String.format("http://localhost:%s/q/swagger-ui", yanoHttpPort)));
         writeLn(infoLabel("Yano Base API URL (BF compatible)", String.format("http://localhost:%s/api/v1/", yanoHttpPort)));
+    }
+
+    private void printWalletSdkInfo() {
+        int adminPort = getAdminPort();
+        writeLn("\n");
+        writeLn(header(AnsiColors.CYAN_BOLD, "#################### Wallet SDK / CIP-30 ####################"));
+        writeLn(infoLabel("Wallet Demo", String.format("http://localhost:%s/wallet", adminPort)));
+        writeLn(infoLabel("Wallet SDK JS", String.format("http://localhost:%s/wallet-sdk.js", adminPort)));
+        writeLn(infoLabel("Injected Wallet", "window.cardano.yacidevkit"));
     }
 
     private void printMcpInfo() {
