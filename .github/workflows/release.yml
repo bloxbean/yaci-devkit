@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: earthly/actions-setup@v1
         with:
-          version: v0.8.0
+          version: v0.8.16
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
-        run: earthly --push +build --tag ${{ env.TAG }}-amd64 --platform linux/amd64
+        run: earthly --push --disable-remote-registry-proxy +build --tag ${{ env.TAG }}-amd64 --platform linux/amd64
 
   build-push-arm:
     runs-on: ARM64
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: earthly/actions-setup@v1
         with:
-          version: v0.8.0
+          version: v0.8.16
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
-        run: earthly --push +build --tag ${{ env.TAG }}-arm64 --platform linux/arm64
+        run: earthly --push --disable-remote-registry-proxy +build --tag ${{ env.TAG }}-arm64 --platform linux/arm64
 
   create-manifests:
     runs-on: [ self-hosted ]
