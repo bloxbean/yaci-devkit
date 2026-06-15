@@ -14,6 +14,21 @@ Please refer to the `config/node.properties` file for all the node specific conf
 
 ## Example of few key configurations:
 
+### nodeMode
+
+`nodeMode` controls how DevKit starts the local network.
+
+```properties
+nodeMode=companion
+```
+
+Supported Yano-backed modes:
+
+- `companion`: Yano bootstraps the network, then hands over to the Haskell node. This is the default mode.
+- `yano-only`: Yano runs as the only node, and Yaci Store syncs directly from Yano.
+
+See [Node Modes](/yano-node-modes) for details about when to use each mode.
+
 ### securityParam
 To set the security parameter for the node. Default value is 300. (300 blocks)
 
@@ -49,4 +64,3 @@ To set the maximum KES evolutions. Default value is `60`.
 
 
 **Note:** More configurations can be found in `node.properties` file.
-

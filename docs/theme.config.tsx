@@ -2,7 +2,13 @@ import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 
 const config: DocsThemeConfig = {
-  logo: <span><b>Yaci DevKit</b></span>,
+  logo: (
+    <img
+      src="/DevKit-logo.svg"
+      alt="Yaci DevKit"
+      style={{ height: 32, width: 'auto' }}
+    />
+  ),
   project: {
     link: 'https://github.com/bloxbean/yaci-devkit',
   },
@@ -26,9 +32,12 @@ const config: DocsThemeConfig = {
   },
   head: (
     <>
+      <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       <meta property="description" content="Yaci DevKit - Accelerate Cardano development with a customizable devnet, featuring rapid setup, lightweight indexing, and browser-based viewer"/>
       <meta property="og:title" content="Yaci DevKit - Accelerate Cardano development with a customizable devnet"/>
       <meta property="og:description" content="Yaci DevKit - Accelerate Cardano development with a customizable devnet, featuring rapid setup, lightweight indexing, and browser-based viewer"/>
+      <meta property="og:image" content="/DevKit-logo.svg"/>
+      <meta name="twitter:image" content="/DevKit-logo.svg"/>
     </>
   )
 }

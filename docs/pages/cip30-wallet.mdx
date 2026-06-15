@@ -1,0 +1,101 @@
+import { Callout } from 'nextra/components'
+
+# CIP-30 Wallet
+
+<Callout type="info">
+Supported in Yaci DevKit `v0.12.0-beta5` and later.
+</Callout>
+
+Yaci DevKit includes a local CIP-30 wallet for dApp development and SDK testing.
+
+It lets you test browser dApps against a local devnet without installing or configuring a separate browser wallet for every test account.
+
+## URLs
+
+When Yaci CLI is running, the wallet tools are served from the CLI/admin port:
+
+| Item | URL |
+|---|---|
+| Wallet page | `http://localhost:10000/wallet` |
+| Wallet SDK | `http://localhost:10000/wallet-sdk.js` |
+| Wallet API health check | `http://localhost:10000/api/v1/wallet/health` |
+
+The wallet SDK injects this CIP-30 provider:
+
+```js
+window.cardano.yacidevkit
+```
+
+## Wallet Page
+
+Open the wallet page to inspect local devnet accounts, switch the active account used by dApps, import accounts, and send test transactions.
+
+```text
+http://localhost:10000/wallet
+```
+
+The default DevKit mnemonic is used for the pre-funded local accounts:
+
+```text
+test test test test test test test test test test test test test test test test test test test test test test test sauce
+```
+
+<Callout type="warning">
+The DevKit wallet is for local development only. Do not use it with real funds.
+</Callout>
+
+## Use From a dApp
+
+Include the SDK in your local dApp page:
+
+```html
+<script src="http://localhost:10000/wallet-sdk.js"></script>
+```
+
+Then use it like any other CIP-30 wallet:
+
+```js
+const wallet = await window.cardano.yacidevkit.enable();
+
+const networkId = await wallet.getNetworkId();
+const balance = await wallet.getBalance();
+const changeAddress = await wallet.getChangeAddress();
+```
+
+## Supported CIP-30 Methods
+
+The wallet SDK supports the common CIP-30 flow used by local dApps:
+
+- `isEnabled()`
+- `enable()`
+- `getNetworkId()`
+- `getBalance()`
+- `getUtxos()`
+- `getUsedAddresses()`
+- `getUnusedAddresses()`
+- `getChangeAddress()`
+- `getRewardAddresses()`
+- `getCollateral()`
+- `signTx()`
+- `signData()`
+- `submitTx()`
+
+## Transaction Flow
+
+For transfer and dApp signing flows:
+
+- wallet data is exposed through CIP-30-compatible CBOR values
+- transaction signing happens through the CLI wallet backend
+- UTxO and balance queries use Yaci Store when required
+- signed transaction submission is proxied through the local DevKit services
+
+## Examples
+
+The packaged `examples/` folder includes browser examples that use CIP-30:
+
+- `examples/wallet-demo`: wallet discovery, CIP-30 methods, signing, and transfer flow
+- `examples/meshjs-mint-nft`: NFT minting with MeshJS and CIP-30 signing
+
+Both Docker and native CLI zip distributions include these examples.
+
+Run `info` in Yaci CLI to see the active wallet page and SDK URLs for your devnet.

@@ -8,18 +8,29 @@ The Docker distribution is the **recommended** way to get started with Yaci DevK
 
 The Docker distribution includes:
 - **Yaci CLI**: Command-line interface for managing your devnet
+- **Yaci CLI Admin API**: HTTP API, Swagger UI, Wallet UI, Wallet SDK, and MCP endpoint
+- **Yano**: Lightweight devnet node used for fast PV11 bootstrap and Yano-only mode (in v0.12.0-beta5+)
 - **Cardano Node**: Local Cardano blockchain node
 - **Yaci Store**: Lightweight indexer with Blockfrost-compatible APIs
 - **Yaci Viewer**: Web-based interface for exploring blockchain data
 - **Ogmios**: A lightweight bridge interface for Cardano Node
 - **Kupo**: A fast, lightweight and configurable chain-indexer
+- **Examples**: Runnable examples under the `examples/` folder
 
 ## Prerequisites
 
 - **Docker**: Make sure Docker is installed and running on your system
-- **Available Ports**: Default ports (3001, 8080, 5173) should be free
+- **Available Ports**: Default ports (3001, 8080, 5173, 10000) should be free
 
 For Ogmios and Kupo, ensure ports 1337 and 1442 are also available if you plan to use these services.
+
+<Callout type="info">
+Starting with Yaci DevKit `v0.12.0-beta5`, the default Docker setup uses Yaci Store's `scalus` transaction evaluator. Ogmios is optional and is not started just for transaction evaluation.
+</Callout>
+
+<Callout type="warning">
+For Yaci DevKit `v0.12.0-beta5`, PV11-compatible Ogmios/Kupo binaries are currently available only as Linux x86_64 builds from IntersectMBO. Docker images can run these on Apple Silicon Docker Desktop through emulation, but native Linux arm64 hosts may need x86_64 emulation or the amd64 image. See [Known Issues](/known-issues#pv11-ogmioskupo-docker-arm64-compatibility).
+</Callout>
 
 ## Installation
 
@@ -116,6 +127,14 @@ yaci-cli:>create-node -o --block-time 5 --slot-length 5 --start
 3. **Access Yaci Viewer**:
    Open http://localhost:5173 in your browser to explore your devnet through the web interface.
 
+4. **Open Wallet and MCP URLs when needed**:
+   - Wallet page: http://localhost:10000/wallet
+   - Wallet SDK: http://localhost:10000/wallet-sdk.js
+   - MCP endpoint: http://localhost:10000/mcp
+
+5. **Try packaged examples**:
+   The Docker zip distribution includes runnable examples under `examples/`.
+
 <Callout type="info">
 **Port Conflicts**: If ports are already in use, update the `config/env` file to change port numbers. Restart the containers after making changes.
 </Callout>
@@ -181,12 +200,19 @@ To activate Ogmios and Kupo support, either:
 1. **Via env file**: Set `ogmios_enabled=true` and `kupo_enabled=true` in `config/env`
 2. **Via CLI**: Use the `enable-kupomios` command in Yaci CLI
 
+In `v0.12.0-beta5+`, if Ogmios is enabled and running when Yaci Store starts, Yaci Store uses `ogmios` transaction evaluation. Otherwise it uses `scalus`.
+
 #### Service URLs
+- **CLI/Admin Swagger UI**: http://localhost:10000/swagger-ui.html
+- **Wallet page**: http://localhost:10000/wallet
+- **MCP endpoint**: http://localhost:10000/mcp
 - **Yaci Store (Blockfrost API)**: http://localhost:8080/api/v1/
-- **Yaci Store (Swagger UI)**: http://localhost:8080/swagger-ui/index.html
+- **Yaci Store (Swagger UI)**: http://localhost:8080/swagger-ui.html
 - **Yaci Viewer**: http://localhost:5173
 - **Ogmios** (if enabled): http://localhost:1337
 - **Kupo** (if enabled): http://localhost:1442
+- **Yano HTTP**: http://localhost:6060
+- **Yano Swagger UI** (`yano-only` mode): http://localhost:6060/q/swagger-ui
 
 ## Stopping the DevKit
 

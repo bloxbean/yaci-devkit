@@ -10,6 +10,7 @@ The NPM distribution provides:
 - **Node.js package management**: Install and manage Yaci CLI distribution through npm
 - **Streamlined commands**: Simplified `up` command that handles download and devnet creation
 - **Yaci Viewer package**: Separately installable web interface for blockchain exploration
+- **Wallet SDK and MCP endpoint**: Served by the Yaci CLI/admin service
 - **CI/CD ready**: Perfect for automated testing and continuous integration
 
 ## Prerequisites
@@ -74,6 +75,8 @@ This command:
 - Downloads the Cardano node (if not already downloaded)
 - Creates and starts a new devnet with 1-second block time
 - Sets up the basic development environment
+
+By default, DevKit uses `companion` node mode: Yano bootstraps the network and then hands over to the Haskell node. See [Node Modes](/yano-node-modes).
 
 ### Interactive Mode
 
@@ -147,7 +150,11 @@ yaci-devkit up --enable-yaci-store
 Includes:
 - Cardano node
 - Yaci Store (Blockfrost-compatible APIs)
-- Ogmios (for script cost evaluation)
+- `scalus` transaction evaluation by default in `v0.12.0-beta5+`
+
+<Callout type="info">
+Starting with Yaci DevKit `v0.12.0-beta5`, Yaci Store does not require Ogmios for transaction evaluation. If Ogmios is enabled and running, Yaci Store automatically switches to `ogmios` evaluation mode.
+</Callout>
 
 #### 4. Kupomios Mode
 ```bash
@@ -239,6 +246,10 @@ For detailed CI/CD integration examples and best practices, see the [CI/CD Integ
 When services are enabled:
 
 - **Cardano Node**: localhost:3001
+- **CLI/Admin Swagger UI**: http://localhost:10000/swagger-ui.html
+- **Wallet page**: http://localhost:10000/wallet
+- **Wallet SDK**: http://localhost:10000/wallet-sdk.js
+- **MCP endpoint**: http://localhost:10000/mcp
 - **Yaci Store (Blockfrost API)**: http://localhost:8080
 - **Yaci Viewer**: http://localhost:5173
 - **Ogmios** (if enabled): ws://localhost:1337

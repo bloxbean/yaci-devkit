@@ -2,7 +2,7 @@ import { Callout } from 'nextra/components'
 
 # Zip Setup
 
-For users who prefer not to use Docker, the ZIP distribution contains only Yaci CLI and allows you to download and manage necessary components like Cardano Node, Ogmios, Kupo, and Yaci Store directly through the command line.
+For users who prefer not to use Docker, the ZIP distribution contains Yaci CLI, configuration files, and packaged examples. It allows you to download and manage necessary components like Cardano Node, Yano, Ogmios, Kupo, and Yaci Store directly through the command line.
 
 ## Overview
 
@@ -13,6 +13,10 @@ The Zip distribution is perfect for:
 
 <Callout type="info">
 **Note**: Yaci Viewer is not included in the Zip distribution. To add viewer functionality, you can install Yaci Viewer separately through NPM. See the [NPM installation guide](/getting-started/npm#step-2-install-yaci-viewer-optional) for details.
+</Callout>
+
+<Callout type="warning">
+PV11-compatible Ogmios/Kupo binaries are currently published only as Linux x86_64 builds. On macOS arm64 native CLI, those specific Ogmios/Kupo defaults cannot run directly. Use Docker as a workaround, or set custom `ogmios.url` / `kupo.url` values when compatible native builds are available.
 </Callout>
 
 ## Key Advantages
@@ -55,6 +59,7 @@ rm -rf $HOME/.yaci-cli
 3. Navigate to the extracted folder where you'll find:
    - `yaci-cli` - The main executable binary
    - `config/` - Configuration files directory
+   - `examples/` - Runnable examples for Wallet SDK, MeshJS, Evolution SDK, and Sutra Elixir
 
 ### Step 2: macOS Setup (macOS users only)
 
@@ -86,8 +91,9 @@ The ZIP distribution doesn't include the necessary components for creating a dev
 yaci-cli:> download
 ```
 
-This automatically downloads all required components for your platform:
+This downloads the configured components for your platform:
 - Cardano Node
+- Yano
 - Ogmios
 - Kupo
 - Yaci Store
@@ -104,6 +110,7 @@ yaci-cli:> download --overwrite
 **Download individual components:**
 ```shell
 yaci-cli:> download -c node
+yaci-cli:> download -c yano
 yaci-cli:> download -c ogmios
 yaci-cli:> download -c kupo
 yaci-cli:> download -c yaci-store
@@ -180,8 +187,8 @@ kupo.enabled=true
 yaci.store.enabled=true
 ```
 
-<Callout type="warning">
-**For Blockfrost-compatible APIs**: To use Yaci Store for transaction building, script cost evaluation, and transaction submission, you must enable both Yaci Store and Ogmios.
+<Callout type="info">
+**Yaci DevKit v0.12.0-beta5+**: Yaci Store uses `scalus` transaction evaluation by default, so transaction building, script cost evaluation, and transaction submission do not require Ogmios. If Ogmios is enabled and running when Yaci Store starts, DevKit switches Yaci Store to `ogmios` evaluation mode.
 </Callout>
 
 #### Update Ports
@@ -197,6 +204,22 @@ yaci.store.port=8080
 ### node.properties
 
 Contains Cardano Node configuration. Update as needed to modify the node's genesis configuration.
+
+#### Node Mode
+
+The default node mode is `companion`.
+
+```properties
+nodeMode=companion
+```
+
+Use `yano-only` for a lighter setup where Yano runs as the only node and Yaci Store syncs directly from Yano.
+
+```properties
+nodeMode=yano-only
+```
+
+See [Node Modes](/yano-node-modes) for details.
 
 ### download.properties
 
@@ -258,11 +281,26 @@ yaci-cli:> create-node -o --block-time 200 --start
 ### Service URLs
 
 When enabled, services are available at:
+- **CLI/Admin Swagger UI**: http://localhost:10000/swagger-ui.html
+- **Wallet page**: http://localhost:10000/wallet
+- **Wallet SDK**: http://localhost:10000/wallet-sdk.js
+- **MCP endpoint**: http://localhost:10000/mcp
 - **Yaci Store (Blockfrost API)**: http://localhost:8080/api/v1/
-- **Yaci Store (Swagger UI)**: http://localhost:8080/swagger-ui/index.html
+- **Yaci Store (Swagger UI)**: http://localhost:8080/swagger-ui.html
 - **Yaci Viewer**: http://localhost:3000 (If Yaci Viewer is installed separately via NPM)
 - **Ogmios**: http://localhost:1337
 - **Kupo**: http://localhost:1442
+
+### Packaged Examples
+
+The ZIP distribution includes examples under `examples/`:
+
+- `wallet-demo`
+- `meshjs-mint-nft`
+- `evolution-sdk`
+- `sutra-elixir`
+
+See `examples/README.md` in the distribution for a quick overview.
 
 ## Multi-Node Networks
 

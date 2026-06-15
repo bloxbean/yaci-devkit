@@ -1,0 +1,56 @@
+import { Callout } from 'nextra/components'
+
+# Evolution SDK
+
+Yaci DevKit includes a packaged Evolution SDK example for testing payment and Plutus transactions against a local devnet.
+
+The example is available in both Docker and native CLI zip distributions:
+
+```text
+examples/evolution-sdk
+```
+
+## Prerequisites
+
+- Yaci DevKit running with Yaci Store enabled
+- Admin API available at `http://localhost:10000`
+- Yaci Store API available at `http://localhost:8080/api/v1`
+- Bun installed
+
+```shell
+curl -fsSL https://bun.sh/install | bash
+```
+
+## Run the Example
+
+From the DevKit distribution folder:
+
+```shell
+cd examples/evolution-sdk
+bun install
+bun run payment
+bun run plutus:v2
+bun run plutus:v3
+```
+
+The example also supports running the scripts directly:
+
+```shell
+bun payment.ts
+bun plutus_v2.ts
+bun plutus_v3.ts
+```
+
+## Chain Configuration
+
+The example fetches the live Shelley genesis from Yaci DevKit:
+
+```text
+http://localhost:10000/local-cluster/api/admin/devnet/genesis/shelley
+```
+
+It uses the current `systemStart`, `slotLength`, `networkMagic`, and `epochLength` to build the Evolution SDK chain descriptor. This keeps the SDK aligned with the active DevKit network after every reset.
+
+<Callout type="info">
+See `examples/evolution-sdk/README.md` in the distribution for additional details about the Yaci Store response shim used by this example.
+</Callout>
