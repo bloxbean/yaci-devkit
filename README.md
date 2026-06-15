@@ -19,6 +19,7 @@
 
 - **⚡ Instant Devnet Creation** - Launch a complete Cardano network in seconds
 - **🎛️ Flexible Configuration** - Customize block times, epochs, eras, and network parameters
+- **🧪 PV11 / Cardano Node 11.0.1 Support** - Beta builds are available for PV11 hard fork compatible devnets
 - **🔄 Rollback Testing** - Advanced rollback simulation for robust application testing *(New in v0.11.0-beta1)*
 - **⏱️ Sub-second Block Times** - Support for ultra-fast development with sub-second block times. e.g; 100ms, 200ms *(New in v0.11.0-beta1)*
 - **🌐 Multi-node Support** - Enable multiple nodes specifically for rollback testing scenarios
@@ -71,9 +72,15 @@ When `--enable-multi-node` is used, DevKit creates a 3-node cluster for rollback
 
 ## 📋 Current Releases
 
-🚀 **Latest Stable Release**: **[v0.10.6](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.10.6)**
+Use the release that matches the Cardano node / protocol version you want to test.
 
-🧪 **Latest Beta Release**: **[v0.11.0-beta1](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.11.0-beta1)**
+| DevKit release | Cardano node | Status | Recommended use |
+|---|---:|---|---|
+| [v0.10.6](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.10.6) | `10.1.4` | Stable | Default stable development setup |
+| [v0.11.0-beta1](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.11.0-beta1) | `10.5.0` | Beta | PV10 or earlier Cardano protocol testing |
+| [v0.12.0-beta5](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.12.0-beta5) | `11.0.1` | Beta | PV11 hard fork / Cardano node 11.0.1 testing |
+
+For PV11 hard fork compatible local devnets, use the PV11 beta release from this table or a newer beta release.
 
 ## 📦 Components
 
@@ -106,6 +113,8 @@ Yaci DevKit offers multiple distribution options to fit your development workflo
 
 Download and unzip the latest docker distribution.
 
+For protocol-specific testing, choose the Docker ZIP from the release compatibility table above.
+
 ```bash
 # 
 # Start DevKit
@@ -115,6 +124,8 @@ Download and unzip the latest docker distribution.
 #### Option 2: Yaci CLI Zip Distribution (Non-Docker)
 Download and unzip the latest Yaci CLI distribution.
 
+For protocol-specific testing, choose the CLI ZIP from the release compatibility table above.
+
 ```bash
 # Start Yaci CLI and download components
 ./yaci-cli
@@ -123,12 +134,25 @@ Download and unzip the latest Yaci CLI distribution.
 #### Option 3: NPM Distribution (CI/CD Ready)
 🚀 **Perfect for CI/CD pipelines and automated testing:**
 ```bash
-# Global installation
+# Latest stable
 npm install -g @bloxbean/yaci-devkit
+
+# Latest beta
+npm install -g @bloxbean/yaci-devkit@beta
+
+# Latest preview
+npm install -g @bloxbean/yaci-devkit@preview
+```
+
+Then start DevKit:
+
+```bash
 yaci-devkit up --enable-yaci-store
 or
 yaci-devkit up --enable-kupomios
 ```
+
+Use `@beta` for the latest beta release and `@preview` for the latest preview release. To lock CI to an exact release, install with an explicit version from the compatibility table.
 
 **CI Integration Examples:**
 - ✅ **GitHub Actions** - Automated testing with DevKit
