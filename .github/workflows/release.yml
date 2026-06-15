@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'dv*'
 
 jobs:
   build-push-amd:
@@ -27,7 +28,7 @@ jobs:
           TAG=$(grep "tag=" config/version | cut -d'=' -f2)
           echo "TAG=${TAG}" >> $GITHUB_ENV
       - name: Run build
-        run: earthly --push +build --tag ${{ env.TAG }}-amd64 --platform linux/amd64
+        run: earthly --push --disable-remote-registry-proxy +build --tag ${{ env.TAG }}-amd64 --platform linux/amd64
 
   build-push-arm:
     runs-on: ARM64
