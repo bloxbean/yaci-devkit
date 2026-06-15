@@ -1,0 +1,59 @@
+import { Callout } from 'nextra/components'
+
+# MCP Integration
+
+<Callout type="info">
+Supported in Yaci DevKit `v0.12.0-beta5` and later.
+</Callout>
+
+Yaci DevKit exposes an MCP server from the CLI/admin service so AI coding tools can inspect and interact with the local devnet.
+
+The default MCP endpoint is:
+
+```text
+http://localhost:10000/mcp
+```
+
+## Configuration
+
+Add this to your `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "yaci-devkit": {
+      "url": "http://localhost:10000/mcp"
+    }
+  }
+}
+```
+
+If you changed the admin port, update the URL to match your configured port.
+
+For Docker, the host admin port is controlled by:
+
+```shell
+HOST_CLUSTER_API_PORT=10000
+```
+
+## Available Tools
+
+The MCP server exposes devnet-focused tools:
+
+| Tool | Purpose |
+|---|---|
+| `devnet_status` | Get devnet status and current chain tip |
+| `devnet_reset` | Reset the local devnet |
+| `devnet_topup` | Fund an address with test ADA |
+| `devnet_utxos` | Query UTxOs for an address |
+| `devnet_submit_tx` | Submit a signed transaction |
+
+## Usage Notes
+
+- Start Yaci DevKit before using the MCP server.
+- Run `info` in Yaci CLI to print the MCP URL and `.mcp.json` snippet.
+- The MCP endpoint is intended for local development workflows.
+
+<Callout type="info">
+MCP support is useful for tools such as Claude Code that can call local development tools while assisting with dApp or SDK tests.
+</Callout>

@@ -10,6 +10,9 @@
     "type": "page"
   },
   "services": "Services",
+  "yano-node-modes": "Node Modes",
+  "cip30-wallet": "CIP-30 Wallet",
+  "mcp-integration": "MCP Integration",
   "commands": "Yaci CLI Commands",
   "node-configuration": "Node Configuration",
   "multi-node-setup": "Multi-node setup",

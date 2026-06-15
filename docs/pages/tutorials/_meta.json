@@ -1,5 +1,7 @@
 {
   "meshjs": "MeshJS",
   "ccl": "Cardano Client Lib (Java)",
-  "lucid-evolution": "Lucid Evolution"
+  "lucid-evolution": "Lucid Evolution",
+  "evolution-sdk": "Evolution SDK",
+  "sutra-elixir": "Sutra Elixir"
 }

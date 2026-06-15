@@ -19,7 +19,7 @@ Create a new node with the default options. 1 sec block time and overwrite the e
      - `--block-time or -b double` : Set the block time in seconds. Default is 1 sec. **New in 0.11.0-beta1:** Supports sub-second values like 0.2 for 200ms blocks.
      - `--slot-length or -s double` : Slot Length in sec. Default is 1 sec. **New in 0.11.0-beta1:** Supports sub-second values like 0.2 for 200ms slots.
      - `--epoch-length or -e int` : Epoch Length in slots. Default is 500.
-     - `--era String` : Era (babbage, conway). Default is babbage.
+     - `--era String` : Era (babbage, conway). Default is conway.
      - `--enable-multi-node` : Enable multi-node setup for rollback testing. **New in 0.11.0-beta1.**
 
 **Note:** There are many other node specific configuration that can be set through env file or node.properties. Please refer to the [Node Configuration](./node-configuration) for more details.
@@ -143,12 +143,14 @@ tip
 
 ### info
 
-To show the info of the node.
+To show devnet details, service URLs, and integration helpers for the current node.
 
 - **Usage:**
 ```bash
 info
 ```
+
+The output includes node mode details, Yaci Store/Ogmios/Kupo URLs when enabled, Wallet SDK / CIP-30 links, and the MCP server URL/config snippet.
 
 ## Log Commands
 

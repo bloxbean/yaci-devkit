@@ -19,7 +19,7 @@ const HomePage = () => {
         <header className="header">
           <nav className="navbar">
             <div className="nav-brand">
-              <span className="brand-text">Yaci DevKit</span>
+              <img className="brand-logo" src="/DevKit-logo.svg" alt="Yaci DevKit" />
             </div>
             <div className="nav-links">
               <Link href="/getting-started/docker" className="nav-link">Get Started</Link>
@@ -494,12 +494,41 @@ const HomePage = () => {
         {/* What's New Section */}
         <section className="whats-new">
           <div className="container">
-            <h2 className="section-title">🔥 What&apos;s New in v0.11.0-beta1</h2>
+            <h2 className="section-title">🔥 What&apos;s New in v0.12.0-beta5</h2>
             <div className="new-features">
+              <div className="new-feature">
+                <span className="feature-emoji">⚡</span>
+                <div>
+                  <strong>Node Modes</strong>
+                  <p>Yano-powered companion mode for fast PV11 bootstrap and yano-only mode for lightweight devnets</p>
+                </div>
+              </div>
+              <div className="new-feature">
+                <span className="feature-emoji">👛</span>
+                <div>
+                  <strong>CIP-30 Wallet SDK</strong>
+                  <p>Local browser wallet, wallet page, and SDK for dApp testing against the devnet</p>
+                </div>
+              </div>
+              <div className="new-feature">
+                <span className="feature-emoji">🤖</span>
+                <div>
+                  <strong>MCP Integration</strong>
+                  <p>Local MCP endpoint for AI coding tools to inspect and interact with the devnet</p>
+                </div>
+              </div>
+              <div className="new-feature">
+                <span className="feature-emoji">📦</span>
+                <div>
+                  <strong>Packaged Examples</strong>
+                  <p>MeshJS mint NFT, wallet demo, Evolution SDK, and Sutra Elixir examples included in distributions</p>
+                </div>
+              </div>
               <div className="new-feature">
                 <span className="feature-emoji">🔄</span>
                 <div>
                   <strong>Rollback Testing</strong>
+                  <span className="feature-version">Since v0.11.0-beta1</span>
                   <p>Consensus-based rollback simulation</p>
                 </div>
               </div>
@@ -507,6 +536,7 @@ const HomePage = () => {
                 <span className="feature-emoji">⏱️</span>
                 <div>
                   <strong>Sub-second Block Times</strong>
+                  <span className="feature-version">Since v0.11.0-beta1</span>
                   <p>Support for 100ms, 200ms blocks and any custom interval (default 1s)</p>
                 </div>
               </div>
@@ -514,6 +544,7 @@ const HomePage = () => {
                 <span className="feature-emoji">🌐</span>
                 <div>
                   <strong>Multi-node Support</strong>
+                  <span className="feature-version">Since v0.11.0-beta1</span>
                   <p>3-node cluster for advanced rollback testing</p>
                 </div>
               </div>
@@ -521,6 +552,7 @@ const HomePage = () => {
                 <span className="feature-emoji">📊</span>
                 <div>
                   <strong>Enhanced Tip Command</strong>
+                  <span className="feature-version">Since v0.11.0-beta1</span>
                   <p>Shows all nodes in multi-node setup</p>
                 </div>
               </div>
@@ -609,13 +641,12 @@ const HomePage = () => {
           .nav-brand {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-weight: bold;
-            font-size: 1.2rem;
           }
 
-          .logo {
-            font-size: 1.5rem;
+          .brand-logo {
+            display: block;
+            width: 170px;
+            height: auto;
           }
 
           .nav-links {
@@ -1333,6 +1364,16 @@ const HomePage = () => {
             display: block;
             color: #1f2937;
             margin-bottom: 0.25rem;
+          }
+
+          .feature-version {
+            display: inline-block;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
           }
 
           .new-feature p {

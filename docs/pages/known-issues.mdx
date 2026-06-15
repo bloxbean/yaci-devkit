@@ -19,10 +19,29 @@ The DevKit Docker image bundles those x86_64 Ogmios/Kupo binaries in both the `l
 - **Linux x86_64 Docker hosts**: Supported.
 - **Apple Silicon Docker Desktop**: Expected to work through Docker Desktop's x86_64 emulation.
 - **Native Linux arm64 Docker hosts**: May fail at runtime unless x86_64 binfmt/qemu emulation is configured on the host.
+- **Native CLI on macOS arm64**: The default PV11 Ogmios/Kupo Linux x86_64 binaries cannot run directly. Use Docker, or set custom `ogmios.url` / `kupo.url` values when compatible native binaries are available.
 
 #### Workaround
 
-On native Linux arm64 hosts, run the DevKit Docker image as `linux/amd64` or use a compatible native Ogmios/Kupo build when one becomes available.
+On native Linux arm64 hosts, run the DevKit Docker image as `linux/amd64` or configure x86_64 emulation. For native CLI installs, use a compatible Ogmios/Kupo build when one becomes available by setting direct URLs in `config/download.properties`.
+
+---
+
+### Yaci Store Tx Evaluator Mode (v0.12.0-beta5+)
+
+<Callout type="info">
+Starting with Yaci DevKit `v0.12.0-beta5`, Yaci Store uses the `scalus` transaction evaluator by default.
+</Callout>
+
+Default Yaci Store transaction evaluation no longer requires Ogmios. If Ogmios is enabled and running when Yaci Store starts, DevKit automatically switches the evaluator mode to `ogmios`.
+
+This means the temporary PV11 Ogmios/Kupo binary limitations do not block the default Yaci Store transaction evaluation path.
+
+Check the active mode in the Yaci CLI startup output:
+
+```text
+Yaci Store tx evaluator mode: scalus
+```
 
 ---
 

@@ -1,0 +1,89 @@
+import { Callout } from 'nextra/components'
+
+# Node Modes
+
+<Callout type="info">
+Supported in Yaci DevKit `v0.12.0-beta5` and later.
+</Callout>
+
+[Yano](https://github.com/bloxbean/yano) is a lightweight Cardano devnet node added in `v0.12.0-beta5` to help DevKit bootstrap and run PV11-compatible local networks quickly.
+
+Yaci DevKit currently exposes two primary Yano-backed modes through `node.properties`:
+
+```properties
+nodeMode=companion
+```
+
+or
+
+```properties
+nodeMode=yano-only
+```
+
+## Why Yano Is Needed
+
+Cardano node `11.0.1` validates the length of each Plutus cost model. That means DevKit can no longer patch extra cost model entries directly into genesis files for fast local startup.
+
+Protocol parameter changes now need to go through the proper governance action flow. Yano helps DevKit complete that flow quickly during devnet bootstrap.
+
+## Companion Mode
+
+`companion` is the default mode.
+
+In companion mode, Yano bootstraps the devnet before handing over to the Haskell node.
+
+Yano starts the network in the past, submits the required protocol parameter governance action for Plutus cost models, advances the chain until the update is enacted, and then fast-forwards back to wall-clock time before handover.
+
+This avoids requiring users to wait for two epoch transitions before updated protocol parameters are available.
+
+Use companion mode when you want normal Haskell-node behavior, including node socket access, but want DevKit to prepare the chain quickly for PV11 protocol parameters.
+
+## Yano-only Mode
+
+In `yano-only` mode, Yano runs as the devnet node. There is no Haskell node handover.
+
+Yaci Store syncs directly from Yano, so this mode starts quickly and avoids running a separate Cardano node process.
+
+Use Yano-only mode when you want a lightweight devnet for application, SDK, and API testing and do not need direct Haskell node process or node socket access.
+
+<Callout type="info">
+Yano-only mode is optimized for local development speed. If your workflow needs direct `cardano-node` socket access, use companion mode.
+</Callout>
+
+## Configuration
+
+For Docker and zip distributions, set the mode in `config/node.properties` before creating the devnet:
+
+```properties
+# Yano bootstraps, then Haskell node takes over
+nodeMode=companion
+```
+
+```properties
+# Yano runs as the only node
+nodeMode=yano-only
+```
+
+After changing `nodeMode`, recreate the devnet:
+
+```shell
+yaci-cli:> create-node -o --start
+```
+
+## Ports
+
+When Yano is running, these ports are used by default:
+
+| Service | Docker host port | Purpose |
+|---|---:|---|
+| Yano HTTP | `6060` | Yano HTTP API |
+| Yano n2n | `14447` | Node-to-node protocol |
+
+For Docker, these can be changed in `config/env`:
+
+```shell
+HOST_YANO_HTTP_PORT=6060
+HOST_YANO_N2N_PORT=14447
+```
+
+Run `info` in the Yaci CLI to see the active node mode and URLs for the current devnet.
