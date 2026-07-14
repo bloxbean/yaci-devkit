@@ -1,0 +1,26 @@
+# TxPlan scenario: simple ADA payment.
+#
+# Sends 25 ADA from default account 0 to default account 1.
+# Signers are referenced by URI (account://accN) and resolved by Yaci DevKit from the
+# 20 pre-funded default accounts, so no keys appear in this file.
+#
+# Run it:
+#   CLI : run-scenario --file examples/scenarios/payment.yaml
+#   REST: POST /local-cluster/api/scenarios/run   body: {"yaml": "<contents>"}
+#   MCP : devnet_run_scenario(<contents>)
+#
+# Addresses below are the standard Yaci default-mnemonic accounts (deterministic across devnets).
+version: 1.1
+context:
+  signers:
+    - ref: account://acc0
+      scope: payment
+transaction:
+  - tx:
+      from: addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex
+      intents:
+        - type: payment
+          address: addr_test1qpqy3lufef8c3en9nrnzp2svwy5vy9zangvp46dy4qw23clgfxhn3pqv243d6wptud7fuaj5tjqer7wc7m036gx0emsqaqa8te
+          amounts:
+            - unit: lovelace
+              quantity: 25000000

@@ -1,0 +1,45 @@
+# TxFlow scenario: two dependent steps in the SAME block.
+#
+# Step 1 (fund):    acc0 → acc5, 100 ADA
+# Step 2 (forward): acc5 → acc6, 40 ADA  (spends step 1's output via depends_on)
+#
+# `context.chaining_mode: BATCH` makes the executor compute tx hashes client-side so step 2 can
+# reference step 1's not-yet-confirmed output — both transactions are submitted back-to-back and
+# land in the same block. Set it to SEQUENTIAL (or omit) to put each step in its own block.
+version: "1.0"
+context:
+  chaining_mode: BATCH
+flow:
+  id: fund-and-forward
+  description: acc0 funds acc5, then acc5 forwards to acc6 in the same block
+  steps:
+    - step:
+        id: fund
+        tx:
+          from: addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex
+          intents:
+            - type: payment
+              address: addr_test1qrrv7774puml0exvzc0uqrc8axezy6a925kv4ucdx906qy6mhjxtmx44x70ndr7g6dgqcdaf69q8fnrdmtvfud5x7rsqvsuqx5
+              amounts:
+                - unit: lovelace
+                  quantity: 100000000
+        context:
+          signers:
+            - ref: account://acc0
+              scope: payment
+    - step:
+        id: forward
+        depends_on:
+          - from_step: fund
+        tx:
+          from: addr_test1qrrv7774puml0exvzc0uqrc8axezy6a925kv4ucdx906qy6mhjxtmx44x70ndr7g6dgqcdaf69q8fnrdmtvfud5x7rsqvsuqx5
+          intents:
+            - type: payment
+              address: addr_test1qpgkf2ccvu2uscmcqgy4dkyjeae0va3kk7yk04nuleekq3u3xrwgnnm6n0yfzz0e8x2kkehex2f6mexrjg9h9l2qhm4qkms53s
+              amounts:
+                - unit: lovelace
+                  quantity: 40000000
+        context:
+          signers:
+            - ref: account://acc5
+              scope: payment

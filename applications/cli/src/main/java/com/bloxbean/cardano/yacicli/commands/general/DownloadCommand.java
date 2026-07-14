@@ -141,7 +141,7 @@ public class DownloadCommand {
         var status = download(componentList.toArray(new String[0]), overwrite);
         if (status) {
             clusterCommands.createCluster(clusterName, port, submitApiPort, slotLength, blockTime, epochLength,
-                    true, true, null, genesisProfile, false, enableMultiNode, stakeRatioFactor);
+                    true, true, null, genesisProfile, false, enableMultiNode, stakeRatioFactor, null);
 
             if (!interactive && tail)
                 clusterCommands.ltail(true, true, true, true, true, true, null, null);

@@ -3,7 +3,6 @@ package com.bloxbean.cardano.yacicli.localcluster.api.service;
 import com.bloxbean.cardano.client.address.AddressProvider;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.backend.api.BackendService;
-import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.common.model.Networks;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.plutus.spec.BigIntPlutusData;
@@ -13,9 +12,8 @@ import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
-import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
-import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.localcluster.service.DefaultAddressService;
+import com.bloxbean.cardano.yacicli.localcluster.service.LocalBackendServiceProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +33,7 @@ import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 @Slf4j
 public class TestTransactionService {
     private final DefaultAddressService defaultAddressService;
-    private final ClusterService clusterService;
+    private final LocalBackendServiceProvider localBackendServiceProvider;
 
     PlutusV2Script alwaysSuccessScript = PlutusV2Script.builder()
             .type("PlutusScriptV2")
@@ -129,24 +127,7 @@ public class TestTransactionService {
 
 
     private Optional<BackendService> getBackendService() {
-        try {
-            String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
-            var clusterInfo = clusterService.getClusterInfo(clusterName);
-            if (clusterInfo == null) {
-                log.error("Cluster {} not found", clusterName);
-                return Optional.empty();
-            }
-
-            String backendUrl;
-            if (NodeMode.YANO_ONLY == clusterInfo.getNodeMode()) {
-                backendUrl = "http://localhost:" + clusterInfo.getYanoHttpPort() + "/api/v1/";
-            } else {
-                backendUrl = "http://localhost:" + clusterInfo.getYaciStorePort() + "/api/v1/";
-            }
-            return Optional.of(new BFBackendService(backendUrl, "dummy_key"));
-        } catch (Exception e) {
-            log.error("Error getting backend service", e);
-            return Optional.empty();
-        }
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        return localBackendServiceProvider.getBackendService(clusterName);
     }
 }

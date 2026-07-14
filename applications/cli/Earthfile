@@ -138,7 +138,9 @@ docker-build:
     RUN chmod +x /app/yaci-cli.sh
 
     RUN mkdir -p /app/config
+    RUN mkdir -p /app/scenarios
     COPY docker/application.properties /app/config/
+    COPY scenarios/scenario-config.yml /app/scenarios/
     COPY config/plutus-costmodels-v10.json /app/config/
     COPY config/plutus-costmodels-v11.json /app/config/
 

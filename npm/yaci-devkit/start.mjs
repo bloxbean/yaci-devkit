@@ -81,7 +81,8 @@ if (existsSync(pidFilePath)) {
 
 const additionalConfig = "optional:file:" + configPath + "/application.properties,"
     + "optional:file:" + configPath + "/download.properties,"
-    + "optional:file:" + configPath + "/node.properties"
+    + "optional:file:" + configPath + "/node.properties,"
+    + "optional:file:" + resolve(configPath, "../scenarios/scenario-config.yml")
 
 const additionalConfigArg = "-Dspring.config.import=" + additionalConfig;
 const costModelsPathArg = "-Dyaci.cli.plutus-costmodels-path=" + configPath;

@@ -272,6 +272,80 @@ public class YanoBootstrapService {
         }
     }
 
+    public JsonNode advanceTime(int httpPort, long slots, Consumer<String> writer) {
+        String url = "http://localhost:" + httpPort + "/api/v1/devnet/time/advance";
+        try {
+            String body = objectMapper.writeValueAsString(Map.of("slots", slots));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(120))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                writer.accept(success("Advanced devnet time by %d slots", slots));
+                return objectMapper.readTree(response.body());
+            } else {
+                writer.accept(error("Failed to advance time: HTTP %d - %s", response.statusCode(), response.body()));
+                return null;
+            }
+        } catch (Exception e) {
+            writer.accept(error("Error advancing time: " + e.getMessage()));
+            return null;
+        }
+    }
+
+    public JsonNode createSnapshot(int httpPort, String name, Consumer<String> writer) {
+        String url = "http://localhost:" + httpPort + "/api/v1/devnet/snapshot";
+        try {
+            String body = objectMapper.writeValueAsString(Map.of("name", name));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                writer.accept(success("Snapshot created: " + name));
+                return objectMapper.readTree(response.body());
+            } else {
+                writer.accept(error("Failed to create snapshot: HTTP %d - %s", response.statusCode(), response.body()));
+                return null;
+            }
+        } catch (Exception e) {
+            writer.accept(error("Error creating snapshot: " + e.getMessage()));
+            return null;
+        }
+    }
+
+    public JsonNode restoreSnapshot(int httpPort, String name, Consumer<String> writer) {
+        String url = "http://localhost:" + httpPort + "/api/v1/devnet/restore/" + name;
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(60))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString("{}"))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                writer.accept(success("Snapshot restored: " + name));
+                return objectMapper.readTree(response.body());
+            } else {
+                writer.accept(error("Failed to restore snapshot: HTTP %d - %s", response.statusCode(), response.body()));
+                return null;
+            }
+        } catch (Exception e) {
+            writer.accept(error("Error restoring snapshot: " + e.getMessage()));
+            return null;
+        }
+    }
+
     public JsonNode getChainTip(int httpPort) {
         String url = "http://localhost:" + httpPort + "/api/v1/blocks/latest";
         try {

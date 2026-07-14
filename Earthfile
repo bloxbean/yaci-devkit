@@ -41,6 +41,7 @@ zip:
   RUN apk add --no-cache zip
   RUN mkdir -p /app/yaci-devkit-${tag}
   RUN mkdir -p /app/yaci-devkit-${tag}/config
+  RUN mkdir -p /app/yaci-devkit-${tag}/scenarios
   RUN mkdir -p /app/yaci-devkit-${tag}/scripts
   RUN echo > /app/yaci-devkit-${tag}/version
   RUN echo "tag=${tag}" >> /app/yaci-devkit-${tag}/config/version
@@ -49,6 +50,7 @@ zip:
   COPY  config/node.properties /app/yaci-devkit-${tag}/config/
   COPY  config/plutus-costmodels-v10.json /app/yaci-devkit-${tag}/config/
   COPY  config/plutus-costmodels-v11.json /app/yaci-devkit-${tag}/config/
+  COPY  scenarios/scenario-config.yml /app/yaci-devkit-${tag}/scenarios/
 
   COPY  bin/devkit.sh /app/yaci-devkit-${tag}/bin/
 

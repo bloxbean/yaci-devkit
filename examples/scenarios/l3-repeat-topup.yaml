@@ -1,0 +1,20 @@
+# DevKit L3 scenario: loop over accounts, top them up, and assert balance.
+#
+# This uses DevKit-only orchestration actions. Transaction-level behavior still belongs
+# in CCL TxPlan/TxFlow files.
+scenario:
+  name: l3-repeat-topup
+  variables:
+    amount: 5
+  steps:
+    - for_each:
+        items: [account://acc1, account://acc2]
+        as: receiver
+        steps:
+          - topup:
+              account: "${receiver}"
+              ada: "${amount}"
+    - assert:
+        account: account://acc1
+        min_ada: "${amount}"
+

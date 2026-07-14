@@ -10,8 +10,12 @@ import com.bloxbean.cardano.yacicli.localcluster.ClusterCommands;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioResult;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioService;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioValidationResult;
 import com.bloxbean.cardano.yacicli.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
@@ -37,8 +41,10 @@ public class DevnetMcpTools {
     private final ClusterUtilService clusterUtilService;
     private final ClusterCommands clusterCommands;
     private final AccountService accountService;
+    private final ScenarioService scenarioService;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Tool(description = "Get devnet info and current tip (slot, block, epoch).")
     public String devnet_status() {
@@ -173,6 +179,101 @@ public class DevnetMcpTools {
         } catch (Exception e) {
             log.error("Error submitting transaction", e);
             return "Submit failed: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "Run a declarative scenario (DevKit L3 scenario, cardano-client-lib TxPlan, or TxFlow YAML) against the devnet. "
+            + "Reference signers as account://acc0 .. account://acc19 (the pre-funded default accounts) and policy://default "
+            + "for minting, or use account://, wallet://, policy://, and custom refs configured in DevKit signer properties, "
+            + "so no keys are needed in the YAML.")
+    public String devnet_run_scenario(
+            @ToolParam(description = "Scenario YAML in DevKit L3, cardano-client-lib TxPlan, or TxFlow format") String yaml) {
+        if (yaml == null || yaml.isEmpty()) {
+            return "Error: yaml is required";
+        }
+
+        try {
+            CommandContext.INSTANCE.setProperty(ClusterConfig.CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+            ScenarioResult result = scenarioService.run(yaml, msg -> log.debug(msg));
+            return toJson(result);
+        } catch (Exception e) {
+            log.error("Error running scenario", e);
+            return "Scenario error: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "Run a declarative scenario asynchronously and return a runId for polling.")
+    public String devnet_run_scenario_async(
+            @ToolParam(description = "Scenario YAML in DevKit L3, cardano-client-lib TxPlan, or TxFlow format") String yaml) {
+        if (yaml == null || yaml.isEmpty()) {
+            return "Error: yaml is required";
+        }
+
+        try {
+            CommandContext.INSTANCE.setProperty(ClusterConfig.CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
+            ScenarioResult result = scenarioService.runAsync(yaml, msg -> log.debug(msg));
+            return toJson(result);
+        } catch (Exception e) {
+            log.error("Error starting scenario", e);
+            return "Scenario error: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "Validate a DevKit L3 scenario, cardano-client-lib TxPlan, or TxFlow YAML document without submitting transactions.")
+    public String devnet_validate_scenario(
+            @ToolParam(description = "Scenario YAML to validate") String yaml) {
+        if (yaml == null || yaml.isEmpty()) {
+            return "Error: yaml is required";
+        }
+        ScenarioValidationResult result = scenarioService.validate(yaml);
+        return toJson(result);
+    }
+
+    @Tool(description = "Return the DevKit scenario grammar schema for AI authoring.")
+    public String devnet_scenario_schema() {
+        return scenarioService.schema();
+    }
+
+    @Tool(description = "Return example DevKit scenario YAML snippets for AI authoring.")
+    public String devnet_scenario_examples() {
+        return scenarioService.examples();
+    }
+
+    @Tool(description = "List default devnet account references and addresses.")
+    public String devnet_accounts() {
+        try {
+            return scenarioService.accounts().toString();
+        } catch (Exception e) {
+            log.error("Error listing devnet accounts", e);
+            return "Error listing accounts: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "Return current devnet state summary: cluster, node mode, tip, slot, epoch.")
+    public String devnet_state_summary() {
+        try {
+            return scenarioService.stateSummary().toString();
+        } catch (Exception e) {
+            log.error("Error getting devnet state summary", e);
+            return "Error getting state summary: " + e.getMessage();
+        }
+    }
+
+    @Tool(description = "Get async scenario run status by runId.")
+    public String devnet_scenario_status(
+            @ToolParam(description = "Run id returned by devnet_run_scenario_async") String runId) {
+        if (runId == null || runId.isBlank()) {
+            return "Error: runId is required";
+        }
+        ScenarioResult result = scenarioService.status(runId);
+        return toJson(result);
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            return String.valueOf(value);
         }
     }
 }

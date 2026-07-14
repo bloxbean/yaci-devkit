@@ -1,0 +1,53 @@
+# Scenario engine configuration.
+#
+# This file is imported by config/application.properties when present.
+# It configures runtime signer references used by CCL TxPlan/TxFlow YAML.
+# It is not a runnable L3 scenario document; runnable scenarios use top-level `scenario:`.
+#
+# Do not commit real mnemonics or private keys. Prefer environment variables
+# such as ${TREASURY_MNEMONIC}, or point to ignored local key files.
+
+# yaci:
+#   scenario:
+#     signers:
+#       # Keep DevKit's built-in refs available by default:
+#       #   account://acc0 .. account://acc19
+#       #   policy://default
+#       include-default-accounts: true
+#       include-default-policy: true
+#
+#       # Duplicate refs are rejected by default. Set this only when you
+#       # intentionally want to replace a built-in ref such as account://acc0.
+#       override-defaults: false
+#
+#       accounts:
+#         - ref: account://treasury
+#           # Environment variable resolved by Spring at startup.
+#           mnemonic: ${TREASURY_MNEMONIC}
+#           account: 0
+#           index: 0
+#
+#         - ref: account://ops
+#           # 96-byte account private key, either hex or bech32 acct_xsk.
+#           account-key-file: ./scenarios/ops.acct_xsk
+#           account: 0
+#           index: 0
+#
+#       wallets:
+#         - ref: wallet://user1
+#           mnemonic: ${USER1_MNEMONIC}
+#           account: 0
+#
+#       policies:
+#         - ref: policy://nft
+#           # Native script JSON accepted by cardano-client-lib NativeScript.
+#           script-file: ./scenarios/nft-policy.script
+#           signing-key-files:
+#             - ./scenarios/nft-policy.skey
+#
+#       custom:
+#         - ref: signer://payment-key
+#           # Raw payment signing key. Useful as an additional payment signer.
+#           # Add address if the ref must be usable as from_ref / fee_payer_ref.
+#           private-key-file: ./scenarios/payment.skey
+#           address: ${PAYMENT_ADDRESS}

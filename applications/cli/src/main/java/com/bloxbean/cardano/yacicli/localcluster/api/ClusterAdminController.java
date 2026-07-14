@@ -6,6 +6,7 @@ import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +49,7 @@ public class ClusterAdminController {
     private final ClusterCommands clusterCommands;
     private final CustomGenesisConfig customGenesisConfig;
     private final ApplicationConfig applicationConfig;
+    private final ScenarioService scenarioService;
 
     @Operation(summary = "Download all devnet files as a zipped archive")
     @GetMapping("/devnet/download")
@@ -235,10 +237,6 @@ public class ClusterAdminController {
 
         customGenesisConfig.populate(request.genesisProperties());
 
-        boolean originalEnableYaciStore = applicationConfig.isYaciStoreEnabled();
-        boolean originalEnableOgmios = applicationConfig.isOgmiosEnabled();
-        boolean originalEnableKupo = applicationConfig.isKupoEnabled();
-
         applicationConfig.setYaciStoreEnabled(request.enableYaciStore());
         applicationConfig.setOgmiosEnabled(request.enableOgmios());
 
@@ -251,15 +249,13 @@ public class ClusterAdminController {
 
         try {
             clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, slotLength, blockTime, epochLength, true,
-                    true, "conway", null, false, request.enableMultiNode(), request.multiNodeStakeRatioFactor);
+                    true, "conway", null, false, request.enableMultiNode(), request.multiNodeStakeRatioFactor, null);
+            if (request.seedYaml() != null && !request.seedYaml().isBlank()) {
+                scenarioService.run(request.seedYaml(), msg -> log.debug(msg));
+            }
             return true;
         } catch (Exception e) {
             return false;
-        } finally {
-            //Reset the application config to original values
-            applicationConfig.setYaciStoreEnabled(originalEnableYaciStore);
-            applicationConfig.setOgmiosEnabled(originalEnableOgmios);
-            applicationConfig.setKupoEnabled(originalEnableKupo);
         }
     }
 
@@ -310,7 +306,9 @@ public class ClusterAdminController {
                                @Schema(description = "Enable Ogmios", defaultValue = "false")
                                boolean enableOgmios,
                                @Schema(description = "Enable Ogmios and Kupo", defaultValue = "false")
-                               boolean enableKupomios) {
+                               boolean enableKupomios,
+                               @Schema(description = "Optional scenario YAML to run after devnet creation")
+                               String seedYaml) {
     }
 
     record NodeTip(

@@ -11,6 +11,8 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.localcluster.events.FirstRunDone;
 import com.bloxbean.cardano.yacicli.localcluster.profiles.GenesisProfile;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioResult;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioService;
 import com.bloxbean.cardano.yacicli.localcluster.service.AccountService;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
@@ -27,6 +29,8 @@ import org.springframework.shell.Availability;
 import org.springframework.shell.standard.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +50,7 @@ public class ClusterCommands {
     private final ClusterPortInfoHelper clusterUrlPrinter;
     private final GenesisConfig genesisConfig;
     private final ClusterInfoService clusterInfoService;
+    private final ScenarioService scenarioService;
 
     @Value("${ogmios.port:1337}")
     private int ogmiosPort;
@@ -113,7 +118,8 @@ public class ClusterCommands {
                                   GenesisProfile genesisProfile,
                               @ShellOption(value = {"--generate-new-keys"}, defaultValue = "false", help = "Generate new genesis keys, pool keys instead of default keys") boolean generateNewKeys,
                               @ShellOption(value = {"--enable-multi-node"}, defaultValue = "false", help="Create multiple local block producing nodes") boolean enableMultiNode,
-                              @ShellOption(value = {"--stake-ratio-factor"}, defaultValue = "5", help="The stake ratio between the primary node and two peers is only used when multi-node is enabled for rollback testing") int stakeRatioFactor
+                              @ShellOption(value = {"--stake-ratio-factor"}, defaultValue = "5", help="The stake ratio between the primary node and two peers is only used when multi-node is enabled for rollback testing") int stakeRatioFactor,
+                              @ShellOption(value = {"--seed"}, defaultValue = ShellOption.NULL, help = "Scenario YAML file to run after the devnet starts") String seedFile
     ) {
 
         try {
@@ -196,8 +202,19 @@ public class ClusterCommands {
                 CommandContext.INSTANCE.setProperty(ClusterConfig.CLUSTER_NAME, clusterName);
                 CommandContext.INSTANCE.setEra(nodeEra);
 
-                if (start)
+                if (start || seedFile != null)
                     startLocalCluster();
+
+                if (seedFile != null) {
+                    writeLn(infoLabel("Scenario Seed", seedFile));
+                    String yaml = Files.readString(Path.of(seedFile));
+                    ScenarioResult seedResult = scenarioService.run(yaml, msg -> writeLn(msg));
+                    if (!seedResult.isSuccess()) {
+                        writeLn(error("Seed scenario failed: " + seedResult.getMessage()));
+                    } else {
+                        writeLn(success("Seed scenario completed"));
+                    }
+                }
             }
         } catch (Exception e) {
             log.error("Error", e);

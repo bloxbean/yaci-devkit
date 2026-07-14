@@ -1,0 +1,17 @@
+# DevKit L3 scenario: run a CCL TxPlan and assert the operation status.
+#
+# The tx step references a pure CCL TxPlan file. DevKit does not parse the TxPlan body;
+# it only orchestrates the operation and assertions around it.
+scenario:
+  name: l3-payment-assert
+  steps:
+    - tx:
+        file: examples/scenarios/payment.yaml
+      id: payment
+      name: Run CCL payment TxPlan
+    - assert:
+        tx:
+          ref: payment
+          status: success
+      name: Payment operation succeeded
+

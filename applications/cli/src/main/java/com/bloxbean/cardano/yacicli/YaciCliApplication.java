@@ -1,6 +1,7 @@
 package com.bloxbean.cardano.yacicli;
 
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
+import com.bloxbean.cardano.yacicli.localcluster.scenario.ScenarioSignerConfig;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -11,7 +12,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(GenesisConfig.class)
+@EnableConfigurationProperties({GenesisConfig.class, ScenarioSignerConfig.class})
 @Slf4j
 public class YaciCliApplication {
     @Autowired
