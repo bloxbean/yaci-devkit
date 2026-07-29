@@ -436,10 +436,16 @@ public class ClusterStartService {
         jsonNode.set("startTime", new LongNode(byronStartTime));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(byronGenesis.toFile(), jsonNode);
 
-        //Update Shelley Genesis file
+        //Update Shelley Genesis file. Use byronStartTime (not Instant.now()) so both genesis
+        //files describe the same chain origin: the node derives its slot counter from byron
+        //`startTime` but translates slots to POSIXTime in the Plutus script context from shelley
+        //`systemStart`. When shiftStartTimeBehind backdates the byron start and shelley stays at
+        //"now", the two clocks disagree by the backdate (one epoch, 600s by default) and every
+        //POSIXTime a Plutus script sees in `txInfoValidRange` is shifted by that amount against
+        //the slots the transaction was built with.
         ObjectNode shelleyJsonNode = (ObjectNode) objectMapper.readTree(shelleyGenesis.toFile());
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        String shelleyStart = formatter.format(Instant.now().atZone(ZoneOffset.UTC));
+        String shelleyStart = formatter.format(Instant.ofEpochSecond(byronStartTime).atZone(ZoneOffset.UTC));
         shelleyJsonNode.set("systemStart", new TextNode(shelleyStart));
         objectMapper.writer(new DefaultPrettyPrinter()).writeValue(shelleyGenesis.toFile(), shelleyJsonNode);
 
