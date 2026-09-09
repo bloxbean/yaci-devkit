@@ -11,6 +11,7 @@ import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +47,13 @@ public class YanoService {
     private List<Process> processes = new ArrayList<>();
     private List<ExecutorService> executors = new ArrayList<>();
     private Queue<String> logs = EvictingQueue.create(300);
+
+    // How many slots apart Yano's past-time-travel backfill places its empty blocks
+    // (yano.block-producer.backfill-block-interval-slots). auto: a quarter of the stability window
+    // (3k/f), the widest gap a Haskell relay can still validate with margin. An integer forces the
+    // interval; 1 (or 0) keeps one block per slot. Needs a Yano build that knows the property.
+    @Value("${yano.backfill.block.interval.slots:auto}")
+    private String backfillBlockIntervalSlots = "auto";
 
     public boolean start(ClusterInfo clusterInfo, Path clusterFolder, boolean pastTimeTravelMode, Consumer<String> writer) {
         logs.clear();
@@ -233,6 +241,35 @@ public class YanoService {
         costModels.set(language, aligned);
     }
 
+    /**
+     * Slots between empty blocks in Yano's past-time-travel backfill, from
+     * {@code yano.backfill.block.interval.slots}: {@code auto} derives a quarter of the stability window
+     * 3k/f (at least 1); an integer forces it; anything else, or a cluster without k, means 1.
+     */
+    int backfillBlockIntervalSlots(ClusterInfo clusterInfo) {
+        String setting = backfillBlockIntervalSlots == null ? "auto" : backfillBlockIntervalSlots.trim().toLowerCase();
+        if (setting.isEmpty() || setting.equals("auto")) {
+            long stabilityWindow = stabilityWindowSlots(clusterInfo);
+            return (int) Math.max(1, Math.min(Integer.MAX_VALUE, stabilityWindow / 4));
+        }
+        try {
+            return Math.max(1, Integer.parseInt(setting));
+        } catch (NumberFormatException e) {
+            log.warn("Unknown yano.backfill.block.interval.slots '{}', using one block per slot", backfillBlockIntervalSlots);
+            return 1;
+        }
+    }
+
+    /** Stability window 3k/f in slots, or 0 when k or f is not known. */
+    static long stabilityWindowSlots(ClusterInfo clusterInfo) {
+        long k = clusterInfo.getSecurityParam();
+        double f = clusterInfo.getActiveSlotsCoeff();
+        if (k <= 0 || f <= 0) {
+            return 0;
+        }
+        return (long) Math.floor(3 * k / f);
+    }
+
     private Process startYanoProcess(ClusterInfo clusterInfo, Path clusterFolder, Path yanoConfigDir,
                                      boolean pastTimeTravelMode, Consumer<String> writer)
             throws IOException, InterruptedException {
@@ -244,7 +281,8 @@ public class YanoService {
         Files.createDirectories(yanoDataDir);
 
         // Write application.properties for Yano (persists config on disk for debugging)
-        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, pastTimeTravelMode);
+        int backfillInterval = pastTimeTravelMode ? backfillBlockIntervalSlots(clusterInfo) : 1;
+        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, pastTimeTravelMode, backfillInterval);
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYanoHome()));
@@ -270,6 +308,11 @@ public class YanoService {
             env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_MODE", "true");
             if (clusterInfo.isLocalMultiNodeEnabled()) {
                 env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_SLOT_LEADER_MODE", "true");
+            }
+            if (backfillInterval > 1) {
+                env.put("YANO_BLOCK_PRODUCER_BACKFILL_BLOCK_INTERVAL_SLOTS", String.valueOf(backfillInterval));
+                writer.accept(info("Yano backfill places one block every %d slots (stability window %d slots)",
+                        backfillInterval, stabilityWindowSlots(clusterInfo)));
             }
         }
 
