@@ -189,7 +189,7 @@ TraceBlockchainTime: False
 TraceChainDb: True
 
 # Trace ChainSync client.
-TraceChainSyncClient: False
+TraceChainSyncClient: True
 
 # Trace ChainSync server (blocks).
 TraceChainSyncBlockServer: False
