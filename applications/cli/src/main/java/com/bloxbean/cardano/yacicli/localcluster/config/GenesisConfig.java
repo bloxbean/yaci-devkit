@@ -563,7 +563,7 @@ public class GenesisConfig {
             if (updatedValues.get("maxKESEvolutions") != null && !updatedValues.get("maxKESEvolutions").isEmpty())
                 maxKESEvolutions = Integer.parseInt(updatedValues.get("maxKESEvolutions"));
             if (updatedValues.get("stabilityWindowFactor") != null && !updatedValues.get("stabilityWindowFactor").isEmpty())
-                stabilityWindowFactor = Integer.parseInt(updatedValues.get("stabilityWindowFactor"));
+                stabilityWindowFactor = Double.parseDouble(updatedValues.get("stabilityWindowFactor"));
             if (updatedValues.get("securityParam") != null && !updatedValues.get("securityParam").isEmpty())
                 securityParam = Integer.parseInt(updatedValues.get("securityParam"));
             if (updatedValues.get("slotsPerKESPeriod") != null && !updatedValues.get("slotsPerKESPeriod").isEmpty())

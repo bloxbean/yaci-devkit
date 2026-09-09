@@ -50,6 +50,28 @@ then you can set `securityParam` to a higher values like `86400` for 1 sec block
     For a real/multi-node network setup, please refer to this known issue/workaround: https://github.com/bloxbean/yaci-devkit/issues/65#issuecomment-2318155838
 </Callout>
 
+### stabilityWindowFactor
+
+When `securityParam` is left at `0`, DevKit derives it from the epoch length so that the stability window
+(`3k/f` slots) covers this fraction of the epoch:
+
+```
+securityParam = epochLength * activeSlotsCoeff * stabilityWindowFactor / 3
+```
+
+The default is `0.5`, half an epoch. The Haskell block producer can only check leadership for slots within
+`3k/f` of its chain tip, so a gap in block production longer than that (the host asleep, the container stopped)
+freezes the chain until it is reset. This factor times the epoch's wall-clock length is therefore the devnet's
+idle tolerance. Raising it buys tolerance without a longer epoch:
+
+```shell
+stabilityWindowFactor=0.7
+```
+
+Values up to about `0.7` are sound: `4k/f` must stay below the epoch length for the epoch nonce schedule, and
+the rewards calculation needs the stability window inside the epoch. Setting `securityParam` explicitly bypasses
+this derivation.
+
 ### peerSharing
 
 To enable or disable peer sharing. Default value is `true`.
