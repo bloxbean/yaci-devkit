@@ -38,6 +38,19 @@ This avoids requiring users to wait for two epoch transitions before updated pro
 
 Use companion mode when you want normal Haskell-node behavior, including node socket access, but want DevKit to prepare the chain quickly for PV11 protocol parameters.
 
+### Backfill block interval
+
+Yano's catch-up from the shifted genesis to wall clock places one empty block per slot by default, so create
+time grows with epoch length. A Haskell relay only needs one block per stability window (`3k/f` slots) to
+validate the history. DevKit asks Yano to place a block every quarter of the stability window instead
+(plus the first slot of each epoch), through `yano.block-producer.backfill-block-interval-slots`, which needs a
+Yano build that knows the property. Force or disable it in `config/application.properties`:
+
+```properties
+# auto (default), or a number of slots; 1 keeps one block per slot
+yano.backfill.block.interval.slots=auto
+```
+
 ## Yano-only Mode
 
 In `yano-only` mode, Yano runs as the devnet node. There is no Haskell node handover.
