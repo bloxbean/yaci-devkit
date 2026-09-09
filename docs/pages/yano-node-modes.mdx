@@ -38,6 +38,25 @@ This avoids requiring users to wait for two epoch transitions before updated pro
 
 Use companion mode when you want normal Haskell-node behavior, including node socket access, but want DevKit to prepare the chain quickly for PV11 protocol parameters.
 
+### Relay sync wait during handover
+
+After Yano catches up to wall-clock time, the Haskell node starts as a relay and copies Yano's chain before it
+takes over as block producer. The handover waits while the relay's tip keeps advancing. It gives up when the tip
+has not moved for the stall timeout, or when the optional overall ceiling is reached. The wait is not a fixed
+deadline: a long epoch means a long bootstrap chain (about 550 blocks per second are copied), and the producer
+must own the whole chain before Yano stops.
+
+The two settings live in `config/application.properties` (the CLI's own properties, not `node.properties`):
+
+```properties
+# Give up when the relay tip stops advancing for this long. Default 30.
+yano.relay.sync.stall.timeout.seconds=30
+# Optional overall ceiling for the wait. Default 0 = no ceiling.
+yano.relay.sync.max.wait.seconds=0
+```
+
+Progress is printed about every five seconds while the relay is syncing.
+
 ## Yano-only Mode
 
 In `yano-only` mode, Yano runs as the devnet node. There is no Haskell node handover.

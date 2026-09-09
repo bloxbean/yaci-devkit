@@ -16,6 +16,7 @@ import com.bloxbean.cardano.yacicli.common.AnsiColors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.bloxbean.cardano.client.crypto.Blake2bUtil;
@@ -57,6 +58,14 @@ public class YanoCompanionService {
     private final ObjectProvider<ClusterUtilService> clusterUtilServiceProvider;
     private final ClusterInfoService clusterInfoService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Relay sync wait during handover. Stall timeout: give up when the relay tip stops advancing for this
+    // long. Max wait: optional overall ceiling, 0 = none. Both in seconds.
+    @Value("${yano.relay.sync.stall.timeout.seconds:30}")
+    private long relaySyncStallTimeoutSeconds = 30;
+
+    @Value("${yano.relay.sync.max.wait.seconds:0}")
+    private long relaySyncMaxWaitSeconds = 0;
 
     /**
      * Run the full companion bootstrap sequence before the Haskell node starts.
@@ -253,43 +262,34 @@ public class YanoCompanionService {
                 Thread.sleep(1000);
             }
 
-            // Wait for Haskell relay to sync past Yano's shifted bootstrap region (~3 epochs).
-            // Poll the relay's tip every ~1s and exit early once epoch >= BOOTSTRAP_EPOCH_SHIFT.
-            // Soft 30s deadline — getTip itself can block up to ~10s on a stuck socket, so
-            // wall-clock worst case is ~40s; on healthy runs this exits in ~10-20s.
+            // Wait for the Haskell relay to sync past Yano's shifted bootstrap region (~3 epochs).
+            // The wait is progress-based: it continues while the relay tip keeps advancing and gives up
+            // only when the tip stalls for yano.relay.sync.stall.timeout.seconds (default 30s) or the
+            // optional ceiling yano.relay.sync.max.wait.seconds is reached. A long epoch means a long
+            // backfill (about 550 blocks/s measured), so a fixed deadline would cut the relay off mid-chain.
             long epochLength = clusterInfo.getEpochLength();
-            writer.accept(info("Waiting up to 30s for relay to sync past epoch %d...", BOOTSTRAP_EPOCH_SHIFT));
+            String ceiling = relaySyncMaxWaitSeconds > 0 ? ", at most " + relaySyncMaxWaitSeconds + "s in total" : "";
+            writer.accept(info("Waiting for relay to sync past epoch %d (giving up if the tip stalls for %ds%s)...",
+                    BOOTSTRAP_EPOCH_SHIFT, relaySyncStallTimeoutSeconds, ceiling));
 
-            final long deadlineMs = System.currentTimeMillis() + 30_000L;
             final ClusterUtilService clusterUtilService = clusterUtilServiceProvider.getObject();
-            boolean synced = false;
+            // ClusterUtilService.getTip prints "Find tip error ..." directly via static
+            // ConsoleWriter on exception (bypassing the consumer); transient noise during
+            // the first one or two polls after the socket appears is expected.
+            RelaySyncWaiter waiter = new RelaySyncWaiter(relaySyncStallTimeoutSeconds * 1000L,
+                    relaySyncMaxWaitSeconds * 1000L);
+            RelaySyncWaiter.Outcome outcome = waiter.await(BOOTSTRAP_EPOCH_SHIFT, epochLength,
+                    () -> clusterUtilService.getTip(msg -> {}),
+                    msg -> writer.accept(info(msg)));
 
-            while (true) {
-                long remaining = deadlineMs - System.currentTimeMillis();
-                if (remaining <= 0) break;
-
-                // ClusterUtilService.getTip prints "Find tip error ..." directly via static
-                // ConsoleWriter on exception (bypassing the consumer); transient noise during
-                // the first one or two polls after the socket appears is expected.
-                Tuple<Long, Point> tip = clusterUtilService.getTip(msg -> {});
-                if (tip != null && tip._2 != null && epochLength > 0) {
-                    long slot = tip._2.getSlot();
-                    long epoch = slot / epochLength;
-                    if (epoch >= BOOTSTRAP_EPOCH_SHIFT) {
-                        writer.accept(success("Relay synced to epoch " + epoch
-                                + " (slot " + slot + ", height " + tip._1 + ")"));
-                        synced = true;
-                        break;
-                    }
-                }
-
-                remaining = deadlineMs - System.currentTimeMillis();
-                if (remaining <= 0) break;
-                Thread.sleep(Math.min(1000L, remaining));
-            }
-            if (!synced) {
-                writer.accept(warn("Relay sync did not reach epoch "
-                        + BOOTSTRAP_EPOCH_SHIFT + " within 30s. Proceeding anyway."));
+            if (outcome.synced()) {
+                writer.accept(success("Relay synced to epoch " + outcome.epoch()
+                        + " (slot " + outcome.slot() + ", height " + outcome.height() + ")"));
+            } else {
+                writer.accept(warn("Relay sync did not reach epoch " + BOOTSTRAP_EPOCH_SHIFT
+                        + ": " + outcome.reason() + ". Proceeding anyway."));
+                writer.accept(warn("If the Haskell node forges no blocks after the restart, its tip is outside "
+                        + "its forecast horizon; recreate the devnet, or raise yano.relay.sync.stall.timeout.seconds."));
             }
 
             // Stop Yano — relay has synced the chain to its db
