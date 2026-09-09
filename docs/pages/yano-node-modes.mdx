@@ -38,6 +38,24 @@ This avoids requiring users to wait for two epoch transitions before updated pro
 
 Use companion mode when you want normal Haskell-node behavior, including node socket access, but want DevKit to prepare the chain quickly for PV11 protocol parameters.
 
+### Block time longer than slot length
+
+With `--block-time` larger than `--slot-length`, `activeSlotsCoeff` is below 1 and only VRF-eligible slots may carry
+a block. Yano's default time travel places one block in every slot, which the Haskell node rejects at the first
+header with `VRFLeaderValueTooBig`, so the relay never syncs and the cost-model update is never enacted.
+
+DevKit therefore turns on Yano's slot-leader time travel whenever a Haskell node validates the chain (companion and
+yano-primary modes) and `activeSlotsCoeff` is below 1. The backfill then places blocks only in eligible slots. The
+choice can be forced in `config/application.properties`:
+
+```properties
+# auto (default), true, or false
+yano.past.time.travel.slot.leader.mode=auto
+```
+
+The node configuration template now sets `TraceChainSyncClient` to `true`, so a rejected bootstrap chain shows up in
+the node log instead of failing silently.
+
 ## Yano-only Mode
 
 In `yano-only` mode, Yano runs as the devnet node. There is no Haskell node handover.

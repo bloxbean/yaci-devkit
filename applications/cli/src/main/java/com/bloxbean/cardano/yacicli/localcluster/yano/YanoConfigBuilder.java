@@ -35,10 +35,12 @@ public class YanoConfigBuilder {
      * @param yanoConfigDir resolved path to Yano's devnet config (genesis files, keys)
      * @param yanoDataDir   resolved path for Yano's chainstate storage
      * @param pastTimeTravelMode whether past-time-travel mode is enabled
+     * @param slotLeaderTimeTravel whether the past-time-travel backfill runs Praos slot-leader checks
+     *                             (see {@link YanoService#slotLeaderTimeTravelEnabled(ClusterInfo)})
      * @return true if config was written successfully
      */
     public boolean build(ClusterInfo clusterInfo, Path yanoConfigDir, Path yanoDataDir,
-                         boolean pastTimeTravelMode) {
+                         boolean pastTimeTravelMode, boolean slotLeaderTimeTravel) {
         Map<String, String> props = new LinkedHashMap<>();
 
         // Quarkus profile
@@ -67,7 +69,7 @@ public class YanoConfigBuilder {
         // Past-time-travel mode
         if (pastTimeTravelMode) {
             props.put("yano.block-producer.past-time-travel-mode", "true");
-            if (clusterInfo.isLocalMultiNodeEnabled()) {
+            if (slotLeaderTimeTravel) {
                 props.put("yano.block-producer.past-time-travel-slot-leader-mode", "true");
             }
         }
