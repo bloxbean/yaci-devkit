@@ -19,8 +19,13 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -41,6 +46,10 @@ public class OgmiosService {
     private final TemplateEngine templateEngine;
     private final ProcessUtil processUtil;
 
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(2))
+            .build();
+
     private List<Process> processes = new ArrayList<>();
     private Process ogmiosProcess;
 
@@ -52,8 +61,14 @@ public class OgmiosService {
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         String clusterName = clusterStarted.getClusterName();
 
-        start(clusterName, msg -> writeLn(msg));
-
+        //Ogmios is optional. This listener runs before YaciStoreService's (@Order(1)), so an exception here
+        //would abort the rest of the startup chain and prevent Yaci Store from starting at all.
+        try {
+            start(clusterName, msg -> writeLn(msg));
+        } catch (Exception e) {
+            log.error("Error starting Ogmios/Kupo", e);
+            writeLn(error("Could not start Ogmios/Kupo : " + e.getMessage()));
+        }
     }
 
     public boolean start(String clusterName, Consumer<String> writer) {
@@ -77,6 +92,13 @@ public class OgmiosService {
             if (clusterInfo == null)
                 throw new IllegalStateException("Cluster info not found for cluster: " + clusterName
                         + ". Please check if the cluster is created.");
+
+            //Ogmios/Kupo talk to the Haskell node over its n2c socket, which doesn't exist in yano-only mode.
+            NodeMode nodeMode = clusterInfo.getNodeMode() != null ? clusterInfo.getNodeMode() : NodeMode.HASKELL_ONLY;
+            if (nodeMode == NodeMode.YANO_ONLY) {
+                writer.accept(info("Ogmios/Kupo require a Haskell cardano-node and are not supported in yano-only mode. Skipping."));
+                return false;
+            }
 
             if (appConfig.isOgmiosEnabled()) {
                 if (!ogmiosPortAvailabilityCheck(clusterInfo, writer))
@@ -106,6 +128,49 @@ public class OgmiosService {
 
     public boolean isOgmiosRunning() {
         return ogmiosProcess != null && ogmiosProcess.isAlive();
+    }
+
+    /**
+     * Waits until Ogmios actually answers on its HTTP health endpoint.
+     * <p>
+     * {@link #isOgmiosRunning()} only reports that the process was still alive a second after spawn, which is
+     * not enough to hand Yaci Store the "ogmios" tx evaluator : if Ogmios dies or never connects to the node
+     * socket shortly after start, the evaluator mode is already baked into the Store process and every Plutus
+     * script evaluation would fail for the lifetime of the devnet. Callers use this to fall back to Scalus.
+     */
+    public boolean waitForOgmiosReady(int ogmiosPort, Consumer<String> writer) {
+        String healthUrl = "http://localhost:" + ogmiosPort + "/health";
+        int maxAttempts = 15;
+
+        for (int i = 0; i < maxAttempts; i++) {
+            if (!isOgmiosRunning()) {
+                writer.accept(warn("Ogmios process is no longer running."));
+                return false;
+            }
+
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(healthUrl))
+                        .timeout(Duration.ofSeconds(2))
+                        .GET()
+                        .build();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200)
+                    return true;
+            } catch (Exception e) {
+                //Not ready yet
+            }
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        writer.accept(warn("Ogmios did not become ready within timeout."));
+        return false;
     }
 
     private static boolean ogmiosPortAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {

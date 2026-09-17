@@ -18,3 +18,5 @@ applications/cli/src/main/resources/static/wallet/
 /applications/cli/chainstate/
 /e2e-tests/evolution-sdk/node_modules/
 /chainstate/
+*.swp
+*.swo

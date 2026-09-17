@@ -87,7 +87,7 @@
   "hasEKG": 12788,
   "hasPrometheus": [
     "127.0.0.1",
-    12798
+    {{prometheusPort}}
   ],
   "minSeverity": "Info",
   "options": {

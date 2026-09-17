@@ -44,7 +44,7 @@ For most development scenarios, Yaci DevKit runs a single Cardano node:
 │                     API Layer                              │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
 │  │ Yaci Store  │  │   Ogmios    │  │    Kupo     │        │
-│  │ (Indexer)   │  │ (Optional)  │  │ (Optional)  │        │
+│  │ (Indexer)   │  │ (Tx Eval)   │  │ (Optional)  │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
 └─────────────────────────────────────────────────────────────┘
                                │
@@ -90,8 +90,8 @@ For PV11 hard fork compatible local devnets, use the PV11 beta release from this
 | **[Yaci Store](https://github.com/bloxbean/yaci-store)** | Lightweight indexer with Blockfrost-compatible APIs | 8080                                 |
 | **[Yaci Viewer](./applications/viewer)** | Web-based blockchain explorer for developers | 5173                                 |
 | **Cardano Node** | Official Cardano node (supports both amd64/arm64) | 3001 (n2n), 3333 (n2c through socat) |
-| **[Ogmios](https://ogmios.dev/)** | WebSocket API for Cardano (optional) | 1337                                 |
-| **[Kupo](https://cardanosolutions.github.io/kupo/)** | Chain indexer (optional) | 1442                                 |
+| **[Ogmios](https://ogmios.dev/) v7.0.0** | WebSocket API for Cardano (enabled by default; used as Yaci Store's tx evaluator) | 1337                                 |
+| **[Kupo](https://cardanosolutions.github.io/kupo/) v2.12.0** | Chain indexer (optional) | 1442                                 |
 | **MCP Server** | AI coding assistant integration | 10000                                |
 
 ## 🎯 Quick Start
@@ -173,7 +173,9 @@ yaci-cli> create-node -o --start
 
   <em>(Can be used in a Java app with Cardano Client Lib's Blockfrost backend or [Javascript app with MeshJS + Blockfrost provider](https://github.com/MeshJS/examples/blob/main/mesh/yaci-send-lovelace.ts) as it exposes required BF compatible minimum apis for tx building and submission)</em>
 - **Yaci Store Swagger UI**: http://localhost:8080/swagger-ui/index.html
-- **Ogmios Url (Optional)**: http://localhost:1337
+- **Ogmios Url**: http://localhost:1337
+
+  <em>(Enabled by default and used by Yaci Store to evaluate Plutus script costs. Set `ogmios_enabled=false` in `config/env` to fall back to the embedded Scalus evaluator.)</em>
 
 **(Optional) If you enabled Kupo**
 - **Kupo Url (Optional)**: http://localhost:1442
