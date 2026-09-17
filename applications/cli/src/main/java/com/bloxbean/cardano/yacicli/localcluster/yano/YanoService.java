@@ -242,9 +242,10 @@ public class YanoService {
         // Store Yano data inside node folder so it gets cleaned up with create-node -o
         Path yanoDataDir = clusterFolder.resolve("node").resolve("yano");
         Files.createDirectories(yanoDataDir);
+        Path yanoHistoryDir = clusterFolder.resolve("node").resolve("yano-history");
 
         // Write application.properties for Yano (persists config on disk for debugging)
-        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, pastTimeTravelMode);
+        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir, pastTimeTravelMode);
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYanoHome()));
@@ -328,6 +329,7 @@ public class YanoService {
     public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
         Path clusterFolder = Path.of(clusterConfig.getClusterHome(), clusterDeleted.getClusterName());
         deleteIfPresent(clusterFolder.resolve("node").resolve("yano"), "Yano data");
+        deleteIfPresent(clusterFolder.resolve("node").resolve("yano-history"), "Yano history");
         deleteIfPresent(clusterFolder.resolve("yano-config"), "Yano config");
         deleteBootstrapMarker(clusterFolder);
     }

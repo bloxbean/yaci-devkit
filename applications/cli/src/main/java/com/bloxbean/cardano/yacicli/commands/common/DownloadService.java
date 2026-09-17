@@ -32,10 +32,6 @@ public class DownloadService {
     private final static String YACI_STORE_DOWNLOAD_URL = "https://github.com/bloxbean/yaci-store/releases/download";
     private final static String OGMIOS_DOWNLOAD_URL = "https://github.com/CardanoSolutions/ogmios/releases/download";
     private final static String KUPO_DOWNLOAD_URL = "https://github.com/CardanoSolutions/kupo/releases/download";
-    private final static String INTERSECT_OGMIOS_DOWNLOAD_URL = "https://github.com/IntersectMBO/ogmios/releases/download";
-    private final static String INTERSECT_KUPO_DOWNLOAD_URL = "https://github.com/IntersectMBO/kupo/releases/download";
-    private final static String INTERSECT_OGMIOS_VERSION = "6.14.0.2";
-    private final static String INTERSECT_KUPO_VERSION = "2.11.0.1";
     private final static String YANO_DOWNLOAD_URL = "https://github.com/bloxbean/yano/releases/download";
 
     private final ClusterConfig clusterConfig;
@@ -315,8 +311,8 @@ public class DownloadService {
     public boolean downloadOgmios(boolean overwrite) {
         String downloadPath = resolveOgmiosDownloadPath();
 
-        if ( downloadPath == null) {
-            writeLn(error("Download URL for ogmios is not set. Please set the download URL in download.properties"));
+        if (downloadPath == null) {
+            //resolveOgmiosDownloadPath() has already reported the specific reason
             return false;
         }
 
@@ -337,7 +333,14 @@ public class DownloadService {
         if (downloadedFile != null) {
             try {
                 extractArchive(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getOgmiosHome(), downloadPath);
+                flattenNestedArchiveLayout(clusterConfig.getOgmiosHome(), "ogmios");
+                if (!ogmiosExec.toFile().exists()) {
+                    writeLn(error("ogmios binary was not found at %s after extraction. The downloaded archive may be invalid.",
+                            ogmiosExec.toFile().getAbsolutePath()));
+                    return false;
+                }
                 setExecutablePermission(ogmiosExec.toFile().getAbsolutePath());
+                Files.deleteIfExists(downloadedFile);
                 return true;
             } catch (IOException e) {
                 writeLn(error("Error extracting ogmios" + e.getMessage()));
@@ -352,8 +355,8 @@ public class DownloadService {
     public boolean downloadKupo(boolean overwrite) {
         String downloadPath = resolveKupoDownloadPath();
 
-        if ( downloadPath == null) {
-            writeLn(error("Download URL for Kupo is not set. Please set the download URL in download.properties"));
+        if (downloadPath == null) {
+            //resolveKupoDownloadPath() has already reported the specific reason
             return false;
         }
 
@@ -374,7 +377,14 @@ public class DownloadService {
         if (downloadedFile != null) {
             try {
                 extractArchive(downloadedFile.toFile().getAbsolutePath(), clusterConfig.getKupoHome(), downloadPath);
+                flattenNestedArchiveLayout(clusterConfig.getKupoHome(), "kupo");
+                if (!kupoExec.toFile().exists()) {
+                    writeLn(error("kupo binary was not found at %s after extraction. The downloaded archive may be invalid.",
+                            kupoExec.toFile().getAbsolutePath()));
+                    return false;
+                }
                 setExecutablePermission(kupoExec.toFile().getAbsolutePath());
+                Files.deleteIfExists(downloadedFile);
                 return true;
             } catch (IOException e) {
                 writeLn(error("Error extracting kupo" + e.getMessage()));
@@ -558,6 +568,44 @@ public class DownloadService {
         return isTarGz(downloadPath) ? component + ".tar.gz" : component + ".zip";
     }
 
+    /**
+     * CardanoSolutions release archives are not consistent across platforms : the Ogmios macOS build
+     * nests everything under a single version directory (v7.0.0/bin/ogmios) while the Linux builds are
+     * flat (bin/ogmios). Flatten the nested layout so the executable is always at
+     * &lt;targetDir&gt;/bin/&lt;binaryName&gt;, which is what the runtime services expect.
+     */
+    private void flattenNestedArchiveLayout(String targetDir, String binaryName) throws IOException {
+        Path target = Path.of(targetDir);
+        if (Files.exists(target.resolve("bin").resolve(binaryName)))
+            return;
+
+        Path nestedRoot = null;
+        try (var children = Files.list(target)) {
+            var candidates = children.filter(Files::isDirectory)
+                    .filter(dir -> Files.exists(dir.resolve("bin").resolve(binaryName)))
+                    .toList();
+            if (candidates.size() == 1)
+                nestedRoot = candidates.get(0);
+        }
+
+        if (nestedRoot == null)
+            return;
+
+        writeLn(info("Flattening nested archive layout : %s", nestedRoot.getFileName().toString()));
+
+        //Move files individually rather than whole directories : moving a directory onto an existing
+        //non-empty directory fails with DirectoryNotEmptyException even with REPLACE_EXISTING.
+        try (var files = Files.walk(nestedRoot)) {
+            for (Path source : files.filter(Files::isRegularFile).toList()) {
+                Path destination = target.resolve(nestedRoot.relativize(source).toString());
+                Files.createDirectories(destination.getParent());
+                Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+
+        FileUtils.deleteDirectory(nestedRoot.toFile());
+    }
+
     private boolean isTarGz(String downloadPath) {
         String normalized = downloadPath.toLowerCase(Locale.ROOT);
         return normalized.contains(".tar.gz") || normalized.contains(".tgz");
@@ -702,36 +750,11 @@ public class DownloadService {
             return null;
         }
 
-        if (INTERSECT_OGMIOS_VERSION.equals(ogmiosVersion)) {
-            if (!isLinuxX86_64()) {
-                writeLn(error("Ogmios %s is currently available from IntersectMBO only for Linux x86_64. Set ogmios.url to a compatible build or use the DevKit Docker image.", ogmiosVersion));
-                return null;
-            }
-
-            return INTERSECT_OGMIOS_DOWNLOAD_URL + "/v" + ogmiosVersion + "/ogmios-v" + ogmiosVersion + "-x86_64-linux.tar.gz";
-        }
-
-        String osPrefix = null;
-        if (SystemUtils.IS_OS_MAC) {
-            osPrefix = "macos";
-        } else if (SystemUtils.IS_OS_LINUX) {
-            osPrefix = "linux";
-        } else {
-            writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
-        }
-
-        if (osPrefix == null)
+        String platformSuffix = resolveOgmiosKupoPlatformSuffix("Ogmios", "ogmios.url");
+        if (platformSuffix == null)
             return null;
 
-        String arch = System.getProperty("os.arch");
-        String cpuArch = null;
-        if (arch.startsWith("aarch") || arch.startsWith("arm")) {
-            cpuArch = "aarch64";
-        } else{
-            cpuArch = "x86_64";
-        }
-
-        String url = OGMIOS_DOWNLOAD_URL + "/v" + ogmiosVersion + "/ogmios-v" + ogmiosVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
+        String url = OGMIOS_DOWNLOAD_URL + "/v" + ogmiosVersion + "/ogmios-v" + ogmiosVersion + "-" + platformSuffix + ".zip";
         return url;
     }
 
@@ -745,47 +768,51 @@ public class DownloadService {
             return null;
         }
 
-        if (INTERSECT_KUPO_VERSION.equals(kupoVersion)) {
-            if (!isLinuxX86_64()) {
-                writeLn(error("Kupo %s is currently available from IntersectMBO only for Linux x86_64. Set kupo.url to a compatible build or use the DevKit Docker image.", kupoVersion));
-                return null;
-            }
+        String platformSuffix = resolveOgmiosKupoPlatformSuffix("Kupo", "kupo.url");
+        if (platformSuffix == null)
+            return null;
 
-            return INTERSECT_KUPO_DOWNLOAD_URL + "/v" + kupoVersion + "/kupo-v" + kupoVersion + "-x86_64-linux.tar.gz";
-        }
+        //Kupo release tags are major.minor (e.g. v2.12) while the asset name carries the
+        //full version (e.g. kupo-v2.12.0-x86_64-linux.zip)
+        String versionParts[] = kupoVersion.split("\\.");
+        String trimmedVersionPath = kupoVersion;
+        if (versionParts.length == 3)
+             trimmedVersionPath = versionParts[0] + "." + versionParts[1];
 
-        String osPrefix = null;
+        String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-v" + kupoVersion + "-" + platformSuffix + ".zip";
+        return url;
+    }
+
+    /**
+     * Resolves the "&lt;cpuArch&gt;-&lt;os&gt;" suffix used by CardanoSolutions Ogmios/Kupo release assets.
+     * Only x86_64-linux, aarch64-linux and aarch64-macos builds are published, so any other OS/arch
+     * combination fails fast with an actionable message instead of a 404 download.
+     */
+    private String resolveOgmiosKupoPlatformSuffix(String component, String urlProperty) {
+        String osPrefix;
         if (SystemUtils.IS_OS_MAC) {
             osPrefix = "macos";
         } else if (SystemUtils.IS_OS_LINUX) {
             osPrefix = "linux";
         } else {
             writeLn(error("Unsupported OS : " + System.getProperty("os.name")));
+            return null;
         }
 
-        if (osPrefix == null)
-            return null;
-
         String arch = System.getProperty("os.arch");
-        String cpuArch = null;
+        String cpuArch;
         if (arch.startsWith("aarch") || arch.startsWith("arm")) {
             cpuArch = "aarch64";
-        } else{
+        } else {
             cpuArch = "x86_64";
         }
 
-        String versionParts[] = kupoVersion.split("\\.");
-        String trimmedVersionPath = kupoVersion;
-        if (versionParts.length == 3)
-             trimmedVersionPath = versionParts[0] + "." + versionParts[1];
+        if (SystemUtils.IS_OS_MAC && "x86_64".equals(cpuArch)) {
+            writeLn(error("%s is not published for macOS x86_64. Set %s to a compatible build or use the DevKit Docker image.", component, urlProperty));
+            return null;
+        }
 
-        String url = KUPO_DOWNLOAD_URL + "/v" + trimmedVersionPath + "/kupo-v" + kupoVersion + "-" + cpuArch + "-" + osPrefix + ".zip";
-        return url;
-    }
-
-    private boolean isLinuxX86_64() {
-        String arch = System.getProperty("os.arch");
-        return SystemUtils.IS_OS_LINUX && !arch.startsWith("aarch") && !arch.startsWith("arm");
+        return cpuArch + "-" + osPrefix;
     }
 
     private String resolveYanoDownloadPath() {

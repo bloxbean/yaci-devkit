@@ -34,11 +34,12 @@ public class YanoConfigBuilder {
      * @param clusterInfo   cluster configuration
      * @param yanoConfigDir resolved path to Yano's devnet config (genesis files, keys)
      * @param yanoDataDir   resolved path for Yano's chainstate storage
+     * @param yanoHistoryDir resolved path for Yano's history archive
      * @param pastTimeTravelMode whether past-time-travel mode is enabled
      * @return true if config was written successfully
      */
     public boolean build(ClusterInfo clusterInfo, Path yanoConfigDir, Path yanoDataDir,
-                         boolean pastTimeTravelMode) {
+                         Path yanoHistoryDir, boolean pastTimeTravelMode) {
         Map<String, String> props = new LinkedHashMap<>();
 
         // Quarkus profile
@@ -63,6 +64,14 @@ public class YanoConfigBuilder {
 
         // Storage — inside the node folder so it gets cleaned up with create-node -o
         props.put("yano.storage.path", yanoDataDir.toAbsolutePath().toString());
+
+        // History archive — Yano's bundled devnet profile enables the DuckLake projection
+        // archive by default. DevKit reads nothing from Yano's history api, so it's turned off
+        // here. The dir is pinned inside the node folder anyway: it defaults to ./history,
+        // relative to the working directory, which is the shared yanoHome — an archive written
+        // there outlives create-node -o and then fails the startup identity/coverage guards.
+        props.put("yano.history.projection.enabled", "false");
+        props.put("yano.history.dir", yanoHistoryDir.toAbsolutePath().toString());
 
         // Past-time-travel mode
         if (pastTimeTravelMode) {
