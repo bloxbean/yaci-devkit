@@ -16,10 +16,15 @@ import java.util.*;
 public class GenesisConfig {
     private String networkId = "Testnet";
     private long protocolMagic = 42;
-    private int maxKESEvolutions = 60;
+    private int maxKESEvolutions = 62;
     private double stabilityWindowFactor = 0.5; //This is used to automatically derive the security parameter from epoch length
     private int securityParam = 0;
-    private long slotsPerKESPeriod = 129600;
+    //A KES period long enough that a past-time-travel devnet never leaves period 0. The bootstrap
+    //shift shifts genesis back by whole epochs before catching up to wall clock, and the node derives
+    //the current KES period as slot / slotsPerKESPeriod : at the mainnet 129600 a long-epoch devnet
+    //burns a large share of its evolutions before producing a single block. Devnets do not exercise
+    //KES rotation, so trade that realism for a devnet that does not expire.
+    private long slotsPerKESPeriod = 10000000;
     private int updateQuorum = 1;
     private boolean peerSharing = true;
 

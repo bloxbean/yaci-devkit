@@ -11,6 +11,7 @@ import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +47,14 @@ public class YanoService {
     private List<Process> processes = new ArrayList<>();
     private List<ExecutorService> executors = new ArrayList<>();
     private Queue<String> logs = EvictingQueue.create(300);
+
+    // Spacing for Yano's past-time-travel backfill, the catch-up from the shifted genesis to wall clock.
+    // auto (0): Yano derives the spacing from genesis, keeping every gap inside the forecast window a
+    // Haskell relay can validate and still placing the epoch-boundary blocks it needs for nonces.
+    // dense (1): one block per slot, Yano's own default, which makes create time grow with epoch length.
+    // An integer forces the interval.
+    @Value("${yano.backfill.block.interval.slots:auto}")
+    private String backfillBlockIntervalSlots = "auto";
 
     public boolean start(ClusterInfo clusterInfo, Path clusterFolder, boolean pastTimeTravelMode, Consumer<String> writer) {
         logs.clear();
@@ -233,6 +242,32 @@ public class YanoService {
         costModels.set(language, aligned);
     }
 
+    /**
+     * Slots between blocks in Yano's past-time-travel backfill, from
+     * {@code yano.backfill.block.interval.slots} : {@code auto} (the default) hands the decision to Yano
+     * as 0, {@code dense} is one block per slot, and an integer forces the interval. An unusable value
+     * falls back to automatic rather than to the dense default, which is the slow one.
+     */
+    int backfillBlockIntervalSlots() {
+        String setting = backfillBlockIntervalSlots == null ? "auto" : backfillBlockIntervalSlots.trim().toLowerCase();
+        if (setting.isEmpty() || setting.equals("auto"))
+            return 0;
+        if (setting.equals("dense"))
+            return 1;
+        try {
+            int interval = Integer.parseInt(setting);
+            if (interval < 0) {
+                log.warn("yano.backfill.block.interval.slots must be non-negative, got {}. Using automatic.",
+                        backfillBlockIntervalSlots);
+                return 0;
+            }
+            return interval;
+        } catch (NumberFormatException e) {
+            log.warn("Unknown yano.backfill.block.interval.slots '{}', using automatic", backfillBlockIntervalSlots);
+            return 0;
+        }
+    }
+
     private Process startYanoProcess(ClusterInfo clusterInfo, Path clusterFolder, Path yanoConfigDir,
                                      boolean pastTimeTravelMode, Consumer<String> writer)
             throws IOException, InterruptedException {
@@ -245,7 +280,12 @@ public class YanoService {
         Path yanoHistoryDir = clusterFolder.resolve("node").resolve("yano-history");
 
         // Write application.properties for Yano (persists config on disk for debugging)
-        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir, pastTimeTravelMode);
+        int backfillInterval = backfillBlockIntervalSlots();
+        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir, pastTimeTravelMode,
+                backfillInterval);
+        if (pastTimeTravelMode)
+            writer.accept(info("Yano backfill block interval : %s",
+                    backfillInterval == 0 ? "automatic (derived from genesis)" : backfillInterval + " slots"));
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYanoHome()));

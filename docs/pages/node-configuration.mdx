@@ -50,6 +50,24 @@ then you can set `securityParam` to a higher values like `86400` for 1 sec block
     For a real/multi-node network setup, please refer to this known issue/workaround: https://github.com/bloxbean/yaci-devkit/issues/65#issuecomment-2318155838
 </Callout>
 
+### maxKESEvolutions and slotsPerKESPeriod
+
+Defaults are `62` and `10000000`. The node derives the current KES period as `slot / slotsPerKESPeriod`, and
+an operational certificate expires once the periods elapsed since it was issued exceed `maxKESEvolutions`.
+
+In companion mode the bootstrap shifts genesis back by whole epochs and then catches up to wall clock, so the
+chain starts at a high slot number. At the mainnet `slotsPerKESPeriod` of `129600` that shift alone consumes a
+large share of the evolutions before the devnet produces its first real block, and the share grows with epoch
+length. The large period keeps a devnet inside KES period 0 for its whole life.
+
+The trade-off is that a DevKit devnet does not exercise KES rotation. Set both to mainnet-like values
+(`62` and `129600`) if that is what you want to test:
+
+```shell
+maxKESEvolutions=62
+slotsPerKESPeriod=129600
+```
+
 ### peerSharing
 
 To enable or disable peer sharing. Default value is `true`.
