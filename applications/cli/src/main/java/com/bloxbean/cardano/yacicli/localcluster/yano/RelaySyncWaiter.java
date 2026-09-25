@@ -18,6 +18,19 @@ import java.util.function.LongSupplier;
 final class RelaySyncWaiter {
     static final long POLL_INTERVAL_MS = 1_000L;
     static final long PROGRESS_REPORT_INTERVAL_MS = 5_000L;
+    static final long DEFAULT_STALL_TIMEOUT_SECONDS = 30;
+    // Largest value in seconds that still converts to milliseconds without overflowing
+    private static final long MAX_SECONDS = Long.MAX_VALUE / 1000;
+
+    /** Stall timeout to use for a configured value: a positive value as given, anything else the default. */
+    static long stallTimeoutSeconds(long configured) {
+        return configured > 0 ? Math.min(configured, MAX_SECONDS) : DEFAULT_STALL_TIMEOUT_SECONDS;
+    }
+
+    /** Overall ceiling to use for a configured value: zero (no ceiling) or a positive value as given, negative is none. */
+    static long maxWaitSeconds(long configured) {
+        return Math.min(Math.max(0, configured), MAX_SECONDS);
+    }
 
     /** Reads the relay's tip: block height and point. Returns {@code null} when the relay is not reachable yet. */
     interface TipReader {
@@ -98,6 +111,12 @@ final class RelaySyncWaiter {
                 slot = tipSlot;
                 height = tipHeight;
                 epoch = slot / epochLength;
+
+                if (lastReportHeight < 0 && height >= 0) {
+                    // First tip read: the baseline the first reported rate is measured from
+                    lastReportHeight = height;
+                    lastReportAt = now;
+                }
 
                 if (epoch >= targetEpoch) {
                     return new Outcome(true, epoch, slot, height, null);

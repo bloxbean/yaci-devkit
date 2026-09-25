@@ -268,16 +268,27 @@ public class YanoCompanionService {
             // optional ceiling yano.relay.sync.max.wait.seconds is reached. A long epoch means a long
             // backfill (about 550 blocks/s measured), so a fixed deadline would cut the relay off mid-chain.
             long epochLength = clusterInfo.getEpochLength();
-            String ceiling = relaySyncMaxWaitSeconds > 0 ? ", at most " + relaySyncMaxWaitSeconds + "s in total" : "";
+
+            // An unusable value must not throw here: the handover would then skip stopping Yano and restoring the
+            // topology, and the Haskell producer would restart next to a Yano that is still producing.
+            long stallTimeoutSeconds = RelaySyncWaiter.stallTimeoutSeconds(relaySyncStallTimeoutSeconds);
+            if (stallTimeoutSeconds != relaySyncStallTimeoutSeconds)
+                writer.accept(warn("yano.relay.sync.stall.timeout.seconds must be positive, got %d. Using %d.",
+                        relaySyncStallTimeoutSeconds, stallTimeoutSeconds));
+            long maxWaitSeconds = RelaySyncWaiter.maxWaitSeconds(relaySyncMaxWaitSeconds);
+            if (maxWaitSeconds != relaySyncMaxWaitSeconds)
+                writer.accept(warn("yano.relay.sync.max.wait.seconds must be 0 (no ceiling) or positive, got %d. Using %d.",
+                        relaySyncMaxWaitSeconds, maxWaitSeconds));
+
+            String ceiling = maxWaitSeconds > 0 ? ", at most " + maxWaitSeconds + "s in total" : "";
             writer.accept(info("Waiting for relay to sync past epoch %d (giving up if the tip stalls for %ds%s)...",
-                    BOOTSTRAP_EPOCH_SHIFT, relaySyncStallTimeoutSeconds, ceiling));
+                    BOOTSTRAP_EPOCH_SHIFT, stallTimeoutSeconds, ceiling));
 
             final ClusterUtilService clusterUtilService = clusterUtilServiceProvider.getObject();
             // ClusterUtilService.getTip prints "Find tip error ..." directly via static
             // ConsoleWriter on exception (bypassing the consumer); transient noise during
             // the first one or two polls after the socket appears is expected.
-            RelaySyncWaiter waiter = new RelaySyncWaiter(relaySyncStallTimeoutSeconds * 1000L,
-                    relaySyncMaxWaitSeconds * 1000L);
+            RelaySyncWaiter waiter = new RelaySyncWaiter(stallTimeoutSeconds * 1000L, maxWaitSeconds * 1000L);
             RelaySyncWaiter.Outcome outcome = waiter.await(BOOTSTRAP_EPOCH_SHIFT, epochLength,
                     () -> clusterUtilService.getTip(msg -> {}),
                     msg -> writer.accept(info(msg)));

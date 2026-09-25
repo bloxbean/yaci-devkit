@@ -137,4 +137,49 @@ class RelaySyncWaiterTest {
         assertThat(outcome.reason()).contains("epoch length");
         assertThat(time.sleeps).isEmpty();
     }
+
+    @Test
+    void firstProgressReportMeasuresTheRateFromTheFirstTip() throws Exception {
+        FakeTime time = new FakeTime();
+        RelaySyncWaiter waiter = new RelaySyncWaiter(30_000, 0, time::read, time::sleep);
+        // One poll per second, 100 blocks further each time
+        List<Tuple<Long, Point>> tips = new ArrayList<>();
+        for (long i = 1; i <= 20; i++) {
+            tips.add(tip(i * 100, i * 100));
+        }
+        List<String> progress = new ArrayList<>();
+
+        waiter.await(TARGET_EPOCH, EPOCH_LENGTH, script(tips), progress::add);
+
+        assertThat(progress).isNotEmpty();
+        assertThat(progress).allSatisfy(line -> assertThat(line).endsWith("(100 blocks/s)"));
+    }
+
+    @Test
+    void unusableStallTimeoutFallsBackToTheDefault() {
+        assertThat(RelaySyncWaiter.stallTimeoutSeconds(45)).isEqualTo(45);
+        assertThat(RelaySyncWaiter.stallTimeoutSeconds(0)).isEqualTo(RelaySyncWaiter.DEFAULT_STALL_TIMEOUT_SECONDS);
+        assertThat(RelaySyncWaiter.stallTimeoutSeconds(-5)).isEqualTo(RelaySyncWaiter.DEFAULT_STALL_TIMEOUT_SECONDS);
+        // Converts to milliseconds without overflowing into a negative timeout
+        assertThat(RelaySyncWaiter.stallTimeoutSeconds(Long.MAX_VALUE) * 1000L).isPositive();
+    }
+
+    @Test
+    void negativeMaxWaitMeansNoCeiling() {
+        assertThat(RelaySyncWaiter.maxWaitSeconds(600)).isEqualTo(600);
+        assertThat(RelaySyncWaiter.maxWaitSeconds(0)).isZero();
+        assertThat(RelaySyncWaiter.maxWaitSeconds(-1)).isZero();
+        assertThat(RelaySyncWaiter.maxWaitSeconds(Long.MAX_VALUE) * 1000L).isPositive();
+    }
+
+    @Test
+    void sanitizedSettingsAlwaysBuildAWaiter() {
+        // The handover builds the waiter from sanitized values, so a bad setting can no longer throw there
+        for (long stall : new long[]{-1, 0, 1, 30, Long.MAX_VALUE}) {
+            for (long max : new long[]{-1, 0, 60, Long.MAX_VALUE}) {
+                new RelaySyncWaiter(RelaySyncWaiter.stallTimeoutSeconds(stall) * 1000L,
+                        RelaySyncWaiter.maxWaitSeconds(max) * 1000L);
+            }
+        }
+    }
 }
