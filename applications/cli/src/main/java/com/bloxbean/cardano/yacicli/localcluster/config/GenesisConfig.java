@@ -22,6 +22,9 @@ public class GenesisConfig {
     private long slotsPerKESPeriod = 129600;
     private int updateQuorum = 1;
     private boolean peerSharing = true;
+    // Node config TraceChainSyncClient. On by default so a bootstrap chain the node rejects
+    // (for example VRFLeaderValueTooBig at activeSlotsCoeff below 1) shows up in the node log.
+    private boolean traceChainSyncClient = true;
 
     private String genesisUtxoSupply = "30000000000000000"; //In byron genesis
     private int nGenesisKeys = 3; //For new priv network
@@ -360,6 +363,7 @@ public class GenesisConfig {
         map.put("slotsPerKESPeriod", slotsPerKESPeriod);
         map.put("updateQuorum", updateQuorum);
         map.put("peerSharing", peerSharing);
+        map.put("traceChainSyncClient", traceChainSyncClient);
         map.put("genesisUtxoSupply", genesisUtxoSupply);
         map.put("nGenesisKeys", nGenesisKeys);
         map.put("nGenesisUtxoKeys", nGenesisUtxoKeys);
@@ -467,6 +471,7 @@ public class GenesisConfig {
         genesisConfig.setSlotsPerKESPeriod(slotsPerKESPeriod);
         genesisConfig.setUpdateQuorum(updateQuorum);
         genesisConfig.setPeerSharing(peerSharing);
+        genesisConfig.setTraceChainSyncClient(traceChainSyncClient);
         genesisConfig.setGenesisUtxoSupply(genesisUtxoSupply);
         genesisConfig.setNGenesisKeys(nGenesisKeys);
         genesisConfig.setNGenesisUtxoKeys(nGenesisUtxoKeys);
@@ -572,6 +577,8 @@ public class GenesisConfig {
                 updateQuorum = Integer.parseInt(updatedValues.get("updateQuorum"));
             if (updatedValues.get("peerSharing") != null && !updatedValues.get("peerSharing").isEmpty())
                 peerSharing = Boolean.parseBoolean(updatedValues.get("peerSharing"));
+            if (updatedValues.get("traceChainSyncClient") != null && !updatedValues.get("traceChainSyncClient").isEmpty())
+                traceChainSyncClient = Boolean.parseBoolean(updatedValues.get("traceChainSyncClient"));
             if (updatedValues.get("genesisUtxoSupply") != null && !updatedValues.get("genesisUtxoSupply").isEmpty())
                 genesisUtxoSupply = updatedValues.get("genesisUtxoSupply");
             if (updatedValues.get("nGenesisKeys") != null && !updatedValues.get("nGenesisKeys").isEmpty())

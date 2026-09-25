@@ -50,6 +50,12 @@ then you can set `securityParam` to a higher values like `86400` for 1 sec block
     For a real/multi-node network setup, please refer to this known issue/workaround: https://github.com/bloxbean/yaci-devkit/issues/65#issuecomment-2318155838
 </Callout>
 
+### traceChainSyncClient
+
+Whether the node logs its chain-sync client (`TraceChainSyncClient`). Default `true`, so a bootstrap chain the
+node rejects during a Yano handover shows up in the node log instead of failing silently. Set to `false` for a
+quieter log.
+
 ### peerSharing
 
 To enable or disable peer sharing. Default value is `true`.
