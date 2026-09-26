@@ -6,5 +6,4 @@
 --shelley-kes-key ../../../pool-keys/{{NODE_NAME}}/kes.skey \
 --shelley-vrf-key ../../../pool-keys/{{NODE_NAME}}/vrf.skey \
 --shelley-operational-certificate ../../../pool-keys/{{NODE_NAME}}/opcert.cert \
---port {{port}} \
-| tee -a 'node.log'
+--port {{port}}

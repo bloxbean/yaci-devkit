@@ -82,6 +82,10 @@
     [
       "StdoutSK",
       "stdout"
+    ],
+    [
+      "FileSK",
+      "node.log"
     ]
   ],
   "hasEKG": 12788,
@@ -118,6 +122,12 @@
       "scFormat": "ScText",
       "scKind": "StdoutSK",
       "scName": "stdout",
+      "scRotation": null
+    },
+    {
+      "scFormat": "ScText",
+      "scKind": "FileSK",
+      "scName": "node.log",
       "scRotation": null
     }
   ]
