@@ -49,6 +49,14 @@ public class YanoService {
     private List<ExecutorService> executors = new ArrayList<>();
     private Queue<String> logs = EvictingQueue.create(300);
 
+    // Spacing for Yano's past-time-travel backfill, the catch-up from the shifted genesis to wall clock.
+    // auto (0): Yano derives the spacing from genesis, keeping every gap inside the forecast window a
+    // Haskell relay can validate and still placing the epoch-boundary blocks it needs for nonces.
+    // dense (1): one block per slot, Yano's own default, which makes create time grow with epoch length.
+    // An integer forces the interval.
+    @Value("${yano.backfill.block.interval.slots:auto}")
+    private String backfillBlockIntervalSlots = "auto";
+
     // Whether Yano's past-time-travel backfill runs Praos slot-leader checks (VRF-eligible slots only).
     // auto: on when a Haskell node will validate the chain and activeSlotsCoeff is below 1, or for local
     // multi-node devnets. true / false force it. The Haskell relay rejects a dense backfill at f < 1 with
@@ -243,6 +251,32 @@ public class YanoService {
     }
 
     /**
+     * Slots between blocks in Yano's past-time-travel backfill, from
+     * {@code yano.backfill.block.interval.slots} : {@code auto} (the default) hands the decision to Yano
+     * as 0, {@code dense} is one block per slot, and an integer forces the interval. An unusable value
+     * falls back to automatic rather than to the dense default, which is the slow one.
+     */
+    int backfillBlockIntervalSlots() {
+        String setting = backfillBlockIntervalSlots == null ? "auto" : backfillBlockIntervalSlots.trim().toLowerCase();
+        if (setting.isEmpty() || setting.equals("auto"))
+            return 0;
+        if (setting.equals("dense"))
+            return 1;
+        try {
+            int interval = Integer.parseInt(setting);
+            if (interval < 0) {
+                log.warn("yano.backfill.block.interval.slots must be non-negative, got {}. Using automatic.",
+                        backfillBlockIntervalSlots);
+                return 0;
+            }
+            return interval;
+        } catch (NumberFormatException e) {
+            log.warn("Unknown yano.backfill.block.interval.slots '{}', using automatic", backfillBlockIntervalSlots);
+            return 0;
+        }
+    }
+
+    /**
      * Decide whether Yano's past-time-travel backfill should run Praos slot-leader checks.
      * <p>
      * Default time travel places one block per slot and ignores VRF eligibility. That is fine while only
@@ -281,10 +315,16 @@ public class YanoService {
         // Store Yano data inside node folder so it gets cleaned up with create-node -o
         Path yanoDataDir = clusterFolder.resolve("node").resolve("yano");
         Files.createDirectories(yanoDataDir);
+        Path yanoHistoryDir = clusterFolder.resolve("node").resolve("yano-history");
 
         // Write application.properties for Yano (persists config on disk for debugging)
+        int backfillInterval = backfillBlockIntervalSlots();
         boolean slotLeaderTimeTravel = pastTimeTravelMode && slotLeaderTimeTravelEnabled(clusterInfo);
-        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, pastTimeTravelMode, slotLeaderTimeTravel);
+        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir, pastTimeTravelMode,
+                slotLeaderTimeTravel, backfillInterval);
+        if (pastTimeTravelMode)
+            writer.accept(info("Yano backfill block interval : %s",
+                    backfillInterval == 0 ? "automatic (derived from genesis)" : backfillInterval + " slots"));
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYanoHome()));
@@ -370,6 +410,7 @@ public class YanoService {
     public void handleClusterDeleted(ClusterDeleted clusterDeleted) {
         Path clusterFolder = Path.of(clusterConfig.getClusterHome(), clusterDeleted.getClusterName());
         deleteIfPresent(clusterFolder.resolve("node").resolve("yano"), "Yano data");
+        deleteIfPresent(clusterFolder.resolve("node").resolve("yano-history"), "Yano history");
         deleteIfPresent(clusterFolder.resolve("yano-config"), "Yano config");
         deleteBootstrapMarker(clusterFolder);
     }

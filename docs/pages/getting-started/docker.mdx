@@ -25,11 +25,11 @@ The Docker distribution includes:
 For Ogmios and Kupo, ensure ports 1337 and 1442 are also available if you plan to use these services.
 
 <Callout type="info">
-Starting with Yaci DevKit `v0.12.0-beta5`, the default Docker setup uses Yaci Store's `scalus` transaction evaluator. Ogmios is optional and is not started just for transaction evaluation.
+The default Docker setup starts Ogmios and uses it as Yaci Store's transaction evaluator. If Ogmios is unavailable, Yaci Store falls back to the embedded `scalus` evaluator. Kupo remains optional.
 </Callout>
 
-<Callout type="warning">
-For Yaci DevKit `v0.12.0-beta5`, PV11-compatible Ogmios/Kupo binaries are currently available only as Linux x86_64 builds from IntersectMBO. Docker images can run these on Apple Silicon Docker Desktop through emulation, but native Linux arm64 hosts may need x86_64 emulation or the amd64 image. See [Known Issues](/known-issues#pv11-ogmioskupo-docker-arm64-compatibility).
+<Callout type="info">
+Ogmios `v7.0.0` and Kupo `v2.12.0` are bundled as **native** binaries in both the `linux/amd64` and `linux/arm64` images — no x86_64 emulation is required on Apple Silicon or native Linux arm64 hosts.
 </Callout>
 
 ## Installation
@@ -194,13 +194,15 @@ topup_addresses=addr_test1...address1:20000,addr_test1...address2:10000
 
 ### Optional Services
 
-#### Enable Ogmios and Kupo
-To activate Ogmios and Kupo support, either:
+#### Ogmios and Kupo
+Ogmios is **enabled by default** (`ogmios_enabled=true` in `config/env`) and is used as Yaci Store's transaction evaluator. Set `ogmios_enabled=false` to disable it and fall back to the embedded `scalus` evaluator.
 
-1. **Via env file**: Set `ogmios_enabled=true` and `kupo_enabled=true` in `config/env`
+Kupo is optional and disabled by default. To activate it, either:
+
+1. **Via env file**: Set `kupo_enabled=true` in `config/env`
 2. **Via CLI**: Use the `enable-kupomios` command in Yaci CLI
 
-In `v0.12.0-beta5+`, if Ogmios is enabled and running when Yaci Store starts, Yaci Store uses `ogmios` transaction evaluation. Otherwise it uses `scalus`.
+When Yaci Store starts, DevKit uses the `ogmios` evaluator if Ogmios is enabled and responding on its health endpoint; otherwise it logs a warning and uses `scalus`.
 
 #### Service URLs
 - **CLI/Admin Swagger UI**: http://localhost:10000/swagger-ui.html

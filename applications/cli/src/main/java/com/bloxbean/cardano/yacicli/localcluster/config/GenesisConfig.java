@@ -16,15 +16,21 @@ import java.util.*;
 public class GenesisConfig {
     private String networkId = "Testnet";
     private long protocolMagic = 42;
-    private int maxKESEvolutions = 60;
+    private int maxKESEvolutions = 62;
     private double stabilityWindowFactor = 0.5; //This is used to automatically derive the security parameter from epoch length
     private int securityParam = 0;
-    private long slotsPerKESPeriod = 129600;
+    //A KES period long enough that a past-time-travel devnet never leaves period 0. The bootstrap
+    //shift shifts genesis back by whole epochs before catching up to wall clock, and the node derives
+    //the current KES period as slot / slotsPerKESPeriod : at the mainnet 129600 a long-epoch devnet
+    //burns a large share of its evolutions before producing a single block. Devnets do not exercise
+    //KES rotation, so trade that realism for a devnet that does not expire.
+    private long slotsPerKESPeriod = 10000000;
     private int updateQuorum = 1;
     private boolean peerSharing = true;
-    // Node config TraceChainSyncClient. On by default so a bootstrap chain the node rejects
-    // (for example VRFLeaderValueTooBig at activeSlotsCoeff below 1) shows up in the node log.
-    private boolean traceChainSyncClient = true;
+    // Node config TraceChainSyncClient. Off by default: it logs every header received from a peer, which
+    // adds up on multi-node devnets. Turn it on to see why a node rejects a bootstrap chain
+    // (for example VRFLeaderValueTooBig at activeSlotsCoeff below 1).
+    private boolean traceChainSyncClient = false;
 
     private String genesisUtxoSupply = "30000000000000000"; //In byron genesis
     private int nGenesisKeys = 3; //For new priv network

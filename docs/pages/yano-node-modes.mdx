@@ -38,6 +38,28 @@ This avoids requiring users to wait for two epoch transitions before updated pro
 
 Use companion mode when you want normal Haskell-node behavior, including node socket access, but want DevKit to prepare the chain quickly for PV11 protocol parameters.
 
+### Backfill block interval
+
+Catching up from the shifted genesis to wall clock used to place one empty block in every slot, so devnet
+create time grew with epoch length and the Haskell relay had to copy the whole chain.
+
+DevKit now asks Yano to derive the spacing itself, through
+`yano.block-producer.backfill-block-interval-slots=0`. Yano places only the blocks a validating node
+actually needs: gaps stay inside the forecast window (`3k/f` slots) so the relay can validate every header,
+the epoch-boundary blocks needed for nonces are kept, and a final block lands at the catch-up target so the
+producer resumes at wall clock. Everything in between was empty filler.
+
+Override it in `config/application.properties`:
+
+```properties
+# auto (default) hands the decision to Yano; dense is one block per slot; an integer forces the interval
+yano.backfill.block.interval.slots=auto
+```
+
+Automatic spacing needs a Yano build that understands the property (`0.1.0-pre15` or later). Yano validates
+the resulting interval against its own forecast window and fails with an explicit message rather than
+producing a chain the relay would reject.
+
 ### Block time longer than slot length
 
 With `--block-time` larger than `--slot-length`, `activeSlotsCoeff` is below 1 and only VRF-eligible slots may carry
@@ -53,8 +75,8 @@ choice can be forced in `config/application.properties`:
 yano.past.time.travel.slot.leader.mode=auto
 ```
 
-The node configuration sets `TraceChainSyncClient` to `true` by default, so a rejected bootstrap chain shows up in
-the node log instead of failing silently. Set `traceChainSyncClient=false` in `node.properties` to turn it off.
+If the relay still does not sync, set `traceChainSyncClient=true` in `node.properties` to see the rejection in the
+node log.
 
 ### Relay sync wait during handover
 

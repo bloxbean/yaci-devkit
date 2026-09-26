@@ -240,7 +240,11 @@ public class ClusterAdminController {
         boolean originalEnableKupo = applicationConfig.isKupoEnabled();
 
         applicationConfig.setYaciStoreEnabled(request.enableYaciStore());
-        applicationConfig.setOgmiosEnabled(request.enableOgmios());
+        //enableOgmios is optional : when the caller omits it, keep the configured default
+        //(ogmios_enabled in config/env) instead of forcing Ogmios off.
+        applicationConfig.setOgmiosEnabled(request.enableOgmios() != null
+                ? request.enableOgmios()
+                : originalEnableOgmios);
 
         if (request.enableKupomios()) {
             applicationConfig.setOgmiosEnabled(true);
@@ -307,8 +311,8 @@ public class ClusterAdminController {
                                int multiNodeStakeRatioFactor,
                                @Schema(description = "Enable Yaci Store", defaultValue = "false")
                                boolean enableYaciStore,
-                               @Schema(description = "Enable Ogmios", defaultValue = "false")
-                               boolean enableOgmios,
+                               @Schema(description = "Enable Ogmios. If omitted, the configured default (ogmios_enabled) is used.")
+                               Boolean enableOgmios,
                                @Schema(description = "Enable Ogmios and Kupo", defaultValue = "false")
                                boolean enableKupomios) {
     }

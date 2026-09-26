@@ -112,8 +112,12 @@ public class DownloadCommand {
 
         if (enableYaciStore) {
             applicationConfig.setYaciStoreEnabled(true);
-            applicationConfig.setOgmiosEnabled(false); //TODO -- Temporarily till Ogmios is ready
-        } else if (enableKupomios){
+            //Ogmios is the default tx evaluator for Yaci Store. If Ogmios fails to start,
+            //Yaci Store falls back to the embedded Scalus evaluator.
+            applicationConfig.setOgmiosEnabled(true);
+        }
+
+        if (enableKupomios) {
             applicationConfig.setOgmiosEnabled(true);
             applicationConfig.setKupoEnabled(true);
         }
@@ -124,7 +128,9 @@ public class DownloadCommand {
             if (!componentList.contains("ogmios")) {
                 componentList.add("ogmios");
             }
-        } else if (enableKupomios) {
+        }
+
+        if (enableKupomios) {
             if (!componentList.contains("ogmios"))
                 componentList.add("ogmios");
             if (!componentList.contains("kupo"))
