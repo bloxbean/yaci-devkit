@@ -91,9 +91,9 @@ the rewards calculation needs the stability window inside the epoch. Setting `se
 this derivation.
 ### traceChainSyncClient
 
-Whether the node logs its chain-sync client (`TraceChainSyncClient`). Default `true`, so a bootstrap chain the
-node rejects during a Yano handover shows up in the node log instead of failing silently. Set to `false` for a
-quieter log.
+Whether the node logs its chain-sync client (`TraceChainSyncClient`). Default `false`. Set to `true` to see why a
+node rejects a bootstrap chain during a Yano handover. It logs every header received from a peer, so expect a
+busier log on multi-node devnets.
 
 ### peerSharing
 

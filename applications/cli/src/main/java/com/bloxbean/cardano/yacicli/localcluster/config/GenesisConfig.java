@@ -27,9 +27,10 @@ public class GenesisConfig {
     private long slotsPerKESPeriod = 10000000;
     private int updateQuorum = 1;
     private boolean peerSharing = true;
-    // Node config TraceChainSyncClient. On by default so a bootstrap chain the node rejects
-    // (for example VRFLeaderValueTooBig at activeSlotsCoeff below 1) shows up in the node log.
-    private boolean traceChainSyncClient = true;
+    // Node config TraceChainSyncClient. Off by default: it logs every header received from a peer, which
+    // adds up on multi-node devnets. Turn it on to see why a node rejects a bootstrap chain
+    // (for example VRFLeaderValueTooBig at activeSlotsCoeff below 1).
+    private boolean traceChainSyncClient = false;
 
     private String genesisUtxoSupply = "30000000000000000"; //In byron genesis
     private int nGenesisKeys = 3; //For new priv network

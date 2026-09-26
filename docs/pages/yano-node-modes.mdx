@@ -75,8 +75,8 @@ choice can be forced in `config/application.properties`:
 yano.past.time.travel.slot.leader.mode=auto
 ```
 
-The node configuration sets `TraceChainSyncClient` to `true` by default, so a rejected bootstrap chain shows up in
-the node log instead of failing silently. Set `traceChainSyncClient=false` in `node.properties` to turn it off.
+If the relay still does not sync, set `traceChainSyncClient=true` in `node.properties` to see the rejection in the
+node log.
 
 ### Relay sync wait during handover
 
