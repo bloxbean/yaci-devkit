@@ -42,7 +42,7 @@
   "TraceBlockFetchServer": false,
   "TraceChainDb": true,
   "TraceChainSyncBlockServer": false,
-  "TraceChainSyncClient": false,
+  "TraceChainSyncClient": {{traceChainSyncClient}},
   "TraceChainSyncHeaderServer": false,
   "TraceChainSyncProtocol": false,
   "TraceConnectionManager": true,

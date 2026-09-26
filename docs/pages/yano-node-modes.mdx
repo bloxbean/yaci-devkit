@@ -60,6 +60,43 @@ Automatic spacing needs a Yano build that understands the property (`0.1.0-pre15
 the resulting interval against its own forecast window and fails with an explicit message rather than
 producing a chain the relay would reject.
 
+### Block time longer than slot length
+
+With `--block-time` larger than `--slot-length`, `activeSlotsCoeff` is below 1 and only VRF-eligible slots may carry
+a block. Yano's default time travel places one block in every slot, which the Haskell node rejects at the first
+header with `VRFLeaderValueTooBig`, so the relay never syncs and the cost-model update is never enacted.
+
+DevKit therefore turns on Yano's slot-leader time travel whenever a Haskell node validates the chain (companion and
+yano-primary modes) and `activeSlotsCoeff` is below 1. The backfill then places blocks only in eligible slots. The
+choice can be forced in `config/application.properties`:
+
+```properties
+# auto (default), true, or false
+yano.past.time.travel.slot.leader.mode=auto
+```
+
+The node configuration sets `TraceChainSyncClient` to `true` by default, so a rejected bootstrap chain shows up in
+the node log instead of failing silently. Set `traceChainSyncClient=false` in `node.properties` to turn it off.
+
+### Relay sync wait during handover
+
+After Yano catches up to wall-clock time, the Haskell node starts as a relay and copies Yano's chain before it
+takes over as block producer. The handover waits while the relay's tip keeps advancing. It gives up when the tip
+has not moved for the stall timeout, or when the optional overall ceiling is reached. The wait is not a fixed
+deadline: a long epoch means a long bootstrap chain (about 550 blocks per second are copied), and the producer
+must own the whole chain before Yano stops.
+
+The two settings live in `config/application.properties` (the CLI's own properties, not `node.properties`):
+
+```properties
+# Give up when the relay tip stops advancing for this long. Default 30.
+yano.relay.sync.stall.timeout.seconds=30
+# Optional overall ceiling for the wait. Default 0 = no ceiling.
+yano.relay.sync.max.wait.seconds=0
+```
+
+Progress is printed about every five seconds while the relay is syncing.
+
 ## Yano-only Mode
 
 In `yano-only` mode, Yano runs as the devnet node. There is no Haskell node handover.

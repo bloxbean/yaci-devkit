@@ -2,6 +2,7 @@ package com.bloxbean.cardano.yacicli.localcluster.yano;
 
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
+import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
@@ -55,6 +56,13 @@ public class YanoService {
     // An integer forces the interval.
     @Value("${yano.backfill.block.interval.slots:auto}")
     private String backfillBlockIntervalSlots = "auto";
+
+    // Whether Yano's past-time-travel backfill runs Praos slot-leader checks (VRF-eligible slots only).
+    // auto: on when a Haskell node will validate the chain and activeSlotsCoeff is below 1, or for local
+    // multi-node devnets. true / false force it. The Haskell relay rejects a dense backfill at f < 1 with
+    // VRFLeaderValueTooBig, so without this the chain never syncs and cost models are never enacted.
+    @Value("${yano.past.time.travel.slot.leader.mode:auto}")
+    private String pastTimeTravelSlotLeaderMode = "auto";
 
     public boolean start(ClusterInfo clusterInfo, Path clusterFolder, boolean pastTimeTravelMode, Consumer<String> writer) {
         logs.clear();
@@ -268,6 +276,36 @@ public class YanoService {
         }
     }
 
+    /**
+     * Decide whether Yano's past-time-travel backfill should run Praos slot-leader checks.
+     * <p>
+     * Default time travel places one block per slot and ignores VRF eligibility. That is fine while only
+     * Yano consumes the chain, but a Haskell node validating it rejects the first header at
+     * activeSlotsCoeff below 1 with {@code VRFLeaderValueTooBig} and never syncs. So in {@code auto} mode
+     * the checks are on when a Haskell node consumes Yano's chain (companion, yano-primary) and
+     * activeSlotsCoeff is below 1, and for local multi-node devnets as before.
+     */
+    boolean slotLeaderTimeTravelEnabled(ClusterInfo clusterInfo) {
+        String mode = pastTimeTravelSlotLeaderMode == null ? "auto" : pastTimeTravelSlotLeaderMode.trim().toLowerCase();
+        switch (mode) {
+            case "true":
+                return true;
+            case "false":
+                return false;
+            case "auto":
+                break;
+            default:
+                log.warn("Unknown yano.past.time.travel.slot.leader.mode '{}', using auto", pastTimeTravelSlotLeaderMode);
+        }
+        if (clusterInfo.isLocalMultiNodeEnabled()) {
+            return true;
+        }
+        boolean haskellNodeValidatesChain = clusterInfo.getNodeMode() == NodeMode.COMPANION
+                || clusterInfo.getNodeMode() == NodeMode.YANO_PRIMARY;
+        double f = clusterInfo.getActiveSlotsCoeff();
+        return haskellNodeValidatesChain && f > 0 && f < 1.0;
+    }
+
     private Process startYanoProcess(ClusterInfo clusterInfo, Path clusterFolder, Path yanoConfigDir,
                                      boolean pastTimeTravelMode, Consumer<String> writer)
             throws IOException, InterruptedException {
@@ -281,8 +319,9 @@ public class YanoService {
 
         // Write application.properties for Yano (persists config on disk for debugging)
         int backfillInterval = backfillBlockIntervalSlots();
+        boolean slotLeaderTimeTravel = pastTimeTravelMode && slotLeaderTimeTravelEnabled(clusterInfo);
         yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir, pastTimeTravelMode,
-                backfillInterval);
+                slotLeaderTimeTravel, backfillInterval);
         if (pastTimeTravelMode)
             writer.accept(info("Yano backfill block interval : %s",
                     backfillInterval == 0 ? "automatic (derived from genesis)" : backfillInterval + " slots"));
@@ -309,8 +348,10 @@ public class YanoService {
 
         if (pastTimeTravelMode) {
             env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_MODE", "true");
-            if (clusterInfo.isLocalMultiNodeEnabled()) {
+            if (slotLeaderTimeTravel) {
                 env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_SLOT_LEADER_MODE", "true");
+                writer.accept(info("Yano past-time-travel uses slot-leader checks (activeSlotsCoeff %s, mode %s)",
+                        clusterInfo.getActiveSlotsCoeff(), pastTimeTravelSlotLeaderMode));
             }
         }
 
