@@ -67,9 +67,9 @@ docker-build:
     ARG APP_VERSION
     ARG REGISTRY_ORG
     ARG COMMIT_ID
-    ARG STORE_NATIVE_BRANCH="release/2.0.1_devkit"
-    ARG YANO_TAG="v0.1.0-pre6"
-    ARG YANO_VERSION="0.1.0-pre6"
+    ARG STORE_NATIVE_BRANCH="v2.0.3"
+    ARG YANO_TAG="v0.1.0-pre17"
+    ARG YANO_VERSION="0.1.0-pre17"
 
     COPY --dir +java-setup/openjdk /opt/java/
     ENV PATH="${JAVA_HOME}/bin:${PATH}"

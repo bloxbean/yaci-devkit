@@ -14,7 +14,7 @@ case "${1:-}" in
         ;;
 esac
 
-VERSION="${2:-0.1.0-pre6}"
+VERSION="${2:-0.1.0-pre17}"
 TAG="${3:-v${VERSION}}"
 
 file="yano-native-${VERSION}-linux-${ARCH}.zip"
