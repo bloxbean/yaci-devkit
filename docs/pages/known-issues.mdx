@@ -6,41 +6,44 @@ This page documents known issues, workarounds, and frequently asked questions ab
 
 ## Known Issues
 
-### PV11 Ogmios/Kupo Docker arm64 Compatibility
+### Ogmios / Kupo Platform Availability
 
-<Callout type="warning">
-**Issue**: PV11-compatible (Cardano node 11.0.1) Ogmios `v6.14.0.2` and Kupo `v2.11.0.1` are currently published by IntersectMBO only as Linux x86_64 binaries.
+<Callout type="info">
+Ogmios `v7.0.0` and Kupo `v2.12.0` are published for Linux (x86_64, arm64) and macOS arm64 only.
 </Callout>
 
 #### Current Behavior
 
-The DevKit Docker image bundles those x86_64 Ogmios/Kupo binaries in both the `linux/amd64` and `linux/arm64` images as a temporary workaround.
-
-- **Linux x86_64 Docker hosts**: Supported.
-- **Apple Silicon Docker Desktop**: Expected to work through Docker Desktop's x86_64 emulation.
-- **Native Linux arm64 Docker hosts**: May fail at runtime unless x86_64 binfmt/qemu emulation is configured on the host.
-- **Native CLI on macOS arm64**: The default PV11 Ogmios/Kupo Linux x86_64 binaries cannot run directly. Use Docker, or set custom `ogmios.url` / `kupo.url` values when compatible native binaries are available.
+- **Docker (linux/amd64 and linux/arm64)**: Fully supported. Both images bundle **native**, statically linked binaries — no emulation required.
+- **Native CLI on Linux (x86_64 and arm64)**: Both supported.
+- **Native CLI on macOS arm64**: Both supported. The macOS builds link only against system libraries and run standalone.
+- **Native CLI on macOS x86_64 / Windows**: Neither component is published. `download -c ogmios` fails fast with an explanatory message instead of attempting a 404 download.
 
 #### Workaround
 
-On native Linux arm64 hosts, run the DevKit Docker image as `linux/amd64` or configure x86_64 emulation. For native CLI installs, use a compatible Ogmios/Kupo build when one becomes available by setting direct URLs in `config/download.properties`.
+On an unsupported platform, use the DevKit Docker image, or set a custom `ogmios.url` / `kupo.url` in `config/download.properties`.
+
+When Ogmios is unavailable, Yaci Store automatically falls back to the embedded `scalus` transaction evaluator, so transaction evaluation keeps working.
 
 ---
 
-### Yaci Store Tx Evaluator Mode (v0.12.0-beta5+)
+### Yaci Store Tx Evaluator Mode
 
 <Callout type="info">
-Starting with Yaci DevKit `v0.12.0-beta5`, Yaci Store uses the `scalus` transaction evaluator by default.
+Yaci Store uses the `ogmios` transaction evaluator by default in the Docker distribution, and falls back to the embedded `scalus` evaluator when Ogmios is unavailable.
 </Callout>
 
-Default Yaci Store transaction evaluation no longer requires Ogmios. If Ogmios is enabled and running when Yaci Store starts, DevKit automatically switches the evaluator mode to `ogmios`.
+DevKit selects the evaluator at devnet start:
 
-This means the temporary PV11 Ogmios/Kupo binary limitations do not block the default Yaci Store transaction evaluation path.
+- If Ogmios is enabled **and** responds on its health endpoint, the mode is `ogmios`.
+- Otherwise DevKit logs a warning and uses `scalus`. No transaction evaluation is lost either way.
+
+To force the Scalus evaluator, set `ogmios_enabled=false` in `config/env` (Docker) or `ogmios.enabled=false` in `config/application.properties` (zip distribution).
 
 Check the active mode in the Yaci CLI startup output:
 
 ```text
-Yaci Store tx evaluator mode: scalus
+Yaci Store tx evaluator mode: ogmios
 ```
 
 ---

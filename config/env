@@ -1,5 +1,7 @@
 yaci_store_enabled=true
-ogmios_enabled=false
+#Ogmios is enabled by default and used as the Yaci Store tx evaluator.
+#Set to false to fall back to the embedded Scalus evaluator.
+ogmios_enabled=true
 kupo_enabled=false
 
 node=node1

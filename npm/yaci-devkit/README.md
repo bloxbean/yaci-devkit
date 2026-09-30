@@ -35,4 +35,6 @@ npm i -g @bloxbean/yaci-devkit
    ```
     - Downloads and starts the Cardano node, Ogmios, and Kupo.
 
+> **Note on platforms**: Ogmios and Kupo are published for Linux (x86_64, arm64) and macOS arm64. On macOS x86_64 and Windows they are unavailable; there Yaci Store falls back to the embedded `scalus` script cost evaluator, or you can use the Docker distribution.
+
 For a full list of Yaci CLI commands, check the Yaci DevKit [documentation](https://devkit.yaci.xyz/commands).

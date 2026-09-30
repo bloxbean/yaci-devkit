@@ -82,12 +82,16 @@
     [
       "StdoutSK",
       "stdout"
+    ],
+    [
+      "FileSK",
+      "node.log"
     ]
   ],
   "hasEKG": 12788,
   "hasPrometheus": [
     "127.0.0.1",
-    12798
+    {{prometheusPort}}
   ],
   "minSeverity": "Info",
   "options": {
@@ -118,6 +122,12 @@
       "scFormat": "ScText",
       "scKind": "StdoutSK",
       "scName": "stdout",
+      "scRotation": null
+    },
+    {
+      "scFormat": "ScText",
+      "scKind": "FileSK",
+      "scName": "node.log",
       "scRotation": null
     }
   ]

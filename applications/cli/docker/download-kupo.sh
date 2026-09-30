@@ -1,21 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# PV11 workaround: IntersectMBO currently publishes the cardano-node 11.0.1
-# compatible Kupo release only as a Linux x86_64 tarball. We bundle it for
-# arm64 Docker images too so Apple Silicon Docker Desktop can run it through
-# emulation. This may fail at runtime on native Linux arm64 hosts without
-# x86_64 binfmt/qemu support. Keep the original CardanoSolutions downloader in
-# download-kupo.sh.original for reverting once upstream publishes the needed
-# assets again.
+# Assign the architecture based on user input and determine the correct suffix
 case "${1:-}" in
     amd64)
         ARCH="x86_64"
         ;;
     arm64)
-        echo "Warning: IntersectMBO Kupo v2.11.0.1 has no Linux arm64 asset."
-        echo "Bundling the Linux x86_64 artifact for arm64 Docker image compatibility on Docker Desktop."
-        ARCH="x86_64"
+        ARCH="aarch64"
         ;;
     *)
         echo "Error: Invalid architecture specified. Use 'amd64' or 'arm64'."
@@ -23,15 +15,17 @@ case "${1:-}" in
         ;;
 esac
 
-version=v2.11.0.1
-file=kupo-${version}-${ARCH}-linux.tar.gz
-url=https://github.com/IntersectMBO/kupo/releases/download/${version}/${file}
+# Kupo release tags are major.minor (v2.12) while the asset carries the full version (v2.12.0)
+version=v2.12.0
+tag=v2.12
+file=kupo-${version}-${ARCH}-linux.zip
+url=https://github.com/CardanoSolutions/kupo/releases/download/${tag}/${file}
 
 wget "${url}"
 
 rm -rf /app/kupo
 mkdir -p /app/kupo
-tar -xzf "${file}" -C /app/kupo
+unzip "${file}" -d /app/kupo
 
 chmod +x /app/kupo/bin/kupo
 

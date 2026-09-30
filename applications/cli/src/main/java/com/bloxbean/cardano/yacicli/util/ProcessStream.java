@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.function.Consumer;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ProcessStream implements Runnable {
     private InputStream inputStream;
     private Consumer<String> consumer;
@@ -22,7 +25,13 @@ public class ProcessStream implements Runnable {
                     if(stop)
                         return;
 
-                    consumer.accept(line);
+                    //A failing consumer must not end the read loop : nothing else drains the pipe, so the
+                    //process would then block or drop its output once the pipe buffer is full
+                    try {
+                        consumer.accept(line);
+                    } catch (RuntimeException e) {
+                        log.warn("Could not process output line: {}", e.getMessage());
+                    }
                 });
     }
 

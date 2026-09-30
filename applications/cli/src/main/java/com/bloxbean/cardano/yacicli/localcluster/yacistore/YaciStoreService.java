@@ -380,7 +380,7 @@ public class YaciStoreService {
         builder.directory(new File(clusterConfig.getYaciStoreBinPath()));
 
         boolean yanoOnly = NodeMode.YANO_ONLY == clusterInfo.getNodeMode();
-        String txEvaluatorMode = resolveTxEvaluatorMode(writer);
+        String txEvaluatorMode = resolveTxEvaluatorMode(clusterInfo, writer);
         builder.environment().put("STORE_SUBMIT_TX_EVALUATOR_MODE", txEvaluatorMode);
         writer.accept(info("Yaci Store tx evaluator mode: " + txEvaluatorMode));
 
@@ -522,15 +522,25 @@ public class YaciStoreService {
         return new StoreStartResult(process, started.get());
     }
 
-    private String resolveTxEvaluatorMode(Consumer<String> writer) {
-        if (appConfig.isOgmiosEnabled() && ogmiosService.isOgmiosRunning())
-            return TX_EVALUATOR_MODE_OGMIOS;
+    private String resolveTxEvaluatorMode(ClusterInfo clusterInfo, Consumer<String> writer) {
+        if (!appConfig.isOgmiosEnabled())
+            return TX_EVALUATOR_MODE_SCALUS;
 
-        if (appConfig.isOgmiosEnabled()) {
+        if (!ogmiosService.isOgmiosRunning()) {
             writer.accept(warn("Ogmios is enabled but not running. Using Scalus tx evaluator for Yaci Store."));
+            return TX_EVALUATOR_MODE_SCALUS;
         }
 
-        return TX_EVALUATOR_MODE_SCALUS;
+        //The mode is baked into the Store process at startup and never re-evaluated, so confirm Ogmios is
+        //actually serving before committing to it. Otherwise a short-lived Ogmios would leave the Store
+        //unable to evaluate any Plutus script for the lifetime of the devnet.
+        if (!ogmiosService.waitForOgmiosReady(clusterInfo.getOgmiosPort(), writer)) {
+            writer.accept(warn("Ogmios is not responding on port " + clusterInfo.getOgmiosPort()
+                    + ". Using Scalus tx evaluator for Yaci Store."));
+            return TX_EVALUATOR_MODE_SCALUS;
+        }
+
+        return TX_EVALUATOR_MODE_OGMIOS;
     }
 
     private Process startViewerApp(String cluster) throws IOException, InterruptedException, ExecutionException, TimeoutException {

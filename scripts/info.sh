@@ -23,7 +23,7 @@ echo "--------------------------------------------"
 echo "Other Urls"
 echo "--------------------------------------------"
 
-echo "Ogmios Url (Optional)         : ws://localhost:${HOST_OGMIOS_PORT}"
+echo "Ogmios Url                    : ws://localhost:${HOST_OGMIOS_PORT}"
 echo "Kupo Url   (Optional)         : http://localhost:${HOST_KUPO_PORT}"
 
 echo ""

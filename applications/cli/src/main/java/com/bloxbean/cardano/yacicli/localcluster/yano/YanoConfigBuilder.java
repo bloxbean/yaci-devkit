@@ -34,13 +34,15 @@ public class YanoConfigBuilder {
      * @param clusterInfo   cluster configuration
      * @param yanoConfigDir resolved path to Yano's devnet config (genesis files, keys)
      * @param yanoDataDir   resolved path for Yano's chainstate storage
+     * @param yanoHistoryDir resolved path for Yano's history archive
      * @param pastTimeTravelMode whether past-time-travel mode is enabled
      * @param slotLeaderTimeTravel whether the past-time-travel backfill runs Praos slot-leader checks
      *                             (see {@link YanoService#slotLeaderTimeTravelEnabled(ClusterInfo)})
+     * @param backfillBlockIntervalSlots slots between blocks in the past-time-travel backfill; 0 = automatic
      * @return true if config was written successfully
      */
-    public boolean build(ClusterInfo clusterInfo, Path yanoConfigDir, Path yanoDataDir,
-                         boolean pastTimeTravelMode, boolean slotLeaderTimeTravel) {
+    public boolean build(ClusterInfo clusterInfo, Path yanoConfigDir, Path yanoDataDir, Path yanoHistoryDir,
+                         boolean pastTimeTravelMode, boolean slotLeaderTimeTravel, int backfillBlockIntervalSlots) {
         Map<String, String> props = new LinkedHashMap<>();
 
         // Quarkus profile
@@ -66,12 +68,26 @@ public class YanoConfigBuilder {
         // Storage — inside the node folder so it gets cleaned up with create-node -o
         props.put("yano.storage.path", yanoDataDir.toAbsolutePath().toString());
 
+        // History archive — Yano's bundled devnet profile enables the DuckLake projection
+        // archive by default. DevKit reads nothing from Yano's history api, so it's turned off
+        // here. The dir is pinned inside the node folder anyway: it defaults to ./history,
+        // relative to the working directory, which is the shared yanoHome — an archive written
+        // there outlives create-node -o and then fails the startup identity/coverage guards.
+        props.put("yano.history.projection.enabled", "false");
+        props.put("yano.history.dir", yanoHistoryDir.toAbsolutePath().toString());
+
         // Past-time-travel mode
         if (pastTimeTravelMode) {
             props.put("yano.block-producer.past-time-travel-mode", "true");
             if (slotLeaderTimeTravel) {
                 props.put("yano.block-producer.past-time-travel-slot-leader-mode", "true");
             }
+
+            //Spacing for the catch-up from the shifted genesis to wall clock. 0 = automatic : Yano derives
+            //the widest spacing that still fits inside the forecast window a Haskell relay can validate,
+            //and keeps the epoch-boundary blocks needed for nonces. 1 is one block per slot (Yano's default),
+            //which makes create time grow with epoch length.
+            props.put("yano.block-producer.backfill-block-interval-slots", String.valueOf(backfillBlockIntervalSlots));
         }
 
         // Write to {yanoHome}/config/application.properties

@@ -68,7 +68,8 @@ public class ProcessUtil {
         Process process = builder.start();
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
-                    logs.add(String.format("[%s] " + line, processName));
+                    //The line is data, not a format string : node output such as "Progress: 95.65%" would throw
+                    logs.add("[" + processName + "] " + line);
                 });
 
         ProcessStream errorStream =
