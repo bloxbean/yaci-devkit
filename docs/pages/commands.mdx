@@ -36,6 +36,22 @@ reset
 If the devnet gets stuck or you simply want to reset the data and restart with the same configuration, simply use the command "reset".
 It will restore your devnet to its initial state, allowing you to continue your development seamlessly.
 
+### catch-up
+
+Catch the devnet up to wall clock after the machine slept or the devnet was paused for longer than its stability
+window. The chain is kept (contracts, wallets, stake), and every epoch that passed is processed. Companion and
+yano-only devnets only.
+
+- **Usage:**
+```bash
+catch-up [--force]
+```
+- **Options:**
+  - `--force`: catch up even when the chain is not stalled.
+
+DevKit already does this on `start` and while the devnet runs, unless `devnet.auto.catch.up=false`. See
+[Resuming After a Long Pause](./yano-node-modes#resuming-after-a-long-pause).
+
 ### stop
 
 Stop the local devnet.

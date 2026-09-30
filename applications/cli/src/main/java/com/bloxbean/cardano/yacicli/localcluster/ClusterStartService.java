@@ -2,6 +2,9 @@ package com.bloxbean.cardano.yacicli.localcluster;
 
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.ChainLag;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.DevnetCatchUpService;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.NodeControl;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.GenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
@@ -56,9 +59,13 @@ public class ClusterStartService {
     private final YanoService yanoService;
     private final YanoBootstrapService yanoBootstrapService;
     private final YanoTimeTravelBootstrap yanoTimeTravelBootstrap;
+    private final DevnetCatchUpService devnetCatchUpService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
-    private List<Process> processes = new ArrayList<>();
+    // Copy-on-write: a catch-up (watchdog thread) replaces the node process while other threads iterate the list
+    private List<Process> processes = new CopyOnWriteArrayList<>();
+    // The Haskell node process (the `sh node.sh` wrapper), replaced when a catch-up restarts the node
+    private volatile Process haskellNodeProcess;
 
     private Queue<String> logs = EvictingQueue.create(200);
     private Queue<String> submitApiLogs = EvictingQueue.create(100);
@@ -106,8 +113,9 @@ public class ClusterStartService {
                         return new RunStatus(false, firstRun);
                     }
                 } else {
-                    // Restart: resume the existing chain at wall-clock; no shift/bootstrap.
-                    boolean yanoStarted = yanoService.start(clusterInfo, clusterFolder, false, writer);
+                    // Restart: resume the existing chain. With auto catch-up, whatever time has passed is
+                    // backfilled first, so the live producer does not jump over the skipped epochs.
+                    boolean yanoStarted = devnetCatchUpService.startYanoOnly(clusterInfo, clusterFolder, writer);
                     if (!yanoStarted) {
                         writer.accept(error("Failed to start Yano."));
                         return new RunStatus(false, firstRun);
@@ -209,6 +217,11 @@ public class ClusterStartService {
                 }
             }
 
+            // Companion restart after a pause longer than the stability window: the producer cannot forge until
+            // the chain is caught up to wall clock
+            if (companionMode && !firstRun)
+                catchUpOnRestart(clusterInfo, clusterFolder, writer);
+
             Process submitApiProcess = startSubmitApi(clusterInfo, clusterFolder, writer);
             if (submitApiProcess == null) {
                 writer.accept(error("Submit API process could not be started."));
@@ -269,25 +282,27 @@ public class ClusterStartService {
 
     public void stopCluster(Consumer<String> writer) {
         try {
+            if (devnetCatchUpService.isInProgress()) {
+                writer.accept(info("Waiting for the running catch-up to finish before stopping ..."));
+                if (!devnetCatchUpService.awaitIdle(java.time.Duration.ofMinutes(3)))
+                    writer.accept(warn("The catch-up is still running; stopping anyway"));
+            }
             if (processes != null && processes.size() > 0)
                 writer.accept(info("Trying to stop the running cluster ..."));
 
             boolean error = false;
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
-                    process.descendants().forEach(processHandle -> {
-                        writer.accept(infoLabel("Process", String.valueOf(processHandle.pid())));
-                        processHandle.destroyForcibly();
-                    });
-                    process.destroy();
+                    process.descendants().forEach(processHandle ->
+                            writer.accept(infoLabel("Process", String.valueOf(processHandle.pid()))));
                     writer.accept(info("Stopping node process : " + process));
-                    process.waitFor(15, TimeUnit.SECONDS);
-                    if (!process.isAlive())
+                    if (stopProcessTree(process))
                         writer.accept(success("Killed : " + process));
                     else
                         writer.accept(error("Process could not be killed : " + process));
                 }
             }
+            haskellNodeProcess = null;
 
             if (!error) {
                 //clean pid files
@@ -365,6 +380,7 @@ public class ClusterStartService {
         writer.accept(success("Starting node from directory : " + nodeStartDir.getAbsolutePath()));
         Process process = processUtil.startLongRunningProcess(NODE_PROCESS_NAME, builder, logs, writer);
         if (process == null) return null;
+        haskellNodeProcess = process;
 
         Path nodeSocketPath = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock");
         int counter = 0;
@@ -376,6 +392,137 @@ public class ClusterStartService {
         }
 
         return process;
+    }
+
+    /**
+     * Stop a process and its children, gracefully first. The node runs as a child of {@code sh node.sh}, so the
+     * signal has to reach it directly: SIGTERM lets cardano-node close its ChainDB (0.1 s), while a forced kill
+     * leaves it unclean and the next start revalidates every chunk, which grows with chain length.
+     *
+     * @return true if the process tree is gone
+     */
+    static boolean stopProcessTree(Process process) throws InterruptedException {
+        List<ProcessHandle> children = process.descendants().toList();
+        children.forEach(ProcessHandle::destroy);
+        process.destroy();
+
+        long deadline = System.currentTimeMillis() + 15_000;
+        for (ProcessHandle child : children) {
+            while (child.isAlive() && System.currentTimeMillis() < deadline)
+                Thread.sleep(100);
+            if (child.isAlive())
+                child.destroyForcibly();
+        }
+        if (!process.waitFor(Math.max(1, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS)) {
+            process.destroyForcibly();
+            process.waitFor(5, TimeUnit.SECONDS);
+        }
+        return !process.isAlive() && children.stream().noneMatch(ProcessHandle::isAlive);
+    }
+
+    /** The Haskell node of this devnet, as a {@link NodeControl} a catch-up can restart as relay or producer. */
+    private NodeControl nodeControl(ClusterInfo clusterInfo, Path clusterFolder) {
+        return new NodeControl() {
+            @Override
+            public boolean stopNode(Consumer<String> writer) {
+                Process process = haskellNodeProcess;
+                try {
+                    if (process != null && process.isAlive() && !stopProcessTree(process)) {
+                        writer.accept(error("Could not stop the Haskell node"));
+                        return false;
+                    }
+                    if (process != null)
+                        processes.remove(process);
+                    haskellNodeProcess = null;
+                    Files.deleteIfExists(clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock"));
+                    return true;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                } catch (IOException e) {
+                    writer.accept(error("Could not remove the node socket: " + e.getMessage()));
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean startNode(boolean asRelay, Consumer<String> writer) {
+                try {
+                    Process process = ClusterStartService.this.startNode(clusterFolder, clusterInfo, asRelay, writer);
+                    if (process == null)
+                        return false;
+                    processes.add(process);
+                    return true;
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                } catch (IOException | ExecutionException | TimeoutException e) {
+                    writer.accept(error("Could not start the Haskell node: " + e.getMessage()));
+                    return false;
+                }
+            }
+        };
+    }
+
+    /** On a companion restart, catch up (or tell the user how to) when the chain is too far behind wall clock. */
+    private void catchUpOnRestart(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer)
+            throws InterruptedException {
+        if (devnetCatchUpService.unsupportedReason(clusterInfo).isPresent())
+            return;
+        // The socket can exist before the node answers queries, so give it a moment
+        ChainLag lag = devnetCatchUpService.probeLagAfterStart(clusterInfo, java.time.Duration.ofSeconds(30));
+        if (lag == null) {
+            writer.accept(warn("Could not read the chain tip to check whether the devnet needs a catch-up"));
+            return;
+        }
+        if (!lag.needsCatchUpOnStart())
+            return;
+
+        if (!devnetCatchUpService.isAutoCatchUp()) {
+            writer.accept(warn("The chain is %s behind wall clock, past the stability window; the node cannot forge. "
+                    + "Run 'catch-up' to bring it to wall clock.", lag.idleTimeText()));
+            return;
+        }
+        var result = devnetCatchUpService.catchUpCompanion(clusterInfo, clusterFolder,
+                nodeControl(clusterInfo, clusterFolder), lag, writer);
+        if (!result.success())
+            writer.accept(error(result.message()));
+    }
+
+    /**
+     * Catch a running devnet up to wall clock (the {@code catch-up} command, the admin API and the stall watchdog).
+     *
+     * @param force catch up even when the chain is not stalled
+     */
+    public DevnetCatchUpService.Result catchUp(ClusterInfo clusterInfo, Path clusterFolder, boolean force,
+                                               Consumer<String> writer) {
+        if (!isClusterRunning())
+            return new DevnetCatchUpService.Result(false,
+                    "The devnet is not running. 'start' catches it up automatically.", -1, -1, 0, 0);
+
+        var unsupported = devnetCatchUpService.unsupportedReason(clusterInfo);
+        if (unsupported.isPresent())
+            return new DevnetCatchUpService.Result(false, "Cannot catch up: " + unsupported.get(), -1, -1, 0, 0);
+
+        ChainLag lag = devnetCatchUpService.probeLag(clusterInfo);
+        if (lag == null)
+            return new DevnetCatchUpService.Result(false, "Could not read the chain tip", -1, -1, 0, 0);
+        if (!force && !lag.stalled())
+            return new DevnetCatchUpService.Result(true, String.format(
+                    "The chain is live: the tip is %,d slots behind wall clock (stability window %,d slots). Nothing to catch up.",
+                    lag.lagSlots(), lag.forecastWindowSlots()), lag.tipSlot(), lag.tipSlot(), 0, 0);
+
+        if (clusterInfo.getNodeMode() == NodeMode.YANO_ONLY) {
+            // Yano forges as soon as it runs, so a stalled yano-only chain means Yano stopped; restart it
+            yanoService.stop();
+            boolean started = devnetCatchUpService.startYanoOnly(clusterInfo, clusterFolder, writer);
+            ChainLag after = devnetCatchUpService.probeLag(clusterInfo);
+            return new DevnetCatchUpService.Result(started, started ? "Yano restarted at wall clock" : "Failed to start Yano",
+                    lag.tipSlot(), after != null ? after.tipSlot() : -1, 0, 0);
+        }
+
+        return devnetCatchUpService.catchUpCompanion(clusterInfo, clusterFolder, nodeControl(clusterInfo, clusterFolder),
+                lag, writer);
     }
 
     private Process startSubmitApi(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {

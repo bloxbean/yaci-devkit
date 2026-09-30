@@ -278,6 +278,23 @@ public class ClusterCommands {
 
     }
 
+    @ShellMethod(value = "Catch the devnet up to wall clock after the machine slept or the devnet was paused longer than "
+            + "the stability window. Runs automatically on start and while the devnet runs (devnet.auto.catch.up).", key = "catch-up")
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void catchUp(@ShellOption(value = {"--force"}, defaultValue = "false",
+            help = "Catch up even when the chain is not stalled") boolean force) {
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        try {
+            var result = localClusterService.catchUp(clusterName, force, msg -> writeLn(msg));
+            if (!result.success())
+                writeLn(error(result.message()));
+            else if (result.blocksProduced() == 0)
+                writeLn(info(result.message()));
+        } catch (IOException e) {
+            writeLn(error("Catch-up failed: " + e.getMessage()));
+        }
+    }
+
     @ShellMethod(value = "Stop the running local devnet", key = "stop")
     @ShellMethodAvailability("localClusterCmdAvailability")
     public void stopLocalCluster() {

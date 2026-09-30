@@ -156,6 +156,47 @@ class RelaySyncWaiterTest {
     }
 
     @Test
+    void awaitSlotReturnsSyncedOnceTheTipReachesTheSlot() throws Exception {
+        FakeTime time = new FakeTime();
+        RelaySyncWaiter waiter = new RelaySyncWaiter(30_000, 0, time::read, time::sleep);
+
+        RelaySyncWaiter.Outcome outcome = waiter.awaitSlot(1250, EPOCH_LENGTH, "Yano sync",
+                script(List.of(tip(5, 1100), tip(8, 1249), tip(9, 1250))), msg -> {});
+
+        assertThat(outcome.synced()).isTrue();
+        assertThat(outcome.slot()).isEqualTo(1250);
+        assertThat(outcome.epoch()).isEqualTo(2);
+    }
+
+    @Test
+    void awaitSlotReportsProgressWithItsLabel() throws Exception {
+        FakeTime time = new FakeTime();
+        RelaySyncWaiter waiter = new RelaySyncWaiter(30_000, 0, time::read, time::sleep);
+        List<Tuple<Long, Point>> tips = new ArrayList<>();
+        for (long i = 1; i <= 10; i++) {
+            tips.add(tip(i * 10, i * 10));
+        }
+        List<String> progress = new ArrayList<>();
+
+        waiter.awaitSlot(100, EPOCH_LENGTH, "Haskell sync", script(tips), progress::add);
+
+        assertThat(progress).isNotEmpty();
+        assertThat(progress.get(0)).startsWith("Haskell sync in progress: slot").contains("of 100");
+    }
+
+    @Test
+    void awaitSlotGivesUpWhenTheTipStalls() throws Exception {
+        FakeTime time = new FakeTime();
+        RelaySyncWaiter waiter = new RelaySyncWaiter(30_000, 0, time::read, time::sleep);
+
+        RelaySyncWaiter.Outcome outcome = waiter.awaitSlot(5000, EPOCH_LENGTH, "Yano sync",
+                () -> tip(40, 400), msg -> {});
+
+        assertThat(outcome.synced()).isFalse();
+        assertThat(outcome.reason()).contains("did not advance for 30s").contains("slot 400");
+    }
+
+    @Test
     void unusableStallTimeoutFallsBackToTheDefault() {
         assertThat(RelaySyncWaiter.stallTimeoutSeconds(45)).isEqualTo(45);
         assertThat(RelaySyncWaiter.stallTimeoutSeconds(0)).isEqualTo(RelaySyncWaiter.DEFAULT_STALL_TIMEOUT_SECONDS);

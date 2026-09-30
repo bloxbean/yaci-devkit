@@ -4,6 +4,9 @@ import com.bloxbean.cardano.yacicli.localcluster.ClusterCommands;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.ClusterService;
+import com.bloxbean.cardano.yacicli.localcluster.api.model.ChainLagResponse;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.ChainLag;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.DevnetCatchUpService;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
@@ -175,6 +178,26 @@ public class ClusterAdminController {
         clusterCommands.resetLocalCluster();
 
         return "done";
+    }
+
+    @Operation(summary = "How far the devnet's chain tip is behind wall clock. A Haskell block producer cannot forge "
+            + "once the lag reaches the forecast window (stalled = true); POST /devnet/catch-up fixes that.")
+    @GetMapping("/devnet/chain-lag")
+    public ResponseEntity<ChainLagResponse> getChainLag() throws IOException {
+        ChainLag lag = clusterService.chainLag(DEFAULT_CLUSTER_NAME);
+        if (lag == null)
+            return ResponseEntity.status(503).build();
+        return ResponseEntity.ok(ChainLagResponse.of(lag));
+    }
+
+    @Operation(summary = "Catch the devnet up to wall clock after the machine slept or the devnet was paused longer "
+            + "than the stability window. Keeps the chain (contracts, wallets, stake); skipped epochs are processed.")
+    @PostMapping("/devnet/catch-up")
+    public ResponseEntity<DevnetCatchUpService.Result> catchUp(
+            @RequestParam(value = "force", defaultValue = "false") boolean force) throws IOException {
+        CommandContext.INSTANCE.setProperty("cluster_name", DEFAULT_CLUSTER_NAME);
+        var result = clusterService.catchUp(DEFAULT_CLUSTER_NAME, force, msg -> log.info(msg));
+        return result.success() ? ResponseEntity.ok(result) : ResponseEntity.status(409).body(result);
     }
 
     @Operation(summary = "Retrieve the current KES period")

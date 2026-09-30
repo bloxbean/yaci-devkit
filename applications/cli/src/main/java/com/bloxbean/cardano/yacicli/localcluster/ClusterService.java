@@ -3,6 +3,8 @@ package com.bloxbean.cardano.yacicli.localcluster;
 import com.bloxbean.cardano.yaci.core.protocol.localstate.api.Era;
 import com.bloxbean.cardano.yaci.core.util.OSUtil;
 import com.bloxbean.cardano.yacicli.common.CommandContext;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.ChainLag;
+import com.bloxbean.cardano.yacicli.localcluster.catchup.DevnetCatchUpService;
 import com.bloxbean.cardano.yacicli.localcluster.config.CustomGenesisConfig;
 import com.bloxbean.cardano.yacicli.localcluster.model.RunStatus;
 import com.bloxbean.cardano.yacicli.localcluster.config.ApplicationConfig;
@@ -93,6 +95,9 @@ public class ClusterService {
     @Autowired
     private LocalPeerService localPeerService;
 
+    @Autowired
+    private DevnetCatchUpService devnetCatchUpService;
+
     public ClusterService(ClusterConfig config,
                           ClusterStartService clusterStartService,
                           BlockStreamerService blockStreamerService,
@@ -134,6 +139,30 @@ public class ClusterService {
         String clusterName = CommandContext.INSTANCE.getProperty(CLUSTER_NAME);
         clusterStartService.stopCluster(writer);
         publisher.publishEvent(new ClusterStopped(clusterName));
+    }
+
+    /**
+     * How far the running devnet's tip is behind wall clock.
+     *
+     * @return the lag, or null when the devnet is not running or its tip cannot be read
+     */
+    public ChainLag chainLag(String clusterName) throws IOException {
+        if (!clusterStartService.isClusterRunning())
+            return null;
+        ClusterInfo clusterInfo = getClusterInfo(clusterName);
+        return clusterInfo != null ? devnetCatchUpService.probeLag(clusterInfo) : null;
+    }
+
+    /**
+     * Catch the running devnet up to wall clock (see ADR-0017).
+     *
+     * @param force catch up even when the chain is not stalled
+     */
+    public DevnetCatchUpService.Result catchUp(String clusterName, boolean force, Consumer<String> writer) throws IOException {
+        ClusterInfo clusterInfo = getClusterInfo(clusterName);
+        if (clusterInfo == null)
+            return new DevnetCatchUpService.Result(false, "Devnet not found: " + clusterName, -1, -1, 0, 0);
+        return clusterStartService.catchUp(clusterInfo, getClusterFolder(clusterName), force, writer);
     }
 
     public void stopClusterNode(Consumer<String> writer) {

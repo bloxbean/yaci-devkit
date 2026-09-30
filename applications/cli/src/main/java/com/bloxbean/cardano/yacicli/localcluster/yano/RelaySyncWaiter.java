@@ -4,6 +4,7 @@ import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
 import com.bloxbean.cardano.yacicli.common.Tuple;
 
 import java.util.function.Consumer;
+import java.util.function.LongPredicate;
 import java.util.function.LongSupplier;
 
 /**
@@ -15,7 +16,7 @@ import java.util.function.LongSupplier;
  * on long epochs: Yano was stopped, and the producer restarted with a tip already outside its own
  * forecast horizon, so the chain was frozen from its first minute.
  */
-final class RelaySyncWaiter {
+public final class RelaySyncWaiter {
     static final long POLL_INTERVAL_MS = 1_000L;
     static final long PROGRESS_REPORT_INTERVAL_MS = 5_000L;
     static final long DEFAULT_STALL_TIMEOUT_SECONDS = 30;
@@ -23,17 +24,17 @@ final class RelaySyncWaiter {
     private static final long MAX_SECONDS = Long.MAX_VALUE / 1000;
 
     /** Stall timeout to use for a configured value: a positive value as given, anything else the default. */
-    static long stallTimeoutSeconds(long configured) {
+    public static long stallTimeoutSeconds(long configured) {
         return configured > 0 ? Math.min(configured, MAX_SECONDS) : DEFAULT_STALL_TIMEOUT_SECONDS;
     }
 
     /** Overall ceiling to use for a configured value: zero (no ceiling) or a positive value as given, negative is none. */
-    static long maxWaitSeconds(long configured) {
+    public static long maxWaitSeconds(long configured) {
         return Math.min(Math.max(0, configured), MAX_SECONDS);
     }
 
     /** Reads the relay's tip: block height and point. Returns {@code null} when the relay is not reachable yet. */
-    interface TipReader {
+    public interface TipReader {
         Tuple<Long, Point> readTip();
     }
 
@@ -51,7 +52,7 @@ final class RelaySyncWaiter {
      * @param height block height of the last tip seen, or -1
      * @param reason why the wait ended when {@code synced} is false; {@code null} otherwise
      */
-    record Outcome(boolean synced, long epoch, long slot, long height, String reason) {
+    public record Outcome(boolean synced, long epoch, long slot, long height, String reason) {
     }
 
     private final long stallTimeoutMs;
@@ -59,7 +60,7 @@ final class RelaySyncWaiter {
     private final LongSupplier clock;
     private final Sleeper sleeper;
 
-    RelaySyncWaiter(long stallTimeoutMs, long maxWaitMs) {
+    public RelaySyncWaiter(long stallTimeoutMs, long maxWaitMs) {
         this(stallTimeoutMs, maxWaitMs, System::currentTimeMillis, Thread::sleep);
     }
 
@@ -84,12 +85,43 @@ final class RelaySyncWaiter {
      * @param tipReader   reads the relay's current tip
      * @param progress    receives a progress line about every {@link #PROGRESS_REPORT_INTERVAL_MS}
      */
-    Outcome await(long targetEpoch, long epochLength, TipReader tipReader, Consumer<String> progress)
+    public Outcome await(long targetEpoch, long epochLength, TipReader tipReader, Consumer<String> progress)
             throws InterruptedException {
         if (epochLength <= 0) {
             return new Outcome(false, -1, -1, -1, "epoch length is not known");
         }
 
+        return awaitTip(slot -> slot / epochLength >= targetEpoch, epochLength,
+                (slot, height, blocksPerSecond) -> String.format(
+                        "Relay sync in progress: epoch %d of %d, slot %d, height %d (%d blocks/s)",
+                        slot / epochLength, targetEpoch, slot, height, blocksPerSecond),
+                tipReader, progress);
+    }
+
+    /**
+     * Poll a tip until it reaches {@code targetSlot}, the tip stalls, or the ceiling is hit.
+     *
+     * @param targetSlot  slot the tip must reach
+     * @param epochLength slots per epoch, only used for the epoch reported in the outcome
+     * @param label       what is syncing, for the progress lines (e.g. "Yano sync")
+     * @param tipReader   reads the current tip
+     * @param progress    receives a progress line about every {@link #PROGRESS_REPORT_INTERVAL_MS}
+     */
+    public Outcome awaitSlot(long targetSlot, long epochLength, String label, TipReader tipReader,
+                             Consumer<String> progress) throws InterruptedException {
+        return awaitTip(slot -> slot >= targetSlot, Math.max(1, epochLength),
+                (slot, height, blocksPerSecond) -> String.format(
+                        "%s in progress: slot %d of %d, height %d (%d blocks/s)",
+                        label, slot, targetSlot, height, blocksPerSecond),
+                tipReader, progress);
+    }
+
+    private interface ProgressLine {
+        String format(long slot, long height, long blocksPerSecond);
+    }
+
+    private Outcome awaitTip(LongPredicate reached, long epochLength, ProgressLine progressLine, TipReader tipReader,
+                             Consumer<String> progress) throws InterruptedException {
         final long startedAt = clock.getAsLong();
         long lastProgressAt = startedAt;
         long lastReportAt = startedAt;
@@ -118,7 +150,7 @@ final class RelaySyncWaiter {
                     lastReportAt = now;
                 }
 
-                if (epoch >= targetEpoch) {
+                if (reached.test(slot)) {
                     return new Outcome(true, epoch, slot, height, null);
                 }
 
@@ -126,9 +158,7 @@ final class RelaySyncWaiter {
                     long elapsedMs = Math.max(1, now - lastReportAt);
                     long blocksSinceReport = lastReportHeight >= 0 && height >= 0 ? height - lastReportHeight : 0;
                     long blocksPerSecond = blocksSinceReport * 1000 / elapsedMs;
-                    progress.accept(String.format(
-                            "Relay sync in progress: epoch %d of %d, slot %d, height %d (%d blocks/s)",
-                            epoch, targetEpoch, slot, height, blocksPerSecond));
+                    progress.accept(progressLine.format(slot, height, blocksPerSecond));
                     lastReportAt = now;
                     lastReportHeight = height;
                 }
@@ -138,7 +168,7 @@ final class RelaySyncWaiter {
             if (sinceProgress >= stallTimeoutMs) {
                 String where = slot >= 0 ? " at slot " + slot + " (epoch " + epoch + ")" : " before any tip was read";
                 return new Outcome(false, epoch, slot, height,
-                        "relay tip did not advance for " + (sinceProgress / 1000) + "s" + where);
+                        "tip did not advance for " + (sinceProgress / 1000) + "s" + where);
             }
             if (maxWaitMs > 0 && now - startedAt >= maxWaitMs) {
                 return new Outcome(false, epoch, slot, height,

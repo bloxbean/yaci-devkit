@@ -333,7 +333,7 @@ public class YanoCompanionService {
     /**
      * Restore the original topology.json (before Yano peering was added).
      */
-    private void restoreOriginalTopology(Path clusterFolder, Consumer<String> writer) {
+    public void restoreOriginalTopology(Path clusterFolder, Consumer<String> writer) {
         try {
             Path topologyPath = clusterFolder.resolve("node").resolve("topology.json");
             Path topologyBackup = clusterFolder.resolve("node").resolve(TOPOLOGY_BEFORE_YANO);

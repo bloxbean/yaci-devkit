@@ -5,6 +5,7 @@ import com.bloxbean.cardano.yacicli.localcluster.ClusterInfo;
 import com.bloxbean.cardano.yacicli.localcluster.NodeMode;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterDeleted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
+import com.bloxbean.cardano.yacicli.util.ConsoleWriter;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
@@ -28,6 +29,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,7 +66,17 @@ public class YanoService {
     @Value("${yano.past.time.travel.slot.leader.mode:auto}")
     private String pastTimeTravelSlotLeaderMode = "auto";
 
+    @Value("${yano.version:}")
+    private String requiredYanoVersion = "";
+
+    private final AtomicBoolean versionChecked = new AtomicBoolean(false);
+
     public boolean start(ClusterInfo clusterInfo, Path clusterFolder, boolean pastTimeTravelMode, Consumer<String> writer) {
+        return start(clusterInfo, clusterFolder, pastTimeTravelMode ? YanoRunMode.PAST_TIME_TRAVEL : YanoRunMode.LIVE,
+                writer);
+    }
+
+    public boolean start(ClusterInfo clusterInfo, Path clusterFolder, YanoRunMode runMode, Consumer<String> writer) {
         logs.clear();
 
         Path yanoBin = Path.of(clusterConfig.getYanoHome(), "yano");
@@ -73,6 +85,9 @@ public class YanoService {
             writer.accept(error("Please run 'download --component yano' first"));
             return false;
         }
+
+        if (versionChecked.compareAndSet(false, true))
+            warnIfNotRequiredVersion(writer);
 
         if (!PortUtil.isPortAvailable(clusterInfo.getYanoServerPort())) {
             writer.accept(error("Yano n2n port " + clusterInfo.getYanoServerPort() + " is not available"));
@@ -88,7 +103,7 @@ public class YanoService {
             Path yanoConfigDir = prepareYanoConfig(clusterInfo, clusterFolder, writer);
             if (yanoConfigDir == null) return false;
 
-            Process process = startYanoProcess(clusterInfo, clusterFolder, yanoConfigDir, pastTimeTravelMode, writer);
+            Process process = startYanoProcess(clusterInfo, clusterFolder, yanoConfigDir, runMode, writer);
             if (process != null) {
                 processes.add(process);
                 return true;
@@ -306,8 +321,42 @@ public class YanoService {
         return haskellNodeValidatesChain && f > 0 && f < 1.0;
     }
 
+    /**
+     * Warn when the installed Yano is not the version this DevKit pins. {@code download} keeps an existing Yano
+     * binary, so a DevKit upgrade does not upgrade Yano, and older releases lack features DevKit relies on
+     * (sparse backfill, catch-up).
+     */
+    void warnIfNotRequiredVersion(Consumer<String> writer) {
+        String installed = installedVersion(Path.of(clusterConfig.getYanoHome()));
+        String required = requiredYanoVersion == null ? "" : requiredYanoVersion.trim();
+        if (required.isEmpty() || required.equals(installed))
+            return;
+
+        writer.accept(warn("Installed Yano is %s, this DevKit expects %s. Run 'download -c yano --overwrite' to update it.",
+                installed == null ? "an older release" : installed, required));
+    }
+
+    /** Version from Yano's yano-distribution-v1.json, or null when the file is missing (releases before pre15). */
+    static String installedVersion(Path yanoHome) {
+        Path distribution = yanoHome.resolve("yano-distribution-v1.json");
+        if (!Files.exists(distribution))
+            return null;
+        try {
+            JsonNode version = new ObjectMapper().readTree(distribution.toFile()).get("version");
+            return version != null && version.isTextual() ? version.asText() : null;
+        } catch (IOException e) {
+            log.debug("Could not read {}: {}", distribution, e.getMessage());
+            return null;
+        }
+    }
+
+    /** Quarkus environment variable for a property: {@code yano.block-producer.enabled} -> {@code YANO_BLOCK_PRODUCER_ENABLED}. */
+    static String envName(String property) {
+        return property.replaceAll("[^A-Za-z0-9]", "_").toUpperCase();
+    }
+
     private Process startYanoProcess(ClusterInfo clusterInfo, Path clusterFolder, Path yanoConfigDir,
-                                     boolean pastTimeTravelMode, Consumer<String> writer)
+                                     YanoRunMode runMode, Consumer<String> writer)
             throws IOException, InterruptedException {
 
         Path yanoBin = Path.of(clusterConfig.getYanoHome(), "yano");
@@ -319,12 +368,16 @@ public class YanoService {
 
         // Write application.properties for Yano (persists config on disk for debugging)
         int backfillInterval = backfillBlockIntervalSlots();
-        boolean slotLeaderTimeTravel = pastTimeTravelMode && slotLeaderTimeTravelEnabled(clusterInfo);
-        yanoConfigBuilder.build(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir, pastTimeTravelMode,
-                slotLeaderTimeTravel, backfillInterval);
-        if (pastTimeTravelMode)
+        boolean slotLeaderTimeTravel = runMode == YanoRunMode.PAST_TIME_TRAVEL && slotLeaderTimeTravelEnabled(clusterInfo);
+        Map<String, String> props = yanoConfigBuilder.properties(clusterInfo, yanoConfigDir, yanoDataDir, yanoHistoryDir,
+                runMode, slotLeaderTimeTravel, backfillInterval);
+        yanoConfigBuilder.write(props);
+        if (runMode == YanoRunMode.PAST_TIME_TRAVEL)
             writer.accept(info("Yano backfill block interval : %s",
                     backfillInterval == 0 ? "automatic (derived from genesis)" : backfillInterval + " slots"));
+        if (slotLeaderTimeTravel)
+            writer.accept(info("Yano past-time-travel uses slot-leader checks (activeSlotsCoeff %s, mode %s)",
+                    clusterInfo.getActiveSlotsCoeff(), pastTimeTravelSlotLeaderMode));
 
         ProcessBuilder builder = new ProcessBuilder();
         builder.directory(new File(clusterConfig.getYanoHome()));
@@ -332,28 +385,7 @@ public class YanoService {
         // Env vars override the properties file (Quarkus priority: env > config file)
         // Keep them for runtime guarantee with native binaries
         var env = builder.environment();
-        env.put("QUARKUS_PROFILE", "devnet");
-        env.put("YANO_REMOTE_PROTOCOL_MAGIC", String.valueOf(clusterInfo.getProtocolMagic()));
-        env.put("YANO_SERVER_PORT", String.valueOf(clusterInfo.getYanoServerPort()));
-        env.put("QUARKUS_HTTP_PORT", String.valueOf(clusterInfo.getYanoHttpPort()));
-        env.put("YANO_GENESIS_SHELLEY_GENESIS_FILE", yanoConfigDir.resolve("shelley-genesis.json").toAbsolutePath().toString());
-        env.put("YANO_GENESIS_BYRON_GENESIS_FILE", yanoConfigDir.resolve("byron-genesis.json").toAbsolutePath().toString());
-        env.put("YANO_GENESIS_ALONZO_GENESIS_FILE", yanoConfigDir.resolve("alonzo-genesis.json").toAbsolutePath().toString());
-        env.put("YANO_GENESIS_CONWAY_GENESIS_FILE", yanoConfigDir.resolve("conway-genesis.json").toAbsolutePath().toString());
-        env.put("YANO_GENESIS_PROTOCOL_PARAMETERS_FILE", yanoConfigDir.resolve("protocol-param.json").toAbsolutePath().toString());
-        env.put("YANO_BLOCK_PRODUCER_VRF_SKEY_FILE", yanoConfigDir.resolve("vrf.skey").toAbsolutePath().toString());
-        env.put("YANO_BLOCK_PRODUCER_KES_SKEY_FILE", yanoConfigDir.resolve("kes.skey").toAbsolutePath().toString());
-        env.put("YANO_BLOCK_PRODUCER_OPCERT_FILE", yanoConfigDir.resolve("opcert.cert").toAbsolutePath().toString());
-        env.put("YANO_STORAGE_PATH", yanoDataDir.toAbsolutePath().toString());
-
-        if (pastTimeTravelMode) {
-            env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_MODE", "true");
-            if (slotLeaderTimeTravel) {
-                env.put("YANO_BLOCK_PRODUCER_PAST_TIME_TRAVEL_SLOT_LEADER_MODE", "true");
-                writer.accept(info("Yano past-time-travel uses slot-leader checks (activeSlotsCoeff %s, mode %s)",
-                        clusterInfo.getActiveSlotsCoeff(), pastTimeTravelSlotLeaderMode));
-            }
-        }
+        props.forEach((key, value) -> env.put(envName(key), value));
 
         builder.command(yanoBin.toAbsolutePath().toString());
 
@@ -438,21 +470,33 @@ public class YanoService {
     }
 
     public boolean stop() {
+        return stop(ConsoleWriter::writeLn);
+    }
+
+    /** Stop Yano without console output, for the Yano restarts inside a catch-up. */
+    public boolean stopQuietly() {
+        return stop(msg -> log.debug(msg));
+    }
+
+    private boolean stop(Consumer<String> out) {
         try {
             if (processes != null && !processes.isEmpty())
-                writeLn(info("Trying to stop Yano ..."));
+                out.accept(info("Trying to stop Yano ..."));
 
             for (Process process : processes) {
                 if (process != null && process.isAlive()) {
-                    process.descendants().forEach(ph -> {
-                        ph.destroyForcibly();
-                    });
-                    process.destroyForcibly();
-                    process.waitFor(15, TimeUnit.SECONDS);
+                    // SIGTERM first so Yano closes its chainstate cleanly; force only if it does not exit
+                    process.descendants().forEach(ProcessHandle::destroy);
+                    process.destroy();
+                    if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                        process.descendants().forEach(ProcessHandle::destroyForcibly);
+                        process.destroyForcibly();
+                        process.waitFor(15, TimeUnit.SECONDS);
+                    }
                     if (!process.isAlive()) {
-                        writeLn(success("Yano stopped"));
+                        out.accept(success("Yano stopped"));
                     } else {
-                        writeLn(error("Yano process could not be killed"));
+                        out.accept(error("Yano process could not be killed"));
                     }
                 }
             }
@@ -462,7 +506,7 @@ public class YanoService {
             logs.clear();
         } catch (Exception e) {
             log.error("Error stopping Yano", e);
-            writeLn(error("Yano could not be stopped: " + e.getMessage()));
+            out.accept(error("Yano could not be stopped: " + e.getMessage()));
             return false;
         } finally {
             processes.clear();
