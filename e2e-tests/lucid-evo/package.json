@@ -9,6 +9,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@lucid-evolution/lucid": "^0.4.27"
+    "@lucid-evolution/lucid": "0.6.5"
   }
 }

@@ -1,8 +1,10 @@
 import { Lucid, Blockfrost, getAddressDetails } from "@lucid-evolution/lucid";
+import { YACI_STORE_URL, devnetSlotConfig } from "./devnet";
 
 const lucid = await Lucid(
-    new Blockfrost("http://localhost:8080/api/v1", "Dummy Key"),
-    "Custom"
+    new Blockfrost(YACI_STORE_URL, "Dummy Key"),
+    "Custom",
+    { slotConfig: await devnetSlotConfig() }
     );
 
 const seedPhrase = "test test test test test test test test test test test test test test test test test test test test test test test sauce";

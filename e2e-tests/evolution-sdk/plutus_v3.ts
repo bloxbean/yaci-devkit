@@ -1,0 +1,87 @@
+// PlutusV3 payment splitter with Evolution SDK, using Yaci Store as the Blockfrost provider.
+// Same parameterized validator and flow as meshjs/payment_splitter_plutusV3.ts:
+//   1. apply the payees' payment key hashes to the script
+//   2. lock ADA at the script address with the owner's key hash as datum
+//   3. unlock it with a redeemer, signed by the owner, splitting the ADA equally between the payees
+// Script evaluation goes through Yaci Store's /utils/txs/evaluate.
+import {
+  Address,
+  Assets,
+  Client,
+  Data,
+  InlineDatum,
+  KeyHash,
+  PlutusV3,
+  ScriptHash,
+  TransactionHash,
+  UPLC,
+} from "@evolution-sdk/evolution";
+import { SEED_PHRASE, YACI_STORE_URL, devnetChain } from "./devnet";
+
+// Payment splitter validator (CBOR-wrapped compiled code), parameterized with the list of payee key hashes
+const COMPILED_CODE = "5903ac0100003232323232323223225333004323232323253323300a3001300b37540042646464a66601a66e1d2000300e375400c26464a666024602a0042646464646464646464646464a66603666ebcdd3999918008009112999810800880109998018019919198008008021129998120008a5eb804c8c94ccc08ccdd7801002880089981380119802002000981400118130009811800981200099918008009129998100008a5eb804c8cc088004cc00c00ccc01cc0900088ccc07ccdd78008012504a26044002646600200201044a666040002297ae01330213007301f3754600e603e6ea8c088004cc008008c08c00402d3001018000100114a0646600200200444a66603e00229444c94ccc074cdc39bad302200233005533302000414c0103d87a80001300e3302130220044bd70240002660060060022940c088004c8cc004004028894ccc07800452f5c026603e6ea0c8c8c8c8c8c94ccc084cdc424000002266e04008cdc0800806080119980119804807119baf300b30233754601660466ea8c014c08cdd5000803240004466e00004c014dd5980318121baa30063024375400466600266010016466ebcc028c088dd5180518111baa0010054800088cdc000098021bab300530233754004444646600200200844a66604c0022008266006605000266004004605200246600c64a66603e602c60406ea80045300103d87a8000132330010013756604a60446ea8008894ccc090004530103d87a800013232323253330253372291100002153330253371e9101000021301633029375000297ae014c0103d87a8000133006006003375a604c0066eb8c090008c0a0008c098004c8cc004004008894ccc08c0045300103d87a800013232323253330243372291100002153330243371e9101000021301533028374c00297ae014c0103d87a80001330060060033756604a0066eb8c08c008c09c008c0940052000230223023001302000133002002302100122533301a3011301b3754004200226eb4c07cc070dd500111191980080080191299980f0008a5eb804c8c94ccc074c0140084cc084008cc0100100044cc010010004c088008c0800048c070004dd6980d180d8011bac3019001301930190023758602e00260266ea8030c8cc00400403c894ccc05400452f5c026602c60066602c602e00297ae0330020023018001374a90000b1bae3013001300f375400c2c60226024004602000260186ea8008dc3a40042c601a601c004601800260180046014002600c6ea8004526136563758002ae6955ceaab9e5573eae815d0aba21";
+
+const PAYEES = [
+  "addr_test1qrzufj3g0ua489yt235wtc3mrjrlucww2tqdnt7kt5rs09grsag6vxw5v053atks5a6whke03cf2qx3h3g2nhsmzwv3sgml3ed",
+  "addr_test1qrh3nrahcd0pj6ps3g9htnlw2jjxuylgdhfn2s5rxqyrr43yzewr2766qsfeq6stl65t546cwvclpqm2rpkkxtksgxuq90xn5f",
+  "addr_test1qq5tscksq8n2vjszkdtqe0zn9645246ex3mu88x9y0stnlzjwyqgnrq3uuc3jst3hyy244rrwuxke0m7ezr3cn93u5vq0rfv8t",
+  "addr_test1qp5l04egnh30q8x3uqn943d7jsa5za66htsvu6e74s8dacxwnjkm0n0v900d8mu20wlrx55xn07p8pm4fj0wdvtc9kwq7pztl7",
+  "addr_test1qryvgass5dsrf2kxl3vgfz76uhp83kv5lagzcp29tcana68ca5aqa6swlq6llfamln09tal7n5kvt4275ckwedpt4v7q48uhex",
+];
+const LOCK_AMOUNT = 20_000_000n;
+
+const paymentKeyHash = (address: Address.Address) => address.paymentCredential as KeyHash.KeyHash;
+
+const client = Client.make(await devnetChain())
+  .withBlockfrost({ baseUrl: YACI_STORE_URL, projectId: "Dummy Key" })
+  .withSeed({ mnemonic: SEED_PHRASE, accountIndex: 0 });
+
+// Apply the payees' key hashes as the script parameter. PlutusV3 takes the script with a single CBOR wrapping.
+const payeeKeyHashes = PAYEES.map((p) => Data.bytearray(KeyHash.toHex(paymentKeyHash(Address.fromBech32(p)))));
+const appliedScript = UPLC.applyParamsToScript(COMPILED_CODE, [Data.list(payeeKeyHashes)]);
+const script = new PlutusV3.PlutusV3({ bytes: Buffer.from(UPLC.applySingleCborEncoding(appliedScript), "hex") });
+const scriptAddress = new Address.Address({ networkId: 0, paymentCredential: ScriptHash.fromScript(script) });
+console.log("Script address:", Address.toBech32(scriptAddress));
+
+const owner = paymentKeyHash(await client.address());
+
+// 1. Lock
+const lockTx = await client
+  .newTx()
+  .payToAddress({
+    address: scriptAddress,
+    assets: Assets.fromLovelace(LOCK_AMOUNT),
+    datum: new InlineDatum.InlineDatum({ data: Data.constr(0n, [Data.bytearray(KeyHash.toHex(owner))]) }),
+  })
+  .build();
+const lockHash = await lockTx.signAndSubmit();
+console.log("Lock submitted:", TransactionHash.toHex(lockHash));
+if (!(await client.awaitTx(lockHash, 1000, 60_000))) throw new Error("Lock tx was not confirmed");
+
+// 2. Unlock the UTxO created by the lock tx and split it between the payees
+const lockHashHex = TransactionHash.toHex(lockHash);
+const scriptUtxo = (await client.getUtxos(scriptAddress)).find(
+  (u) => TransactionHash.toHex(u.transactionId) === lockHashHex,
+);
+if (!scriptUtxo) throw new Error(`Locked UTxO not found at ${Address.toBech32(scriptAddress)}`);
+
+const split = Assets.lovelaceOf(scriptUtxo.assets) / BigInt(PAYEES.length);
+console.log("Split per payee:", split);
+
+let unlock = client
+  .newTx()
+  .collectFrom({
+    inputs: [scriptUtxo],
+    redeemer: Data.constr(0n, [Data.bytearray(Buffer.from("Hello, World!").toString("hex"))]),
+  })
+  .attachScript({ script })
+  .addSigner({ keyHash: owner });
+for (const payee of PAYEES) {
+  unlock = unlock.payToAddress({ address: Address.fromBech32(payee), assets: Assets.fromLovelace(split) });
+}
+
+const unlockHash = await (await unlock.build()).signAndSubmit();
+console.log("Unlock submitted:", TransactionHash.toHex(unlockHash));
+const confirmed = await client.awaitTx(unlockHash, 1000, 60_000);
+console.log("Confirmed:", confirmed);
+process.exit(confirmed ? 0 : 1);
