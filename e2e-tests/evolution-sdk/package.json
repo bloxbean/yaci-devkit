@@ -1,0 +1,15 @@
+{
+  "name": "evolution-sdk-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Evolution SDK compatibility tests against Yaci DevKit",
+  "scripts": {
+    "test:params": "bun protocol_params.ts",
+    "test:payment": "bun payment.ts"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@evolution-sdk/evolution": "0.5.15"
+  }
+}

@@ -1,6 +1,7 @@
-import {MeshWallet, Transaction, YaciProvider} from "@meshsdk/core";
+import {BlockfrostProvider, MeshWallet, Transaction} from "@meshsdk/core";
 
-const provider = new YaciProvider('http://localhost:8080/api/v1/');
+// Mesh's BlockfrostProvider pointed at Yaci Store's Blockfrost-compatible API
+const provider = new BlockfrostProvider(process.env.YACI_STORE_URL ?? 'http://localhost:8080/api/v1');
 
 const seedPhrase = ["test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "test", "sauce"];
 
