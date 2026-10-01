@@ -9,6 +9,7 @@ import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStarted;
 import com.bloxbean.cardano.yacicli.localcluster.events.ClusterStopped;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import org.jline.reader.LineReader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.event.EventListener;
@@ -38,6 +39,8 @@ public class DevnetStallWatchdog {
     // ObjectProvider: ClusterService -> ClusterStartService -> DevnetCatchUpService, and this listens to both sides
     private final ObjectProvider<ClusterService> clusterServiceProvider;
     private final DevnetCatchUpService devnetCatchUpService;
+    // The interactive shell's line reader, absent in non-interactive runs
+    private final ObjectProvider<LineReader> lineReaderProvider;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
         Thread thread = new Thread(runnable, "devnet-stall-watchdog");
@@ -113,9 +116,29 @@ public class DevnetStallWatchdog {
             return;
         }
 
+        // The shell prompt is waiting for input on the current line: start below it, redraw it when done
+        LineReader reader = lineReaderProvider.getIfAvailable();
+        boolean atPrompt = reader != null && reader.isReading();
+        if (atPrompt)
+            System.out.println();
+
         writeLn(header(AnsiColors.CYAN_BOLD, "The devnet stopped producing blocks (the machine slept?)"));
-        var result = clusterService.catchUp(name, false, msg -> writeLn(msg));
+        var result = clusterService.catchUp(name, false, console());
         if (!result.success())
             writeLn(error(result.message() + " Run 'catch-up' to retry, or 'reset' to start a new chain."));
+
+        if (atPrompt)
+            redrawPrompt(reader);
+    }
+
+    private static void redrawPrompt(LineReader reader) {
+        try {
+            if (reader.isReading()) {
+                reader.callWidget(LineReader.REDRAW_LINE);
+                reader.callWidget(LineReader.REDISPLAY);
+            }
+        } catch (RuntimeException e) {
+            log.debug("Could not redraw the prompt: {}", e.getMessage());
+        }
     }
 }

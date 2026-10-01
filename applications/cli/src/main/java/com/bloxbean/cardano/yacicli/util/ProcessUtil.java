@@ -139,6 +139,10 @@ public class ProcessUtil {
     }
 
     public void deletePidFile(String processName) {
+        deletePidFile(processName, ConsoleWriter::writeLn);
+    }
+
+    public void deletePidFile(String processName, Consumer<String> writer) {
         var yaciCliHome = clusterConfig.getYaciCliHome();
         // Validate the yaciCliHome directory
         Path homePath = Paths.get(yaciCliHome);
@@ -147,7 +151,7 @@ public class ProcessUtil {
         var pidPath = pids.resolve(processName + ".pid");
         if (Files.exists(pidPath)) {
             pidPath.toFile().delete();
-            writeLn(info("Deleted pid file : " + processName + ".pid"));
+            writer.accept(info("Deleted pid file : " + processName + ".pid"));
         }
     }
 

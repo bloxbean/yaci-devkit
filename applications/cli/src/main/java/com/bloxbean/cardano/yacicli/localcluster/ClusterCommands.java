@@ -285,7 +285,7 @@ public class ClusterCommands {
             help = "Catch up even when the chain is not stalled") boolean force) {
         String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
         try {
-            var result = localClusterService.catchUp(clusterName, force, msg -> writeLn(msg));
+            var result = localClusterService.catchUp(clusterName, force, console());
             if (!result.success())
                 writeLn(error(result.message()));
             else if (result.blocksProduced() == 0)

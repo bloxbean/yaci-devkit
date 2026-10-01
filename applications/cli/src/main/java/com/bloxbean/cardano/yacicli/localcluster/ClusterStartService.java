@@ -386,8 +386,8 @@ public class ClusterStartService {
         int counter = 0;
         while (!Files.exists(nodeSocketPath) && counter < 10) { //wait 5 sec max
             Thread.sleep(500);
-            if (counter > 4)
-                writeLn(info("Waiting for node socket file to be created ..."));
+            if (counter == 5)
+                writer.accept(info("Waiting for node socket file to be created ..."));
             counter++;
         }
 

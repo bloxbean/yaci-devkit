@@ -24,6 +24,8 @@ import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
+import com.bloxbean.cardano.yacicli.util.progress.ConsoleProgress;
+import com.bloxbean.cardano.yacicli.util.progress.Step;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.EvictingQueue;
@@ -82,7 +84,7 @@ public class YaciStoreService {
     public void handleClusterStarted(ClusterStarted clusterStarted) {
         String clusterName = clusterStarted.getClusterName();
 
-        start(clusterName, msg -> writeLn(msg));
+        start(clusterName, console());
     }
 
     public boolean start(String clusterName, Consumer<String> writer) {
@@ -186,11 +188,12 @@ public class YaciStoreService {
         ObjectMapper mapper = new ObjectMapper();
 
         long deadlineMs = System.currentTimeMillis() + SYNC_WAIT_DEADLINE_MS;
-        writer.accept(info("Waiting for Yaci Store to sync to chain tip (lag tolerance " + maxLagBlocks + " blocks)..."));
+        Step step = ConsoleProgress.step("Yaci Store syncing to chain tip", writer);
 
         while (true) {
             long remaining = deadlineMs - System.currentTimeMillis();
             if (remaining <= 0) {
+                step.fail("not at the tip after 60s");
                 writer.accept(warn("Yaci Store did not reach chain tip within 60s. Proceeding anyway."));
                 return;
             }
@@ -204,10 +207,10 @@ public class YaciStoreService {
                 // Non-negative guard: if indexer is ahead of node (stale DB / aborted reset),
                 // don't false-pass — keep waiting until the indexer's height makes sense.
                 if (lag >= 0 && lag <= maxLagBlocks) {
-                    writer.accept(success("Yaci Store synced to chain tip (indexer height "
-                            + indexerHeight + ", node height " + nodeHeight + ", lag " + lag + ")"));
+                    step.done("height " + indexerHeight + " (node " + nodeHeight + ", lag " + lag + ")");
                     return;
                 }
+                step.progress(indexerHeight, nodeHeight, String.format("height %,d / %,d", indexerHeight, nodeHeight));
             }
             // null/negative-lag cases fall through to the sleep + retry within the deadline.
 
@@ -468,22 +471,21 @@ public class YaciStoreService {
 
         Process process = builder.start();
 
-        writeLn(success("Yaci store starting ..."));
         AtomicBoolean started = new AtomicBoolean(false);
         AtomicBoolean intersectNotFoundAlreadyShown = new AtomicBoolean(false);
+        Step step = ConsoleProgress.step("Starting Yaci Store", writer);
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     logs.add(line);
                     if (line != null && line.contains("Started YaciStoreApplication")) {
-                        writeLn(infoLabel("OK", "Yaci Store Started"));
                         started.set(true);
                     }
 
                     if (line != null && customDBHelper.getStoreDbUrl() != null && !customDBHelper.getStoreDbUrl().isEmpty()) {
                         if (!intersectNotFoundAlreadyShown.get() && line.contains("IntersactNotFound")) {
-                            writeLn(warn("Looks like some issue while starting yaci store."));
-                            writeLn(warn("Please check the logs for more details. Command: yaci-store-logs"));
-                            writeLn(warn("Please verify if you are using an empty schema while creating a new devnet."));
+                            step.log(warn("Looks like some issue while starting yaci store."));
+                            step.log(warn("Please check the logs for more details. Command: yaci-store-logs"));
+                            step.log(warn("Please verify if you are using an empty schema while creating a new devnet."));
                             intersectNotFoundAlreadyShown.set(true);
                         }
                     }
@@ -496,10 +498,12 @@ public class YaciStoreService {
             if (started.get())
                 break;
             Thread.sleep(1000);
-            writeLn("Waiting for Yaci Store to start ...");
         }
 
-        if (!started.get()) {
+        if (started.get()) {
+            step.done("started");
+        } else {
+            step.fail("not started after 40s");
             writeLn(error("Waited too long. Could not start Yaci Store. Something is wrong.."));
             writeLn(error("Use \"yaci-store-logs\" to see the logs"));
             writeLn(error("Please verify if another yaci-store in running in the same port. " +

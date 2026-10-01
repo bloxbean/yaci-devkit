@@ -95,7 +95,7 @@ public final class RelaySyncWaiter {
                 (slot, height, blocksPerSecond) -> String.format(
                         "Relay sync in progress: epoch %d of %d, slot %d, height %d (%d blocks/s)",
                         slot / epochLength, targetEpoch, slot, height, blocksPerSecond),
-                tipReader, progress);
+                tipReader, progress, null);
     }
 
     /**
@@ -113,7 +113,33 @@ public final class RelaySyncWaiter {
                 (slot, height, blocksPerSecond) -> String.format(
                         "%s in progress: slot %d of %d, height %d (%d blocks/s)",
                         label, slot, targetSlot, height, blocksPerSecond),
-                tipReader, progress);
+                tipReader, progress, null);
+    }
+
+    /**
+     * Like {@link #awaitSlot(long, long, String, TipReader, Consumer)}, but reports every tip read to
+     * {@code listener} instead of writing progress lines, for a progress bar.
+     */
+    public Outcome awaitSlot(long targetSlot, long epochLength, TipReader tipReader, TipListener listener)
+            throws InterruptedException {
+        return awaitTip(slot -> slot >= targetSlot, Math.max(1, epochLength), null, tipReader, msg -> {}, listener);
+    }
+
+    /**
+     * Like {@link #await(long, long, TipReader, Consumer)}, but reports every tip read to {@code listener} instead
+     * of writing progress lines, for a progress bar.
+     */
+    public Outcome await(long targetEpoch, long epochLength, TipReader tipReader, TipListener listener)
+            throws InterruptedException {
+        if (epochLength <= 0) {
+            return new Outcome(false, -1, -1, -1, "epoch length is not known");
+        }
+        return awaitTip(slot -> slot / epochLength >= targetEpoch, epochLength, null, tipReader, msg -> {}, listener);
+    }
+
+    /** Receives every tip read during a wait. */
+    public interface TipListener {
+        void tip(long slot, long height, long blocksPerSecond);
     }
 
     private interface ProgressLine {
@@ -121,7 +147,7 @@ public final class RelaySyncWaiter {
     }
 
     private Outcome awaitTip(LongPredicate reached, long epochLength, ProgressLine progressLine, TipReader tipReader,
-                             Consumer<String> progress) throws InterruptedException {
+                             Consumer<String> progress, TipListener listener) throws InterruptedException {
         final long startedAt = clock.getAsLong();
         long lastProgressAt = startedAt;
         long lastReportAt = startedAt;
@@ -150,11 +176,17 @@ public final class RelaySyncWaiter {
                     lastReportAt = now;
                 }
 
+                if (listener != null) {
+                    long elapsedMs = Math.max(1, now - lastReportAt);
+                    long blocks = lastReportHeight >= 0 && height >= 0 ? height - lastReportHeight : 0;
+                    listener.tip(slot, height, blocks * 1000 / elapsedMs);
+                }
+
                 if (reached.test(slot)) {
                     return new Outcome(true, epoch, slot, height, null);
                 }
 
-                if (now - lastReportAt >= PROGRESS_REPORT_INTERVAL_MS) {
+                if (progressLine != null && now - lastReportAt >= PROGRESS_REPORT_INTERVAL_MS) {
                     long elapsedMs = Math.max(1, now - lastReportAt);
                     long blocksSinceReport = lastReportHeight >= 0 && height >= 0 ? height - lastReportHeight : 0;
                     long blocksPerSecond = blocksSinceReport * 1000 / elapsedMs;

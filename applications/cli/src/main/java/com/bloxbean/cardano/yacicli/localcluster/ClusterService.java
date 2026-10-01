@@ -124,7 +124,7 @@ public class ClusterService {
 
     public RunStatus startCluster(String clusterName) {
         try {
-            RunStatus startedSuccessfully = clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), msg -> writeLn(msg));
+            RunStatus startedSuccessfully = clusterStartService.startCluster(getClusterInfo(clusterName), getClusterFolder(clusterName), console());
             if (startedSuccessfully.stared())
                 writeLn(info("Swagger Url to interact with the cluster's node : " + "http://localhost:" + server.getWebServer().getPort() +"/swagger-ui.html"));
 

@@ -125,18 +125,24 @@ with Yano:
 3. The Haskell node syncs those blocks and restarts as the block producer.
 
 ```text
-Devnet was idle for 3d 4h (tip slot 1,830, now slot 275,562, 457 epochs behind)
-Catching up to wall clock with Yano (sparse backfill, about 1,380 blocks) ...
-✅ Yano synced the chain from the Haskell node (tip slot 1,830)
-✅ Backfilled to slot 275,561 (1,372 blocks)
-✅ Haskell node synced the backfill
-✅ Devnet resumed in 38s at slot 275,570, epoch 459. Your contracts, wallets and stake are unchanged; 457 epochs passed.
+The devnet stopped producing blocks (the machine slept?)
+⏸  Devnet was idle for 3d 4h (tip slot 1,830, now slot 275,562, 457 epochs behind).
+💡 Catching up to wall clock with Yano (sparse backfill, about 1,380 blocks) ...
+  [1/4] ✅ Haskell node → relay ................. tip slot 1,830 (2s)
+  [2/4] ✅ Yano following the chain ............. at slot 1,830 (4s)
+  [3/4] ✅ Backfill to wall clock ............... 1,372 blocks to slot 275,561 (12s)
+  [4/4] ✅ Haskell node back as block producer .. forging at slot 275,570 (1s)
+✅ Devnet resumed in 19s at slot 275,570, epoch 459. Your contracts, wallets and stake are unchanged; 457 epochs passed.
 ```
 
 This happens on its own:
 
 - **On `start`**, before Yaci Store and the other services start.
 - **While DevKit keeps running** (lid closed, machine asleep): a watchdog checks the chain every 30 seconds.
+
+In a terminal each step shows a spinner, and a progress bar with a percentage while Yano or the Haskell node
+syncs. In Docker logs and other non-terminal output the same steps are written as plain lines. Set
+`YACI_PROGRESS=plain` to get plain lines in a terminal too.
 
 In yano-only mode, `start` backfills before Yano produces its first live block.
 

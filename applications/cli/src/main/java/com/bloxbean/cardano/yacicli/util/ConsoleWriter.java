@@ -2,7 +2,30 @@ package com.bloxbean.cardano.yacicli.util;
 
 import com.bloxbean.cardano.yacicli.common.AnsiColors;
 
+import java.util.function.Consumer;
+
 public class ConsoleWriter {
+    /**
+     * A writer that prints to the console. Progress output ({@code util.progress}) redraws its line in place only
+     * for this writer, and only when stdout is a terminal.
+     */
+    public static final class ConsoleSink implements Consumer<String> {
+        private static final ConsoleSink INSTANCE = new ConsoleSink();
+
+        private ConsoleSink() {
+        }
+
+        @Override
+        public void accept(String line) {
+            writeLn(line);
+        }
+    }
+
+    /** The console as a {@code Consumer<String>} writer. */
+    public static Consumer<String> console() {
+        return ConsoleSink.INSTANCE;
+    }
+
     public static void writeLn(String str, Object...args) {
         if (args.length != 0)
             System.out.println(String.format(str, args));

@@ -9,6 +9,8 @@ import com.bloxbean.cardano.yacicli.util.ConsoleWriter;
 import com.bloxbean.cardano.yacicli.util.PortUtil;
 import com.bloxbean.cardano.yacicli.util.ProcessStream;
 import com.bloxbean.cardano.yacicli.util.ProcessUtil;
+import com.bloxbean.cardano.yacicli.util.progress.ConsoleProgress;
+import com.bloxbean.cardano.yacicli.util.progress.Step;
 import com.google.common.collect.EvictingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -390,8 +392,9 @@ public class YanoService {
         builder.command(yanoBin.toAbsolutePath().toString());
 
         Process process = builder.start();
-        writer.accept(info("Starting Yano (n2n port: %d, HTTP port: %d) ...",
-                clusterInfo.getYanoServerPort(), clusterInfo.getYanoHttpPort()));
+        Step step = ConsoleProgress.step(String.format("Starting Yano (%s, n2n port %d, HTTP port %d)",
+                runMode.name().toLowerCase().replace('_', '-'), clusterInfo.getYanoServerPort(),
+                clusterInfo.getYanoHttpPort()), writer);
 
         AtomicBoolean started = new AtomicBoolean(false);
         ProcessStream processStream = new ProcessStream(process.getInputStream(), line -> {
@@ -416,19 +419,20 @@ public class YanoService {
             counter++;
             if (started.get()) break;
             if (!process.isAlive()) {
+                step.fail("exited");
                 writer.accept(error("Yano process exited unexpectedly. Check logs with 'yano-logs'"));
                 return null;
             }
             Thread.sleep(1000);
-            writer.accept("Waiting for Yano to start ...");
         }
 
         if (!started.get()) {
+            step.fail("not started after 30s");
             writer.accept(error("Yano did not start within timeout. Check logs with 'yano-logs'"));
             return null;
         }
 
-        writer.accept(success("Yano started successfully"));
+        step.done("started");
         processUtil.createProcessId(YANO_PROCESS_NAME, process);
         return process;
     }
@@ -500,7 +504,7 @@ public class YanoService {
                     }
                 }
             }
-            processUtil.deletePidFile(YANO_PROCESS_NAME);
+            processUtil.deletePidFile(YANO_PROCESS_NAME, out);
             executors.forEach(ExecutorService::shutdownNow);
             executors.clear();
             logs.clear();
