@@ -281,9 +281,6 @@ public class YanoCompanionService {
                         relaySyncMaxWaitSeconds, maxWaitSeconds));
 
             final ClusterUtilService clusterUtilService = clusterUtilServiceProvider.getObject();
-            // ClusterUtilService.getTip prints "Find tip error ..." directly via static
-            // ConsoleWriter on exception (bypassing the consumer); transient noise during
-            // the first one or two polls after the socket appears is expected.
             RelaySyncWaiter waiter = new RelaySyncWaiter(stallTimeoutSeconds * 1000L, maxWaitSeconds * 1000L);
             long targetSlot = BOOTSTRAP_EPOCH_SHIFT * epochLength;
             Step step = ConsoleProgress.step(String.format("Haskell relay syncing to epoch %d", BOOTSTRAP_EPOCH_SHIFT),

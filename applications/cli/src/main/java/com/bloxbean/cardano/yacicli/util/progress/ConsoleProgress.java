@@ -2,6 +2,8 @@ package com.bloxbean.cardano.yacicli.util.progress;
 
 import com.bloxbean.cardano.yacicli.util.ConsoleWriter;
 
+import java.io.PrintStream;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
@@ -113,8 +115,9 @@ public final class ConsoleProgress {
     }
 
     static final class TerminalSink implements Sink {
-        private static final String CLEAR_LINE = "\r\033[K";
-        private boolean liveShown;
+        TerminalSink() {
+            LiveAwareOut.install();
+        }
 
         @Override
         public boolean inPlace() {
@@ -123,31 +126,113 @@ public final class ConsoleProgress {
 
         @Override
         public void line(String text) {
-            synchronized (LOCK) {
-                if (liveShown)
-                    System.out.print(CLEAR_LINE);
-                System.out.println(text);
-                liveShown = false;
-                System.out.flush();
-            }
+            LiveAwareOut.line(text);
         }
 
         @Override
         public void live(String text) {
-            synchronized (LOCK) {
-                System.out.print(CLEAR_LINE + text);
-                liveShown = true;
-                System.out.flush();
-            }
+            LiveAwareOut.live(text);
         }
 
         @Override
         public void clearLive() {
+            LiveAwareOut.clearLive();
+        }
+    }
+
+    /**
+     * Wraps {@code System.out} while progress is rendered in place, so output from anywhere else (process stderr
+     * relayed to the console, warnings, other services) never lands on the end of the live step line: the live line
+     * is cleared before the write, and the spinner redraws it below on its next tick.
+     */
+    static final class LiveAwareOut extends PrintStream {
+        private static final String CLEAR_LINE = "\r\033[K";
+        private static PrintStream terminal;
+        // A live step line is on screen
+        private static boolean liveShown;
+        // Other output left the cursor in the middle of a line
+        private static boolean foreignLineOpen;
+
+        private LiveAwareOut(PrintStream target) {
+            super(target, true);
+        }
+
+        static void install() {
             synchronized (LOCK) {
-                if (liveShown)
-                    System.out.print(CLEAR_LINE);
+                if (System.out instanceof LiveAwareOut)
+                    return;
+                terminal = System.out;
+                System.setOut(new LiveAwareOut(terminal));
+            }
+        }
+
+        @Override
+        public void write(int b) {
+            synchronized (LOCK) {
+                beforeForeignOutput();
+                terminal.write(b);
+                foreignLineOpen = b != '\n';
+            }
+        }
+
+        @Override
+        public void write(byte[] buf, int off, int len) {
+            if (len <= 0)
+                return;
+            synchronized (LOCK) {
+                beforeForeignOutput();
+                terminal.write(buf, off, len);
+                foreignLineOpen = buf[off + len - 1] != '\n';
+            }
+        }
+
+        @Override
+        public void flush() {
+            terminal.flush();
+        }
+
+        private static void beforeForeignOutput() {
+            if (liveShown) {
+                terminal.print(CLEAR_LINE);
                 liveShown = false;
-                System.out.flush();
+            }
+        }
+
+        static void line(String text) {
+            synchronized (LOCK) {
+                clearLiveLocked();
+                terminal.println(text);
+                terminal.flush();
+            }
+        }
+
+        static void live(String text) {
+            synchronized (LOCK) {
+                if (foreignLineOpen) {
+                    terminal.println();
+                    foreignLineOpen = false;
+                }
+                terminal.print(CLEAR_LINE + text);
+                liveShown = true;
+                terminal.flush();
+            }
+        }
+
+        static void clearLive() {
+            synchronized (LOCK) {
+                clearLiveLocked();
+                terminal.flush();
+            }
+        }
+
+        private static void clearLiveLocked() {
+            if (foreignLineOpen) {
+                terminal.println();
+                foreignLineOpen = false;
+            }
+            if (liveShown) {
+                terminal.print(CLEAR_LINE);
+                liveShown = false;
             }
         }
     }
