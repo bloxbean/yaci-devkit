@@ -62,6 +62,9 @@ public class DevnetCatchUpService {
     private boolean autoCatchUp = true;
 
     private final AtomicBoolean inProgress = new AtomicBoolean(false);
+    // The thread running the current catch-up, and whether stop/reset asked it to give up
+    private volatile Thread runner;
+    private volatile boolean cancelled;
 
     /**
      * Outcome of a catch-up.
@@ -93,15 +96,48 @@ public class DevnetCatchUpService {
     }
 
     /**
-     * Wait for a running catch-up to finish, so a stop or reset does not pull processes from under it.
+     * Cancel a running catch-up and wait for it to give up, so a stop or reset does not race it: the catch-up's
+     * thread is interrupted (its waits, Yano HTTP calls and sleeps all stop), it starts no further process, and its
+     * clean-up does not restart the node. Whatever it already started is in the process list the stop then stops.
      *
      * @return true when no catch-up is running any more
      */
-    public boolean awaitIdle(Duration timeout) throws InterruptedException {
+    public boolean cancelAndAwait(Duration timeout) throws InterruptedException {
+        if (!inProgress.get())
+            return true;
+        cancelled = true;
+        Thread thread = runner;
+        if (thread != null && thread != Thread.currentThread())
+            thread.interrupt();
         long deadline = System.currentTimeMillis() + timeout.toMillis();
         while (inProgress.get() && System.currentTimeMillis() < deadline)
-            Thread.sleep(500);
+            Thread.sleep(100);
         return !inProgress.get();
+    }
+
+    /** Claim the catch-up slot for the current thread. */
+    private boolean begin(Consumer<String> writer) {
+        if (!inProgress.compareAndSet(false, true)) {
+            writer.accept(error("A catch-up is already running"));
+            return false;
+        }
+        cancelled = false;
+        runner = Thread.currentThread();
+        return true;
+    }
+
+    private void end() {
+        runner = null;
+        // A cancel interrupts this thread; do not leak the flag into whatever the thread does next
+        if (cancelled)
+            Thread.interrupted();
+        inProgress.set(false);
+    }
+
+    /** Called before anything that starts a process: once stop/reset cancelled the catch-up, nothing is started. */
+    private void checkCancelled() throws InterruptedException {
+        if (cancelled || Thread.currentThread().isInterrupted())
+            throw new InterruptedException("catch-up cancelled");
     }
 
     /** Why this devnet cannot be caught up, or empty when it can. */
@@ -160,12 +196,12 @@ public class DevnetCatchUpService {
      */
     public Result catchUpCompanion(ClusterInfo clusterInfo, Path clusterFolder, NodeControl node, ChainLag lag,
                                    Consumer<String> writer) {
-        if (!inProgress.compareAndSet(false, true))
+        if (!begin(writer))
             return Result.failed("A catch-up is already running");
         try {
             return doCatchUpCompanion(clusterInfo, clusterFolder, node, lag, writer);
         } finally {
-            inProgress.set(false);
+            end();
         }
     }
 
@@ -186,9 +222,11 @@ public class DevnetCatchUpService {
         try {
             // 1. Haskell node as a relay, peering with Yano: it serves its chain to Yano and pulls Yano's backfill
             step = task.step("Haskell node → relay");
+            checkCancelled();
             if (!node.stopNode(quiet))
                 return failed(step, "Could not stop the Haskell node");
             yanoCompanionService.updateTopologyForYanoPeering(clusterInfo, clusterFolder, quiet);
+            checkCancelled();
             if (!node.startNode(true, quiet))
                 return failed(step, "Could not start the Haskell node as a relay");
             Tuple<Long, Point> relayTip = waitForHaskellTip(clusterInfo, NODE_READY_TIMEOUT);
@@ -201,6 +239,7 @@ public class DevnetCatchUpService {
             //    since the handover are fetched.
             step = task.step("Yano following the chain");
             yanoService.stopQuietly();
+            checkCancelled();
             if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.FOLLOW, quiet)
                     || !yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT))
                 return failed(step, "Yano did not start to follow the Haskell node (see 'yano-logs')");
@@ -220,6 +259,7 @@ public class DevnetCatchUpService {
             //    a live block at the wall-clock slot before the backfill runs. Repeat until the relay is within a
             //    quarter of the forecast window; the rest is for the producer restart.
             step = task.step("Backfill to wall clock");
+            checkCancelled();
             if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.CATCH_UP, quiet)
                     || !yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT))
                 return failed(step, "Yano did not start as a block producer (see 'yano-logs')");
@@ -227,6 +267,7 @@ public class DevnetCatchUpService {
             RelaySyncWaiter relayWaiter = new RelaySyncWaiter(SYNC_STALL_TIMEOUT_MS, 0);
             final Step backfilling = step;
             for (int round = 1; ; round++) {
+                checkCancelled();
                 JsonNode caughtUp = yanoBootstrapService.catchUp(httpPort);
                 if (caughtUp == null)
                     return failed(step, "Yano's catch-up call failed (see 'yano-logs')");
@@ -257,10 +298,11 @@ public class DevnetCatchUpService {
             step = task.step("Haskell node back as block producer");
             yanoService.stopQuietly();
             yanoCompanionService.restoreOriginalTopology(clusterFolder, quiet);
-            boolean restarted = node.stopNode(quiet) && node.startNode(false, quiet);
-            handedBack = true;
-            if (!restarted)
+            checkCancelled();
+            // Only a successful restart counts as handed back; otherwise the recovery below retries it
+            if (!node.stopNode(quiet) || !node.startNode(false, quiet))
                 return failed(step, "Could not restart the Haskell node as the block producer");
+            handedBack = true;
 
             step.detail("waiting for the first block");
             Tuple<Long, Point> forged = waitForHaskellSlotAbove(clusterInfo, yanoTipSlot, forgeTimeout(clusterInfo));
@@ -278,23 +320,30 @@ public class DevnetCatchUpService {
             task.log(success(message));
             return new Result(true, message, lag.tipSlot(), forged._2.getSlot(), blocksProduced, duration);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return failed(step, "Catch-up interrupted");
+            return failed(step, cancelled ? "Catch-up cancelled" : "Catch-up interrupted");
         } catch (IOException | RuntimeException e) {
             log.error("Catch-up failed", e);
             return failed(step, "Catch-up failed: " + e.getMessage());
         } finally {
+            // A cancel interrupts this thread: clear it so the clean-up's own waits (stopping Yano) still work
+            Thread.interrupted();
             if (!handedBack) {
-                // Never leave the devnet half-way: Yano stopped, original topology, Haskell node as producer
+                // Never leave the devnet half-way: Yano stopped, original topology. Then the Haskell node back as
+                // the producer, unless a stop/reset cancelled the catch-up: that stops whatever is running and must
+                // not find the node restarted behind its back.
                 yanoService.stopQuietly();
                 yanoCompanionService.restoreOriginalTopology(clusterFolder, quiet);
-                if (node.stopNode(quiet))
-                    node.startNode(false, quiet);
+                if (!cancelled && !(node.stopNode(quiet) && node.startNode(false, quiet)))
+                    writer.accept(error("Could not restart the Haskell node as the block producer. "
+                            + "Run 'stop' and 'start' to recover."));
             }
         }
     }
 
-    private static Result failed(Step step, String message) {
+    private Result failed(Step step, String message) {
+        // A step fails as a side effect of a cancel (an interrupted wait, a Yano start cut short): say so
+        if (cancelled)
+            message = "Catch-up cancelled";
         if (step != null)
             step.fail(message);
         return Result.failed(message);
@@ -309,41 +358,113 @@ public class DevnetCatchUpService {
     // ---------------------------------------------------------------------------------------------------------
 
     /**
-     * Start Yano for an existing yano-only devnet. With auto catch-up it first runs Yano without forging, backfills
-     * whatever time has passed, and only then starts the live producer, so every skipped epoch gets its boundary.
+     * Start Yano for an existing yano-only devnet.
+     * <p>
+     * With auto catch-up, Yano first runs without forging, the time that passed is backfilled, and only then the
+     * live producer starts, so every skipped epoch gets its boundary. If the backfill fails while the gap crosses an
+     * epoch boundary, live production is not started: its first block would jump over the missed epochs.
+     * <p>
+     * With auto catch-up off, a chain that is too far behind is left with Yano running but not forging (like a
+     * stalled companion producer), and the user is told to run {@code catch-up}.
+     *
+     * @return true when Yano is running
      */
     public boolean startYanoOnly(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
-        if (!autoCatchUp)
-            return yanoService.start(clusterInfo, clusterFolder, YanoRunMode.LIVE, writer);
-
-        if (!inProgress.compareAndSet(false, true)) {
-            writer.accept(error("A catch-up is already running"));
+        if (!begin(writer))
             return false;
-        }
         try {
-            catchUpYanoOnly(clusterInfo, clusterFolder, writer);
+            if (!autoCatchUp)
+                return startYanoOnlyWithoutCatchUp(clusterInfo, clusterFolder, writer);
+
+            YanoBackfill backfill = backfillYanoOnly(clusterInfo, clusterFolder, writer);
+            if (!backfill.liveStartAllowed()) {
+                writer.accept(error(backfill.message()));
+                return false;
+            }
+            checkCancelled();
+            return yanoService.start(clusterInfo, clusterFolder, YanoRunMode.LIVE, writer);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         } finally {
-            inProgress.set(false);
+            end();
         }
+    }
+
+    /**
+     * Catch a yano-only devnet up on request ({@code catch-up}, the admin API), whatever
+     * {@code devnet.auto.catch.up} says: Yano is stopped, the gap backfilled, and the live producer started.
+     */
+    public Result catchUpYanoOnly(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
+        if (!begin(writer))
+            return Result.failed("A catch-up is already running");
+        long startedAt = System.currentTimeMillis();
+        try {
+            yanoService.stopQuietly();
+            YanoBackfill backfill = backfillYanoOnly(clusterInfo, clusterFolder, writer);
+            if (!backfill.liveStartAllowed())
+                return Result.failed(backfill.message());
+            checkCancelled();
+            if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.LIVE, writer))
+                return Result.failed("Yano did not start as the live producer (see 'yano-logs')");
+            long duration = System.currentTimeMillis() - startedAt;
+            return new Result(true, backfill.message(), backfill.fromSlot(), backfill.toSlot(), backfill.blocks(), duration);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Result.failed("Catch-up cancelled");
+        } finally {
+            end();
+        }
+    }
+
+    private boolean startYanoOnlyWithoutCatchUp(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer)
+            throws InterruptedException {
+        int httpPort = clusterInfo.getYanoHttpPort();
+        // Look at the tip before anything can forge, as the companion start does with its stalled producer
+        if (yanoService.start(clusterInfo, clusterFolder, YanoRunMode.CATCH_UP, problemsOnly(writer))
+                && yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT)) {
+            Tuple<Long, Point> tip = yanoBootstrapService.getNodeTip(httpPort);
+            ChainLag lag = tip != null ? ChainLag.of(clusterInfo, tip._2.getSlot(), System.currentTimeMillis()) : null;
+            if (lag != null && lag.needsCatchUpOnStart()) {
+                writer.accept(warn("The chain is %s behind wall clock%s. Yano is running but not producing blocks; "
+                                + "run 'catch-up' to bring it to wall clock.", lag.idleTimeText(),
+                        lag.epochsToCross() > 0 ? String.format(" (%s)", epochs(lag.epochsToCross())) : ""));
+                return true;
+            }
+        }
+        yanoService.stopQuietly();
+        checkCancelled();
         return yanoService.start(clusterInfo, clusterFolder, YanoRunMode.LIVE, writer);
     }
 
-    /** Backfill a stopped yano-only chain to wall clock. Yano is stopped again on return. */
-    private void catchUpYanoOnly(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
+    /**
+     * Outcome of a yano-only backfill.
+     *
+     * @param liveStartAllowed the live producer can start: the chain is at wall clock, or the gap stays inside one
+     *                         epoch so its first block skips no boundary
+     */
+    record YanoBackfill(boolean liveStartAllowed, String message, long fromSlot, long toSlot, long blocks) {
+    }
+
+    /** Backfill a stopped yano-only chain to wall clock with Yano in catch-up mode. Yano is stopped again on return. */
+    private YanoBackfill backfillYanoOnly(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer)
+            throws InterruptedException {
         int httpPort = clusterInfo.getYanoHttpPort();
         long startedAt = System.currentTimeMillis();
         try {
+            checkCancelled();
             if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.CATCH_UP, problemsOnly(writer))
-                    || !yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT)) {
-                writer.accept(warn("Could not check the chain tip before starting Yano; starting without catch-up"));
-                return;
-            }
+                    || !yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT))
+                return new YanoBackfill(false, "Yano did not start to check the chain tip (see 'yano-logs'); "
+                        + "not starting block production, so no missed epoch is skipped. Retry with 'start' or 'catch-up'.",
+                        -1, -1, 0);
             Tuple<Long, Point> tip = yanoBootstrapService.getNodeTip(httpPort);
             if (tip == null)
-                return;
+                return new YanoBackfill(false, "Could not read the chain tip from Yano; not starting block production. "
+                        + "Retry with 'start' or 'catch-up'.", -1, -1, 0);
             ChainLag lag = ChainLag.of(clusterInfo, tip._2.getSlot(), System.currentTimeMillis());
             if (lag.lagSlots() == 0)
-                return;
+                return new YanoBackfill(true, "The chain is at wall clock", lag.tipSlot(), lag.tipSlot(), 0);
 
             // Short stops need no banner: the backfill is a block or two
             boolean report = lag.needsCatchUpOnStart();
@@ -351,22 +472,34 @@ public class DevnetCatchUpService {
             if (report)
                 printBanner(lag, task.logWriter());
             Step step = report ? task.step("Backfill to wall clock") : null;
+            checkCancelled();
             JsonNode caughtUp = yanoBootstrapService.catchUp(httpPort);
+            checkCancelled();
             if (caughtUp == null) {
-                String message = "Yano's catch-up call failed (see 'yano-logs'); the first block will skip the gap";
                 if (step != null)
-                    step.fail(message);
-                else
-                    writer.accept(error(message));
-                return;
+                    step.fail("Yano's catch-up call failed");
+                // Inside one epoch the first live block skips no boundary, so starting is harmless
+                if (lag.epochsToCross() == 0)
+                    return new YanoBackfill(true, "Catch-up failed; the gap is inside one epoch", lag.tipSlot(),
+                            lag.tipSlot(), 0);
+                return new YanoBackfill(false, String.format("Yano's catch-up call failed (see 'yano-logs'). Not starting "
+                        + "block production: its first block would skip %s. Retry with 'catch-up'.",
+                        epochs(lag.epochsToCross())), lag.tipSlot(), lag.tipSlot(), 0);
             }
+            long toSlot = caughtUp.path("new_slot").asLong();
+            long blocks = caughtUp.path("blocks_produced").asLong();
+            String message = resumedMessage(clusterInfo, lag, toSlot, System.currentTimeMillis() - startedAt);
             if (report) {
-                long toSlot = caughtUp.path("new_slot").asLong();
-                step.done(String.format("%,d blocks to slot %,d", caughtUp.path("blocks_produced").asLong(), toSlot));
-                task.log(success(resumedMessage(clusterInfo, lag, toSlot, System.currentTimeMillis() - startedAt)));
+                step.done(String.format("%,d blocks to slot %,d", blocks, toSlot));
+                task.log(success(message));
             }
+            return new YanoBackfill(true, message, lag.tipSlot(), toSlot, blocks);
         } finally {
+            // A cancel interrupts this thread: keep the flag for the caller, but let stopping Yano wait properly
+            boolean interrupted = Thread.interrupted();
             yanoService.stopQuietly();
+            if (interrupted)
+                Thread.currentThread().interrupt();
         }
     }
 

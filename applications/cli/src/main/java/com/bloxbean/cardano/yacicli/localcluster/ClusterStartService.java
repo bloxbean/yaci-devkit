@@ -282,10 +282,12 @@ public class ClusterStartService {
 
     public void stopCluster(Consumer<String> writer) {
         try {
+            // Cancel a running catch-up first: it starts no further process and does not restart the node behind
+            // this stop (or a reset deleting the database)
             if (devnetCatchUpService.isInProgress()) {
-                writer.accept(info("Waiting for the running catch-up to finish before stopping ..."));
-                if (!devnetCatchUpService.awaitIdle(java.time.Duration.ofMinutes(3)))
-                    writer.accept(warn("The catch-up is still running; stopping anyway"));
+                writer.accept(info("Cancelling the running catch-up ..."));
+                if (!devnetCatchUpService.cancelAndAwait(java.time.Duration.ofSeconds(60)))
+                    writer.accept(warn("The catch-up did not stop within 60s; it will not start any further process"));
             }
             if (processes != null && processes.size() > 0)
                 writer.accept(info("Trying to stop the running cluster ..."));
@@ -513,12 +515,9 @@ public class ClusterStartService {
                     lag.lagSlots(), lag.forecastWindowSlots()), lag.tipSlot(), lag.tipSlot(), 0, 0);
 
         if (clusterInfo.getNodeMode() == NodeMode.YANO_ONLY) {
-            // Yano forges as soon as it runs, so a stalled yano-only chain means Yano stopped; restart it
-            yanoService.stop();
-            boolean started = devnetCatchUpService.startYanoOnly(clusterInfo, clusterFolder, writer);
-            ChainLag after = devnetCatchUpService.probeLag(clusterInfo);
-            return new DevnetCatchUpService.Result(started, started ? "Yano restarted at wall clock" : "Failed to start Yano",
-                    lag.tipSlot(), after != null ? after.tipSlot() : -1, 0, 0);
+            // A stalled yano-only chain means Yano is not forging (stopped, or left idle by a start with auto
+            // catch-up off): backfill and start the live producer, whatever devnet.auto.catch.up says
+            return devnetCatchUpService.catchUpYanoOnly(clusterInfo, clusterFolder, writer);
         }
 
         return devnetCatchUpService.catchUpCompanion(clusterInfo, clusterFolder, nodeControl(clusterInfo, clusterFolder),
