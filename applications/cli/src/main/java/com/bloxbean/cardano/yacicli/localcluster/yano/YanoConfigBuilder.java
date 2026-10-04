@@ -104,6 +104,12 @@ public class YanoConfigBuilder {
                 props.put("yano.remote.host", "127.0.0.1");
                 props.put("yano.remote.port", String.valueOf(clusterInfo.getNodePort()));
             }
+            case IDLE -> {
+                //Serve the chain without forging: no producer, no client. Yano's dev mode requires a producer.
+                props.put("yano.dev-mode", "false");
+                props.put("yano.block-producer.enabled", "false");
+                props.put("yano.client.enabled", "false");
+            }
             case LIVE -> {
             }
         }

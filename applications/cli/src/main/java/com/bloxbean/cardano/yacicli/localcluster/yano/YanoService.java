@@ -105,11 +105,12 @@ public class YanoService {
             Path yanoConfigDir = prepareYanoConfig(clusterInfo, clusterFolder, writer);
             if (yanoConfigDir == null) return false;
 
-            Process process = startYanoProcess(clusterInfo, clusterFolder, yanoConfigDir, runMode, writer);
-            if (process != null) {
-                processes.add(process);
-                return true;
-            }
+            // startYanoProcess registers the process as soon as it is spawned and removes it again if it fails
+            return startYanoProcess(clusterInfo, clusterFolder, yanoConfigDir, runMode, writer) != null;
+        } catch (InterruptedException e) {
+            // A cancelled catch-up: the spawned process was already terminated
+            Thread.currentThread().interrupt();
+            writer.accept(warn("Yano start interrupted"));
         } catch (Exception e) {
             log.error("Error starting Yano", e);
             writer.accept(error("Failed to start Yano: " + e.getMessage()));
@@ -392,6 +393,23 @@ public class YanoService {
         builder.command(yanoBin.toAbsolutePath().toString());
 
         Process process = builder.start();
+        // Track it right away: a stop, or a cancel interrupting the wait below, must be able to find it
+        processes.add(process);
+        boolean started = false;
+        try {
+            started = awaitYanoStart(process, clusterInfo, runMode, writer);
+            return started ? process : null;
+        } finally {
+            if (!started) {
+                // Not started (exited, timed out, interrupted): never leave it running untracked
+                processes.remove(process);
+                ProcessUtil.terminate(process);
+            }
+        }
+    }
+
+    private boolean awaitYanoStart(Process process, ClusterInfo clusterInfo, YanoRunMode runMode,
+                                   Consumer<String> writer) throws InterruptedException {
         Step step = ConsoleProgress.step(String.format("Starting Yano (%s, n2n port %d, HTTP port %d)",
                 runMode.name().toLowerCase().replace('_', '-'), clusterInfo.getYanoServerPort(),
                 clusterInfo.getYanoHttpPort()), writer);
@@ -421,20 +439,25 @@ public class YanoService {
             if (!process.isAlive()) {
                 step.fail("exited");
                 writer.accept(error("Yano process exited unexpectedly. Check logs with 'yano-logs'"));
-                return null;
+                return false;
             }
-            Thread.sleep(1000);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                step.fail("interrupted");
+                throw e;
+            }
         }
 
         if (!started.get()) {
             step.fail("not started after 30s");
             writer.accept(error("Yano did not start within timeout. Check logs with 'yano-logs'"));
-            return null;
+            return false;
         }
 
         step.done("started");
         processUtil.createProcessId(YANO_PROCESS_NAME, process);
-        return process;
+        return true;
     }
 
     @EventListener

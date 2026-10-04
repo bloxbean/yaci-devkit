@@ -41,7 +41,7 @@ class YanoRunModeConfigTest {
     void catchUpModeForgesNothingOnItsOwnAndBackfillsSparsely() {
         Map<String, String> props = props(YanoRunMode.CATCH_UP);
 
-        assertThat(props).containsEntry("yano.block-producer.block-time-millis", "3600000")
+        assertThat(props).containsEntry("yano.block-producer.block-time-millis", String.valueOf(Integer.MAX_VALUE))
                 .containsEntry("yano.block-producer.backfill-block-interval-slots", "0")
                 .doesNotContainKeys("yano.block-producer.past-time-travel-mode", "yano.client.enabled");
     }
@@ -56,6 +56,17 @@ class YanoRunModeConfigTest {
                 .containsEntry("yano.block-producer.enabled", "false")
                 // Yano refuses dev mode without a block producer
                 .containsEntry("yano.dev-mode", "false");
+    }
+
+    @Test
+    void idleModeServesTheChainWithoutAnyProducerOrClient() {
+        Map<String, String> props = props(YanoRunMode.IDLE);
+
+        assertThat(props).containsEntry("yano.block-producer.enabled", "false")
+                .containsEntry("yano.client.enabled", "false")
+                .containsEntry("yano.dev-mode", "false")
+                .doesNotContainKeys("yano.block-producer.block-time-millis", "yano.remote.host");
+        assertThat(YanoRunMode.IDLE.producesBlocks()).isFalse();
     }
 
     @Test

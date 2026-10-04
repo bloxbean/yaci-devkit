@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
 
@@ -62,6 +63,8 @@ public class DevnetCatchUpService {
     private boolean autoCatchUp = true;
 
     private final AtomicBoolean inProgress = new AtomicBoolean(false);
+    // Wall clock, replaceable in tests
+    LongSupplier clock = System::currentTimeMillis;
     // The thread running the current catch-up, and whether stop/reset asked it to give up
     private volatile Thread runner;
     private volatile boolean cancelled;
@@ -168,7 +171,7 @@ public class DevnetCatchUpService {
                 : haskellTip(clusterInfo);
         if (tip == null || tip._2 == null)
             return null;
-        return ChainLag.of(clusterInfo, tip._2.getSlot(), System.currentTimeMillis());
+        return ChainLag.of(clusterInfo, tip._2.getSlot(), clock.getAsLong());
     }
 
     /**
@@ -207,7 +210,7 @@ public class DevnetCatchUpService {
 
     private Result doCatchUpCompanion(ClusterInfo clusterInfo, Path clusterFolder, NodeControl node, ChainLag lag,
                                       Consumer<String> writer) {
-        long startedAt = System.currentTimeMillis();
+        long startedAt = clock.getAsLong();
         int httpPort = clusterInfo.getYanoHttpPort();
         long epochLength = clusterInfo.getEpochLength();
         ProgressTask task = ConsoleProgress.task(null, 4, writer);
@@ -284,7 +287,7 @@ public class DevnetCatchUpService {
                     return failed(step, "The Haskell relay did not sync Yano's backfill: " + adopted.reason());
 
                 long lagNow = ChainLag.wallClockSlot(clusterInfo.getStartTime(), clusterInfo.getSlotLength(),
-                        System.currentTimeMillis()) - yanoTipSlot;
+                        clock.getAsLong()) - yanoTipSlot;
                 if (lagNow <= slack)
                     break;
                 if (round >= MAX_PUMP_ROUNDS)
@@ -306,7 +309,7 @@ public class DevnetCatchUpService {
 
             step.detail("waiting for the first block");
             Tuple<Long, Point> forged = waitForHaskellSlotAbove(clusterInfo, yanoTipSlot, forgeTimeout(clusterInfo));
-            long duration = System.currentTimeMillis() - startedAt;
+            long duration = clock.getAsLong() - startedAt;
             if (forged == null) {
                 String message = "The chain is caught up, but the Haskell node has not forged yet. "
                         + "If it does not, run 'catch-up' again.";
@@ -398,7 +401,7 @@ public class DevnetCatchUpService {
     public Result catchUpYanoOnly(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
         if (!begin(writer))
             return Result.failed("A catch-up is already running");
-        long startedAt = System.currentTimeMillis();
+        long startedAt = clock.getAsLong();
         try {
             yanoService.stopQuietly();
             YanoBackfill backfill = backfillYanoOnly(clusterInfo, clusterFolder, writer);
@@ -407,7 +410,7 @@ public class DevnetCatchUpService {
             checkCancelled();
             if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.LIVE, writer))
                 return Result.failed("Yano did not start as the live producer (see 'yano-logs')");
-            long duration = System.currentTimeMillis() - startedAt;
+            long duration = clock.getAsLong() - startedAt;
             return new Result(true, backfill.message(), backfill.fromSlot(), backfill.toSlot(), backfill.blocks(), duration);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -420,11 +423,11 @@ public class DevnetCatchUpService {
     private boolean startYanoOnlyWithoutCatchUp(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer)
             throws InterruptedException {
         int httpPort = clusterInfo.getYanoHttpPort();
-        // Look at the tip before anything can forge, as the companion start does with its stalled producer
-        if (yanoService.start(clusterInfo, clusterFolder, YanoRunMode.CATCH_UP, problemsOnly(writer))
+        // Look at the tip with Yano serving but never forging, as the companion start does with its stalled producer
+        if (yanoService.start(clusterInfo, clusterFolder, YanoRunMode.IDLE, problemsOnly(writer))
                 && yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT)) {
             Tuple<Long, Point> tip = yanoBootstrapService.getNodeTip(httpPort);
-            ChainLag lag = tip != null ? ChainLag.of(clusterInfo, tip._2.getSlot(), System.currentTimeMillis()) : null;
+            ChainLag lag = tip != null ? ChainLag.of(clusterInfo, tip._2.getSlot(), clock.getAsLong()) : null;
             if (lag != null && lag.needsCatchUpOnStart()) {
                 writer.accept(warn("The chain is %s behind wall clock%s. Yano is running but not producing blocks; "
                                 + "run 'catch-up' to bring it to wall clock.", lag.idleTimeText(),
@@ -450,7 +453,7 @@ public class DevnetCatchUpService {
     private YanoBackfill backfillYanoOnly(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer)
             throws InterruptedException {
         int httpPort = clusterInfo.getYanoHttpPort();
-        long startedAt = System.currentTimeMillis();
+        long startedAt = clock.getAsLong();
         try {
             checkCancelled();
             if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.CATCH_UP, problemsOnly(writer))
@@ -462,7 +465,7 @@ public class DevnetCatchUpService {
             if (tip == null)
                 return new YanoBackfill(false, "Could not read the chain tip from Yano; not starting block production. "
                         + "Retry with 'start' or 'catch-up'.", -1, -1, 0);
-            ChainLag lag = ChainLag.of(clusterInfo, tip._2.getSlot(), System.currentTimeMillis());
+            ChainLag lag = ChainLag.of(clusterInfo, tip._2.getSlot(), clock.getAsLong());
             if (lag.lagSlots() == 0)
                 return new YanoBackfill(true, "The chain is at wall clock", lag.tipSlot(), lag.tipSlot(), 0);
 
@@ -478,17 +481,19 @@ public class DevnetCatchUpService {
             if (caughtUp == null) {
                 if (step != null)
                     step.fail("Yano's catch-up call failed");
-                // Inside one epoch the first live block skips no boundary, so starting is harmless
-                if (lag.epochsToCross() == 0)
-                    return new YanoBackfill(true, "Catch-up failed; the gap is inside one epoch", lag.tipSlot(),
-                            lag.tipSlot(), 0);
+                // Inside one epoch the first live block skips no boundary, so starting is harmless. Measure again:
+                // the failed call may have taken minutes, and epochs may have passed meanwhile.
+                ChainLag now = ChainLag.of(clusterInfo, lag.tipSlot(), clock.getAsLong());
+                if (now.epochsToCross() == 0)
+                    return new YanoBackfill(true, "Catch-up failed; the gap is inside one epoch", now.tipSlot(),
+                            now.tipSlot(), 0);
                 return new YanoBackfill(false, String.format("Yano's catch-up call failed (see 'yano-logs'). Not starting "
                         + "block production: its first block would skip %s. Retry with 'catch-up'.",
-                        epochs(lag.epochsToCross())), lag.tipSlot(), lag.tipSlot(), 0);
+                        epochs(now.epochsToCross())), now.tipSlot(), now.tipSlot(), 0);
             }
             long toSlot = caughtUp.path("new_slot").asLong();
             long blocks = caughtUp.path("blocks_produced").asLong();
-            String message = resumedMessage(clusterInfo, lag, toSlot, System.currentTimeMillis() - startedAt);
+            String message = resumedMessage(clusterInfo, lag, toSlot, clock.getAsLong() - startedAt);
             if (report) {
                 step.done(String.format("%,d blocks to slot %,d", blocks, toSlot));
                 task.log(success(message));

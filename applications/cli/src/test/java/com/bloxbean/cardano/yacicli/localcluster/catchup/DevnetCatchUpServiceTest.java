@@ -156,10 +156,32 @@ class DevnetCatchUpServiceTest {
         boolean started = service.startYanoOnly(clusterInfo(NodeMode.YANO_ONLY), FOLDER, writer);
 
         assertThat(started).isTrue();
-        verify(yano).start(any(), any(), eq(YanoRunMode.CATCH_UP), any());
+        // Waiting for catch-up in a mode that cannot forge at all, not merely one with a long block time
+        verify(yano).start(any(), any(), eq(YanoRunMode.IDLE), any());
+        verify(yano, never()).start(any(), any(), eq(YanoRunMode.CATCH_UP), any());
+        verify(yano, never()).stopQuietly();
         verify(bootstrap, never()).catchUp(anyInt());
         verifyNoLiveStart();
         assertThat(String.join("\n", output)).contains("run 'catch-up'");
+    }
+
+    @Test
+    void yanoOnlyFailedBackfillRechecksTheLagBeforeAllowingLiveProduction() {
+        // At the start the gap is inside one epoch (tip 1,000, wall clock 1,001) ...
+        long[] now = {(startTime + 1001) * 1000};
+        service.clock = () -> now[0];
+        when(bootstrap.getNodeTip(HTTP_PORT)).thenReturn(tip(1000));
+        // ... but the failing call takes long enough for five epochs to pass
+        when(bootstrap.catchUp(HTTP_PORT)).thenAnswer(invocation -> {
+            now[0] += 200_000;
+            return null;
+        });
+
+        boolean started = service.startYanoOnly(clusterInfo(NodeMode.YANO_ONLY), FOLDER, writer);
+
+        assertThat(started).isFalse();
+        verifyNoLiveStart();
+        assertThat(String.join("\n", output)).contains("would skip 5 epochs");
     }
 
     @Test

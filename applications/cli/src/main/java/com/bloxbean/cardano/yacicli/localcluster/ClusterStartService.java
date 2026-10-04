@@ -387,7 +387,15 @@ public class ClusterStartService {
         Path nodeSocketPath = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock");
         int counter = 0;
         while (!Files.exists(nodeSocketPath) && counter < 10) { //wait 5 sec max
-            Thread.sleep(500);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                // A cancelled catch-up: the caller never gets this process to track, so do not leave it running
+                if (haskellNodeProcess == process)
+                    haskellNodeProcess = null;
+                ProcessUtil.terminate(process);
+                throw e;
+            }
             if (counter == 5)
                 writer.accept(info("Waiting for node socket file to be created ..."));
             counter++;
