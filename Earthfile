@@ -5,7 +5,7 @@ ARG --global tag="dev"
 ARG --global local="true"
 ARG --global REGISTRY_ORG = "bloxbean"
 ARG --global build_type="native"
-ARG --global STORE_NATIVE_BRANCH="v2.0.4"
+ARG --global STORE_NATIVE_BRANCH="v2.0.6"
 ARG --global YANO_TAG="v0.1.0-pre17"
 ARG --global YANO_VERSION="0.1.0-pre17"
 
