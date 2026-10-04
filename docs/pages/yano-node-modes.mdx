@@ -163,6 +163,9 @@ To only report the stall and catch up by hand, set this in `config/application.p
 devnet.auto.catch.up=false
 ```
 
+The chain then waits for you: a companion block producer cannot forge, and in yano-only mode Yano starts without
+producing blocks, so no missed epoch is skipped. `catch-up` brings it to wall clock and starts block production.
+
 <Callout type="info">
 Time moves forward to wall clock, so every epoch that passed is processed. Governance actions and DRep activity
 can expire while the devnet sleeps, just as they would on a real network.
