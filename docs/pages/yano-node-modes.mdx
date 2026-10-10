@@ -165,6 +165,7 @@ devnet.auto.catch.up=false
 
 The chain then waits for you: a companion block producer cannot forge, and in yano-only mode Yano starts without
 producing blocks, so no missed epoch is skipped. `catch-up` brings it to wall clock and starts block production.
+If Yano cannot read its chain tip on `start`, the start fails instead of producing blocks; run `start` again.
 
 <Callout type="info">
 Time moves forward to wall clock, so every epoch that passed is processed. Governance actions and DRep activity

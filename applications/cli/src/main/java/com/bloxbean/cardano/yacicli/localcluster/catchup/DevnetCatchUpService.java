@@ -423,17 +423,28 @@ public class DevnetCatchUpService {
     private boolean startYanoOnlyWithoutCatchUp(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer)
             throws InterruptedException {
         int httpPort = clusterInfo.getYanoHttpPort();
-        // Look at the tip with Yano serving but never forging, as the companion start does with its stalled producer
-        if (yanoService.start(clusterInfo, clusterFolder, YanoRunMode.IDLE, problemsOnly(writer))
-                && yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT)) {
-            Tuple<Long, Point> tip = yanoBootstrapService.getNodeTip(httpPort);
-            ChainLag lag = tip != null ? ChainLag.of(clusterInfo, tip._2.getSlot(), clock.getAsLong()) : null;
-            if (lag != null && lag.needsCatchUpOnStart()) {
-                writer.accept(warn("The chain is %s behind wall clock%s. Yano is running but not producing blocks; "
-                                + "run 'catch-up' to bring it to wall clock.", lag.idleTimeText(),
-                        lag.epochsToCross() > 0 ? String.format(" (%s)", epochs(lag.epochsToCross())) : ""));
-                return true;
-            }
+        // Look at the tip with Yano serving but never forging, as the companion start does with its stalled producer.
+        // Live production starts only once the tip is known and the lag is safe: an unknown lag is no permission.
+        if (!yanoService.start(clusterInfo, clusterFolder, YanoRunMode.IDLE, problemsOnly(writer))
+                || !yanoBootstrapService.waitForNodeTip(httpPort, YANO_READY_TIMEOUT)) {
+            yanoService.stopQuietly();
+            writer.accept(error("Yano did not start to check the chain tip (see 'yano-logs'); not starting block "
+                    + "production, so no missed epoch is skipped. Retry with 'start'."));
+            return false;
+        }
+        Tuple<Long, Point> tip = yanoBootstrapService.getNodeTip(httpPort);
+        if (tip == null || tip._2 == null) {
+            yanoService.stopQuietly();
+            writer.accept(error("Could not read the chain tip from Yano; not starting block production. "
+                    + "Retry with 'start'."));
+            return false;
+        }
+        ChainLag lag = ChainLag.of(clusterInfo, tip._2.getSlot(), clock.getAsLong());
+        if (!lag.liveStartSafe()) {
+            writer.accept(warn("The chain is %s behind wall clock%s. Yano is running but not producing blocks; "
+                            + "run 'catch-up' to bring it to wall clock.", lag.idleTimeText(),
+                    lag.epochsToCross() > 0 ? String.format(" (%s)", epochs(lag.epochsToCross())) : ""));
+            return true;
         }
         yanoService.stopQuietly();
         checkCancelled();
@@ -475,24 +486,28 @@ public class DevnetCatchUpService {
             if (report)
                 printBanner(lag, task.logWriter());
             Step step = report ? task.step("Backfill to wall clock") : null;
-            checkCancelled();
-            JsonNode caughtUp = yanoBootstrapService.catchUp(httpPort);
-            checkCancelled();
-            if (caughtUp == null) {
-                if (step != null)
-                    step.fail("Yano's catch-up call failed");
-                // Inside one epoch the first live block skips no boundary, so starting is harmless. Measure again:
-                // the failed call may have taken minutes, and epochs may have passed meanwhile.
-                ChainLag now = ChainLag.of(clusterInfo, lag.tipSlot(), clock.getAsLong());
-                if (now.epochsToCross() == 0)
-                    return new YanoBackfill(true, "Catch-up failed; the gap is inside one epoch", now.tipSlot(),
-                            now.tipSlot(), 0);
-                return new YanoBackfill(false, String.format("Yano's catch-up call failed (see 'yano-logs'). Not starting "
-                        + "block production: its first block would skip %s. Retry with 'catch-up'.",
-                        epochs(now.epochsToCross())), now.tipSlot(), now.tipSlot(), 0);
+            long toSlot = lag.tipSlot();
+            long blocks = 0;
+            long slack = lag.yanoHandoffSlackSlots();
+            // Yano backfills to the wall clock it reads when the call comes in, so a long backfill ends behind the
+            // current one. Repeat until the gap left for the live producer's restart is small.
+            for (int round = 1; ; round++) {
+                checkCancelled();
+                JsonNode caughtUp = yanoBootstrapService.catchUp(httpPort);
+                checkCancelled();
+                // Measure again after every call: it may have taken minutes, and epochs may have passed meanwhile
+                if (caughtUp == null)
+                    return gaveUp(step, "Yano's catch-up call failed",
+                            ChainLag.of(clusterInfo, toSlot, clock.getAsLong()));
+                toSlot = caughtUp.path("new_slot").asLong(toSlot);
+                blocks += caughtUp.path("blocks_produced").asLong(0);
+                ChainLag now = ChainLag.of(clusterInfo, toSlot, clock.getAsLong());
+                if (now.lagSlots() <= slack)
+                    break;
+                if (round >= MAX_PUMP_ROUNDS)
+                    return gaveUp(step, String.format("Yano's backfill could not keep up with wall clock (still %,d "
+                            + "slots behind)", now.lagSlots()), now);
             }
-            long toSlot = caughtUp.path("new_slot").asLong();
-            long blocks = caughtUp.path("blocks_produced").asLong();
             String message = resumedMessage(clusterInfo, lag, toSlot, clock.getAsLong() - startedAt);
             if (report) {
                 step.done(String.format("%,d blocks to slot %,d", blocks, toSlot));
@@ -506,6 +521,20 @@ public class DevnetCatchUpService {
             if (interrupted)
                 Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * A yano-only backfill that stopped short of wall clock. Inside one epoch the first live block skips no boundary,
+     * so starting is harmless; otherwise live production is not started.
+     */
+    private YanoBackfill gaveUp(Step step, String why, ChainLag now) {
+        if (step != null)
+            step.fail(why);
+        if (now.epochsToCross() == 0)
+            return new YanoBackfill(true, why + "; the gap is inside one epoch", now.tipSlot(), now.tipSlot(), 0);
+        return new YanoBackfill(false, String.format("%s (see 'yano-logs'). Not starting block production: its first "
+                + "block would skip %s. Retry with 'catch-up'.", why, epochs(now.epochsToCross())),
+                now.tipSlot(), now.tipSlot(), 0);
     }
 
     // ---------------------------------------------------------------------------------------------------------

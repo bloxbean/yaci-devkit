@@ -195,6 +195,90 @@ class DevnetCatchUpServiceTest {
         verify(yano).start(any(), any(), eq(YanoRunMode.LIVE), any());
     }
 
+    @Test
+    void yanoOnlyStartWithAutoCatchUpOffFailsWhenYanoNeverAnswers() {
+        ReflectionTestUtils.setField(service, "autoCatchUp", false);
+        when(bootstrap.waitForNodeTip(eq(HTTP_PORT), any())).thenReturn(false);
+
+        boolean started = service.startYanoOnly(clusterInfo(NodeMode.YANO_ONLY), FOLDER, writer);
+
+        // Not knowing the lag is no permission to forge
+        assertThat(started).isFalse();
+        verifyNoLiveStart();
+        verify(yano).stopQuietly();
+        assertThat(String.join("\n", output)).contains("Retry with 'start'");
+    }
+
+    @Test
+    void yanoOnlyStartWithAutoCatchUpOffFailsWhenTheTipCannotBeRead() {
+        ReflectionTestUtils.setField(service, "autoCatchUp", false);
+        when(bootstrap.getNodeTip(HTTP_PORT)).thenReturn(null);
+
+        boolean started = service.startYanoOnly(clusterInfo(NodeMode.YANO_ONLY), FOLDER, writer);
+
+        assertThat(started).isFalse();
+        verifyNoLiveStart();
+        verify(yano).stopQuietly();
+        assertThat(String.join("\n", output)).contains("Could not read the chain tip");
+    }
+
+    @Test
+    void yanoOnlyStartWithAutoCatchUpOffStaysIdleWhenAShortLagCrossesSeveralEpochs() {
+        ReflectionTestUtils.setField(service, "autoCatchUp", false);
+        // securityParam 70: a 210-slot window, longer than the 40-slot epoch. 100 slots behind is inside the
+        // threshold, yet a live block would jump from epoch 22 to 25.
+        ClusterInfo info = clusterInfo(NodeMode.YANO_ONLY);
+        info.setSecurityParam(70);
+        when(bootstrap.getNodeTip(HTTP_PORT)).thenAnswer(invocation -> tip(wallSlot() - 100));
+
+        boolean started = service.startYanoOnly(info, FOLDER, writer);
+
+        assertThat(started).isTrue();
+        verify(yano).start(any(), any(), eq(YanoRunMode.IDLE), any());
+        verifyNoLiveStart();
+        assertThat(String.join("\n", output)).contains("run 'catch-up'");
+    }
+
+    @Test
+    void yanoOnlySlowBackfillIsRepeatedUntilItReachesTheCurrentWallClock() {
+        long[] now = {(startTime + 1010) * 1000};
+        service.clock = () -> now[0];
+        when(bootstrap.getNodeTip(HTTP_PORT)).thenReturn(tip(100));
+        // The first call reaches the wall clock it saw when it came in (slot 1,010), but takes 200 s: five epochs
+        // pass meanwhile. The second reaches the wall clock of its own start.
+        when(bootstrap.catchUp(HTTP_PORT)).thenAnswer(invocation -> {
+            now[0] += 200_000;
+            return caughtUp(1010, 30);
+        }).thenAnswer(invocation -> caughtUp(1210, 6));
+
+        boolean started = service.startYanoOnly(clusterInfo(NodeMode.YANO_ONLY), FOLDER, writer);
+
+        assertThat(started).isTrue();
+        var order = inOrder(yano, bootstrap);
+        order.verify(bootstrap, times(2)).catchUp(HTTP_PORT);
+        order.verify(yano).start(any(), any(), eq(YanoRunMode.LIVE), any());
+        assertThat(String.join("\n", output)).contains("36 blocks to slot 1,210");
+    }
+
+    @Test
+    void yanoOnlyBackfillThatNeverCatchesUpDoesNotStartLiveProduction() {
+        long[] now = {(startTime + 1010) * 1000};
+        service.clock = () -> now[0];
+        when(bootstrap.getNodeTip(HTTP_PORT)).thenReturn(tip(100));
+        // Every call ends 200 s behind the wall clock
+        when(bootstrap.catchUp(HTTP_PORT)).thenAnswer(invocation -> {
+            long target = ChainLag.wallClockSlot(startTime, 1.0, now[0]);
+            now[0] += 200_000;
+            return caughtUp(target, 6);
+        });
+
+        boolean started = service.startYanoOnly(clusterInfo(NodeMode.YANO_ONLY), FOLDER, writer);
+
+        assertThat(started).isFalse();
+        verifyNoLiveStart();
+        assertThat(String.join("\n", output)).contains("could not keep up with wall clock").contains("would skip 5 epochs");
+    }
+
     // --- Companion ------------------------------------------------------------------------------------------
 
     @Test

@@ -72,6 +72,8 @@ public class YanoService {
     private String requiredYanoVersion = "";
 
     private final AtomicBoolean versionChecked = new AtomicBoolean(false);
+    // How the running Yano was started, or null when it is not running
+    private volatile YanoRunMode runMode;
 
     public boolean start(ClusterInfo clusterInfo, Path clusterFolder, boolean pastTimeTravelMode, Consumer<String> writer) {
         return start(clusterInfo, clusterFolder, pastTimeTravelMode ? YanoRunMode.PAST_TIME_TRAVEL : YanoRunMode.LIVE,
@@ -398,6 +400,8 @@ public class YanoService {
         boolean started = false;
         try {
             started = awaitYanoStart(process, clusterInfo, runMode, writer);
+            if (started)
+                this.runMode = runMode;
             return started ? process : null;
         } finally {
             if (!started) {
@@ -537,12 +541,18 @@ public class YanoService {
             return false;
         } finally {
             processes.clear();
+            runMode = null;
         }
         return true;
     }
 
     public boolean isRunning() {
         return processes.stream().anyMatch(Process::isAlive);
+    }
+
+    /** How the running Yano was started ({@link YanoRunMode#IDLE} waits for a catch-up), or null when it is not running. */
+    public YanoRunMode runMode() {
+        return isRunning() ? runMode : null;
     }
 
     public void showLogs(Consumer<String> consumer) {

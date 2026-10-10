@@ -60,6 +60,28 @@ public record ChainLag(long tipSlot, long wallClockSlot, long forecastWindowSlot
         return forecastWindowSlots > 0 && lagSlots() * 4 > forecastWindowSlots * 3;
     }
 
+    /**
+     * Yano-only: whether the live producer can start at wall clock with no backfill. Its first block processes one
+     * epoch boundary as usual but jumps over any further ones ("epoch boundary 3 → 6"), which leaves those epochs
+     * without protocol parameters and rewards. A securityParam set by hand can make the forecast window longer than
+     * an epoch, so the lag threshold alone does not rule that out.
+     */
+    public boolean liveStartSafe() {
+        return !needsCatchUpOnStart() && epochsToCross() <= 1;
+    }
+
+    /**
+     * Yano-only: how close a backfill must get to wall clock before the live producer starts. The Yano restart in
+     * between must not let the gap cross a second epoch boundary, so at most half an epoch, and at most a quarter of
+     * the forecast window, as in companion mode.
+     */
+    public long yanoHandoffSlackSlots() {
+        long slack = forecastWindowSlots > 0 ? forecastWindowSlots / 4 : epochLength / 2;
+        if (epochLength > 0)
+            slack = Math.min(slack, epochLength / 2);
+        return Math.max(2, slack);
+    }
+
     public long tipEpoch() {
         return epochLength > 0 ? tipSlot / epochLength : 0;
     }

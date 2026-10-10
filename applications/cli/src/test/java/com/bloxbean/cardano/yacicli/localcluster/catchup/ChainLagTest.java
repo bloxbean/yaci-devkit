@@ -90,4 +90,20 @@ class ChainLagTest {
         assertThat(ChainLag.durationText(Duration.ofMinutes(125))).isEqualTo("2h 5m");
         assertThat(ChainLag.durationText(Duration.ofHours(76).plusMinutes(12))).isEqualTo("3d 4h");
     }
+
+    @Test
+    void liveStartIsSafeInsideTheThresholdAndAcrossAtMostOneEpochBoundary() {
+        assertThat(lag(1000, 1100).liveStartSafe()).isTrue();          // epoch 1, nothing crossed
+        assertThat(lag(1100, 1250).liveStartSafe()).isTrue();          // one boundary (epoch 1 -> 2)
+        assertThat(lag(1000, 1226).liveStartSafe()).isFalse();         // past 3/4 of the window
+        // A window longer than the epoch (securityParam set by hand): a short lag can cross several boundaries
+        assertThat(new ChainLag(100, 200, 210, 40, 1.0).liveStartSafe()).isFalse();
+    }
+
+    @Test
+    void yanoHandoffSlackIsAQuarterWindowAndAtMostHalfAnEpoch() {
+        assertThat(lag(0, 0).yanoHandoffSlackSlots()).isEqualTo(75);                          // 300 / 4
+        assertThat(new ChainLag(0, 0, 210, 40, 1.0).yanoHandoffSlackSlots()).isEqualTo(20);   // 40 / 2
+        assertThat(new ChainLag(0, 0, 4, 40, 1.0).yanoHandoffSlackSlots()).isEqualTo(2);      // floor of 2
+    }
 }
