@@ -80,7 +80,7 @@ public class ProcessUtil {
         executorHelper.getExecutor().submit(processStream);
         executorHelper.getExecutor().submit(errorStream);
 
-        process.waitFor(1, TimeUnit.SECONDS);
+        awaitStartOrTerminate(process);
         if (!process.isAlive()) {
             writer.accept(error("%s process could not be started.", processName));
             return null;
@@ -96,7 +96,7 @@ public class ProcessUtil {
     public Process startLongRunningProcess(String processName, ProcessBuilder builder, Consumer<String> writer)
             throws IOException, InterruptedException {
         Process process = builder.start();
-        process.waitFor(1, TimeUnit.SECONDS);
+        awaitStartOrTerminate(process);
         if (!process.isAlive()) {
             writer.accept(error("%s process could not be started.", processName));
             return null;
@@ -105,6 +105,45 @@ public class ProcessUtil {
         createProcessId(processName, process);
 
         return process;
+    }
+
+    /**
+     * Give a freshly spawned process a second to fail fast. If the wait is interrupted (a cancelled catch-up), the
+     * process is not returned to anyone who could stop it later, so terminate it here.
+     */
+    private static void awaitStartOrTerminate(Process process) throws InterruptedException {
+        try {
+            process.waitFor(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            terminate(process);
+            throw e;
+        }
+    }
+
+    /**
+     * Stop a process tree: SIGTERM, then a forced kill after a timeout. Works on an interrupted thread too; the
+     * interrupt flag is restored afterwards.
+     */
+    public static void terminate(Process process) {
+        boolean interrupted = Thread.interrupted();
+        try {
+            var children = process.descendants().toList();
+            children.forEach(ProcessHandle::destroy);
+            process.destroy();
+            if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                children.forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+            }
+            children.stream().filter(ProcessHandle::isAlive).forEach(ProcessHandle::destroyForcibly);
+        } catch (InterruptedException e) {
+            process.descendants().forEach(ProcessHandle::destroyForcibly);
+            process.destroyForcibly();
+            interrupted = true;
+        } finally {
+            if (interrupted)
+                Thread.currentThread().interrupt();
+        }
     }
 
     public String createProcessId(String processName, Process process) {
@@ -139,6 +178,10 @@ public class ProcessUtil {
     }
 
     public void deletePidFile(String processName) {
+        deletePidFile(processName, ConsoleWriter::writeLn);
+    }
+
+    public void deletePidFile(String processName, Consumer<String> writer) {
         var yaciCliHome = clusterConfig.getYaciCliHome();
         // Validate the yaciCliHome directory
         Path homePath = Paths.get(yaciCliHome);
@@ -147,7 +190,7 @@ public class ProcessUtil {
         var pidPath = pids.resolve(processName + ".pid");
         if (Files.exists(pidPath)) {
             pidPath.toFile().delete();
-            writeLn(info("Deleted pid file : " + processName + ".pid"));
+            writer.accept(info("Deleted pid file : " + processName + ".pid"));
         }
     }
 
