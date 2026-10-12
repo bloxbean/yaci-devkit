@@ -456,26 +456,43 @@ public class ClusterStartService {
      * Stop a process and its children, gracefully first. The node runs as a child of {@code sh node.sh}, so the
      * signal has to reach it directly: SIGTERM lets cardano-node close its ChainDB (0.1 s), while a forced kill
      * leaves it unclean and the next start revalidates every chunk, which grows with chain length.
+     * <p>
+     * The children go first, while their shell still runs and reaps them. Stopping both at once orphans the node,
+     * and in Docker its new parent ({@code sleep infinity}, PID 1) never reaps it: it stays a zombie, which
+     * {@link ProcessHandle#isAlive()} still reports as alive.
      *
      * @return true if the process tree is gone
      */
     static boolean stopProcessTree(Process process) throws InterruptedException {
         List<ProcessHandle> children = process.descendants().toList();
         children.forEach(ProcessHandle::destroy);
-        process.destroy();
 
         long deadline = System.currentTimeMillis() + 15_000;
         for (ProcessHandle child : children) {
-            while (child.isAlive() && System.currentTimeMillis() < deadline)
+            while (isRunning(child) && System.currentTimeMillis() < deadline)
                 Thread.sleep(100);
-            if (child.isAlive())
+            if (isRunning(child))
                 child.destroyForcibly();
         }
+        process.destroy();
         if (!process.waitFor(Math.max(1, deadline - System.currentTimeMillis()), TimeUnit.MILLISECONDS)) {
             process.destroyForcibly();
             process.waitFor(5, TimeUnit.SECONDS);
         }
-        return !process.isAlive() && children.stream().noneMatch(ProcessHandle::isAlive);
+        return !process.isAlive() && children.stream().noneMatch(ClusterStartService::isRunning);
+    }
+
+    /** Alive and not a zombie (Linux {@code /proc/<pid>/stat} state Z); where there is no /proc, just alive. */
+    static boolean isRunning(ProcessHandle handle) {
+        if (!handle.isAlive())
+            return false;
+        try {
+            String stat = Files.readString(Path.of("/proc", String.valueOf(handle.pid()), "stat"));
+            int commEnd = stat.lastIndexOf(')');   // the state follows "(comm) "
+            return commEnd < 0 || commEnd + 2 >= stat.length() || stat.charAt(commEnd + 2) != 'Z';
+        } catch (IOException | RuntimeException e) {
+            return handle.isAlive();
+        }
     }
 
     /** The Haskell node of this devnet, as a {@link NodeControl} a catch-up can restart as relay or producer. */

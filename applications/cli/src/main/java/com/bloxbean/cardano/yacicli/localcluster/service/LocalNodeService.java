@@ -104,7 +104,13 @@ public class LocalNodeService {
             public void txRejected(TxSubmissionRequest txSubmissionRequest, MsgRejectTx msgRejectTx) {
             }
         });
-        this.localClientProvider.start();
+        try {
+            this.localClientProvider.start();
+        } catch (Exception e) {
+            // The caller never gets this service to shut down: stop the client's reconnects here
+            localClientProvider.shutdown();
+            throw e;
+        }
 
         this.utxoSupplier = new LocalUtxoSupplier(localClientProvider.getLocalStateQueryClient(), era);
         this.protocolParamsSupplier = new LocalProtocolParamSupplier(localClientProvider.getLocalStateQueryClient(), era);

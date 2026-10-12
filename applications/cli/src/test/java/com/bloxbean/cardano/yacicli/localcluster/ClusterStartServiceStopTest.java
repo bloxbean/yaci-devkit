@@ -181,6 +181,33 @@ class ClusterStartServiceStopTest {
         verify(catchUp, never()).catchUpYanoOnly(any(), any(), any());
     }
 
+    @Test
+    void stopProcessTreeStopsTheNodeWhileItsShellStillRunsToReapIt() throws Exception {
+        // Like node.sh: a shell running the node. The marker is written only if the shell outlives the node
+        Path marker = tmp.resolve("reaped");
+        Process shell = new ProcessBuilder("bash", "-c", "sleep 600; echo reaped > '" + marker + "'").start();
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (shell.descendants().findAny().isEmpty() && System.currentTimeMillis() < deadline)
+            Thread.sleep(20);
+        ProcessHandle node = shell.descendants().findFirst().orElseThrow();
+
+        assertThat(ClusterStartService.stopProcessTree(shell)).isTrue();
+
+        // Had the shell been stopped with the node, the node would be orphaned: in Docker, PID 1 ('sleep infinity')
+        // never reaps it, and the zombie still counts as alive
+        assertThat(node.isAlive()).isFalse();
+        assertThat(shell.isAlive()).isFalse();
+        assertThat(marker).exists();
+    }
+
+    @Test
+    void aProcessThatHasExitedIsNotRunning() throws Exception {
+        Process process = new ProcessBuilder("true").start();
+        process.waitFor(5, TimeUnit.SECONDS);
+        assertThat(ClusterStartService.isRunning(process.toHandle())).isFalse();
+        assertThat(ClusterStartService.isRunning(ProcessHandle.current())).isTrue();
+    }
+
     /** A process that runs until it is destroyed. */
     private static final class FakeProcess extends Process {
         private final String name;

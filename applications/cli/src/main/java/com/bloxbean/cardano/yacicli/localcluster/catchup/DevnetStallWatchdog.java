@@ -50,35 +50,38 @@ public class DevnetStallWatchdog {
     private ScheduledFuture<?> check;
     private volatile String clusterName;
     private volatile boolean hintShown;
+    long intervalMillis = TimeUnit.SECONDS.toMillis(CHECK_INTERVAL_SECONDS);
 
     @EventListener
     public synchronized void handleClusterStarted(ClusterStarted event) {
-        stopChecking();
+        stopChecking(false);
         clusterName = event.getClusterName();
         hintShown = false;
-        check = scheduler.scheduleWithFixedDelay(this::checkSafely, CHECK_INTERVAL_SECONDS, CHECK_INTERVAL_SECONDS,
-                TimeUnit.SECONDS);
+        check = scheduler.scheduleWithFixedDelay(this::checkSafely, intervalMillis, intervalMillis,
+                TimeUnit.MILLISECONDS);
     }
 
+    // The node is gone: interrupt a check still reading its tip. ClusterStopped comes after the stop, and a check
+    // that started meanwhile finds the node's stale socket; the node client retries that connect until interrupted.
     @EventListener
     public void handleClusterStopped(ClusterStopped event) {
-        stopChecking();
+        stopChecking(true);
     }
 
     @EventListener
     public void handleClusterDeleted(ClusterDeleted event) {
-        stopChecking();
+        stopChecking(true);
     }
 
     @PreDestroy
     public void shutdown() {
-        stopChecking();
+        stopChecking(true);
         scheduler.shutdownNow();
     }
 
-    private synchronized void stopChecking() {
+    private synchronized void stopChecking(boolean interrupt) {
         if (check != null) {
-            check.cancel(false);
+            check.cancel(interrupt);
             check = null;
         }
     }
