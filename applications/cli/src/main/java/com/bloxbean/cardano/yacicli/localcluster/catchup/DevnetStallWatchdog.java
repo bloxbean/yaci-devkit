@@ -111,6 +111,10 @@ public class DevnetStallWatchdog {
             return;
         }
 
+        // A 'catch-up' run while the lag was being read is already on it
+        if (devnetCatchUpService.isInProgress())
+            return;
+
         if (!devnetCatchUpService.isAutoCatchUp()) {
             if (!hintShown)
                 writeLn(warn("The devnet's chain is %s behind wall clock (the machine slept?) and the node cannot forge. "
@@ -127,7 +131,8 @@ public class DevnetStallWatchdog {
 
         writeLn(header(AnsiColors.CYAN_BOLD, "The devnet stopped producing blocks (the machine slept?)"));
         var result = clusterService.catchUp(name, false, console());
-        if (!result.success())
+        // Still in progress: another catch-up took the slot first and is doing the work, no retry needed
+        if (!result.success() && !devnetCatchUpService.isInProgress())
             writeLn(error(result.message() + " Run 'catch-up' to retry, or 'reset' to start a new chain."));
 
         if (atPrompt)
