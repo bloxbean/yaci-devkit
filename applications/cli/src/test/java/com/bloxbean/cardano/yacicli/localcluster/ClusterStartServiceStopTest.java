@@ -82,7 +82,7 @@ class ClusterStartServiceStopTest {
 
     private ClusterInfo clusterInfo(NodeMode mode) throws Exception {
         return ClusterInfo.builder()
-                .nodeMode(mode).masterNode(true).nodePort(freePort()).submitApiPort(freePort())
+                .nodeMode(mode).masterNode(true).nodePort(freePort()).submitApiPort(freePort()).prometheusPort(freePort())
                 .startTime(System.currentTimeMillis() / 1000 - 1010).slotLength(1.0).blockTime(1.0).epochLength(40)
                 .securityParam(7).activeSlotsCoeff(1.0).yanoHttpPort(6060)
                 .build();

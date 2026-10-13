@@ -37,4 +37,16 @@ npm i -g @bloxbean/yaci-devkit
 
 > **Note on platforms**: Ogmios and Kupo are published for Linux (x86_64, arm64) and macOS arm64. On macOS x86_64 and Windows they are unavailable; there Yaci Store falls back to the embedded `scalus` script cost evaluator, or you can use the Docker distribution.
 
+### Port Conflicts
+
+If a cardano-node (for example a mainnet node) already runs on this machine, the devnet node cannot open its
+Prometheus port (12798). Use another one:
+
+```bash
+yaci-devkit up --prometheus-port 12799
+
+# or for every run
+PROMETHEUS_PORT=12799 yaci-devkit up
+```
+
 For a full list of Yaci CLI commands, check the Yaci DevKit [documentation](https://devkit.yaci.xyz/commands).

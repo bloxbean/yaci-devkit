@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static com.bloxbean.cardano.yacicli.util.ConsoleWriter.*;
@@ -69,12 +70,18 @@ public class ProcessUtil {
         ProcessStream processStream =
                 new ProcessStream(process.getInputStream(), line -> {
                     //The line is data, not a format string : node output such as "Progress: 95.65%" would throw
-                    logs.add("[" + processName + "] " + line);
+                    addLine(logs, processName, line);
                 });
 
+        // Shown while the process starts. Afterwards kept with its output rather than dropped, so the reason of a
+        // later exit (e.g. a port already in use) can still be shown
+        AtomicBoolean started = new AtomicBoolean(false);
         ProcessStream errorStream =
                 new ProcessStream(process.getErrorStream(), line -> {
-                    writeLn(error(line));
+                    if (started.get())
+                        addLine(logs, processName, line);
+                    else
+                        writeLn(error(line));
                 });
 
         executorHelper.getExecutor().submit(processStream);
@@ -88,9 +95,15 @@ public class ProcessUtil {
 
         createProcessId(processName, process);
 
-        //stop consuming error stream
-        errorStream.stop();
+        started.set(true);
         return process;
+    }
+
+    // Both output readers add to the queue, which is not thread-safe
+    private static void addLine(Queue<String> logs, String processName, String line) {
+        synchronized (logs) {
+            logs.add("[" + processName + "] " + line);
+        }
     }
 
     public Process startLongRunningProcess(String processName, ProcessBuilder builder, Consumer<String> writer)

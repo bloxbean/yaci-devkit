@@ -205,6 +205,9 @@ public class ClusterStartService {
             Process nodeProcess = startNode(clusterFolder, clusterInfo, companionBootstrapDone, writer);
             if (nodeProcess == null) {
                 writer.accept(error("Node process could not be started."));
+                // The companion bootstrap left Yano running for the handover that will not happen
+                if (companionBootstrapDone)
+                    yanoService.stop();
                 return new RunStatus(false, firstRun);
             }
             processes.add(nodeProcess);
@@ -277,7 +280,7 @@ public class ClusterStartService {
         }
     }
 
-    private static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
+    static boolean portAvailabilityCheck(ClusterInfo clusterInfo, Consumer<String> writer) {
         // yano-only uses neither the Haskell node port nor the submit-api port; Yano checks its own
         // n2n/http ports in YanoService.start. Skip the Haskell port checks so they can't block a
         // valid yano-only startup.
@@ -305,10 +308,24 @@ public class ClusterStartService {
             writer.accept(error("Submit Api Port " + clusterInfo.getSubmitApiPort() + " is not available. Please check if the port is already in use."));
         }
 
-        if (!nodePortAvailable || !submitPortAvaiable)
+        // The node exits at startup when its Prometheus port is taken, which a mainnet or testnet node on this
+        // machine uses by default
+        int prometheusPort = clusterInfo.getPrometheusPort();
+        boolean prometheusPortAvailable = prometheusPort <= 0 || PortUtil.isPortAvailable(prometheusPort);
+        if (!prometheusPortAvailable)
+            prometheusPortInUse(prometheusPort, writer);
+
+        if (!nodePortAvailable || !submitPortAvaiable || !prometheusPortAvailable)
             return false;
         else
             return true;
+    }
+
+    static void prometheusPortInUse(int prometheusPort, Consumer<String> writer) {
+        writer.accept(error("Prometheus Port " + prometheusPort + " is not available. The devnet node needs it; another "
+                + "cardano-node on this machine (e.g. a mainnet node) may be using it."));
+        writer.accept(info("Stop that process, or re-create the devnet with a free port: 'create-node -o --prometheus-port <port>' "
+                + "(or 'up --prometheus-port <port>'), or set prometheus.port=<port> in config/application.properties."));
     }
 
     public void stopCluster(Consumer<String> writer) {
@@ -434,7 +451,7 @@ public class ClusterStartService {
 
         Path nodeSocketPath = clusterFolder.resolve(ClusterConfig.NODE_FOLDER_PREFIX).resolve("node.sock");
         int counter = 0;
-        while (!Files.exists(nodeSocketPath) && counter < 10) { //wait 5 sec max
+        while (!Files.exists(nodeSocketPath) && counter < 10 && process.isAlive()) { //wait 5 sec max
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -447,6 +464,14 @@ public class ClusterStartService {
             if (counter == 5)
                 writer.accept(info("Waiting for node socket file to be created ..."));
             counter++;
+        }
+
+        // Exited after the first second ProcessUtil waits: don't let the caller wait for a node that is gone
+        if (!process.isAlive()) {
+            if (haskellNodeProcess == process)
+                haskellNodeProcess = null;
+            nodeExitedAtStartup(process, clusterInfo, writer);
+            return null;
         }
 
         return process;
@@ -598,6 +623,24 @@ public class ClusterStartService {
 
         return devnetCatchUpService.catchUpCompanion(clusterInfo, clusterFolder, nodeControl(clusterInfo, clusterFolder),
                 lag, writer);
+    }
+
+    private void nodeExitedAtStartup(Process process, ClusterInfo clusterInfo, Consumer<String> writer) throws InterruptedException {
+        processUtil.deletePidFile(NODE_PROCESS_NAME);
+        // Let the output readers take in the node's last lines, its error among them
+        Thread.sleep(500);
+        writer.accept(error("The node exited during startup (exit code " + process.exitValue() + "). Its last output:"));
+        List<String> lastLines;
+        synchronized (logs) {
+            lastLines = new ArrayList<>(logs);
+        }
+        lastLines.subList(0, Math.max(0, lastLines.size() - 5)).clear();
+        // Its startup lines include the whole node configuration on one line
+        lastLines.forEach(line -> writer.accept("  " + (line.length() > 300 ? line.substring(0, 300) + " ..." : line)));
+
+        int prometheusPort = clusterInfo.getPrometheusPort();
+        if (prometheusPort > 0 && !PortUtil.isPortAvailable(prometheusPort))
+            prometheusPortInUse(prometheusPort, writer);
     }
 
     private Process startSubmitApi(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) throws IOException, InterruptedException, ExecutionException, TimeoutException {

@@ -277,7 +277,7 @@ public class ClusterAdminController {
         }
 
         try {
-            clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, slotLength, blockTime, epochLength, true,
+            clusterCommands.createCluster(DEFAULT_CLUSTER_NAME, 3001, 8090, null, slotLength, blockTime, epochLength, true,
                     true, "conway", null, false, request.enableMultiNode(), request.multiNodeStakeRatioFactor);
             return true;
         } catch (Exception e) {

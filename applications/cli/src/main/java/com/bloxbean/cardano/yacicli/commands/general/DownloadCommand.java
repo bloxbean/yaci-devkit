@@ -92,6 +92,7 @@ public class DownloadCommand {
             @ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Node Name") String clusterName,
             @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
             @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
+            @ShellOption(value = {"--prometheus-port"}, defaultValue = ShellOption.NULL, help = ClusterCommands.PROMETHEUS_PORT_HELP) Integer prometheusPort,
             @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
             @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (0.1 - 20)", defaultValue = "1") double blockTime,
             @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "600") int epochLength,
@@ -146,7 +147,7 @@ public class DownloadCommand {
 
         var status = download(componentList.toArray(new String[0]), overwrite);
         if (status) {
-            clusterCommands.createCluster(clusterName, port, submitApiPort, slotLength, blockTime, epochLength,
+            clusterCommands.createCluster(clusterName, port, submitApiPort, prometheusPort, slotLength, blockTime, epochLength,
                     true, true, null, genesisProfile, false, enableMultiNode, stakeRatioFactor);
 
             if (!interactive && tail)
