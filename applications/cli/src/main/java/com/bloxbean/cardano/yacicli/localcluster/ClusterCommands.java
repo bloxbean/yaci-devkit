@@ -59,6 +59,9 @@ public class ClusterCommands {
     @Value("${socat.port:3333}")
     private int socatPort;
 
+    public static final String PROMETHEUS_PORT_HELP = "Prometheus metrics port of the devnet node. Use another port when a "
+            + "cardano-node already running on this machine (e.g. a mainnet node) uses it. Default: prometheus.port (12798)";
+
     @Value("${prometheus.port:12798}")
     private int prometheusPort;
 
@@ -102,6 +105,7 @@ public class ClusterCommands {
     public void createCluster(@ShellOption(value = {"-n", "--name"}, defaultValue = "default", help = "Node Name") String clusterName,
                               @ShellOption(value = {"--port"}, help = "Node port (Used with --create option only)", defaultValue = "3001") int port,
                               @ShellOption(value = {"--submit-api-port"}, help = "Submit Api Port", defaultValue = "8090") int submitApiPort,
+                              @ShellOption(value = {"--prometheus-port"}, defaultValue = ShellOption.NULL, help = PROMETHEUS_PORT_HELP) Integer prometheusPortOption,
                               @ShellOption(value = {"-s", "--slot-length"}, help = "Slot Length in sec. (0.1 to ..)", defaultValue = "1") double slotLength,
                               @ShellOption(value = {"-b", "--block-time"}, help = "Block time in sec. (0.1 - 20)", defaultValue = "1") double blockTime,
                               @ShellOption(value = {"-e", "--epoch-length"}, help = "No of slots in an epoch", defaultValue = "600") int epochLength,
@@ -129,6 +133,11 @@ public class ClusterCommands {
 
             if (slotLength > blockTime) {
                 writeLn(error("Slot length should be less than block time"));
+                return;
+            }
+
+            if (prometheusPortOption != null && (prometheusPortOption < 1 || prometheusPortOption > 65535)) {
+                writeLn(error("Invalid Prometheus port: " + prometheusPortOption));
                 return;
             }
 
@@ -178,7 +187,7 @@ public class ClusterCommands {
                     .kupoPort(kupoPort)
                     .yaciStorePort(yaciStorePort)
                     .socatPort(socatPort)
-                    .prometheusPort(prometheusPort)
+                    .prometheusPort(prometheusPortOption != null ? prometheusPortOption : prometheusPort)
                     .yanoServerPort(yanoServerPort)
                     .yanoHttpPort(yanoHttpPort)
                     .nodeMode(genesisConfig.getNodeMode())
@@ -276,6 +285,23 @@ public class ClusterCommands {
                 publisher.publishEvent(new ClusterStarted(clusterName));
         }
 
+    }
+
+    @ShellMethod(value = "Catch the devnet up to wall clock after the machine slept or the devnet was paused longer than "
+            + "the stability window. Runs automatically on start and while the devnet runs (devnet.auto.catch.up).", key = "catch-up")
+    @ShellMethodAvailability("localClusterCmdAvailability")
+    public void catchUp(@ShellOption(value = {"--force"}, defaultValue = "false",
+            help = "Catch up even when the chain is not stalled") boolean force) {
+        String clusterName = CommandContext.INSTANCE.getProperty(ClusterConfig.CLUSTER_NAME);
+        try {
+            var result = localClusterService.catchUp(clusterName, force, console());
+            if (!result.success())
+                writeLn(error(result.message()));
+            else if (result.blocksProduced() == 0)
+                writeLn(info(result.message()));
+        } catch (IOException e) {
+            writeLn(error("Catch-up failed: " + e.getMessage()));
+        }
     }
 
     @ShellMethod(value = "Stop the running local devnet", key = "stop")

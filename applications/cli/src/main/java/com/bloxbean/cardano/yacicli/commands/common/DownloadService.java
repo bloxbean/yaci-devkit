@@ -1,6 +1,8 @@
 package com.bloxbean.cardano.yacicli.commands.common;
 
 import com.bloxbean.cardano.yacicli.localcluster.ClusterConfig;
+import com.bloxbean.cardano.yacicli.util.progress.ConsoleProgress;
+import com.bloxbean.cardano.yacicli.util.progress.Step;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -490,29 +492,30 @@ public class DownloadService {
             Path targetPath = Paths.get(targetDir, targetFileName);
             Files.createDirectories(targetPath.getParent());
 
+            Step step = ConsoleProgress.step("Downloading " + component, console());
             try (InputStream inputStream = httpConn.getInputStream();
                  FileOutputStream outputStream = new FileOutputStream(targetPath.toFile())) {
 
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[65536];
                 int bytesRead;
                 long totalBytesRead = 0;
-                int percentCompleted;
 
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     if (Thread.currentThread().isInterrupted()) {
-                        writeLn(warnLabel("Download", "Download interrupted by user."));
+                        step.fail("interrupted by user");
                         Files.deleteIfExists(targetPath);
                         return null;
                     }
 
                     outputStream.write(buffer, 0, bytesRead);
                     totalBytesRead += bytesRead;
-                    percentCompleted = (int) ((totalBytesRead * 100) / fileSize);
-                    write("\rDownloading: " + percentCompleted + "%");
+                    step.progress(totalBytesRead, fileSize, fileSize > 0
+                            ? megabytes(totalBytesRead) + " / " + megabytes(fileSize)
+                            : megabytes(totalBytesRead));
                 }
-                System.out.println();
-                writeLn(success("Download complete for %s!", component));
+                step.done(megabytes(totalBytesRead));
             } catch (Exception e) {
+                step.fail(e.getMessage());
                 e.printStackTrace();
             }
 
@@ -522,6 +525,10 @@ public class DownloadService {
         }
 
         return null;
+    }
+
+    private static String megabytes(long bytes) {
+        return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
     }
 
     public void extractTarGz(String filePath, String extractDir) throws IOException {

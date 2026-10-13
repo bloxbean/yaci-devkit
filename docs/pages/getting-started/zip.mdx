@@ -199,7 +199,12 @@ Customize default ports:
 ogmios.port=1337
 kupo.port=1442
 yaci.store.port=8080
+# Devnet node's Prometheus port. Change it when another cardano-node on this machine uses 12798.
+prometheus.port=12799
 ```
+
+`prometheus.port` is written into the devnet when it is created; re-create the devnet (`create-node -o`) after changing
+it. See [Known Issues](../known-issues#devnet-node-does-not-start-while-another-cardano-node-runs).
 
 ### node.properties
 

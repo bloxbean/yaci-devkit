@@ -296,6 +296,18 @@ If you encounter port conflicts, use custom ports:
 yaci-devkit up --port 3002 --enable-yaci-store
 ```
 
+If a cardano-node (for example a mainnet node) already runs on this machine, the devnet node cannot open its
+Prometheus port (12798). Use another one:
+
+```bash
+yaci-devkit up --prometheus-port 12799 --enable-yaci-store
+
+# or for every run
+PROMETHEUS_PORT=12799 yaci-devkit up --enable-yaci-store
+```
+
+See [Known Issues](../known-issues#devnet-node-does-not-start-while-another-cardano-node-runs).
+
 ## Next Steps
 
 - **Learn all commands**: Check out [Yaci CLI Commands](/commands)

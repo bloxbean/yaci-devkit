@@ -21,6 +21,11 @@ Create a new node with the default options. 1 sec block time and overwrite the e
      - `--epoch-length or -e int` : Epoch Length in slots. Default is 500.
      - `--era String` : Era (babbage, conway). Default is conway.
      - `--enable-multi-node` : Enable multi-node setup for rollback testing. **New in 0.11.0-beta1.**
+     - `--port int` : Node-to-node port. Default is 3001.
+     - `--submit-api-port int` : Submit API port. Default is 8090.
+     - `--prometheus-port int` : Prometheus metrics port of the devnet node. Default is the `prometheus.port` property (12798). Use another port when a cardano-node already running on this machine (for example a mainnet node) uses it. See [Known Issues](./known-issues#devnet-node-does-not-start-while-another-cardano-node-runs).
+
+The `up` command takes the same `--port`, `--submit-api-port` and `--prometheus-port` options.
 
 **Note:** There are many other node specific configuration that can be set through env file or node.properties. Please refer to the [Node Configuration](./node-configuration) for more details.
 
@@ -35,6 +40,22 @@ reset
 
 If the devnet gets stuck or you simply want to reset the data and restart with the same configuration, simply use the command "reset".
 It will restore your devnet to its initial state, allowing you to continue your development seamlessly.
+
+### catch-up
+
+Catch the devnet up to wall clock after the machine slept or the devnet was paused for longer than its stability
+window. The chain is kept (contracts, wallets, stake), and every epoch that passed is processed. Companion and
+yano-only devnets only.
+
+- **Usage:**
+```bash
+catch-up [--force]
+```
+- **Options:**
+  - `--force`: catch up even when the chain is not stalled.
+
+DevKit already does this on `start` and while the devnet runs, unless `devnet.auto.catch.up=false`. See
+[Resuming After a Long Pause](./yano-node-modes#resuming-after-a-long-pause).
 
 ### stop
 

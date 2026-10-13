@@ -1,5 +1,7 @@
 package com.bloxbean.cardano.yacicli.localcluster.yano;
 
+import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yacicli.common.Tuple;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -78,6 +80,72 @@ public class YanoBootstrapService {
             writer.accept(error("Error shifting epochs: " + e.getMessage()));
             return false;
         }
+    }
+
+    /**
+     * Catch Yano's producer up to wall clock without printing anything.
+     *
+     * @return Yano's response ({@code new_slot}, {@code new_block_number}, {@code blocks_produced}), or null on failure
+     */
+    public JsonNode catchUp(int httpPort) {
+        String url = "http://localhost:" + httpPort + "/api/v1/devnet/epochs/catch-up";
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofMinutes(10))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString("{}"))
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200)
+                return objectMapper.readTree(response.body());
+            log.warn("Catch-up failed: HTTP {} - {}", response.statusCode(), response.body());
+        } catch (Exception e) {
+            log.warn("Catch-up failed: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Yano's node tip from {@code /api/v1/node/tip}, available in every run mode.
+     *
+     * @return (block number, point), or null when Yano is not reachable
+     */
+    public Tuple<Long, Point> getNodeTip(int httpPort) {
+        String url = "http://localhost:" + httpPort + "/api/v1/node/tip";
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(5))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode tip = objectMapper.readTree(response.body());
+                if (tip.hasNonNull("slot"))
+                    return new Tuple<>(tip.path("blockNumber").asLong(),
+                            new Point(tip.get("slot").asLong(), tip.path("blockHash").asText()));
+            }
+        } catch (Exception e) {
+            log.debug("Error getting Yano node tip: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /** Wait until {@code /api/v1/node/tip} answers (it does in every run mode, unlike the readiness probe). */
+    public boolean waitForNodeTip(int httpPort, Duration timeout) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        while (System.currentTimeMillis() < deadline) {
+            if (getNodeTip(httpPort) != null)
+                return true;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
     }
 
     public boolean catchUpToWallClock(int httpPort, Consumer<String> writer) {

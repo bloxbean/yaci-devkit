@@ -8,6 +8,8 @@ import com.bloxbean.cardano.yacicli.localcluster.service.ClusterUtilService;
 import com.bloxbean.cardano.yacicli.localcluster.yano.bootstrap.ChainBootstrapContext;
 import com.bloxbean.cardano.yacicli.localcluster.yano.bootstrap.ChainBootstrapRunner;
 import com.bloxbean.cardano.yaci.core.protocol.chainsync.messages.Point;
+import com.bloxbean.cardano.yacicli.util.progress.ConsoleProgress;
+import com.bloxbean.cardano.yacicli.util.progress.Step;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -252,8 +254,6 @@ public class YanoCompanionService {
      * @param writer        console output
      */
     public void performHandover(ClusterInfo clusterInfo, Path clusterFolder, Consumer<String> writer) {
-        writer.accept(info("Waiting for Haskell node to sync from Yano..."));
-
         try {
             // Wait for node socket to appear (Haskell node is ready)
             Path socketPath = Path.of(clusterInfo.getSocketPath());
@@ -280,23 +280,20 @@ public class YanoCompanionService {
                 writer.accept(warn("yano.relay.sync.max.wait.seconds must be 0 (no ceiling) or positive, got %d. Using %d.",
                         relaySyncMaxWaitSeconds, maxWaitSeconds));
 
-            String ceiling = maxWaitSeconds > 0 ? ", at most " + maxWaitSeconds + "s in total" : "";
-            writer.accept(info("Waiting for relay to sync past epoch %d (giving up if the tip stalls for %ds%s)...",
-                    BOOTSTRAP_EPOCH_SHIFT, stallTimeoutSeconds, ceiling));
-
             final ClusterUtilService clusterUtilService = clusterUtilServiceProvider.getObject();
-            // ClusterUtilService.getTip prints "Find tip error ..." directly via static
-            // ConsoleWriter on exception (bypassing the consumer); transient noise during
-            // the first one or two polls after the socket appears is expected.
             RelaySyncWaiter waiter = new RelaySyncWaiter(stallTimeoutSeconds * 1000L, maxWaitSeconds * 1000L);
+            long targetSlot = BOOTSTRAP_EPOCH_SHIFT * epochLength;
+            Step step = ConsoleProgress.step(String.format("Haskell relay syncing to epoch %d", BOOTSTRAP_EPOCH_SHIFT),
+                    writer);
             RelaySyncWaiter.Outcome outcome = waiter.await(BOOTSTRAP_EPOCH_SHIFT, epochLength,
                     () -> clusterUtilService.getTip(msg -> {}),
-                    msg -> writer.accept(info(msg)));
+                    (slot, height, blocksPerSecond) -> step.progress(slot, targetSlot, String.format(
+                            "height %,d%s", height, blocksPerSecond > 0 ? ", " + blocksPerSecond + " blocks/s" : "")));
 
             if (outcome.synced()) {
-                writer.accept(success("Relay synced to epoch " + outcome.epoch()
-                        + " (slot " + outcome.slot() + ", height " + outcome.height() + ")"));
+                step.done("epoch " + outcome.epoch() + " (slot " + outcome.slot() + ", height " + outcome.height() + ")");
             } else {
+                step.fail("stopped at slot " + outcome.slot());
                 writer.accept(warn("Relay sync did not reach epoch " + BOOTSTRAP_EPOCH_SHIFT
                         + ": " + outcome.reason() + ". Proceeding anyway."));
                 writer.accept(warn("If the Haskell node forges no blocks after the restart, its tip is outside "
@@ -333,7 +330,7 @@ public class YanoCompanionService {
     /**
      * Restore the original topology.json (before Yano peering was added).
      */
-    private void restoreOriginalTopology(Path clusterFolder, Consumer<String> writer) {
+    public void restoreOriginalTopology(Path clusterFolder, Consumer<String> writer) {
         try {
             Path topologyPath = clusterFolder.resolve("node").resolve("topology.json");
             Path topologyBackup = clusterFolder.resolve("node").resolve(TOPOLOGY_BEFORE_YANO);

@@ -64,8 +64,10 @@ public class ClusterUtilService {
 
             return localNodeService.getTip();
         } catch (Exception e) {
-            log.error("Error", e);
-            writeLn(error("Find tip error : " + e.getMessage()));
+            log.debug("Find tip error", e);
+            // Through the caller's writer: polling callers (relay sync, catch-up, store sync) pass a silent one, and
+            // a direct print would land in the middle of their progress line
+            writer.accept(error("Find tip error : " + e.getMessage()));
             return null;
         } finally {
             rootLogService.setLogLevel(orgLevel);
