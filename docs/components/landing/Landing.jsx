@@ -594,8 +594,8 @@ function RunItYourWay() {
             </>
           }
         >
-          Four distributions, one CLI. Pick the one that fits your machine or your pipeline. They all share
-          <code className="dk-inline-code">~/.yaci-cli</code>.
+          Four distributions, one CLI. Pick the one that fits your machine or your pipeline. Homebrew, npm and Zip
+          share <code className="dk-inline-code">~/.yaci-cli</code>; Docker keeps its data in a Docker volume.
         </SectionHead>
 
         <div className="dk-run dk-reveal">
