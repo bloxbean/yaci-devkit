@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  buildAndPush:
+  build:
     strategy:
       matrix:
-        os: ["ubuntu-22.04", "macos-14"]
+        os: ["ubuntu-22.04", "macos-15"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -55,3 +55,175 @@ jobs:
         with:
           name: yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}
           path: ./applications/cli/build/yaci-cli-${{ env.TAG }}-${{ env.os_prefix }}-${{ env.arch }}.zip
+      - name: Upload native binary for npm dry run
+        uses: actions/upload-artifact@v4
+        with:
+          name: yaci-cli-${{ matrix.os }}
+          path: |
+            applications/cli/build/native/nativeCompile/yaci-cli
+            applications/cli/config
+          retention-days: 2
+
+  npm-publish-dry-run:
+    needs: build
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        os: [ "ubuntu-22.04", "macos-15" ]
+    runs-on: ${{ matrix.os }}
+    env:
+      FORCE_COLOR: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yaci-cli-${{ matrix.os }}
+
+      - name: Determine Platform-Specific Folder
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+            echo "npm_folder=yaci-devkit-linux-x64" >> $GITHUB_ENV
+          elif [[ "${{ matrix.os }}" == "macos-15" ]]; then
+            echo "npm_folder=yaci-devkit-macos-arm64" >> $GITHUB_ENV
+          fi
+
+      - name: Prepare npm package
+        run: |
+          cp build/native/nativeCompile/yaci-cli npm/${{ env.npm_folder }}/
+          cp -r config npm/${{ env.npm_folder }}/
+
+      - name: Set npm package version
+        working-directory: npm/${{ env.npm_folder }}
+        run: npm version ${{ env.TAG }} --no-git-tag-version
+
+      - name: Publish to npm (dry run)
+        working-directory: npm/${{ env.npm_folder }}
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then
+            npm publish --dry-run --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then
+            npm publish --dry-run --access public --tag beta
+          else
+            npm publish --dry-run --access public
+          fi
+
+  publish-yaci-devkit-dry-run:
+    needs: npm-publish-dry-run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+
+      - name: Update `yaci-devkit` Version and Dependencies
+        working-directory: npm/yaci-devkit
+        run: |
+          npm version ${{ env.TAG }} --no-git-tag-version
+          sed -i "s/\"@bloxbean\/yaci-devkit-macos-arm64\": \".*\"/\"@bloxbean\/yaci-devkit-macos-arm64\": \"${{ env.TAG }}\"/" package.json
+          sed -i "s/\"@bloxbean\/yaci-devkit-linux-x64\": \".*\"/\"@bloxbean\/yaci-devkit-linux-x64\": \"${{ env.TAG }}\"/" package.json
+          cat package.json
+
+      - name: Publish `yaci-devkit` to npm (dry run)
+        working-directory: npm/yaci-devkit
+        run: |
+          if [[ "${{ env.TAG }}" == *"-preview"* ]]; then
+            npm publish --dry-run --access public --tag preview
+          elif [[ "${{ env.TAG }}" == *"-beta"* ]]; then
+            npm publish --dry-run --access public --tag beta
+          else
+            npm publish --dry-run --access public
+          fi
+
+  # Installs the formula release-cli.yml would publish, from this run's zips through a throwaway local tap,
+  # and checks the installed yaci-devkit starts. Nothing is pushed to bloxbean/homebrew-tap.
+  homebrew-dry-run:
+    needs: build
+    runs-on: macos-15
+    permissions:
+      contents: read
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_ANALYTICS: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          FORMULA=$(.github/scripts/homebrew-formula.sh name "$TAG")
+          if [[ -z "$FORMULA" ]]; then
+            echo "${TAG} is a preview release - release-cli.yml would not update Homebrew. Dry running yaci-devkit-beta."
+            FORMULA=yaci-devkit-beta
+          fi
+          echo "FORMULA=${FORMULA}" >> $GITHUB_ENV
+
+      - name: Download macOS zip
+        uses: actions/download-artifact@v4
+        with:
+          name: yaci-cli-${{ env.TAG }}-macos-arm64
+
+      - name: Download Linux zip
+        uses: actions/download-artifact@v4
+        with:
+          name: yaci-cli-${{ env.TAG }}-linux-x64
+
+      - name: Write formulas
+        run: |
+          MAC_ZIP="$PWD/yaci-cli-${TAG}-macos-arm64.zip"
+          LINUX_ZIP="$PWD/yaci-cli-${TAG}-linux-x64.zip"
+          for f in yaci-devkit yaci-devkit-beta; do
+            .github/scripts/homebrew-formula.sh render "$f" "$TAG" \
+              "file://${MAC_ZIP}" "$(shasum -a 256 "$MAC_ZIP" | cut -d' ' -f1)" \
+              "file://${LINUX_ZIP}" "$(shasum -a 256 "$LINUX_ZIP" | cut -d' ' -f1)" > "$f.rb"
+            ruby -c "$f.rb"
+          done
+          cat "${FORMULA}.rb"
+
+      - name: Install from a local tap
+        run: |
+          brew tap-new --no-git bloxbean-local/devkit-dry-run
+          cp "${FORMULA}.rb" "$(brew --repository)/Library/Taps/bloxbean-local/homebrew-devkit-dry-run/Formula/"
+          brew install "bloxbean-local/devkit-dry-run/${FORMULA}"
+          brew test "bloxbean-local/devkit-dry-run/${FORMULA}"
+          cat "$(brew --prefix)/bin/yaci-devkit"
+
+      - name: Start the installed yaci-devkit
+        run: |
+          cd "$RUNNER_TEMP"
+          (sleep 600 | "$(brew --prefix)/bin/yaci-devkit" > yaci-devkit.log 2>&1 &)
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:10000/local-cluster/api/admin/devnet/status || true)
+            if [[ "$code" != "000" ]]; then echo "yaci-devkit is up (HTTP $code)"; ok=1; break; fi
+            sleep 1
+          done
+          pkill -f "libexec/yaci-cli" || true
+          cat yaci-devkit.log
+          [[ "${ok:-}" == "1" ]]
