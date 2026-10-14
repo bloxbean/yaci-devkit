@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import Architecture from "./Architecture";
 import HeroConsole from "./HeroConsole";
-import YanoWalletArt from "./YanoWalletArt";
 import { BlockfrostTerm, BlockSpeed, CatchUpArt, ForkArt, McpChat, NodeModes, WalletArt } from "./FeatureArt";
 import { useGithubStars, useReveal, useScrolled, useTheme } from "./hooks";
 import {
@@ -44,7 +43,6 @@ const GITHUB_URL = `https://github.com/${GITHUB_REPO}`;
 const RELEASE_URL = `${GITHUB_URL}/releases/tag/${VERSION}`;
 const DISCORD_URL = "https://discord.gg/JtQ54MSw6p";
 const X_URL = "https://x.com/bloxbean";
-const YANO_WALLET_URL = "https://github.com/bloxbean/yano-wallet";
 
 const formatStars = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n));
 
@@ -95,7 +93,6 @@ function Nav({ theme, onToggleTheme, stars }) {
         <nav className="dk-nav-links" aria-label="Primary">
           <a href="#how-it-works">How it works</a>
           <a href="#features">Features</a>
-          <a href="#yano-wallet">Yano Wallet</a>
           <a href="#get-started">Get started</a>
           <a href="#whats-new">What&apos;s new</a>
           <Link href="/introduction">Docs</Link>
@@ -273,7 +270,7 @@ function HowItWorks() {
           }
         >
           Your off-chain code talks to the same APIs it uses on mainnet. DevKit runs the chain underneath, indexes
-          every block, and gives you a CLI, an admin API, wallets and an explorer to drive it.
+          every block, and gives you a CLI, an admin API, a wallet and an explorer to drive it.
         </SectionHead>
         <div className="dk-arch-card dk-reveal">
           <Architecture />
@@ -301,91 +298,6 @@ function FeatureCard({ span, accent, icon, badge, title, text, link, children, d
       </div>
       <div className="dk-card-art">{children}</div>
     </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-
-const YW_POINTS = [
-  "Software and Ledger wallets, with multiple accounts",
-  "A CIP-30 connector for your dApp in the browser",
-  "Simulate before you sign: see what a transaction does first",
-  "Native assets, staking and governance votes",
-];
-
-const YW_STEPS = [
-  { cmd: "yaci-devkit up --enable-yaci-store", note: "start a devnet with Yaci Store" },
-  { cmd: "brew install --cask bloxbean/tap/yano-wallet", note: "macOS · other platforms on GitHub" },
-  { cmd: "Connect → Yaci DevKit → localhost:8080", note: "then topup your address", plain: true },
-];
-
-function YanoWallet() {
-  const [copiedAt, setCopiedAt] = useState(-1);
-  const copy = async (i, text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedAt(i);
-      setTimeout(() => setCopiedAt(-1), 1600);
-    } catch {}
-  };
-
-  return (
-    <section id="yano-wallet" className="dk-section">
-      <div className="dk-container">
-        <div className="dk-yw dk-reveal">
-          <div className="dk-yw-copy">
-            <div className="dk-yw-kicker">
-              <span className="tag">New</span>
-              Works with Yano Wallet
-            </div>
-            <h2 className="dk-h2">
-              Sign with a <span className="dk-gradient-text">real wallet</span>
-            </h2>
-            <p className="dk-sub">
-              Yano Wallet is BloxBean&apos;s desktop Cardano wallet. Pick <b>Yaci DevKit</b> on its Connect screen and
-              it runs on your devnet&apos;s Yaci Store, so you can approve your dApp&apos;s transactions, even on a
-              Ledger, before you ship.
-            </p>
-            <ul className="dk-yw-points">
-              {YW_POINTS.map((p) => (
-                <li key={p}>
-                  <Check /> {p}
-                </li>
-              ))}
-            </ul>
-            <ol className="dk-yw-steps">
-              {YW_STEPS.map((st, i) => (
-                <li key={st.cmd}>
-                  <span className="n">{i + 1}</span>
-                  <span className="cmd">
-                    <code>
-                      {!st.plain && <span className="p">$ </span>}
-                      {st.cmd}
-                    </code>
-                    <span className="note">{st.note}</span>
-                  </span>
-                  {!st.plain && (
-                    <button type="button" className="dk-copy" onClick={() => copy(i, st.cmd)} aria-label={`Copy: ${st.cmd}`}>
-                      {copiedAt === i ? <Check /> : <Copy />}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ol>
-            <div className="dk-yw-cta">
-              <Link href="/yano-wallet" className="dk-btn dk-btn-primary">
-                Set it up <ArrowRight />
-              </Link>
-              <a href={YANO_WALLET_URL} target="_blank" rel="noopener noreferrer" className="dk-btn dk-btn-ghost">
-                <GitHub /> yano-wallet
-              </a>
-            </div>
-            <p className="dk-yw-note">Preview release, for local devnets and test networks only.</p>
-          </div>
-          <YanoWalletArt />
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -805,7 +717,6 @@ export default function Landing() {
         <Hero />
         <Stack />
         <HowItWorks />
-        <YanoWallet />
         <Features />
         <RunItYourWay />
         <WhatsNew />

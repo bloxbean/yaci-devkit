@@ -33,14 +33,13 @@ const TOOLS = [
   { name: "Yaci CLI", sub: "create-node · topup · tip", c: EMBER },
   { name: "Admin API", sub: ":10000 · REST · Swagger", c: AMBER },
   { name: "Yaci Viewer", sub: ":5173 · block explorer", c: CYAN },
-  { name: "Yano Wallet", sub: "desktop wallet · Ledger", c: BLUE },
   { name: "CIP-30 wallet", sub: "window.cardano.yacidevkit", c: MINT },
   { name: "MCP server", sub: ":10000/mcp · AI agents", c: PINK },
 ];
 const TOOL_X = 930;
 const TOOL_W = 210;
-const TOOL_H = 48;
-const toolY = (i) => 54 + i * 58;
+const TOOL_H = 52;
+const toolY = (i) => 56 + i * 66;
 
 const curve = (x1, y1, x2, y2) => {
   const mx = (x1 + x2) / 2;
@@ -97,7 +96,7 @@ export default function Architecture() {
             Off-chain SDKs such as MeshJS, Evolution SDK, Lucid Evolution, Cardano Client Lib, PyCardano and Sutra
             connect to the devnet through Yaci Store's Blockfrost-compatible API, Ogmios, Kupo and the Submit API. The
             local devnet runs Yano and cardano-node, in companion or yano-only mode. The Yaci CLI, admin API, Yaci
-            Viewer, Yano Wallet, the CIP-30 wallet and the MCP server let you operate it.
+            Viewer, the CIP-30 wallet and the MCP server let you operate it.
           </desc>
           <defs>
             <linearGradient id="dk-core-stroke" x1="0" y1="0" x2="1" y2="1">
@@ -139,7 +138,7 @@ export default function Architecture() {
           <Wire d={curve(API_X + API_W, 379, cx, 330)} color={MINT} dur={2} delay={0.3} />
 
           {TOOLS.map((t, i) => (
-            <Wire key={t.name} d={curve(TOOL_X, toolY(i) + TOOL_H / 2, cx + cw, 112 + i * 56)} color={t.c} dur={2.3} delay={i * 0.3} />
+            <Wire key={t.name} d={curve(TOOL_X, toolY(i) + TOOL_H / 2, cx + cw, 120 + i * 62)} color={t.c} dur={2.3} delay={i * 0.3} />
           ))}
 
           {/* 01 · SDKs */}
@@ -280,18 +279,18 @@ export default function Architecture() {
             return (
               <g key={t.name}>
                 <rect className="node-bg" x={TOOL_X} y={y} width={TOOL_W} height={TOOL_H} rx="12" />
-                <rect x={TOOL_X} y={y + 13} width="3" height="22" rx="1.5" fill={t.c} />
-                <text className="node-title sm" x={TOOL_X + 18} y={y + 21}>
+                <rect x={TOOL_X} y={y + 15} width="3" height="22" rx="1.5" fill={t.c} />
+                <text className="node-title sm" x={TOOL_X + 18} y={y + 23}>
                   {t.name}
                 </text>
-                <text className="node-sub" x={TOOL_X + 18} y={y + 37}>
+                <text className="node-sub" x={TOOL_X + 18} y={y + 40}>
                   {t.sub}
                 </text>
               </g>
             );
           })}
           <text className="node-sub faint" x={TOOL_X + TOOL_W / 2} y="426" textAnchor="middle">
-            terminal · browser · desktop · AI agent
+            terminal · browser · AI agent
           </text>
         </svg>
       </div>
