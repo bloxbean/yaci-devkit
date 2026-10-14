@@ -1,0 +1,117 @@
+import { Callout } from 'nextra/components'
+
+# Homebrew Setup
+
+The Homebrew distribution installs the native Yaci CLI and its configuration with `brew`, and keeps it up to date with `brew upgrade`. It provides the same `yaci-devkit` command as the [NPM distribution](/getting-started/npm), without needing Node.js.
+
+## Prerequisites
+
+### Supported Platforms
+
+1. **macOS 15 (Arm64) or later**
+2. **Linux x86**: Tested on Ubuntu 22.04 and later ([Homebrew on Linux](https://docs.brew.sh/Homebrew-on-Linux))
+
+### Requirements
+
+- **Homebrew**: [brew.sh](https://brew.sh)
+- **Available ports**: Default ports should be free (3001, 8080, 10000)
+
+For Ogmios and Kupo, ensure ports 1337 and 1442 are also available if you plan to use these services.
+
+## Installation
+
+For latest stable version:
+```bash
+brew install bloxbean/tap/yaci-devkit
+```
+
+For latest beta version:
+```bash
+brew install bloxbean/tap/yaci-devkit-beta
+```
+
+Both formulas install the same `yaci-devkit` command, so install only one of them. To switch, uninstall the other first:
+
+```bash
+brew uninstall yaci-devkit-beta
+brew install bloxbean/tap/yaci-devkit
+```
+
+Check that the command comes from Homebrew:
+
+```bash
+which yaci-devkit
+```
+
+It should print `/opt/homebrew/bin/yaci-devkit` on macOS or `/home/linuxbrew/.linuxbrew/bin/yaci-devkit` on Linux.
+
+<Callout type="info">
+**Switching from NPM?** An NPM install also provides a `yaci-devkit` command, and an older `sudo npm install -g` puts it in `/usr/local/bin`, which usually comes before Homebrew on the `PATH`. Remove it first:
+
+```bash
+npm uninstall -g @bloxbean/yaci-devkit
+# for an install made with sudo:
+sudo npm uninstall -g --prefix /usr/local @bloxbean/yaci-devkit
+```
+
+Devnets and downloaded components in `$HOME/.yaci-cli` are kept, and are used by the Homebrew install too.
+</Callout>
+
+### Upgrade
+
+```bash
+brew update
+brew upgrade yaci-devkit
+```
+
+### Uninstall
+
+```bash
+brew uninstall yaci-devkit
+```
+
+This does not remove `$HOME/.yaci-cli` (devnets, downloaded components and `devkit.properties`).
+
+## Getting Started
+
+The `yaci-devkit` command takes the same options as with the NPM distribution:
+
+```bash
+# Devnet with Cardano node only
+yaci-devkit up
+
+# Devnet with Yaci Store (Blockfrost-compatible APIs)
+yaci-devkit up --enable-yaci-store
+
+# Sub-second block time (200ms)
+yaci-devkit up --enable-yaci-store --block-time 0.2 --slot-length 0.2
+
+# Devnet with the interactive Yaci CLI prompt
+yaci-devkit up --interactive
+```
+
+To see all supported options:
+```bash
+yaci-devkit up --help
+```
+
+See the [NPM Setup](/getting-started/npm#basic-usage) page for more examples, service URLs and CLI commands.
+
+Yaci Viewer is not included. Install it separately through NPM: see [Install Yaci Viewer](/getting-started/npm#step-2-install-yaci-viewer-optional).
+
+## Configuration
+
+The bundled `application.properties`, `node.properties` and `download.properties` are inside the Homebrew installation and are replaced on every upgrade. Put your settings in `$HOME/.yaci-cli/devkit.properties` instead:
+
+```properties
+yaci.store.enabled=true
+prometheus.port=12799
+```
+
+See [User Settings](/user-settings) for details.
+
+## Next Steps
+
+- **Learn all commands**: Check out [Yaci CLI Commands](/commands)
+- **CI/CD integration**: Set up [automated testing](/ci-integration)
+- **Compare options**: Consider [Docker Setup](/getting-started/docker) for local development

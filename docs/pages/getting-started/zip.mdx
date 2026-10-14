@@ -15,10 +15,6 @@ The Zip distribution is perfect for:
 **Note**: Yaci Viewer is not included in the Zip distribution. To add viewer functionality, you can install Yaci Viewer separately through NPM. See the [NPM installation guide](/getting-started/npm#step-2-install-yaci-viewer-optional) for details.
 </Callout>
 
-<Callout type="warning">
-PV11-compatible Ogmios/Kupo binaries are currently published only as Linux x86_64 builds. On macOS arm64 native CLI, those specific Ogmios/Kupo defaults cannot run directly. Use Docker as a workaround, or set custom `ogmios.url` / `kupo.url` values when compatible native builds are available.
-</Callout>
-
 ## Key Advantages
 
 - **Reduced Disk Space**: Requires less disk space than Docker, containing only the Yaci CLI binary and configuration files
@@ -40,6 +36,8 @@ Yaci CLI is currently supported on:
 ```bash
 rm -rf $HOME/.yaci-cli
 ```
+
+This also removes your [User Settings](/user-settings) file, `$HOME/.yaci-cli/devkit.properties`. Copy it somewhere else first if you have one.
 </Callout>
 
 ## Installation
@@ -172,6 +170,10 @@ yaci-cli:> create-node -o --block-time 5 --slot-length 5 --start
 ## Configuration
 
 The `config` folder contains three important configuration files:
+
+<Callout type="info">
+A new release comes with a new `config` folder. To keep your settings across upgrades, put them in `$HOME/.yaci-cli/devkit.properties` instead: it can hold any key from these three files and wins over them. See [User Settings](/user-settings).
+</Callout>
 
 ### application.properties
 

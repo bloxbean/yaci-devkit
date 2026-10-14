@@ -35,7 +35,7 @@ The ZIP distribution includes only the Yaci CLI and allows selective downloading
 
 **Supported Environments:**
 - Linux x64
-- macOS arm64
+- macOS 15 (arm64) or later
 
 ### 3. NPM Distribution
 
@@ -50,7 +50,18 @@ Supported environments include: Linux x64, MacOS arm64
 
 **Supported Environments:**
 - Linux x64
-- macOS arm64
+- macOS 15 (arm64) or later
+
+### 4. Homebrew Distribution
+
+The Homebrew distribution installs the same native Yaci CLI and `yaci-devkit` command as the NPM distribution, through `brew`, without needing Node.js.
+
+- `brew install bloxbean/tap/yaci-devkit`
+- Updates with `brew upgrade`
+
+**Supported Environments:**
+- Linux x64
+- macOS 15 (arm64) or later
 
 ## Getting Started
 
@@ -61,6 +72,7 @@ For the quickest setup experience, we recommend starting with the [Docker Setup]
 - [Docker Setup](/getting-started/docker) - Installation method
 - [Zip Setup](/getting-started/zip) - Non-Docker installation
 - [NPM Setup](/getting-started/npm) - NPM package installation
+- [Homebrew Setup](/getting-started/homebrew) - Homebrew installation
 - [Yaci CLI Commands](/commands) - Learn about available CLI commands
 
 ## Important Notes

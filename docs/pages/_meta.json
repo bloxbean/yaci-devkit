@@ -15,6 +15,7 @@
   "mcp-integration": "MCP Integration",
   "commands": "Yaci CLI Commands",
   "node-configuration": "Node Configuration",
+  "user-settings": "User Settings",
   "multi-node-setup": "Multi-node setup",
   "rollback-testing": "Rollback Testing",
   "ci-integration": "CI/CD Integration",

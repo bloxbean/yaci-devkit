@@ -106,7 +106,7 @@ For technical details about this issue, see: [GitHub Issue #65](https://github.c
 
 ### Devnet node does not start while another cardano-node runs
 
-Applies to the zip, npm and native/JAR distributions. Docker is not affected: the devnet node runs in the container's own network, and its Prometheus port is not published to the host.
+Applies to the zip, npm, Homebrew and native/JAR distributions. Docker is not affected: the devnet node runs in the container's own network, and its Prometheus port is not published to the host.
 
 #### Current Behavior
 
@@ -128,7 +128,8 @@ Stop the other node, or give the devnet a free port. The port is written into th
 |---|---|---|
 | Zip / native binary | `create-node -o --prometheus-port 12799` | `prometheus.port=12799` in `config/application.properties`, or `./yaci-cli -Dprometheus.port=12799` |
 | JAR | `create-node -o --prometheus-port 12799` | `java -Dprometheus.port=12799 -jar yaci-cli.jar` |
-| NPM | `yaci-devkit up --prometheus-port 12799` | `PROMETHEUS_PORT=12799 yaci-devkit up` |
+| NPM / Homebrew | `yaci-devkit up --prometheus-port 12799` | `PROMETHEUS_PORT=12799 yaci-devkit up` |
+| Zip / NPM / Homebrew (v0.12.0+) | | `prometheus.port=12799` in `$HOME/.yaci-cli/devkit.properties` (see [User Settings](/user-settings)) |
 
 The `PROMETHEUS_PORT=12799` environment variable works with every distribution. Use one of the "Every time" forms if you also create devnets through the admin API or Yaci Viewer, which use the `prometheus.port` property.
 
