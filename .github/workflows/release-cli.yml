@@ -10,7 +10,7 @@ jobs:
   buildAndPush:
     strategy:
       matrix:
-        os: ["ubuntu-22.04", "macos-14"]
+        os: ["ubuntu-22.04", "macos-15"]
     runs-on: ${{ matrix.os }}
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -75,7 +75,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "macos-14" ]
+        os: [ "ubuntu-22.04", "macos-15" ]
     runs-on: ${{ matrix.os }}
     env:
       FORCE_COLOR: 1
@@ -104,7 +104,7 @@ jobs:
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
             echo "npm_folder=yaci-devkit-linux-x64" >> $GITHUB_ENV
-          elif [[ "${{ matrix.os }}" == "macos-14" ]]; then
+          elif [[ "${{ matrix.os }}" == "macos-15" ]]; then
             echo "npm_folder=yaci-devkit-macos-arm64" >> $GITHUB_ENV
           fi
           echo "npm_folder=${{ env.npm_folder }}"
@@ -169,3 +169,75 @@ jobs:
           else            
             npm publish --access public
           fi
+
+  # Publishes the formula to bloxbean/homebrew-tap, like the npm packages: a final release updates yaci-devkit,
+  # a *-beta* release updates yaci-devkit-beta, a *-preview* release is not published. It downloads the zips the
+  # buildAndPush jobs attached to this tag's release, so it runs only after both of them.
+  update-homebrew:
+    needs: buildAndPush
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Get Tag from version file
+        run: |
+          TAG=$(grep "tag=" config/version | cut -d'=' -f2)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "FORMULA=$(.github/scripts/homebrew-formula.sh name "$TAG")" >> $GITHUB_ENV
+
+      - name: Skip preview releases
+        if: env.FORMULA == ''
+        run: echo "${{ env.TAG }} is a preview release - the Homebrew formulas are not updated."
+
+      - name: Download release zips
+        if: env.FORMULA != ''
+        run: |
+          # The release is the git tag's (v* or rel-cli-*), which can differ from the version in config/version
+          BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+          echo "MAC_URL=${BASE}/yaci-cli-${TAG}-macos-ARM64.zip" >> $GITHUB_ENV
+          echo "LINUX_URL=${BASE}/yaci-cli-${TAG}-linux-X64.zip" >> $GITHUB_ENV
+          curl -fSL -o macos.zip "${BASE}/yaci-cli-${TAG}-macos-ARM64.zip"
+          curl -fSL -o linux.zip "${BASE}/yaci-cli-${TAG}-linux-X64.zip"
+          echo "MAC_SHA=$(sha256sum macos.zip | cut -d' ' -f1)" >> $GITHUB_ENV
+          echo "LINUX_SHA=$(sha256sum linux.zip | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Checkout homebrew-tap
+        if: env.FORMULA != ''
+        uses: actions/checkout@v4
+        with:
+          repository: bloxbean/homebrew-tap
+          path: homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # The token is only needed for the push below, which passes it explicitly
+          persist-credentials: false
+
+      - name: Write formula
+        if: env.FORMULA != ''
+        run: |
+          mkdir -p homebrew-tap/Formula
+          .github/scripts/homebrew-formula.sh render "$FORMULA" "$TAG" "$MAC_URL" "$MAC_SHA" "$LINUX_URL" "$LINUX_SHA" \
+            > "homebrew-tap/Formula/${FORMULA}.rb"
+          ruby -c "homebrew-tap/Formula/${FORMULA}.rb"
+          cat "homebrew-tap/Formula/${FORMULA}.rb"
+
+      - name: Commit and push
+        if: env.FORMULA != ''
+        working-directory: homebrew-tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "Formula/${FORMULA}.rb"
+          if git diff --cached --quiet; then
+            echo "Formula ${FORMULA} already at ${TAG} - nothing to push."
+            exit 0
+          fi
+          git commit -m "${FORMULA} ${TAG}"
+          git remote set-url origin "https://x-access-token:${TAP_TOKEN}@github.com/bloxbean/homebrew-tap.git"
+          git push

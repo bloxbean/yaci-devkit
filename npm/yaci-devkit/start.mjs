@@ -81,7 +81,9 @@ if (existsSync(pidFilePath)) {
 
 const additionalConfig = "optional:file:" + configPath + "/application.properties,"
     + "optional:file:" + configPath + "/download.properties,"
-    + "optional:file:" + configPath + "/node.properties"
+    + "optional:file:" + configPath + "/node.properties,"
+    // User overrides, last so they win over the bundled config. Always in the user's home, even with a custom yaci.cli.home
+    + "optional:file:" + join(homedir(), ".yaci-cli", "devkit.properties")
 
 const additionalConfigArg = "-Dspring.config.import=" + additionalConfig;
 const costModelsPathArg = "-Dyaci.cli.plutus-costmodels-path=" + configPath;
