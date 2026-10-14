@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { platform, homedir } from "node:os";
+import { platform, homedir, release } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs";
@@ -32,6 +32,12 @@ const packageMap = {
 
 if (packageMap[osType] == null) {
     console.error(`Unsupported platform: ${osType}`);
+    process.exit(1);
+}
+
+// The macOS binary is built on macOS 15 and needs macOS 15 or later (Darwin 24)
+if (osType === "darwin" && parseInt(release(), 10) < 24) {
+    console.error("Yaci DevKit requires macOS 15 or later.");
     process.exit(1);
 }
 const binPath = fileURLToPath(packageMap[osType]());
@@ -86,9 +92,11 @@ const additionalConfig = "optional:file:" + configPath + "/application.propertie
     + "optional:file:" + join(homedir(), ".yaci-cli", "devkit.properties")
 
 const additionalConfigArg = "-Dspring.config.import=" + additionalConfig;
-const costModelsPathArg = "-Dyaci.cli.plutus-costmodels-path=" + configPath;
+// Location of the bundled config, the default for yaci.cli.plutus-costmodels-path in application.properties.
+// Not passed as that property itself, which would override devkit.properties and environment variables
+const bundledConfigDirArg = "-Dyaci.cli.bundled-config-dir=" + configPath;
 
-const child = spawn(binPath, [additionalConfigArg, costModelsPathArg, ...process.argv.slice(2)], {
+const child = spawn(binPath, [additionalConfigArg, bundledConfigDirArg, ...process.argv.slice(2)], {
     stdio: "inherit",
     env: {
         ...process.env // Inherit parent environment. Additional env vars below.

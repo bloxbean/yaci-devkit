@@ -41,6 +41,8 @@ class @CLASS@ < Formula
   license "MIT"
 
   on_macos do
+    # Built on macOS 15: the binary needs macOS 15 or later
+    depends_on macos: :sequoia
     if Hardware::CPU.arm?
       url "@MAC_URL@"
       sha256 "@MAC_SHA@"
@@ -69,11 +71,13 @@ class @CLASS@ < Formula
     cfg = libexec/"config"
     # yaci-cli reads its config relative to the working directory, so point it at the installed config.
     # User overrides in ~/.yaci-cli/devkit.properties are imported last, so they win over the bundled config.
+    # yaci.cli.bundled-config-dir is only the default for yaci.cli.plutus-costmodels-path (see application.properties),
+    # so devkit.properties and environment variables can still override that path.
     (bin/"yaci-devkit").write <<~EOS
       #!/bin/bash
       exec "#{libexec}/yaci-cli" \\
         "-Dspring.config.import=optional:file:#{cfg}/application.properties,optional:file:#{cfg}/download.properties,optional:file:#{cfg}/node.properties,optional:file:${HOME}/.yaci-cli/devkit.properties" \\
-        "-Dyaci.cli.plutus-costmodels-path=#{cfg}" "$@"
+        "-Dyaci.cli.bundled-config-dir=#{cfg}" "$@"
     EOS
   end
 
