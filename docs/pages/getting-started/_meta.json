@@ -1,5 +1,6 @@
 {
   "docker": "Docker Setup",
-  "zip": "Zip Setup", 
-  "npm": "NPM Setup"
+  "zip": "Zip Setup",
+  "npm": "NPM Setup",
+  "homebrew": "Homebrew Setup"
 }

@@ -1,0 +1,58 @@
+import { Callout } from 'nextra/components'
+
+# User Settings (devkit.properties)
+
+`$HOME/.yaci-cli/devkit.properties` holds your own Yaci CLI settings. It is read by the [Homebrew](/getting-started/homebrew), [NPM](/getting-started/npm) and [Zip](/getting-started/zip) distributions, and is kept across upgrades: an upgrade replaces the bundled configuration files, but never this file.
+
+<Callout type="info">
+Available from Yaci DevKit `v0.12.0`. The [Docker distribution](/getting-started/docker) does not read it: use its `config/env` and `config/node.properties` files instead.
+</Callout>
+
+## Create the file
+
+The file is optional. Create it when you need it:
+
+```bash
+mkdir -p $HOME/.yaci-cli
+nano $HOME/.yaci-cli/devkit.properties
+```
+
+It can hold any key from the bundled `application.properties`, `node.properties` or `download.properties`, in the same `key=value` format. For example:
+
+```properties
+# Start Yaci Store with every devnet
+yaci.store.enabled=true
+
+# Devnet node's Prometheus port, when another cardano-node on this machine uses 12798
+prometheus.port=12799
+
+# Node mode (node.properties)
+nodeMode=yano-only
+
+# Your own Plutus cost models (a folder with plutus-costmodels-v10.json and plutus-costmodels-v11.json)
+yaci.cli.plutus-costmodels-path=/Users/me/cardano/costmodels
+```
+
+The settings are read when `yaci-devkit` (or `yaci-cli`) starts: restart it after changing the file.
+
+## Precedence
+
+From highest to lowest:
+
+1. Command options, such as `yaci-devkit up --prometheus-port 12799` or `create-node --block-time 2`, for that command
+2. `-D` options, such as `yaci-devkit -Dprometheus.port=12799 up` or `./yaci-cli -Dprometheus.port=12799`
+3. Environment variables, such as `PROMETHEUS_PORT=12799` or `YACI_STORE_ENABLED=true`
+4. `$HOME/.yaci-cli/devkit.properties`
+5. The bundled `application.properties`, `node.properties` and `download.properties`
+
+A setting in `devkit.properties` therefore wins over the same setting in the bundled files, including the `config` folder of the Zip distribution.
+
+The environment variable for a property is its name in upper case, with `.` replaced by `_` and `-` removed: `yaci.store.enabled` becomes `YACI_STORE_ENABLED`.
+
+## Things to know
+
+- **Location**: the file is always `$HOME/.yaci-cli/devkit.properties`, even when you set `yaci.cli.home` to store devnets and components elsewhere.
+- **Devnet settings**: genesis and node settings (from `node.properties`, and properties such as `prometheus.port`) are written into the devnet when it is created. Re-create the devnet after changing them: `create-node -o`, or `yaci-devkit up` (which creates a new devnet).
+- **Paths**: use absolute paths. A relative path resolves against the directory you run `yaci-devkit` or `yaci-cli` from.
+- **Shared**: Homebrew, NPM and Zip installs on the same machine all use `$HOME/.yaci-cli`, so they share this file, as they share devnets and downloaded components.
+- **Clean reinstall**: removing `$HOME/.yaci-cli` removes this file too. Copy it somewhere else first if you want to keep it.

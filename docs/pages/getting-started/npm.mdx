@@ -177,6 +177,10 @@ yaci-devkit up --port 3002 --interactive
 yaci-devkit up -e 30 --interactive
 ```
 
+## Configuration
+
+The bundled configuration files are inside the NPM package and are replaced on every upgrade. Put your own settings, for example `yaci.store.enabled=true` or `prometheus.port=12799`, in `$HOME/.yaci-cli/devkit.properties`. See [User Settings](/user-settings).
+
 ## Yaci Viewer Setup
 
 ### Starting Yaci Viewer
@@ -312,4 +316,4 @@ See [Known Issues](../known-issues#devnet-node-does-not-start-while-another-card
 
 - **Learn all commands**: Check out [Yaci CLI Commands](/commands)
 - **CI/CD integration**: Set up [automated testing](/ci-integration)
-- **Compare options**: Consider [Docker Setup](/getting-started/docker) for local development
+- **Compare options**: Consider [Docker Setup](/getting-started/docker) for local development, or [Homebrew Setup](/getting-started/homebrew) to install without Node.js
