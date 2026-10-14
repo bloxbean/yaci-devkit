@@ -2244,6 +2244,11 @@ html[data-dk-theme="light"] .dk-chain3d.on {
   gap: 14px;
 }
 
+/* Seven items: the last one fills the end of the row on 4- and 2-column grids */
+.dk-news > :last-child:nth-child(odd) {
+  grid-column: span 2;
+}
+
 .dk-news-item {
   position: relative;
   display: flex;
@@ -2543,6 +2548,10 @@ html[data-dk-js] .dk-reveal.in {
 
   .dk-news {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dk-news > :last-child:nth-child(odd) {
+    grid-column: auto;
   }
 
   .dk-tip {

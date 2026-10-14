@@ -584,7 +584,6 @@ const NEWS = [
   { icon: <Shuffle />, c: "var(--amber)", title: "Yano node modes", text: "Companion mode for a fast PV11 bootstrap, or yano-only for the lightest devnet.", href: "/yano-node-modes" },
   { icon: <Wallet />, c: "var(--mint)", title: "CIP-30 wallet", text: "A browser wallet, wallet page and SDK for testing dApps against the devnet.", href: "/cip30-wallet" },
   { icon: <Sparkles />, c: "var(--pink)", title: "MCP server", text: "Let AI coding agents inspect and drive the devnet at :10000/mcp.", href: "/mcp-integration" },
-  { icon: <Braces />, c: "var(--cyan)", title: "No Ogmios needed", text: "Yaci Store evaluates script costs with Scalus by default.", href: "/services" },
   { icon: <Settings />, c: "var(--violet)", title: "devkit.properties", text: "Your own settings in ~/.yaci-cli, kept across upgrades.", href: "/user-settings" },
   { icon: <Flask />, c: "var(--ember)", title: "SDK test suites", text: "Evolution SDK, Lucid, MeshJS, PyCardano and CCL checked end to end.", href: GITHUB_URL + "/tree/main/e2e-tests" },
 ];
@@ -597,7 +596,7 @@ function WhatsNew() {
           eyebrow={`What's new in ${VERSION}`}
           title={
             <>
-              The biggest release <span className="dk-gradient-text">yet</span>
+              Fresh in the <span className="dk-gradient-text">latest release</span>
             </>
           }
         >
