@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  buildAndPush:
+  build:
     strategy:
       matrix:
         os: ["ubuntu-22.04", "macos-15"]
@@ -65,7 +65,7 @@ jobs:
           retention-days: 2
 
   npm-publish-dry-run:
-    needs: buildAndPush
+    needs: build
     permissions:
       contents: read
     strategy:
@@ -164,7 +164,7 @@ jobs:
   # Installs the formula release-cli.yml would publish, from this run's zips through a throwaway local tap,
   # and checks the installed yaci-devkit starts. Nothing is pushed to bloxbean/homebrew-tap.
   homebrew-dry-run:
-    needs: buildAndPush
+    needs: build
     runs-on: macos-15
     permissions:
       contents: read
