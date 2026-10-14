@@ -23,8 +23,7 @@
     "nextra": "^2.13.0",
     "nextra-theme-docs": "^2.13.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "three": "0.169.0"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/node": "18.11.10",
