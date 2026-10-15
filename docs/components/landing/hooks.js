@@ -99,14 +99,21 @@ export function useGithubStars(repo) {
   return stars;
 }
 
-/** Fades sections in as they scroll into view. Without JS, everything stays visible. */
+/**
+ * Fades sections in as they scroll into view. Content stays visible until this runs, so a page whose scripts are
+ * slow to load is never blank: what's already on screen (and the hero, which animates in with CSS) stays shown, and
+ * only what's further down is hidden until it scrolls in.
+ */
 export function useReveal() {
   useEffect(() => {
-    const els = document.querySelectorAll(".dk-reveal");
-    if (typeof IntersectionObserver === "undefined") {
-      els.forEach((el) => el.classList.add("in"));
-      return;
-    }
+    if (typeof IntersectionObserver === "undefined") return;
+    const root = document.documentElement;
+    const later = [];
+    document.querySelectorAll(".dk-reveal").forEach((el) => {
+      if (el.closest(".dk-hero") || el.getBoundingClientRect().top < window.innerHeight) el.classList.add("in");
+      else later.push(el);
+    });
+    root.setAttribute("data-dk-js", "");
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -118,8 +125,11 @@ export function useReveal() {
       },
       { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
     );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    later.forEach((el) => io.observe(el));
+    return () => {
+      io.disconnect();
+      root.removeAttribute("data-dk-js");
+    };
   }, []);
 }
 
