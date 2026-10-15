@@ -78,7 +78,7 @@ Use the release that matches the Cardano node / protocol version you want to tes
 |---|---:|---|---|
 | [v0.10.6](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.10.6) | `10.1.4` | Stable | Default stable development setup |
 | [v0.11.0-beta1](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.11.0-beta1) | `10.5.0` | Beta | PV10 or earlier Cardano protocol testing |
-| [v0.12.0-beta5](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.12.0-beta5) | `11.0.1` | Beta | PV11 hard fork / Cardano node 11.0.1 testing |
+| [v0.12.0](https://github.com/bloxbean/yaci-devkit/releases/tag/v0.12.0) | `11.0.1` | Stable | PV11 hard fork / Cardano node 11.0.1 testing |
 
 For PV11 hard fork compatible local devnets, use the PV11 beta release from this table or a newer beta release.
 
