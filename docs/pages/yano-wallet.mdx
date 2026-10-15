@@ -1,0 +1,209 @@
+---
+title: Yano Wallet (Preview)
+---
+
+import { Callout, Steps, Tabs } from 'nextra/components'
+
+# Yano Wallet <span className="yw-preview-badge">Preview</span>
+
+[Yano Wallet](https://github.com/bloxbean/yano-wallet) is a desktop Cardano wallet designed for your custom devnet.
+Connect it to a Yaci DevKit devnet to test your dApp with a real wallet: create or restore accounts, send ADA and
+tokens, and approve CIP-30 requests from your dApp in the browser.
+
+<Callout type="warning">
+Yano Wallet is a preview release and should be used only on devnets and test networks.
+</Callout>
+
+![Yano Wallet connected to a Yaci DevKit devnet](/images/yano-wallet/dashboard.png)
+
+## What you get
+
+- Create or restore wallets, with multiple accounts
+- Send and receive ADA and native assets, staking, and governance voting
+- A **CIP-30 dApp connector**: a browser extension that injects `window.cardano.yano` and hands each request to the
+  wallet for approval
+- **Simulate before you sign**: the approval prompt shows what a transaction does to your wallet, such as the ADA that
+  leaves it and the tokens it mints, before you sign
+- Transaction hashes link to Yaci Viewer at `http://localhost:5173`. See [Yaci Viewer](#yaci-viewer-optional) for
+  how to get it
+
+## How it connects
+
+On other networks Yano Wallet runs its own Yano node. With Yaci DevKit it doesn't: it talks to the devnet's
+**Yaci Store** over its Blockfrost-compatible API at `http://localhost:8080/api/v1`. Yaci Store must be running.
+
+| Setting | Value |
+|---|---|
+| Network | `Yaci DevKit` (protocol magic 42) |
+| Backend | External, Yaci Store |
+| Default URL | `http://localhost:8080/api/v1` |
+
+A browser dApp reaches the wallet through two pieces you install once: the **Yano Wallet Connector** extension in the
+browser, and the **Native Messaging** host that the wallet registers with the browser.
+
+```text
+dApp (window.cardano.yano) → Yano Wallet Connector extension → Native Messaging host → Yano Wallet → Yaci Store
+```
+
+## Set up the wallet
+
+<Steps>
+
+### Start a devnet with Yaci Store
+
+The command depends on how you installed Yaci DevKit.
+
+<Tabs items={['Homebrew / npm', 'Zip', 'Docker']}>
+  <Tabs.Tab>
+```bash
+yaci-devkit up --enable-yaci-store
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```bash
+./yaci-cli up --enable-yaci-store
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```bash
+devkit start
+```
+
+Then, in the Yaci CLI:
+
+```bash
+yaci-cli:> create-node -o --start
+```
+
+Docker starts Yaci Store by default.
+  </Tabs.Tab>
+</Tabs>
+
+### Install Yano Wallet
+
+On an Apple Silicon Mac:
+
+```bash
+brew install --cask bloxbean/tap/yano-wallet
+```
+
+For Linux, Windows and Intel Macs, download the latest build from the
+[releases page](https://github.com/bloxbean/yano-wallet/releases). The
+[Getting Started guide](https://github.com/bloxbean/yano-wallet/blob/main/GETTING-STARTED.md#1-pick-a-download)
+explains which file to pick.
+
+### Connect to the devnet
+
+On the wallet's **Connect** screen, choose the **Yaci DevKit** network. The wallet switches to an external backend and
+fills in `http://localhost:8080/api/v1`. Change the URL if Yaci Store runs on another port, then click **Start**.
+
+When it is connected, the bottom of the sidebar shows **Yaci DevKit** and **synced · block N**.
+
+### Create a wallet and fund it
+
+Create a new wallet, or restore a test wallet. Copy a receiving address from **Receive**, then top it up from the Yaci
+CLI:
+
+```bash
+topup <address> 1000
+```
+
+You can also use the admin API at `http://localhost:10000`. See [Yaci CLI commands](/commands).
+
+</Steps>
+
+The wallet is now ready to send and receive on the devnet. Before it submits a payment, it shows what will leave your
+wallet:
+
+![Reviewing a payment before it is submitted](/images/yano-wallet/send-review.png)
+
+## Connect a dApp (CIP-30)
+
+To let a browser dApp use Yano Wallet, install the connector extension and the Native Messaging host. Both are one-time
+steps. They work in Chrome, Chromium, Edge and Brave.
+
+<Steps>
+
+### Load the connector extension
+
+The extension is not on the Chrome Web Store yet, so load it unpacked in developer mode:
+
+1. Download `yano-connector-<version>.zip` from the
+   [Yano Wallet releases page](https://github.com/bloxbean/yano-wallet/releases), from the same release as your
+   wallet, and unzip it. You get a folder with `manifest.json` directly inside it.
+2. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
+3. Turn on **Developer mode** (top right).
+4. Click **Load unpacked** and select the unzipped folder.
+
+The extension appears as **Yano Wallet Connector**. Keep the folder where it is: the browser loads an unpacked extension
+from that path every time it starts.
+
+### Install the Native Messaging host
+
+The extension doesn't talk to the wallet over the network. The browser starts a small relay that the wallet installs,
+and the relay passes messages to the wallet over a local socket.
+
+1. In Yano Wallet, open **Settings → Browser connector**.
+2. Click **Install browser connector (Native Messaging)**.
+3. **Quit and restart the browser.** Browsers read this registration only at startup.
+
+Run this step again if you move the wallet, upgrade to a build in a different folder, or switch between the native and
+JVM builds, because the registration points at an exact path on disk.
+
+### Connect from your dApp
+
+With the wallet running and unlocked, open your dApp and choose **Yano** in its wallet list (or call
+`window.cardano.yano.enable()`). The wallet asks you to approve the connection:
+
+![Yano Wallet asking to connect a dApp](/images/yano-wallet/connect-dapp.png)
+
+### Approve transactions
+
+Each transaction the dApp asks to sign opens an approval prompt in the wallet. It shows what leaves your wallet, the
+network fee, the tokens minted or received, and warnings such as "Creates new tokens":
+
+![Approving a dApp transaction that mints an NFT](/images/yano-wallet/approve-mint.png)
+
+Click a transaction hash in the wallet's **History** to open it in [Yaci Viewer](#yaci-viewer-optional):
+
+![The transaction in Yaci Viewer](/images/yano-wallet/viewer-transaction.png)
+
+</Steps>
+
+<Callout type="info">
+Every Cardano test network reports CIP-30 `networkId` 0, so a dApp can't tell a devnet from Preprod by the network
+id alone. Make sure your dApp and the wallet point at the same devnet.
+</Callout>
+
+## Yaci Viewer (optional)
+
+The wallet doesn't need Yaci Viewer. It only opens Yaci Viewer when you click a transaction hash.
+
+- **Docker:** Yaci Viewer is included at `http://localhost:5173`.
+- **Homebrew, npm and Zip:** install it separately with npm, and start it on port 5173 while the devnet is
+  running. The npm package listens on port 3000 unless you set `PORT`, and the wallet's links expect 5173.
+
+  ```bash
+  npm install -g @bloxbean/yaci-viewer
+  PORT=5173 yaci-viewer
+  ```
+
+  See [Install Yaci Viewer](/getting-started/npm#step-2-install-yaci-viewer-optional).
+
+## Yano Wallet or the built-in CIP-30 wallet?
+
+Yaci DevKit also ships a [CIP-30 wallet](/cip30-wallet) at `http://localhost:10000/wallet`. Use it for automated tests
+and quick checks: it needs no install and uses the devnet's pre-funded accounts. Use Yano Wallet when you want to test
+with a real wallet and the approval flow your users will see.
+
+## Troubleshooting
+
+- **The wallet can't connect to the devnet.** Check that Yaci Store answers at
+  `http://localhost:8080/api/v1/blocks/latest`.
+- **The dApp doesn't list Yano.** Check that **Yano Wallet Connector** is enabled at `chrome://extensions`, then reload
+  the dApp page.
+- **"Yano wallet is not reachable — is it running and unlocked?"** Unlock the wallet. If it is unlocked, run
+  **Install browser connector (Native Messaging)** again and restart the browser.
+- **Balances look wrong after resetting the devnet.** A reset starts a new chain. Top up the address again.
+
+More help is in the [Yano Wallet Getting Started guide](https://github.com/bloxbean/yano-wallet/blob/main/GETTING-STARTED.md#if-something-goes-wrong).
