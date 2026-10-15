@@ -25,7 +25,7 @@ The NPM distribution is supported on:
 ### Requirements
 
 - **Node.js**: 20.8.0 or later
-- **Available ports**: Default ports should be free (3001, 8080, 5173)
+- **Available ports**: Default ports should be free (3001, 8080, and 3000 if you run Yaci Viewer)
 
 For Ogmios and Kupo, ensure ports 1337 and 1442 are also available if you plan to use these services.
 
@@ -191,6 +191,15 @@ Once you have a devnet running with Yaci Store support:
 yaci-viewer
 ```
 
+Yaci Viewer runs at http://localhost:3000. To use another port, set `PORT`, for example to match the Docker
+distribution's port 5173:
+
+```bash
+PORT=5173 yaci-viewer
+```
+
+You can also put `PORT=5173` in the `.env` file described below.
+
 By default, Yaci Viewer connects to:
 - **Indexer API**: http://localhost:8080/api/v1
 - **WebSocket**: ws://localhost:8080/ws/liveblocks
@@ -255,7 +264,7 @@ When services are enabled:
 - **Wallet SDK**: http://localhost:10000/wallet-sdk.js
 - **MCP endpoint**: http://localhost:10000/mcp
 - **Yaci Store (Blockfrost API)**: http://localhost:8080
-- **Yaci Viewer**: http://localhost:5173
+- **Yaci Viewer**: http://localhost:3000 (`yaci-viewer`, or the port you set with `PORT`)
 - **Ogmios** (if enabled): ws://localhost:1337
 - **Kupo** (if enabled): http://localhost:1442
 
