@@ -12,7 +12,7 @@
   "services": "Services",
   "yano-node-modes": "Node Modes",
   "cip30-wallet": "CIP-30 Wallet",
-  "yano-wallet": "Yano Wallet",
+  "yano-wallet": "Yano Wallet (Preview)",
   "mcp-integration": "MCP Integration",
   "commands": "Yaci CLI Commands",
   "node-configuration": "Node Configuration",

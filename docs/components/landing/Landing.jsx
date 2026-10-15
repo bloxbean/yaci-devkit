@@ -336,7 +336,7 @@ function YanoWallet() {
         <div className="dk-yw dk-reveal">
           <div className="dk-yw-copy">
             <div className="dk-yw-kicker">
-              <span className="tag">New</span>
+              <span className="tag">Preview</span>
               Works with Yano Wallet
             </div>
             <h2 className="dk-h2">

@@ -1,14 +1,18 @@
+---
+title: Yano Wallet (Preview)
+---
+
 import { Callout, Steps } from 'nextra/components'
 
-# Yano Wallet
+# Yano Wallet <span className="yw-preview-badge">Preview</span>
 
 [Yano Wallet](https://github.com/bloxbean/yano-wallet) is a desktop Cardano wallet designed for your custom devnet.
 Connect it to a Yaci DevKit devnet to test your dApp with a real wallet: create or restore accounts, send ADA and
 tokens, and approve CIP-30 requests from your dApp in the browser.
 
 <Callout type="warning">
-Yano Wallet is in preview (`v0.1.0-pre5` at the time of writing) and has not been audited. Use it only with a local
-devnet or a public test network. Do not use it on Mainnet, and do not restore a recovery phrase that holds real funds.
+Yano Wallet is a preview release and has not been audited. Use it only with a local devnet or a public test
+network. Do not use it on Mainnet, and do not restore a recovery phrase that holds real funds.
 </Callout>
 
 ![Yano Wallet connected to a Yaci DevKit devnet](/images/yano-wallet/dashboard.png)
@@ -62,7 +66,7 @@ On an Apple Silicon Mac:
 brew install --cask bloxbean/tap/yano-wallet
 ```
 
-For Linux, Windows and Intel Macs, download a build from the
+For Linux, Windows and Intel Macs, download the latest build from the
 [releases page](https://github.com/bloxbean/yano-wallet/releases). The
 [Getting Started guide](https://github.com/bloxbean/yano-wallet/blob/main/GETTING-STARTED.md#1-pick-a-download)
 explains which file to pick.
@@ -103,9 +107,9 @@ steps. They work in Chrome, Chromium, Edge and Brave.
 
 The extension is not on the Chrome Web Store yet, so load it unpacked in developer mode:
 
-1. Download `yano-connector-<version>.zip` from the same
-   [Yano Wallet release](https://github.com/bloxbean/yano-wallet/releases) and unzip it. You get a folder with
-   `manifest.json` directly inside it.
+1. Download `yano-connector-<version>.zip` from the
+   [Yano Wallet releases page](https://github.com/bloxbean/yano-wallet/releases), from the same release as your
+   wallet, and unzip it. You get a folder with `manifest.json` directly inside it.
 2. Open `chrome://extensions` (or `edge://extensions`, `brave://extensions`).
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and select the unzipped folder.

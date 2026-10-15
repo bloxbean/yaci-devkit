@@ -18,3 +18,18 @@ nav a:active {
 body {
   margin: 0;
 }
+
+/* "Preview" tag next to a page title */
+.yw-preview-badge {
+  display: inline-block;
+  margin-left: 0.6rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: linear-gradient(115deg, #e8401c 0%, #f06a1a 100%);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
