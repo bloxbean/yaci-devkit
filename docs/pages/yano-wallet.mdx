@@ -2,7 +2,7 @@
 title: Yano Wallet (Preview)
 ---
 
-import { Callout, Steps } from 'nextra/components'
+import { Callout, Steps, Tabs } from 'nextra/components'
 
 # Yano Wallet <span className="yw-preview-badge">Preview</span>
 
@@ -24,8 +24,8 @@ Yano Wallet is a preview release and should be used only on devnets and test net
   wallet for approval
 - **Simulate before you sign**: the approval prompt shows what a transaction does to your wallet, such as the ADA that
   leaves it and the tokens it mints, before you sign
-- Transaction hashes link to Yaci Viewer at `http://localhost:5173`, where the [Docker](/getting-started/docker)
-  distribution serves it
+- Transaction hashes link to Yaci Viewer at `http://localhost:5173`. See [Yaci Viewer](#yaci-viewer-optional) for
+  how to get it
 
 ## How it connects
 
@@ -51,11 +51,33 @@ dApp (window.cardano.yano) → Yano Wallet Connector extension → Native Messag
 
 ### Start a devnet with Yaci Store
 
+The command depends on how you installed Yaci DevKit.
+
+<Tabs items={['Homebrew / npm', 'Zip', 'Docker']}>
+  <Tabs.Tab>
 ```bash
 yaci-devkit up --enable-yaci-store
 ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```bash
+./yaci-cli up --enable-yaci-store
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```bash
+devkit start
+```
 
-The [Docker](/getting-started/docker) distribution starts Yaci Store by default.
+Then, in the Yaci CLI:
+
+```bash
+yaci-cli:> create-node -o --start
+```
+
+Docker starts Yaci Store by default.
+  </Tabs.Tab>
+</Tabs>
 
 ### Install Yano Wallet
 
@@ -142,7 +164,7 @@ network fee, the tokens minted or received, and warnings such as "Creates new to
 
 ![Approving a dApp transaction that mints an NFT](/images/yano-wallet/approve-mint.png)
 
-Click a transaction hash in the wallet's **History** to open it in Yaci Viewer:
+Click a transaction hash in the wallet's **History** to open it in [Yaci Viewer](#yaci-viewer-optional):
 
 ![The transaction in Yaci Viewer](/images/yano-wallet/viewer-transaction.png)
 
@@ -152,6 +174,21 @@ Click a transaction hash in the wallet's **History** to open it in Yaci Viewer:
 Every Cardano test network reports CIP-30 `networkId` 0, so a dApp can't tell a devnet from Preprod by the network
 id alone. Make sure your dApp and the wallet point at the same devnet.
 </Callout>
+
+## Yaci Viewer (optional)
+
+The wallet doesn't need Yaci Viewer. It only opens Yaci Viewer when you click a transaction hash.
+
+- **Docker:** Yaci Viewer is included at `http://localhost:5173`.
+- **Homebrew, npm and Zip:** install it separately with npm, and start it on port 5173 while the devnet is
+  running. The npm package listens on port 3000 unless you set `PORT`, and the wallet's links expect 5173.
+
+  ```bash
+  npm install -g @bloxbean/yaci-viewer
+  PORT=5173 yaci-viewer
+  ```
+
+  See [Install Yaci Viewer](/getting-started/npm#step-2-install-yaci-viewer-optional).
 
 ## Yano Wallet or the built-in CIP-30 wallet?
 

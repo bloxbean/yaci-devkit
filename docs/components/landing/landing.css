@@ -2562,6 +2562,53 @@ html[data-dk-theme="light"] .dk {
   color: var(--code-muted);
 }
 
+.dk-yw-steps .note b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--code-text);
+  white-space: nowrap;
+}
+
+.dk-yw-steps code .line {
+  display: block;
+}
+
+/* Step 1: pick the distribution */
+.dk-yw-steps li.start {
+  align-items: flex-start;
+}
+
+.dk-yw-steps li.start .dk-copy {
+  margin-top: 26px;
+}
+
+.dk-yw-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.dk-yw-switch button {
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--code-text) 18%, transparent);
+  background: transparent;
+  color: var(--code-muted);
+  font: 500 0.7rem/1.6 var(--font-mono);
+  cursor: pointer;
+}
+
+.dk-yw-switch button:hover {
+  color: var(--code-text);
+}
+
+.dk-yw-switch button[aria-pressed="true"] {
+  border-color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--code-text);
+}
+
 .dk-yw-cta {
   display: flex;
   flex-wrap: wrap;

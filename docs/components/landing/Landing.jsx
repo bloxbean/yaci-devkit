@@ -313,8 +313,22 @@ const YW_POINTS = [
   "Native assets, staking and governance votes",
 ];
 
+/* Step 1 depends on how DevKit was installed. Yaci Viewer only ships in Docker; elsewhere it's an optional npm package. */
+const YW_START = [
+  { id: "native", label: "Homebrew · npm", lines: [["$", "yaci-devkit up --enable-yaci-store"]] },
+  { id: "zip", label: "Zip", lines: [["$", "./yaci-cli up --enable-yaci-store"]] },
+  {
+    id: "docker",
+    label: "Docker",
+    lines: [
+      ["$", "devkit start"],
+      ["yaci-cli:>", "create-node -o --start"],
+    ],
+    docker: true,
+  },
+];
+
 const YW_STEPS = [
-  { cmd: "yaci-devkit up --enable-yaci-store", note: "start a devnet with Yaci Store" },
   { cmd: "brew install --cask bloxbean/tap/yano-wallet", note: "macOS · other platforms on GitHub" },
   { cmd: "Connect → Yaci DevKit → localhost:8080", note: "then topup your address", plain: true },
   { cmd: "Settings → Browser connector", note: "for dApps: load the connector extension, then install Native Messaging", plain: true },
@@ -322,6 +336,8 @@ const YW_STEPS = [
 
 function YanoWallet() {
   const [copiedAt, setCopiedAt] = useState(-1);
+  const [startAt, setStartAt] = useState(0);
+  const start = YW_START[startAt];
   const copy = async (i, text) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -355,9 +371,45 @@ function YanoWallet() {
               ))}
             </ul>
             <ol className="dk-yw-steps">
+              <li className="start">
+                <span className="n">1</span>
+                <span className="cmd">
+                  <span className="dk-yw-switch" role="group" aria-label="How you installed Yaci DevKit">
+                    {YW_START.map((o, i) => (
+                      <button key={o.id} type="button" aria-pressed={i === startAt} onClick={() => setStartAt(i)}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </span>
+                  <code key={start.id} className="dk-fade-swap">
+                    {start.lines.map(([prompt, line]) => (
+                      <span key={line} className="line">
+                        <span className="p">{prompt} </span>
+                        {line}
+                      </span>
+                    ))}
+                  </code>
+                  <span className="note">
+                    {start.docker ? "start a devnet · Yaci Store and Yaci Viewer are included" : "start a devnet with Yaci Store"}
+                  </span>
+                  {!start.docker && (
+                    <span className="note">
+                      Viewer (optional): <b>npm i -g @bloxbean/yaci-viewer</b>
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="dk-copy"
+                  onClick={() => copy(0, start.lines.filter(([prompt]) => prompt === "$").map(([, line]) => line).join("\n"))}
+                  aria-label={`Copy: ${start.lines[0][1]}`}
+                >
+                  {copiedAt === 0 ? <Check /> : <Copy />}
+                </button>
+              </li>
               {YW_STEPS.map((st, i) => (
                 <li key={st.cmd}>
-                  <span className="n">{i + 1}</span>
+                  <span className="n">{i + 2}</span>
                   <span className="cmd">
                     <code>
                       {!st.plain && <span className="p">$ </span>}
@@ -366,8 +418,8 @@ function YanoWallet() {
                     <span className="note">{st.note}</span>
                   </span>
                   {!st.plain && (
-                    <button type="button" className="dk-copy" onClick={() => copy(i, st.cmd)} aria-label={`Copy: ${st.cmd}`}>
-                      {copiedAt === i ? <Check /> : <Copy />}
+                    <button type="button" className="dk-copy" onClick={() => copy(i + 1, st.cmd)} aria-label={`Copy: ${st.cmd}`}>
+                      {copiedAt === i + 1 ? <Check /> : <Copy />}
                     </button>
                   )}
                 </li>
