@@ -2420,6 +2420,19 @@ html[data-dk-js] .dk-reveal.in {
   transform: none;
 }
 
+/* The hero animates in with CSS alone, so it plays on first paint instead of waiting for the scripts */
+@keyframes dk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.dk-hero .dk-reveal {
+  animation: dk-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--delay, 0s);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
   .dk-hero-grid {
