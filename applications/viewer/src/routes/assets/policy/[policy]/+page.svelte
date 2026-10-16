@@ -1,153 +1,74 @@
 <script lang="ts">
-    import { page } from '$app/stores';
-    import { goto } from '$app/navigation';
-    import { truncate, getDate } from '$lib/util';
-    import { parseUnit } from '$lib/utils/asset';
-    import TruncateCopy from '../../../../components/TruncateCopy.svelte';
-    import EmptyState from '../../../../components/EmptyState.svelte';
+	import { num, parseUnit } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import AssetChip from '$lib/ui/AssetChip.svelte';
+	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import AssetAvatar from '$lib/assets/AssetAvatar.svelte';
+	import MintHistory from '$lib/assets/MintHistory.svelte';
+	import { scriptTypeLabel } from '$lib/assets/script';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import FileCode from '@lucide/svelte/icons/file-code';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 
-    export let data: any;
+	let { data } = $props();
 
-    let loading = false;
-    let policy = '';
-    let supply: any = null;
-    let history: any[] = [];
-    let currentPage = 1;
-    let count = 15;
-
-    $: supplyValue = supply?.supply ?? '—';
-    $: hasMore = history.length === count;
-
-    function goToPage(newPage: number) {
-        if (newPage < 1 || loading) return;
-        loading = true;
-        goto(`/assets/policy/${policy}?page=${newPage}&count=${count}`);
-    }
-
-    function decodeAssetName(unit: string): string {
-        try {
-            const parsed = parseUnit(unit);
-            return parsed.assetNameUtf8 || parsed.assetNameHex || '(empty)';
-        } catch {
-            return unit;
-        }
-    }
-
-    $: if (data && $page) {
-        loading = false;
-        policy = data.policy;
-        supply = data.supply;
-        history = data.history || [];
-        currentPage = data.currentPage;
-        count = data.count;
-    }
+	// Assets seen on this page of history, newest first.
+	const units = $derived([...new Set(data.rows.map((r) => r.unit))]);
+	const kind = $derived(data.script?.type ? scriptTypeLabel(data.script.type) : null);
 </script>
 
-<section class="py-8 px-4 md:px-6 min-h-screen">
-    <div class="container mx-auto max-w-6xl">
-        <!-- Header -->
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
-            <div class="bg-base-200/50 p-6 border-b border-base-200">
-                <h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
-                    Policy
-                </h2>
-                <div class="flex items-center gap-3">
-                    <TruncateCopy text={policy} max={60} />
-                </div>
-            </div>
+<svelte:head><title>Policy {data.policy.slice(0, 10)}… · Yaci Viewer</title></svelte:head>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-base-200">
-                <div class="p-6">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-                        Total Supply (all assets)
-                    </div>
-                    <div class="text-base-content font-medium text-lg">
-                        {supplyValue}
-                    </div>
-                </div>
-                <div class="p-6">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-                        Mint/Burn Events
-                    </div>
-                    <div class="text-base-content font-medium text-lg">
-                        {history.length}{history.length === count ? '+' : ''}
-                    </div>
-                </div>
-            </div>
-        </div>
+<PageHeader kind="Minting policy" title="{data.policy.slice(0, 12)}…{data.policy.slice(-8)}">
+	{#snippet icon()}<ShieldCheck class="h-5 w-5" />{/snippet}
+	<div class="flex items-start gap-1.5">
+		<span class="mono break-all text-xs text-faint">{data.policy}</span>
+		<CopyButton value={data.policy} label="Policy id copied" />
+	</div>
+	{#snippet actions()}
+		{#if kind}<Badge tone={kind.startsWith('Plutus') ? 'violet' : 'cyan'}><FileCode class="h-3.5 w-3.5" />{kind}</Badge>{/if}
+	{/snippet}
+</PageHeader>
 
-        <!-- History Table -->
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px] relative">
-            {#if loading}
-                <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
-                    <span class="loading loading-spinner loading-lg"></span>
-                </div>
-            {/if}
+<section class="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+	<div class="y-panel relative flex items-center gap-5 overflow-hidden p-5">
+		<div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10 blur-2xl"></div>
+		<AssetAvatar policy={data.policy} name={units[0] ? parseUnit(units[0]).name : 'P'} size={64} />
+		<div class="min-w-0">
+			<div class="y-label">Total supply</div>
+			<div class="mt-1 truncate font-display text-3xl font-semibold tabular-nums tracking-tight">{data.supply.value != null ? num(data.supply.value) : '—'}</div>
+			<div class="mt-1 text-xs text-muted">
+				{data.supply.value != null ? 'units across every asset under this policy' : data.supply.error ? 'The store took too long to total this policy.' : 'Not reported'}
+			</div>
+		</div>
+	</div>
+	<Panel title="Assets in recent activity">
+		{#snippet actions()}
+			<a class="y-btn h-8 text-xs" href="/scripts/{data.policy}">Policy script <ArrowRight class="h-3.5 w-3.5" /></a>
+		{/snippet}
+		{#if units.length}
+			<div class="flex flex-wrap gap-1.5">
+				{#each units.slice(0, 18) as u (u)}<AssetChip unit={u} />{/each}
+				{#if units.length > 18}<span class="self-center text-xs text-faint">+{units.length - 18} more</span>{/if}
+			</div>
+		{:else}
+			<p class="text-sm text-muted">No mint or burn events on this page of history.</p>
+		{/if}
+	</Panel>
+</section>
 
-            <h3 class="text-lg font-semibold text-base-content mb-4">Mint/Burn History</h3>
-
-            {#if history.length === 0}
-                <EmptyState title="No History" message="No mint or burn events found for this policy." />
-            {:else}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-base-300">
-                        <thead class="bg-base-200">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Asset</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Quantity</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Time</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-base-100 divide-y divide-base-300">
-                            {#each history as event (event.tx_hash + event.unit + event.quantity)}
-                                <tr class="hover:bg-base-200">
-                                    <td class="px-4 py-4 text-sm">
-                                        <a href="/transactions/{event.tx_hash}" class="text-blue-600 hover:underline">
-                                            {truncate(event.tx_hash, 20, '...')}
-                                        </a>
-                                    </td>
-                                    <td class="px-4 py-4 text-sm">
-                                        <a href="/assets/unit/{event.unit}" class="text-blue-600 hover:underline">
-                                            {decodeAssetName(event.unit)}
-                                        </a>
-                                    </td>
-                                    <td class="px-4 py-4 text-sm">
-                                        {#if event.mint_type === 'MINT'}
-                                            <span class="badge badge-success badge-sm">MINT</span>
-                                        {:else}
-                                            <span class="badge badge-error badge-sm">BURN</span>
-                                        {/if}
-                                    </td>
-                                    <td class="px-4 py-4 text-sm font-medium text-base-content">
-                                        {event.quantity}
-                                    </td>
-                                    <td class="px-4 py-4 text-sm text-base-content/60">
-                                        <a href="/blocks/{event.block_number}" class="text-blue-500 hover:underline">
-                                            {event.block_number}
-                                        </a>
-                                    </td>
-                                    <td class="px-4 py-4 text-sm text-base-content/60">
-                                        {getDate(event.block_time)}
-                                    </td>
-                                </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-6 flex justify-between items-center">
-                    <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
-                        &lt; Previous
-                    </button>
-                    <span class="text-sm text-base-content/80">Page {currentPage}</span>
-                    <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage + 1)} disabled={!hasMore}>
-                        Next &gt;
-                    </button>
-                </div>
-            {/if}
-        </div>
-    </div>
+<section class="y-panel overflow-hidden">
+	<header class="y-panel-head">
+		<h2 class="font-display text-[15px] font-semibold">Mint & burn history</h2>
+	</header>
+	{#if data.listError}
+		<ErrorBox title="Couldn't load the history" message="{data.listError}. Busy policies can be too slow for the store; open an asset to see its own history." />
+	{:else}
+		<MintHistory rows={data.rows} showAsset />
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{/if}
 </section>

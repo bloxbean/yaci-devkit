@@ -1,34 +1,17 @@
-import type { PageLoad } from './$types'
-import { env } from '$env/dynamic/public';
+import { error } from '@sveltejs/kit';
+import { api, paging } from '$lib/api/client';
+import type { PageServerLoad } from './$types';
 
-export const load: PageLoad = async ({params, url}) => {
-    let page = url.searchParams.get('page');
-    if (!page) page = 0;
-    const count = 15;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
-    const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-    const apiUrl = `${INDEXER_BASE_URL}/governance/votes?page=${page}&count=${count}`;
-    console.log(apiUrl);
-
-    const res = await fetch(apiUrl);
-    const data = await res.json();
-
-    const votes  = data;
-    console.log(data);
-
-    if (res.ok) {
-        return {
-            votes,
-            total: 0,
-            total_pages: 0,
-            page: page,
-            count: count
-        }
-    }
-
-    return {
-        status: 404,
-        body: { error: 'Can not fetch Voting Procedures.' }
-    };
-
-}
+/* Every vote on chain, newest first (/governance/votes, 1-based). */
+export const load: PageServerLoad = async ({ url, fetch }) => {
+	const { page, count } = paging(url, 25);
+	try {
+		const votes = await api<Any[]>('/governance/votes', { fetch, params: { page, count, order: 'desc' } });
+		return { votes: votes ?? [], page, count };
+	} catch (e) {
+		error(503, (e as Error).message);
+	}
+};

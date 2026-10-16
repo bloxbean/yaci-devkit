@@ -1,96 +1,85 @@
 <script lang="ts">
-    import {goto} from '$app/navigation';
-    import {onMount} from 'svelte';
+	import { shorten } from '$lib/format';
+	import LookupHero from '$lib/ui/LookupHero.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import { isPoolId, marginPct, poolBech32 } from '$lib/staking/pool';
+	import Server from '@lucide/svelte/icons/server';
+	import UserPlus from '@lucide/svelte/icons/user-plus';
+	import Power from '@lucide/svelte/icons/power';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 
-    let poolId = '';
-    let error = '';
-    let loading = false;
+	let { data } = $props();
 
-    async function handleSubmit() {
-        if (!poolId.trim()) {
-            error = 'Please enter a pool ID';
-            return;
-        }
+	const examples = $derived(
+		[...new Map(data.registrations.map((r) => [r.pool_id, r])).values()]
+			.slice(0, 2)
+			.map((r) => ({ label: shorten(r.pool_id_bech32 ?? poolBech32(r.pool_id), 10, 4), value: r.pool_id_bech32 ?? poolBech32(r.pool_id) }))
+	);
 
-        loading = true;
-        error = '';
-
-        try {
-            // Validate pool ID format (bech32)
-            if (!poolId.startsWith('pool1')) {
-                error = 'Invalid pool ID format. Pool ID should start with "pool1"';
-                return;
-            }
-
-            // Redirect to pool details page
-            await goto(`/pools/${poolId}`);
-        } catch (e) {
-            error = 'An error occurred while searching for the pool';
-            console.error(e);
-        } finally {
-            loading = false;
-        }
-    }
+	function resolve(v: string) {
+		return isPoolId(v) ? `/pools/${v}` : { error: 'Pool ids start with pool1, or are a 56-character hex hash.' };
+	}
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">Pool Search</h1>
-        
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <form on:submit|preventDefault={handleSubmit} class="space-y-4">
-                    <div class="form-control">
-                        <label class="label" for="poolId">
-                            <span class="label-text">Pool ID</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="poolId"
-                            bind:value={poolId}
-                            placeholder="Enter pool ID (e.g., pool1...)"
-                            class="input input-bordered w-full"
-                            required
-                        />
-                    </div>
+<svelte:head><title>Stake pools · Yaci Viewer</title></svelte:head>
 
-                    {#if error}
-                        <div class="alert alert-error">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <span>{error}</span>
-                        </div>
-                    {/if}
+<LookupHero
+	kind="Staking"
+	title="Find a stake pool"
+	text="Pledge, fees, owners, relays, stake and delegators for any pool on this chain."
+	placeholder="pool1… or pool hash"
+	icon={Server}
+	{resolve}
+	{examples}
+/>
 
-                    <div class="card-actions justify-end">
-                        <button type="submit" class="btn btn-primary" disabled={loading}>
-                            {#if loading}
-                                <span class="loading loading-spinner"></span>
-                                Searching...
-                            {:else}
-                                Search
-                            {/if}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+<div class="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+	<Panel title="Recent registrations and updates" flush>
+		{#snippet icon()}<UserPlus class="h-4 w-4" />{/snippet}
+		{#snippet actions()}<a href="/certificates/pool-registrations" class="y-btn h-8 text-xs">All <ArrowRight class="h-3.5 w-3.5" /></a>{/snippet}
+		{#if data.registrations.length}
+			<ul class="divide-y divide-line/70">
+				{#each data.registrations as r (r.tx_hash + r.cert_index)}
+					{@const id = r.pool_id_bech32 ?? poolBech32(r.pool_id)}
+					<li>
+						<a href="/pools/{id}" class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-2/70">
+							<span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-surface-2 text-faint group-hover:border-brand/40 group-hover:text-brand"><Server class="h-4 w-4" /></span>
+							<span class="min-w-0 flex-1">
+								<span class="mono block truncate text-[13px] font-medium group-hover:text-brand">{shorten(id, 14, 8)}</span>
+								<span class="block text-xs text-muted">margin {marginPct(r.margin)} · cost <Ada value={r.cost} decimals={0} /></span>
+							</span>
+							<span class="shrink-0 text-right">
+								<span class="block text-[13px]">pledge <Ada value={r.pledge} decimals={0} class="font-semibold" /></span>
+								<TimeAgo ts={r.block_time} class="text-[11px] text-faint" />
+							</span>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<Empty title="No pool registrations" />
+		{/if}
+	</Panel>
 
-        <div class="mt-8">
-            <div class="alert alert-info">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <div>
-                    <h3 class="font-bold">How to find a pool ID</h3>
-                    <div class="text-sm">
-                        <p>Pool IDs are unique identifiers for Cardano stake pools. They start with "pool1" followed by a series of characters.</p>
-                        <p>You can find pool IDs on:</p>
-                        <ul class="list-disc list-inside mt-2">
-                            <li>Pool registration certificates</li>
-                            <li>Pool explorer websites</li>
-                            <li>Your wallet's delegation interface</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div> 
+	<Panel title="Retirements" flush>
+		{#snippet icon()}<Power class="h-4 w-4" />{/snippet}
+		{#snippet actions()}<a href="/certificates/pool-retirements" class="y-btn h-8 text-xs">All <ArrowRight class="h-3.5 w-3.5" /></a>{/snippet}
+		{#if data.retirements.length}
+			<ul class="divide-y divide-line/70">
+				{#each data.retirements as r (r.tx_hash + r.cert_index)}
+					{@const id = r.pool_id_bech32 ?? poolBech32(r.pool_id)}
+					<li class="flex items-center gap-3 px-5 py-3">
+						<a href="/pools/{id}" class="mono min-w-0 flex-1 truncate text-[13px] font-medium hover:text-brand">{shorten(id, 12, 6)}</a>
+						{#if data.epoch != null && r.retirement_epoch <= data.epoch}<Badge tone="neutral">retired {r.retirement_epoch}</Badge>{:else}<Badge tone="warn">retires {r.retirement_epoch}</Badge>{/if}
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<Empty title="No retirements" text="No pool has announced it is retiring." />
+		{/if}
+	</Panel>
+</div>

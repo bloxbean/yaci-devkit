@@ -25,8 +25,7 @@
 
 <nav class="flex items-center justify-between gap-3 border-t border-line px-4 py-3 text-sm" aria-label="Pagination">
 	<span class="text-muted">
-		Page <b class="font-semibold text-ink tabular-nums">{page.toLocaleString()}</b>{#if totalPages}
-			<span> of {totalPages.toLocaleString()}</span>{/if}
+		Page <b class="font-semibold text-ink tabular-nums">{page.toLocaleString()}</b>{#if totalPages}{' '}of {totalPages.toLocaleString()}{/if}
 	</span>
 	<div class="flex items-center gap-1.5">
 		<a class="y-icon-btn h-8 w-8 {page <= 1 ? 'pointer-events-none opacity-35' : ''}" href={href(1)} aria-label="First page" data-sveltekit-noscroll

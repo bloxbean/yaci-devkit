@@ -22,7 +22,7 @@
 	const kb = (bytes: number) => (bytes >= 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${bytes} B`);
 </script>
 
-<div class="relative -mx-1 overflow-x-auto px-1 pb-1 [mask-image:linear-gradient(90deg,#000_88%,transparent)] md:overflow-hidden">
+<div class="relative -mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [mask-image:linear-gradient(90deg,#000_88%,transparent)] md:overflow-hidden">
 	<ol class="flex items-stretch gap-3">
 		{#if tip}
 			<!-- The block being forged -->

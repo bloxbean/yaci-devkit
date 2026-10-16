@@ -1,214 +1,93 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-    import { page } from "$app/stores";
-    import { formatAda } from "$lib/util";
-    import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { num, shorten, adaCompact } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import { credLabel, statusLabel, statusTone } from '$lib/governance/labels';
+	import { drepIdCandidates } from '$lib/governance/drep';
+	import Users from '@lucide/svelte/icons/users';
+	import Search from '@lucide/svelte/icons/search';
 
-    export let data;
+	let { data } = $props();
 
-    interface Drep {
-        drep_id: string | null;
-        drep_hash: string | null;
-        deposit: number;
-        status: string;
-        voting_power: number | null;
-        registration_slot: number;
-        drep_type: string | null;
-    }
+	let query = $state('');
+	let problem = $state<string | null>(null);
+	function find(e: Event) {
+		e.preventDefault();
+		const q = query.trim();
+		if (!q) return;
+		if (!drepIdCandidates(q).length) {
+			problem = 'That is not a DRep id. Use drep1… or the 56-character hash.';
+			return;
+		}
+		goto(`/governance/dreps/${q}`);
+	}
 
-    // Add toast state
-    let showToast = false;
-    let toastTimeout: number;
-    let toastMessage = '';
-
-    function getStatusClass(status: string): string {
-        switch (status.toUpperCase()) {
-            case 'ACTIVE':
-                return 'badge badge-success';
-            case 'INACTIVE':
-                return 'badge badge-error';
-            default:
-                return 'badge badge-ghost';
-        }
-    }
-
-    function formatVotingPower(power: number | null): string {
-        if (power === null) return '';
-        return formatAda(power);
-    }
-
-    function truncateHash(hash: string | null): string {
-        if (!hash) return '';
-        return hash.substring(0, 8) + '...' + hash.substring(hash.length - 8);
-    }
-
-    async function copyToClipboard(text: string | null, message: string) {
-        if (!text) return;
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast = true;
-            toastMessage = message;
-            // Clear any existing timeout
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-            // Hide toast after 2 seconds
-            toastTimeout = setTimeout(() => {
-                showToast = false;
-            }, 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-        }
-    }
-
-    // Cleanup timeout on component destroy
-    onMount(() => {
-        return () => {
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-        };
-    });
-
-    const previous = () => {
-        let currentPage = parseInt(data.page);
-        let prevPage = currentPage - 1;
-        if (prevPage <= 0)
-            prevPage = 1;
-        goto(`/governance/dreps?page=${prevPage}&count=${data.count}`)
-    };
-
-    const next = () => {
-        let currentPage = parseInt(data.page);
-        let nextPage = currentPage + 1;
-
-        if (data.dreps.length == 0)
-            nextPage = currentPage;
-
-        goto(`/governance/dreps?page=${nextPage}&count=${data.count}`)
-    };
-
-    const itemsPerPage = parseInt(data.count);
-    const currentPage = parseInt(data.page);
-    const totalPages = Math.ceil(data.dreps.length / itemsPerPage);
-
-    $: hasMore = data.dreps.length === itemsPerPage;
+	const abstain = $derived(data.special.find((s) => s.drep_type === 'ABSTAIN')?.voting_power);
+	const noConfidence = $derived(data.special.find((s) => s.drep_type === 'NO_CONFIDENCE')?.voting_power);
 </script>
 
-<section class="container mx-auto text-sm">
-    <!-- Toast Notification -->
-    {#if showToast}
-        <div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 z-50">
-            {toastMessage}
-        </div>
-    {/if}
+<svelte:head><title>DReps · Yaci Viewer</title></svelte:head>
 
-    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">DReps</h2>
-    <div class="flex justify-end mt-4">
-        <div class="join">
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={currentPage === 1}
-                on:click={previous}
-            >
-                «
-            </button>
-            <button class="join-item btn btn-sm">Page {currentPage}</button>
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={!hasMore}
-                on:click={next}
-            >
-                »
-            </button>
-        </div>
-    </div>
-    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4">
-        <table class="min-w-full divide-y divide-base-300">
-            <thead class="bg-base-200">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">DRep ID</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">DRep Hash</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Deposit</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Voting Power</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Registration Slot</th>
-            </tr>
-            </thead>
-            <tbody class="bg-base-100 divide-y divide-base-300">
-            {#each data.dreps as drep}
-                <tr class="hover:bg-base-200">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
-                        {#if drep.drep_id}
-                            <div class="flex items-center gap-2">
-                                <a href="/governance/dreps/{drep.drep_id}" class="link link-primary">{drep.drep_id}</a>
-                                <button
-                                    class="text-base-content/50 hover:text-base-content/70"
-                                    on:click={() => copyToClipboard(drep.drep_id, 'DRep ID copied to clipboard!')}
-                                    title="Copy DRep ID"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                    </svg>
-                                </button>
-                            </div>
-                        {/if}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        {#if drep.drep_hash}
-                            <div class="flex items-center gap-2">
-                                <span>{truncateHash(drep.drep_hash)}</span>
-                                <button 
-                                    class="text-base-content/50 hover:text-base-content/70"
-                                    on:click={() => copyToClipboard(drep.drep_hash, 'DRep Hash copied to clipboard!')}
-                                    title="Copy DRep Hash"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                    </svg>
-                                </button>
-                            </div>
-                        {/if}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        <span class={getStatusClass(drep.status)}>{drep.status}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        {formatAda(drep.deposit)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        {formatVotingPower(drep.voting_power)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        {drep.drep_type || ''}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        {drep.registration_slot}
-                    </td>
-                </tr>
-            {/each}
-            </tbody>
-        </table>
-    </div>
+<PageHeader kind="Governance" title="DReps">
+	{#snippet icon()}<Users class="h-5 w-5" />{/snippet}
+	Delegated representatives vote on governance actions with the stake delegated to them.
+	{#snippet actions()}
+		<form class="flex w-full gap-2 sm:w-96" onsubmit={find}>
+			<input class="y-input h-9 font-mono text-xs placeholder:font-sans" placeholder="drep1… or hash" bind:value={query} oninput={() => (problem = null)} aria-label="Find a DRep" />
+			<button class="y-btn h-9" type="submit" aria-label="Find"><Search class="h-4 w-4" /></button>
+		</form>
+	{/snippet}
+</PageHeader>
 
-    <div class="flex justify-end mt-4">
-        <div class="join">
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={currentPage === 1}
-                on:click={previous}
-            >
-                «
-            </button>
-            <button class="join-item btn btn-sm">Page {currentPage}</button>
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={!hasMore}
-                on:click={next}
-            >
-                »
-            </button>
-        </div>
-    </div>
-</section> 
+{#if problem}<p class="-mt-3 mb-4 text-right text-sm text-danger">{problem}</p>{/if}
+
+{#if abstain != null || noConfidence != null}
+	<section class="mb-6 grid gap-4 sm:grid-cols-2">
+		<div class="y-panel p-4">
+			<div class="y-label">Always abstain</div>
+			<div class="mt-1 font-display text-2xl font-semibold">₳{adaCompact(abstain)}</div>
+			<div class="text-xs text-muted">stake that counts as abstaining on every action</div>
+		</div>
+		<div class="y-panel p-4">
+			<div class="y-label">Always no confidence</div>
+			<div class="mt-1 font-display text-2xl font-semibold">₳{adaCompact(noConfidence)}</div>
+			<div class="text-xs text-muted">stake that votes no confidence in the committee</div>
+		</div>
+	</section>
+{/if}
+
+<section class="y-panel overflow-hidden">
+	<DataTable
+		rows={data.dreps}
+		columns={[
+			{ key: 'drep', label: 'DRep' },
+			{ key: 'status', label: 'Status' },
+			{ key: 'power', label: 'Voting power', align: 'right' },
+			{ key: 'deposit', label: 'Deposit', align: 'right', minor: true },
+			{ key: 'type', label: 'Credential', minor: true },
+			{ key: 'slot', label: 'Registered at slot', align: 'right', minor: true }
+		]}
+		key={(d) => d.drep_id}
+		rowHref={(d) => `/governance/dreps/${d.drep_id}`}
+		emptyTitle="No DReps registered"
+		emptyText="Register a DRep on your devnet and it appears here."
+	>
+		{#snippet cell(d, key)}
+			{#if key === 'drep'}
+				<a class="group flex items-center gap-2.5" href="/governance/dreps/{d.drep_id}">
+					<span class="grid h-8 w-8 place-items-center rounded-lg border border-line bg-surface-2 text-faint group-hover:border-brand/40 group-hover:text-brand"><Users class="h-4 w-4" /></span>
+					<span class="mono text-[13px] font-medium text-ink group-hover:text-brand">{shorten(d.drep_id, 14, 8)}</span>
+				</a>
+			{:else if key === 'status'}<Badge tone={statusTone(d.status)}>{statusLabel(d.status)}</Badge>
+			{:else if key === 'power'}<Ada value={d.voting_power} decimals={0} class="font-semibold" />
+			{:else if key === 'deposit'}<Ada value={d.deposit} decimals={0} class="text-muted" />
+			{:else if key === 'type'}<span class="text-muted">{credLabel(d.drep_type)}</span>
+			{:else if key === 'slot'}<span class="mono text-xs text-muted">{num(d.registration_slot)}</span>{/if}
+		{/snippet}
+	</DataTable>
+	<Pager page={data.page} hasNext={data.dreps.length === data.count} />
+</section>

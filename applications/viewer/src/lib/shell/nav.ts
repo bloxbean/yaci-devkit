@@ -17,6 +17,8 @@ import Vote from '@lucide/svelte/icons/vote';
 import Scale from '@lucide/svelte/icons/scale';
 import Gavel from '@lucide/svelte/icons/gavel';
 import Link2 from '@lucide/svelte/icons/link-2';
+import Timer from '@lucide/svelte/icons/timer';
+import UserPlus from '@lucide/svelte/icons/user-plus';
 
 export interface NavItem {
 	label: string;
@@ -39,6 +41,7 @@ export const NAV: NavGroup[] = [
 			{ label: 'Dashboard', href: '/', icon: LayoutDashboard, keywords: 'home live overview' },
 			{ label: 'Blocks', href: '/blocks', icon: Blocks },
 			{ label: 'Transactions', href: '/transactions', icon: ArrowLeftRight, keywords: 'txs' },
+			{ label: 'Epochs', href: '/epochs', icon: Timer, keywords: 'protocol parameters params' },
 			{ label: 'Addresses', href: '/addresses', icon: Wallet, match: ['/stake'], keywords: 'wallet balance utxo' },
 			{ label: 'Assets', href: '/assets', icon: Coins, keywords: 'tokens nft policy mint' }
 		]
@@ -66,7 +69,8 @@ export const NAV: NavGroup[] = [
 		items: [
 			{ label: 'Overview', href: '/governance', icon: Landmark, keywords: 'conway' },
 			{ label: 'Proposals', href: '/governance/proposals', icon: ScrollText, match: ['/governance/govactions'], keywords: 'gov actions' },
-			{ label: 'DReps', href: '/governance/dreps', icon: Users, match: ['/governance/drep-'], keywords: 'delegated representatives' },
+			{ label: 'DReps', href: '/governance/dreps', icon: Users, keywords: 'delegated representatives' },
+			{ label: 'DRep activity', href: '/governance/drep-registrations', icon: UserPlus, match: ['/governance/drep-'], keywords: 'drep registrations updates retirements' },
 			{ label: 'Votes', href: '/governance/votes', icon: Vote },
 			{ label: 'Committee', href: '/governance/committee', icon: Gavel, keywords: 'cc constitutional' },
 			{ label: 'Constitution', href: '/governance/constitution', icon: Scale }

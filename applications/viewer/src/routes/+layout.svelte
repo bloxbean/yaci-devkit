@@ -20,6 +20,8 @@
 	onMount(() => {
 		shell.restore();
 		chain.start();
+		// Lets tests (and anything else) know the app is interactive.
+		document.documentElement.dataset.ready = '';
 	});
 
 	// Cross-fade between pages where the browser supports view transitions.

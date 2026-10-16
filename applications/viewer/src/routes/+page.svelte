@@ -91,7 +91,7 @@
 	</Panel>
 
 	<!-- KPIs -->
-	<section class="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+	<section class="mb-6 grid grid-cols-1 gap-3 min-[520px]:grid-cols-2 sm:gap-4 xl:grid-cols-4">
 		<Stat label="Block time" value={avgInterval ? `${avgInterval.toFixed(avgInterval < 10 ? 2 : 1)}s` : '—'} sub="average, last {recent.length} blocks" trend={intervals} color="rgb(var(--c-violet))">
 			{#snippet icon()}<Timer class="h-4 w-4" />{/snippet}
 		</Stat>

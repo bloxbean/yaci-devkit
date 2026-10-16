@@ -19,7 +19,7 @@
 </script>
 
 {#snippet links(compact: boolean)}
-	<nav class="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4" aria-label="Main">
+	<nav class="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-3 [scrollbar-width:thin]" aria-label="Main">
 		{#each NAV as group (group.label)}
 			<div>
 				{#if !compact}<div class="y-label mb-1.5 px-2.5">{group.label}</div>{:else}<div class="mx-auto mb-2 h-px w-6 bg-line"></div>{/if}
@@ -29,7 +29,7 @@
 						<li>
 							<a
 								href={item.href}
-								class="group relative flex items-center gap-3 rounded-xl px-2.5 py-2 text-[13.5px] font-medium transition-colors {active
+								class="group relative flex items-center gap-3 rounded-xl px-2.5 py-[7px] text-[13.5px] font-medium transition-colors {active
 									? 'bg-brand/10 text-ink'
 									: 'text-muted hover:bg-surface-2 hover:text-ink'} {compact ? 'justify-center' : ''}"
 								aria-current={active ? 'page' : undefined}

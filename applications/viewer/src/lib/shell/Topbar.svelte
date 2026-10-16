@@ -15,18 +15,19 @@
 		<div class="lg:hidden"><Logo compact /></div>
 
 		<button
-			class="group flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl border border-line bg-surface px-3.5 text-left text-sm text-faint transition hover:border-brand/40 md:max-w-xl"
+			class="group hidden h-10 min-w-0 flex-1 items-center gap-3 rounded-xl border border-line bg-surface px-3.5 text-left text-sm text-faint transition hover:border-brand/40 sm:flex md:max-w-xl"
 			onclick={() => shell.openPalette()}
 			aria-label="Search"
 		>
 			<Search class="h-4 w-4 shrink-0 transition group-hover:text-brand" />
 			<span class="truncate">Search blocks, transactions, addresses, assets…</span>
-			<span class="ml-auto hidden shrink-0 items-center gap-1 sm:flex">
+			<span class="ml-auto hidden shrink-0 items-center gap-1 md:flex">
 				<kbd class="y-kbd">{isMac ? '⌘' : 'Ctrl'}</kbd><kbd class="y-kbd">K</kbd>
 			</span>
 		</button>
 
 		<div class="ml-auto flex items-center gap-2">
+			<button class="y-icon-btn sm:hidden" onclick={() => shell.openPalette()} aria-label="Search"><Search class="h-4 w-4" /></button>
 			<LiveBadge />
 			<ThemeToggle />
 		</div>

@@ -107,8 +107,11 @@ class Chain {
 	txs = $state<LiveTx[]>([]);
 	network = $state<NetworkInfo | null>(null);
 	epoch = $state<EpochInfo | null>(null);
-	/** Ticks every second so relative times ("12s ago") stay current. */
-	now = $state(Date.now());
+	private tick = $state(Date.now());
+	/** Ticks every second in the browser, so relative times ("12s ago") stay current. On the server: the real time. */
+	get now() {
+		return typeof window === 'undefined' ? Date.now() : this.tick;
+	}
 	/** Set when the store can't be reached at all. */
 	error = $state<string | null>(null);
 
@@ -134,7 +137,7 @@ class Chain {
 		if (this.started || typeof window === 'undefined') return;
 		this.started = true;
 		this.status = 'connecting';
-		setInterval(() => (this.now = Date.now()), 1000);
+		setInterval(() => (this.tick = Date.now()), 1000);
 		setInterval(() => this.refreshNetwork(), 30000);
 		document.addEventListener('visibilitychange', () => {
 			if (!document.hidden && this.status === 'polling') this.poll();

@@ -1,5 +1,3 @@
-const themes = require('daisyui/src/theming/themes');
-
 /* Colours come from CSS variables in app.postcss, so one class works in both themes. */
 const token = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
 
@@ -74,52 +72,7 @@ const config = {
 		}
 	},
 
-	plugins: [require('daisyui')],
-
-	/* DaisyUI stays only while pages move to the new components. Its themes follow the same palette. */
-	daisyui: {
-		logs: false,
-		themes: [
-			{
-				yaci: {
-					...themes['light'],
-					primary: '#e8501c',
-					'primary-content': '#ffffff',
-					secondary: '#7c3aed',
-					accent: '#0891b2',
-					neutral: '#14121c',
-					'base-100': '#ffffff',
-					'base-200': '#f6f4f2',
-					'base-300': '#e6e2ea',
-					'base-content': '#14121c',
-					info: '#1f6bff',
-					success: '#059669',
-					warning: '#b97806',
-					error: '#dc2626',
-					'--rounded-box': '14px',
-					'--rounded-btn': '10px'
-				},
-				'yaci-dark': {
-					...themes['dark'],
-					primary: '#ff6a34',
-					'primary-content': '#ffffff',
-					secondary: '#a78bfa',
-					accent: '#22d3ee',
-					neutral: '#161926',
-					'base-100': '#10121c',
-					'base-200': '#0d0f17',
-					'base-300': '#222536',
-					'base-content': '#eef0f8',
-					info: '#3b8bff',
-					success: '#34d399',
-					warning: '#fbbf24',
-					error: '#f87171',
-					'--rounded-box': '14px',
-					'--rounded-btn': '10px'
-				}
-			}
-		]
-	}
+	plugins: []
 };
 
 module.exports = config;

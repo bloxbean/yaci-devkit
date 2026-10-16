@@ -22,7 +22,7 @@
 	</Ring>
 	<div class="min-w-0 flex-1">
 		<div class="y-label">Epoch</div>
-		<a href={e ? `/rewards/epoch/${e.epoch}` : undefined} class="font-display text-3xl font-semibold tabular-nums hover:text-brand">{e ? num(e.epoch) : '—'}</a>
+		<a href={e ? `/epochs/${e.epoch}` : undefined} class="font-display text-3xl font-semibold tabular-nums hover:text-brand">{e ? num(e.epoch) : '—'}</a>
 		<dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
 			<div>
 				<dt class="text-faint">Ends in</dt>

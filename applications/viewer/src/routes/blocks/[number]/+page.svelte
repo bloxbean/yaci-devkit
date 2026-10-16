@@ -54,7 +54,7 @@
 
 <div class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
 	<Panel title="Block details">
-		<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+		<dl class="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-3">
 			<KV label="Hash" wide><Hash value={b.hash} head={16} tail={12} /></KV>
 			<KV label="Epoch"><span class="font-medium">{b.epoch}</span></KV>
 			<KV label="Slot"><span class="mono">{num(b.slot)}</span>{#if b.epoch_slot != null}<span class="text-faint"> · {num(b.epoch_slot)} in epoch</span>{/if}</KV>

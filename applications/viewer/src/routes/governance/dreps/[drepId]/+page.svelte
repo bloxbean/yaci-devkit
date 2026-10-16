@@ -1,168 +1,105 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { formatAda } from '$lib/util';
-    import TruncateCopy from '../../../../components/TruncateCopy.svelte';
-    import EmptyState from '../../../../components/EmptyState.svelte';
+	import { shorten, num } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import Tabs from '$lib/ui/Tabs.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import AnchorLink from '$lib/governance/AnchorLink.svelte';
+	import { actionHref, credLabel, statusLabel, statusTone, voteLabel, voteTone } from '$lib/governance/labels';
+	import Users from '@lucide/svelte/icons/users';
 
-    export let data;
-
-    function getStatusClass(status: string): string {
-        if (!status) return 'badge badge-ghost';
-        switch (status.toUpperCase()) {
-            case 'ACTIVE': return 'badge badge-success';
-            case 'INACTIVE': return 'badge badge-error';
-            default: return 'badge badge-ghost';
-        }
-    }
-
-    function truncateHash(hash: string): string {
-        if (!hash) return '';
-        return hash.substring(0, 8) + '...' + hash.substring(hash.length - 8);
-    }
-
-    $: currentPage = parseInt(data.page);
-    $: itemsPerPage = parseInt(data.count);
-    $: hasMore = data.delegations.length === itemsPerPage;
-
-    const previous = () => {
-        let prevPage = currentPage - 1;
-        if (prevPage < 1) prevPage = 1;
-        goto(`/governance/dreps/${data.drepId}?page=${prevPage}&count=${data.count}`);
-    };
-
-    const next = () => {
-        let nextPage = currentPage + 1;
-        if (data.delegations.length === 0) nextPage = currentPage;
-        goto(`/governance/dreps/${data.drepId}?page=${nextPage}&count=${data.count}`);
-    };
+	let { data } = $props();
+	const d = $derived(data.drep);
+	const a = $derived(data.activity);
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="mb-2">
-        <a href="/governance/dreps" class="btn btn-ghost btn-sm">&larr; Back to DReps</a>
-    </div>
+<svelte:head><title>DRep {shorten(d.drep_id, 10, 6)} · Yaci Viewer</title></svelte:head>
 
-    <h1 class="text-2xl font-bold mb-6">DRep Detail</h1>
+<PageHeader kind="DRep" title={shorten(d.drep_id, 14, 10)}>
+	{#snippet icon()}<Users class="h-5 w-5" />{/snippet}
+	<div class="flex items-start gap-1.5">
+		<span class="mono break-all text-xs text-faint">{d.drep_id}</span>
+		<CopyButton value={d.drep_id} label="DRep id copied" />
+	</div>
+	{#snippet actions()}
+		<Badge tone={statusTone(d.status)}>{statusLabel(d.status)}</Badge>
+		<Badge tone="neutral">{credLabel(d.drep_type)}</Badge>
+	{/snippet}
+</PageHeader>
 
-    <!-- DRep ID -->
-    <div class="mb-4">
-        <TruncateCopy text={data.drepId} max={80} title="DRep ID" />
-    </div>
+<section class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+	<div class="y-panel relative overflow-hidden p-5 xl:col-span-2">
+		<div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10 blur-2xl"></div>
+		<div class="y-label">Voting power</div>
+		<div class="mt-1 font-display text-4xl font-semibold tracking-tight"><Ada value={d.voting_power} decimals={0} /></div>
+		<div class="mt-2 text-sm text-muted">stake delegated to this DRep</div>
+	</div>
+	<div class="y-panel p-5">
+		<div class="y-label">Deposit</div>
+		<div class="mt-2 font-display text-xl font-semibold"><Ada value={d.deposit} decimals={0} /></div>
+		<div class="mt-1 text-xs text-muted">returned when the DRep retires</div>
+	</div>
+	<div class="y-panel p-5">
+		<div class="y-label">Activity</div>
+		{#if a}
+			<div class="mt-2 text-sm">Last voted in epoch <b>{a.last_active_epoch ?? '—'}</b></div>
+			<div class="mt-1 text-xs text-muted">active since epoch {a.active_epoch ?? '—'}{a.expired ? ' · expired' : ''}{a.retired ? ' · retired' : ''}</div>
+		{:else}
+			<div class="mt-2 text-sm text-muted">Registered at slot {num(d.registration_slot)}</div>
+		{/if}
+	</div>
+</section>
 
-    {#if data.drep}
-        <!-- Info Card -->
-        <div class="card bg-base-100 shadow-md mb-8">
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Status:</span>
-                        <span class={getStatusClass(data.drep.status)}>{data.drep.status}</span>
-                    </div>
+<Panel title="Details" class="mb-6">
+	<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+		<KV label="Credential hash" wide><Hash value={d.drep_hash} head={16} tail={12} /></KV>
+		<KV label="Registered at slot"><span class="mono">{num(d.registration_slot)}</span></KV>
+		<KV label="Profile" wide>{#if data.metadata?.url}<AnchorLink url={data.metadata.url} hash={data.metadata.hash} />{:else}<span class="text-muted">None published</span>{/if}</KV>
+	</dl>
+</Panel>
 
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Type:</span>
-                        <span>{data.drep.drep_type || ''}</span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">DRep Hash:</span>
-                        {#if data.drep.drep_hash}
-                            <TruncateCopy text={data.drep.drep_hash} max={38} />
-                        {:else}
-                            <span class="text-base-content/50">None</span>
-                        {/if}
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Deposit:</span>
-                        <span>{formatAda(data.drep.deposit)} ADA</span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Voting Power:</span>
-                        <span>{data.drep.voting_power !== null ? formatAda(data.drep.voting_power) + ' ADA' : ''}</span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Registration Slot:</span>
-                        <span>{data.drep.registration_slot}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Delegations -->
-        <h2 class="text-lg font-semibold mb-4">Delegations</h2>
-
-        {#if data.delegations.length > 0}
-            <div class="flex justify-end mb-2">
-                <div class="join">
-                    <button class="join-item btn btn-sm" disabled={currentPage === 1} on:click={previous}>«</button>
-                    <button class="join-item btn btn-sm">Page {currentPage}</button>
-                    <button class="join-item btn btn-sm" disabled={!hasMore} on:click={next}>»</button>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto bg-base-100 rounded-lg shadow mb-4">
-                <table class="table w-full">
-                    <thead>
-                        <tr class="bg-base-200">
-                            <th class="font-semibold text-base-content/80">Address</th>
-                            <th class="font-semibold text-base-content/80">Tx Hash</th>
-                            <th class="font-semibold text-base-content/80">Block</th>
-                            <th class="font-semibold text-base-content/80">Slot</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#each data.delegations as delegation}
-                            <tr class="hover:bg-base-200">
-                                <td>
-                                    {#if delegation.address}
-                                        <a href="/addresses/{delegation.address}" class="link link-primary">
-                                            <TruncateCopy text={delegation.address} max={30} />
-                                        </a>
-                                    {:else}
-                                        <span class="text-base-content/50">-</span>
-                                    {/if}
-                                </td>
-                                <td>
-                                    {#if delegation.tx_hash}
-                                        <a href="/transactions/{delegation.tx_hash}" class="link link-primary">
-                                            {truncateHash(delegation.tx_hash)}
-                                        </a>
-                                    {:else}
-                                        <span class="text-base-content/50">-</span>
-                                    {/if}
-                                </td>
-                                <td>
-                                    {#if delegation.block_number}
-                                        <a href="/blocks/{delegation.block_number}" class="link link-primary">
-                                            {delegation.block_number}
-                                        </a>
-                                    {:else}
-                                        <span class="text-base-content/50">-</span>
-                                    {/if}
-                                </td>
-                                <td>{delegation.slot ?? '-'}</td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-end">
-                <div class="join">
-                    <button class="join-item btn btn-sm" disabled={currentPage === 1} on:click={previous}>«</button>
-                    <button class="join-item btn btn-sm">Page {currentPage}</button>
-                    <button class="join-item btn btn-sm" disabled={!hasMore} on:click={next}>»</button>
-                </div>
-            </div>
-        {:else}
-            <EmptyState title="No delegations" message="No delegations found for this DRep." />
-        {/if}
-    {:else}
-        <div class="alert alert-warning">
-            <span>DRep not found or failed to load.</span>
-        </div>
-    {/if}
-</div>
+<section class="y-panel overflow-hidden">
+	<Tabs tabs={[{ id: 'delegators', label: 'Delegations' }, { id: 'votes', label: 'Votes cast' }]} active={data.tab} link />
+	{#if !data.rowsAvailable}
+		<Empty title="Not available" text={data.tab === 'votes' ? "This store doesn't list votes by DRep." : "This store doesn't list delegations by DRep."} />
+	{:else if data.tab === 'votes'}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'vote', label: 'Vote' }, { key: 'action', label: 'On action' }, { key: 'tx', label: 'In transaction', align: 'right' }]}
+			key={(v) => v.tx_hash + v.cert_index}
+			rowHref={(v) => actionHref(v.proposal_tx_hash, v.proposal_cert_index)}
+			emptyTitle="No votes yet"
+		>
+			{#snippet cell(v, key)}
+				{#if key === 'vote'}<Badge tone={voteTone(v.vote)}>{voteLabel(v.vote)}</Badge>
+				{:else if key === 'action'}<a class="mono text-[13px] text-ink hover:text-brand" href={actionHref(v.proposal_tx_hash, v.proposal_cert_index)}>{shorten(v.proposal_id ?? v.proposal_tx_hash, 14, 8)}</a>
+				{:else}<a class="mono text-xs text-muted hover:text-brand" href="/transactions/{v.tx_hash}">{shorten(v.tx_hash, 8, 6)}</a>{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{:else}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'address', label: 'Stake account' }, { key: 'epoch', label: 'Epoch', minor: true }, { key: 'tx', label: 'Transaction', minor: true }, { key: 'age', label: 'When', align: 'right' }]}
+			key={(r) => r.tx_hash + r.cert_index}
+			emptyTitle="No delegations yet"
+			emptyText="Stake accounts that delegate their voting power to this DRep appear here."
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'address'}<Hash value={r.address} href="/stake/{r.address}" head={14} tail={8} />
+				{:else if key === 'epoch'}{r.epoch ?? '—'}
+				{:else if key === 'tx'}<a class="mono text-xs text-muted hover:text-brand" href="/transactions/{r.tx_hash}">{shorten(r.tx_hash, 8, 6)}</a>
+				{:else}<TimeAgo ts={r.block_time} class="text-muted" />{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{/if}
+</section>

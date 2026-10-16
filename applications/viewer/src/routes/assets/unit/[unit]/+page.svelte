@@ -1,359 +1,136 @@
 <script lang="ts">
-    import { page } from '$app/stores';
-    import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-    import { truncate, getDate } from '$lib/util';
-    import { parseUnit } from '$lib/utils/asset';
-    import TruncateCopy from '../../../../components/TruncateCopy.svelte';
-    import AddressLink from '../../../../components/AddressLink.svelte';
-    import AmountBadges from '../../../../components/AmountBadges.svelte';
-    import EmptyState from '../../../../components/EmptyState.svelte';
+	import { num, parseUnit, shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import Tabs from '$lib/ui/Tabs.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import AssetChip from '$lib/ui/AssetChip.svelte';
+	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import AssetAvatar from '$lib/assets/AssetAvatar.svelte';
+	import MintHistory from '$lib/assets/MintHistory.svelte';
+	import { assetsOf, lovelaceOf } from '$lib/tx/types';
+	import Coins from '@lucide/svelte/icons/coins';
 
-    export let data: any;
+	let { data } = $props();
 
-    const HISTORY_TAB = 0;
-    const TXS_TAB = 1;
-    const UTXOS_TAB = 2;
-
-    let activeTabIndex = HISTORY_TAB;
-    let loading = false;
-    let unit = '';
-    let supply: any = null;
-    let history: any[] = [];
-    let transactions: any[] = [];
-    let utxos: any[] = [];
-    let currentPage = 1;
-    let count = 15;
-    let order = 'desc';
-
-    $: parsed = unit ? parseUnit(unit) : { policyId: '', assetNameHex: '', assetNameUtf8: '' };
-    $: fingerprint = history.length > 0 ? history[0].fingerprint : '';
-    $: supplyValue = supply?.supply ?? '—';
-
-    $: hasMore = activeTabIndex === HISTORY_TAB
-        ? history.length === count
-        : activeTabIndex === TXS_TAB
-        ? transactions.length === count
-        : utxos.length === count;
-
-    function goToPage(newPage: number) {
-        if (newPage < 1 || loading) return;
-        loading = true;
-        const tab = activeTabIndex === HISTORY_TAB ? 'history' : activeTabIndex === TXS_TAB ? 'transactions' : 'utxos';
-        goto(`/assets/unit/${unit}?page=${newPage}&count=${count}&order=${order}&tab=${tab}`);
-    }
-
-    function switchTab(tabIndex: number) {
-        activeTabIndex = tabIndex;
-        loading = true;
-        const tab = tabIndex === HISTORY_TAB ? 'history' : tabIndex === TXS_TAB ? 'transactions' : 'utxos';
-        goto(`/assets/unit/${unit}?page=1&count=${count}&order=${order}&tab=${tab}`);
-    }
-
-    onMount(() => {
-        const urlTab = $page.url.searchParams.get('tab') || 'history';
-        if (urlTab === 'transactions') activeTabIndex = TXS_TAB;
-        else if (urlTab === 'utxos') activeTabIndex = UTXOS_TAB;
-        else activeTabIndex = HISTORY_TAB;
-    });
-
-    $: if (data && $page) {
-        loading = false;
-        unit = data.unit;
-        supply = data.supply;
-        history = data.history || [];
-        transactions = data.transactions || [];
-        utxos = data.utxos || [];
-        currentPage = data.currentPage;
-        count = data.count;
-        order = data.order;
-
-        const urlTab = $page.url.searchParams.get('tab') || 'history';
-        if (urlTab === 'transactions') activeTabIndex = TXS_TAB;
-        else if (urlTab === 'utxos') activeTabIndex = UTXOS_TAB;
-        else activeTabIndex = HISTORY_TAB;
-    }
+	const info = $derived(parseUnit(data.unit));
+	const supplyZero = $derived(String(data.supply.value) === '0');
+	const tabs = [
+		{ id: 'history', label: 'Mint & burn' },
+		{ id: 'transactions', label: 'Transactions' },
+		{ id: 'utxos', label: 'UTxOs' },
+		{ id: 'holders', label: 'Holders' }
+	];
+	const supplyText = $derived(data.supply.value != null ? num(data.supply.value) : '—');
 </script>
 
-<section class="py-8 px-4 md:px-6 min-h-screen">
-    <div class="container mx-auto max-w-6xl">
-        <!-- Header -->
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
-            <div class="bg-base-200/50 p-6 border-b border-base-200">
-                <h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
-                    Asset
-                </h2>
-                <div class="text-lg font-semibold text-base-content mb-1">
-                    {parsed.assetNameUtf8 || parsed.assetNameHex || '(empty name)'}
-                </div>
-                <div class="flex items-center gap-3">
-                    <TruncateCopy text={unit} max={60} />
-                </div>
-            </div>
+<svelte:head><title>{info.name} · Asset · Yaci Viewer</title></svelte:head>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-base-200">
-                <div class="p-6">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-                        Policy ID
-                    </div>
-                    <div class="text-base-content text-sm">
-                        <a href="/assets/policy/{parsed.policyId}" class="text-blue-600 hover:underline">
-                            <TruncateCopy text={parsed.policyId} max={24} />
-                        </a>
-                    </div>
-                </div>
+<PageHeader kind="Asset" title={info.name}>
+	{#snippet icon()}<Coins class="h-5 w-5" />{/snippet}
+	<div class="flex items-start gap-1.5">
+		<span class="mono break-all text-xs text-faint">{data.unit}</span>
+		<CopyButton value={data.unit} label="Asset unit copied" />
+	</div>
+	{#snippet actions()}
+		{#if info.label}<Badge tone="violet">CIP-68 {info.label}</Badge>{/if}
+		{#if supplyZero}<Badge tone="warn">Fully burned</Badge>{/if}
+	{/snippet}
+</PageHeader>
 
-                <div class="p-6">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-                        Fingerprint
-                    </div>
-                    <div class="text-base-content text-sm">
-                        {#if fingerprint}
-                            <TruncateCopy text={fingerprint} max={24} />
-                        {:else}
-                            <span class="text-base-content/50">—</span>
-                        {/if}
-                    </div>
-                </div>
-
-                <div class="p-6">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-                        Total Supply
-                    </div>
-                    <div class="text-base-content font-medium text-lg">
-                        {supplyValue}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="mb-6 bg-base-200 rounded-xl p-2">
-            <div class="flex flex-wrap gap-2 border-b border-base-300">
-                <button
-                    class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === HISTORY_TAB
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-                    on:click={() => switchTab(HISTORY_TAB)}
-                >
-                    Mint/Burn History
-                    {#if history.length > 0}
-                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{history.length}</span>
-                    {/if}
-                </button>
-
-                <button
-                    class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === TXS_TAB
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-                    on:click={() => switchTab(TXS_TAB)}
-                >
-                    Transactions
-                    {#if transactions.length > 0}
-                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{transactions.length}</span>
-                    {/if}
-                </button>
-
-                <button
-                    class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === UTXOS_TAB
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-                    on:click={() => switchTab(UTXOS_TAB)}
-                >
-                    UTXOs
-                    {#if utxos.length > 0}
-                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{utxos.length}</span>
-                    {/if}
-                </button>
-            </div>
-        </div>
-
-        <!-- Tab Content -->
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px] relative">
-            {#if loading}
-                <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
-                    <span class="loading loading-spinner loading-lg"></span>
-                </div>
-            {/if}
-
-            <!-- History Tab -->
-            {#if activeTabIndex === HISTORY_TAB}
-                <div class="w-full animate-fade-in">
-                    {#if history.length === 0}
-                        <EmptyState title="No Mint/Burn History" message="No mint or burn events found for this asset." />
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-base-300">
-                                <thead class="bg-base-200">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Quantity</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-base-100 divide-y divide-base-300">
-                                    {#each history as event (event.tx_hash + event.quantity)}
-                                        <tr class="hover:bg-base-200">
-                                            <td class="px-4 py-4 text-sm">
-                                                <a href="/transactions/{event.tx_hash}" class="text-blue-600 hover:underline">
-                                                    {truncate(event.tx_hash, 20, '...')}
-                                                </a>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm text-base-content/60">
-                                                <a href="/blocks/{event.block_number}" class="text-blue-500 hover:underline">
-                                                    {event.block_number}
-                                                </a>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                {#if event.mint_type === 'MINT'}
-                                                    <span class="badge badge-success badge-sm">MINT</span>
-                                                {:else}
-                                                    <span class="badge badge-error badge-sm">BURN</span>
-                                                {/if}
-                                            </td>
-                                            <td class="px-4 py-4 text-sm font-medium text-base-content">
-                                                {event.quantity}
-                                            </td>
-                                            <td class="px-4 py-4 text-sm text-base-content/60">
-                                                {getDate(event.block_time)}
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-6 flex justify-between items-center">
-                            <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
-                                &lt; Previous
-                            </button>
-                            <span class="text-sm text-base-content/80">Page {currentPage}</span>
-                            <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage + 1)} disabled={!hasMore}>
-                                Next &gt;
-                            </button>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-
-            <!-- Transactions Tab -->
-            {#if activeTabIndex === TXS_TAB}
-                <div class="w-full animate-fade-in">
-                    {#if transactions.length === 0}
-                        <EmptyState title="No Transactions" message="No transactions found for this asset." />
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-base-300">
-                                <thead class="bg-base-200">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-base-100 divide-y divide-base-300">
-                                    {#each transactions as tx (tx.tx_hash)}
-                                        <tr class="hover:bg-base-200">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <a href="/transactions/{tx.tx_hash}" class="text-blue-600 hover:underline">
-                                                    {truncate(tx.tx_hash, 25, '...')}
-                                                </a>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                                <a href="/blocks/{tx.block_number || tx.block_height}" class="text-blue-500 hover:underline">
-                                                    {tx.block_number || tx.block_height}
-                                                </a>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                                {getDate(tx.block_time)}
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-6 flex justify-between items-center">
-                            <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
-                                &lt; Previous
-                            </button>
-                            <span class="text-sm text-base-content/80">Page {currentPage}</span>
-                            <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage + 1)} disabled={!hasMore}>
-                                Next &gt;
-                            </button>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-
-            <!-- UTXOs Tab -->
-            {#if activeTabIndex === UTXOS_TAB}
-                <div class="w-full animate-fade-in">
-                    {#if utxos.length === 0}
-                        <EmptyState title="No UTXOs" message="No unspent transaction outputs found holding this asset." />
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-base-300">
-                                <thead class="bg-base-200">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash # Index</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Address</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amounts</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-base-100 divide-y divide-base-300">
-                                    {#each utxos as utxo (utxo.tx_hash + '#' + utxo.output_index)}
-                                        <tr class="hover:bg-base-200">
-                                            <td class="px-4 py-4 text-sm">
-                                                <a href="/transactions/{utxo.tx_hash}" class="text-blue-600 hover:underline">
-                                                    {truncate(utxo.tx_hash, 20, '...')}
-                                                </a>
-                                                <span class="text-base-content/50">#{utxo.output_index}</span>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                <AddressLink address={utxo.address} />
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                <div class="space-x-1">
-                                                    <AmountBadges amounts={utxo.amount} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-6 flex justify-between items-center">
-                            <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage - 1)} disabled={currentPage <= 1}>
-                                &lt; Previous
-                            </button>
-                            <span class="text-sm text-base-content/80">Page {currentPage}</span>
-                            <button class="btn btn-outline btn-sm" on:click={() => goToPage(currentPage + 1)} disabled={!hasMore}>
-                                Next &gt;
-                            </button>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-        </div>
-    </div>
+<section class="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+	<div class="y-panel relative flex items-center gap-5 overflow-hidden p-5">
+		<div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10 blur-2xl"></div>
+		<AssetAvatar policy={info.policy} name={info.name} size={64} />
+		<div class="min-w-0">
+			<div class="y-label">Supply</div>
+			<div
+				class="mt-1 break-all font-display font-semibold tabular-nums tracking-tight {supplyText.length > 22 ? 'text-xl' : supplyText.length > 14 ? 'text-2xl' : 'text-3xl'}"
+				title={String(data.supply.value ?? '')}
+			>
+				{supplyText}
+			</div>
+			<div class="mt-1 text-xs text-muted">{data.supply.value != null ? 'units in circulation, before decimals' : 'The store did not report a supply.'}</div>
+		</div>
+	</div>
+	<div class="y-panel p-5">
+		<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+			<KV label="Policy id"><Hash value={info.policy} href="/assets/policy/{info.policy}" head={12} tail={8} /></KV>
+			<KV label="Fingerprint">{#if data.fingerprint}<Hash value={data.fingerprint} head={12} tail={8} />{:else}<span class="text-faint">—</span>{/if}</KV>
+			<KV label="Asset name">
+				{#if info.nameHex}
+					<span class="font-medium">{info.name}</span>
+					<span class="mono ml-1.5 text-xs text-faint" title={info.nameHex}>0x{shorten(info.nameHex, 12, 6)}</span>
+				{:else}<span class="text-muted">Empty name</span>{/if}
+			</KV>
+			<KV label="Policy script"><a class="y-link" href="/scripts/{info.policy}">View the minting policy</a></KV>
+		</dl>
+	</div>
 </section>
 
-<style>
-    .animate-fade-in {
-        animation: fadeIn 0.3s ease-in-out;
-    }
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(5px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-</style>
+<section class="y-panel overflow-hidden">
+	<Tabs {tabs} active={data.tab} link />
+	{#if data.listError}
+		<ErrorBox
+			title="Couldn't load this list"
+			message="{data.listError}. On a large chain this query can be too slow for the store; mint and burn history still works."
+		/>
+	{:else if data.tab === 'history'}
+		<MintHistory rows={data.rows} />
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{:else if data.tab === 'transactions'}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'tx', label: 'Transaction' }, { key: 'block', label: 'Block' }, { key: 'age', label: 'Age', align: 'right' }]}
+			key={(r) => r.tx_hash}
+			rowHref={(r) => `/transactions/${r.tx_hash}`}
+			emptyTitle="No transactions"
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'tx'}<a class="mono font-medium text-ink hover:text-brand" href="/transactions/{r.tx_hash}">{shorten(r.tx_hash, 14, 10)}</a>
+				{:else if key === 'block'}{@const b = r.block_number ?? r.block_height}{#if b != null}<a class="y-link mono" href="/blocks/{b}">#{num(b)}</a>{:else}—{/if}
+				{:else}<TimeAgo ts={r.block_time} class="text-muted" />{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{:else if data.tab === 'utxos'}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'ref', label: 'Output' }, { key: 'address', label: 'Address' }, { key: 'ada', label: 'ADA', align: 'right', minor: true }, { key: 'qty', label: 'This asset', align: 'right' }]}
+			key={(r) => r.tx_hash + '#' + r.output_index}
+			emptyTitle="No unspent outputs hold this asset"
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'ref'}<a class="mono text-[13px] hover:text-brand" href="/transactions/{r.tx_hash}">{shorten(r.tx_hash, 10, 6)}<span class="text-faint">#{r.output_index}</span></a>
+				{:else if key === 'address'}<Hash value={r.address} href="/addresses/{r.address}" head={12} tail={6} />
+				{:else if key === 'ada'}<Ada value={lovelaceOf(r.amount)} class="text-muted" />
+				{:else}
+					{@const mine = assetsOf(r.amount).find((a) => a.unit === data.unit)}
+					{#if mine}<AssetChip unit={mine.unit} quantity={mine.quantity} />{:else}—{/if}
+				{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{:else}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'address', label: 'Address' }, { key: 'qty', label: 'Quantity', align: 'right' }]}
+			key={(r) => r.address}
+			rowHref={(r) => `/addresses/${r.address}`}
+			emptyTitle="No holders listed"
+			emptyText="This store doesn't report holders for this asset."
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'address'}<Hash value={r.address} href="/addresses/{r.address}" head={16} tail={8} />
+				{:else}<span class="mono font-semibold tabular-nums">{num(r.quantity)}</span>{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{/if}
+</section>

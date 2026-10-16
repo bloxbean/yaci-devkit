@@ -87,7 +87,7 @@
 
 <div class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
 	<Panel title="Overview">
-		<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+		<dl class="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-3">
 			<KV label="Block">
 				{#if tx.block_height >= 0}
 					<a class="y-link mono font-medium" href="/blocks/{tx.block_height}">#{num(tx.block_height)}</a>

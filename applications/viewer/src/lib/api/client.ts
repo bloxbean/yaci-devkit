@@ -51,11 +51,21 @@ function buildUrl(path: string, params?: Params): string {
 export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Promise<T> {
 	const f = opts.fetch ?? fetch;
 	const ctrl = new AbortController();
-	const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 20000);
+	const timeoutMs = opts.timeoutMs ?? 20000;
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	// SvelteKit's server-side fetch doesn't always honour the abort signal, so the timeout also races the request.
+	const timedOut = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => {
+			ctrl.abort();
+			const e = new Error('timeout');
+			e.name = 'AbortError';
+			reject(e);
+		}, timeoutMs);
+	});
 	opts.signal?.addEventListener('abort', () => ctrl.abort());
 	const url = buildUrl(path, opts.params);
 	try {
-		const res = await f(url, { signal: ctrl.signal, headers: { accept: 'application/json' } });
+		const res = await Promise.race([f(url, { signal: ctrl.signal, headers: { accept: 'application/json' } }), timedOut]);
 		if (!res.ok) {
 			let detail = res.statusText;
 			try {
@@ -66,7 +76,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
 			}
 			throw new ApiError(detail || `HTTP ${res.status}`, res.status, path);
 		}
-		const text = await res.text();
+		const text = await Promise.race([res.text(), timedOut]);
 		if (!text) return null as T;
 		try {
 			return JSON.parse(text) as T;

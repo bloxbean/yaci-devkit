@@ -1,28 +1,17 @@
-import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 import { error } from '@sveltejs/kit';
+import { tryApi } from '$lib/api/client';
+import type { PageServerLoad } from './$types';
 
+/* A datum by hash: the store keeps its JSON and CBOR once a transaction includes it in its witnesses. */
 export const load: PageServerLoad = async ({ params, fetch }) => {
-    const hash = params.hash;
+	const hash = params.hash.trim().toLowerCase();
+	if (!/^[0-9a-f]{64}$/.test(hash)) error(404, 'That is not a datum hash (64 hex characters).');
 
-    if (!/^[0-9a-fA-F]{64}$/.test(hash)) {
-        throw error(400, 'Invalid datum hash. Expected 64 hex characters.');
-    }
+	const [json, cbor] = await Promise.all([
+		tryApi<{ json_value?: unknown }>(`/scripts/datum/${hash}`, { fetch }),
+		tryApi<{ cbor?: string }>(`/scripts/datum/${hash}/cbor`, { fetch })
+	]);
+	if (!json && !cbor) error(404, 'No datum with that hash on this chain. Only datums included in a transaction are stored.');
 
-    const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-
-    const [datumJson, datumCbor] = await Promise.all([
-        fetch(`${INDEXER_BASE_URL}/scripts/datum/${hash}`).then(r => r.ok ? r.json() : null),
-        fetch(`${INDEXER_BASE_URL}/scripts/datum/${hash}/cbor`).then(r => r.ok ? r.json() : null),
-    ]);
-
-    if (!datumJson && !datumCbor) {
-        throw error(404, 'Datum not found');
-    }
-
-    return {
-        hash,
-        datumJson,
-        datumCbor,
-    };
+	return { hash, json: json?.json_value ?? null, cbor: cbor?.cbor ?? null };
 };
