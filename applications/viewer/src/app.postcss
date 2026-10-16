@@ -1,11 +1,179 @@
-/* Write your global styles here, in PostCSS syntax */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@media (max-width: 640px) {
-        .break-words {
-            white-space: normal;
-            word-break: break-word;
-        }
-    }
+/* ==========================================================================
+   Design tokens. Colours are RGB channels so Tailwind can add alpha (bg-brand/10).
+   Dark is html[data-theme="yaci-dark"]; light is the default.
+   ========================================================================== */
+@layer base {
+	:root {
+		--c-bg: 250 248 246;
+		--c-bg-2: 243 240 237;
+		--c-surface: 255 255 255;
+		--c-surface-2: 247 245 243;
+		--c-line: 230 226 234;
+		--c-ink: 20 18 28;
+		--c-muted: 84 80 100;
+		--c-faint: 138 134 152;
+		--c-brand: 232 80 28;
+		--c-brand-2: 228 106 18;
+		--c-amber: 185 120 6;
+		--c-blue: 31 107 255;
+		--c-cyan: 8 145 178;
+		--c-mint: 5 150 105;
+		--c-violet: 124 58 237;
+		--c-pink: 219 39 119;
+		--c-danger: 220 38 38;
+		--grad: linear-gradient(115deg, #e8401c 0%, #f06a1a 50%, #d99a06 100%);
+		--glow-1: rgb(255 90 54 / 0.14);
+		--glow-2: rgb(124 58 237 / 0.08);
+		--sidebar-w: 248px;
+		color-scheme: light;
+	}
+
+	html[data-theme='yaci-dark'] {
+		--c-bg: 7 8 13;
+		--c-bg-2: 12 14 21;
+		--c-surface: 16 18 28;
+		--c-surface-2: 22 25 38;
+		--c-line: 34 37 54;
+		--c-ink: 238 240 248;
+		--c-muted: 161 166 189;
+		--c-faint: 106 112 140;
+		--c-brand: 255 106 52;
+		--c-brand-2: 255 138 61;
+		--c-amber: 251 191 36;
+		--c-blue: 59 139 255;
+		--c-cyan: 34 211 238;
+		--c-mint: 52 211 153;
+		--c-violet: 167 139 250;
+		--c-pink: 244 114 182;
+		--c-danger: 248 113 113;
+		--grad: linear-gradient(115deg, #ff4e2d 0%, #ff8a3d 45%, #fbbf24 100%);
+		--glow-1: rgb(255 78 45 / 0.12);
+		--glow-2: rgb(167 139 250 / 0.08);
+		color-scheme: dark;
+	}
+
+	html {
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	body {
+		@apply bg-bg font-sans text-ink antialiased;
+		font-feature-settings: 'cv11', 'ss01';
+		text-rendering: optimizeLegibility;
+	}
+
+	h1,
+	h2,
+	h3 {
+		@apply font-display tracking-tight;
+	}
+
+	code,
+	kbd,
+	.mono {
+		@apply font-mono;
+		font-feature-settings: 'zero';
+	}
+
+	:focus-visible {
+		outline: 2px solid rgb(var(--c-brand));
+		outline-offset: 2px;
+		border-radius: 6px;
+	}
+
+	::selection {
+		background: rgb(var(--c-brand) / 0.25);
+	}
+}
+
+/* ==========================================================================
+   Building blocks shared by the components. Prefixed y- so they don't clash with DaisyUI while it's still here.
+   ========================================================================== */
+@layer components {
+	.y-panel {
+		@apply rounded-2xl border border-line bg-surface shadow-card;
+	}
+
+	.y-panel-head {
+		@apply flex items-center justify-between gap-3 border-b border-line px-5 py-3.5;
+	}
+
+	.y-label {
+		@apply text-[11px] font-semibold uppercase tracking-[0.08em] text-faint;
+	}
+
+	.y-link {
+		@apply text-brand underline-offset-4 transition-colors hover:text-brand-2 hover:underline;
+	}
+
+	.y-btn {
+		@apply inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3.5 text-sm font-medium text-ink transition-all hover:border-brand/40 hover:bg-surface-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+	}
+
+	.y-btn-primary {
+		@apply border-transparent text-white shadow-glow hover:brightness-110;
+		background-image: var(--grad);
+	}
+
+	.y-icon-btn {
+		@apply inline-grid h-9 w-9 place-items-center rounded-xl border border-line bg-surface text-muted transition-all hover:border-brand/40 hover:text-ink active:scale-95;
+	}
+
+	.y-input {
+		@apply h-10 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-faint transition focus:border-brand/60 focus:outline-none focus:ring-4 focus:ring-brand/15;
+	}
+
+	.y-pill {
+		@apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium;
+	}
+
+	.y-skel {
+		@apply rounded-md;
+		background: linear-gradient(
+			90deg,
+			rgb(var(--c-line) / 0.55) 0%,
+			rgb(var(--c-line) / 0.95) 50%,
+			rgb(var(--c-line) / 0.55) 100%
+		);
+		background-size: 200% 100%;
+		animation: shimmer 1.6s linear infinite;
+	}
+
+	.y-grad-text {
+		background-image: var(--grad);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+
+	.y-kbd {
+		@apply inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-line bg-surface-2 px-1 font-mono text-[10px] font-medium text-muted;
+	}
+}
+
+@keyframes shimmer {
+	to {
+		background-position: -200% 0;
+	}
+}
+
+/* Smooth page changes where the browser supports view transitions */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+}

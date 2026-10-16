@@ -1,39 +1,77 @@
-<script>
-    import '../app.postcss';
-    import {navigating} from "$app/stores";
-    import Nav from "../components/Nav.svelte";
-    import { env } from '$env/dynamic/public';
+<script lang="ts">
+	import '@fontsource-variable/inter';
+	import '@fontsource-variable/space-grotesk';
+	import '@fontsource-variable/jetbrains-mono';
+	import '../app.postcss';
+	import { onMount, type Snippet } from 'svelte';
+	import { onNavigate } from '$app/navigation';
+	import { env } from '$env/dynamic/public';
+	import { chain } from '$lib/live/chain.svelte';
+	import { shell } from '$lib/shell/ui.svelte';
+	import Sidebar from '$lib/shell/Sidebar.svelte';
+	import Topbar from '$lib/shell/Topbar.svelte';
+	import CommandPalette from '$lib/shell/CommandPalette.svelte';
+	import NavProgress from '$lib/shell/NavProgress.svelte';
+	import Toaster from '$lib/ui/Toaster.svelte';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+
+	let { children }: { children: Snippet } = $props();
+
+	onMount(() => {
+		shell.restore();
+		chain.start();
+	});
+
+	// Cross-fade between pages where the browser supports view transitions.
+	onNavigate((navigation) => {
+		const doc = document as Document & { startViewTransition?: (update: () => Promise<void>) => unknown };
+		if (!doc.startViewTransition || navigation.from?.url.pathname === navigation.to?.url.pathname) return;
+		return new Promise((resolve) => {
+			doc.startViewTransition!(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
-<!--<Nav></Nav>-->
-<div class="flex flex-col min-h-screen">
-    <!-- Main -->
-    <main class="container mx-auto flex-grow px-4">
-        <Nav></Nav>
-        
-        {#if env.PUBLIC_MAINTENANCE_MSG}
-            <div class="alert alert-warning mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <span>{env.PUBLIC_MAINTENANCE_MSG}</span>
-            </div>
-        {/if}
+<svelte:head>
+	<title>Yaci Viewer</title>
+</svelte:head>
 
-        {#if $navigating}
-            <section class="flex justify-center h-screen">
-                <span class="loading loading-ring loading-lg mx-auto"></span>
-            </section>
-        {:else}
-            <slot />
-        {/if}
-    </main>
+<NavProgress />
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 py-4 text-center bottom-0 left-0 w-full">
-        <div class="container mx-auto">
-            <p class="text-gray-300">
-                Open-source with ❤️ by <a href="https://github.com/bloxbean/yaci-viewer" target="_blank"
-                                          rel="noopener noreferrer">BloxBean</a>
-            </p>
-        </div>
-    </footer>
+<!-- Soft brand glow behind the content -->
+<div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+	<div class="absolute -top-40 right-[-10%] h-[520px] w-[620px] rounded-full blur-3xl" style="background: var(--glow-1)"></div>
+	<div class="absolute top-[30%] -left-40 h-[480px] w-[520px] rounded-full blur-3xl" style="background: var(--glow-2)"></div>
 </div>
+
+<Sidebar />
+
+<div class="flex min-h-screen flex-col transition-[padding] duration-200 {shell.collapsed ? 'lg:pl-[76px]' : 'lg:pl-[248px]'}">
+	<Topbar />
+
+	{#if env.PUBLIC_MAINTENANCE_MSG}
+		<div class="mx-auto mt-4 w-full max-w-[1480px] px-4 sm:px-6 lg:px-8">
+			<div class="flex items-center gap-3 rounded-xl border border-amber/30 bg-amber/10 px-4 py-3 text-sm text-ink">
+				<TriangleAlert class="h-4 w-4 shrink-0 text-amber" />
+				{env.PUBLIC_MAINTENANCE_MSG}
+			</div>
+		</div>
+	{/if}
+
+	<main class="mx-auto w-full max-w-[1480px] flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+		{@render children()}
+	</main>
+
+	<footer class="border-t border-line/70">
+		<div class="mx-auto flex max-w-[1480px] flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-faint sm:flex-row sm:px-6 lg:px-8">
+			<span>Yaci Viewer · part of <a class="y-link" href="https://devkit.yaci.xyz" target="_blank" rel="noopener noreferrer">Yaci DevKit</a></span>
+			<span>Open source by <a class="y-link" href="https://github.com/bloxbean" target="_blank" rel="noopener noreferrer">BloxBean</a> · MIT</span>
+		</div>
+	</footer>
+</div>
+
+<CommandPalette />
+<Toaster />
