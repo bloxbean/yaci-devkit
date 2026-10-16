@@ -1,146 +1,60 @@
-import { error, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import { api, paging, tryApi } from '$lib/api/client';
+import { stakeAddressOf } from '$lib/bech32';
+import type { Amount, Utxo } from '$lib/tx/types';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-const DEFAULT_COUNT = 15;
-const DEFAULT_ORDER = 'desc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
-interface Amount {
-    unit: string;
-    quantity: number;
-}
+const TABS = ['txs', 'utxos', 'tokens'] as const;
 
-interface Utxo {
-    tx_hash: string;
-    output_index: number;
-    address: string;
-    amount: Array<{ unit: string; quantity: string }>;
-    inline_datum?: string;
-    data_hash?: string;
-    script_ref?: string;
-}
-
-interface Transaction {
-    tx_hash: string;
-    block_height: number;
-    block_time: number;
-}
-
+/*
+ * Balance comes from /balance when the store aggregates balances, otherwise /amounts. Only the open tab's list is
+ * fetched, so busy addresses stay quick. Yaci Store pages are 1-based.
+ */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
-    const address = params.address;
+	const address = params.address.trim();
+	if (address.startsWith('stake')) redirect(302, `/stake/${address}`);
 
-    // Redirect stake addresses to dedicated stake page
-    if (address.startsWith('stake')) {
-        throw redirect(302, `/stake/${address}`);
-    }
+	const tab = (TABS as readonly string[]).includes(url.searchParams.get('tab') ?? '') ? (url.searchParams.get('tab') as (typeof TABS)[number]) : 'txs';
+	const { page, count } = paging(url, 20);
+	const order = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+	const stake = stakeAddressOf(address);
 
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const count = parseInt(url.searchParams.get('count') || String(DEFAULT_COUNT));
-    const order = url.searchParams.get('order') || DEFAULT_ORDER;
-    const tab = url.searchParams.get('tab') || 'utxos';
-    const balanceApi = url.searchParams.get('balanceApi') || 'auto';
+	const balance = async (): Promise<Amount[] | null> => {
+		const b = await tryApi<Any>(`/addresses/${address}/balance`, { fetch });
+		if (b?.amounts) return b.amounts;
+		return tryApi<Amount[]>(`/addresses/${address}/amounts`, { fetch });
+	};
 
-    if (!address) {
-        throw error(400, 'Address is required');
-    }
-    if (isNaN(page) || page < 1) {
-        throw error(400, 'Invalid page number');
-    }
-    if (isNaN(count) || count < 1 || count > 100) {
-        throw error(400, 'Invalid count number');
-    }
-    if (order !== 'asc' && order !== 'desc') {
-        throw error(400, 'Invalid order parameter');
-    }
+	const list = async (): Promise<{ rows: Any[]; error: string | null }> => {
+		if (tab === 'tokens') return { rows: [], error: null };
+		try {
+			const rows = await api<Any[]>(`/addresses/${address}/${tab === 'txs' ? 'transactions' : 'utxos'}`, {
+				fetch,
+				params: { page, count, order },
+				timeoutMs: 25000
+			});
+			return { rows: rows ?? [], error: null };
+		} catch (e) {
+			return { rows: [], error: (e as Error).message };
+		}
+	};
 
-    const fetchAmounts = async (): Promise<{ data: Amount[]; balanceApiUsed: 'balance' | 'amounts' }> => {
-        // Try /balance first if auto or balance
-        if (balanceApi === 'auto' || balanceApi === 'balance') {
-            try {
-                const balanceUrl = `${INDEXER_BASE_URL}/addresses/${address}/balance`;
-                const response = await fetch(balanceUrl);
-                if (response.ok) {
-                    const json = await response.json();
-                    const data: Amount[] = json.amounts || [];
-                    return { data, balanceApiUsed: 'balance' };
-                }
-            } catch {
-                // Fall through to /amounts
-            }
-        }
+	const [amounts, rows, account] = await Promise.all([balance(), list(), stake ? tryApi<Any>(`/accounts/${stake}`, { fetch }) : null]);
 
-        // Fall back to /amounts
-        try {
-            const amountsUrl = `${INDEXER_BASE_URL}/addresses/${address}/amounts`;
-            const response = await fetch(amountsUrl);
-            if (response.ok) {
-                const data: Amount[] = await response.json();
-                return { data, balanceApiUsed: 'amounts' };
-            }
-        } catch {
-            // Return empty
-        }
-
-        return { data: [], balanceApiUsed: 'amounts' };
-    };
-
-    const fetchUtxos = async () => {
-        const apiUrl = `${INDEXER_BASE_URL}/addresses/${address}/utxos?page=${page - 1}&count=${count}&order=${order}`;
-        try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                return { data: [], error: `UTXOs: ${response.statusText}` };
-            }
-            const data: Utxo[] = await response.json();
-            // Transform amount entries: map {unit, quantity} to {asset_name, quantity}
-            // so they are compatible with the AmountBadges component
-            const transformed = data.map(utxo => ({
-                ...utxo,
-                amount: utxo.amount.map(a => ({ asset_name: a.unit, quantity: a.quantity, unit: a.unit }))
-            }));
-            return { data: transformed, error: null };
-        } catch (err) {
-            return { data: [], error: 'Failed to fetch UTXOs' };
-        }
-    };
-
-    const fetchTransactions = async () => {
-        const apiUrl = `${INDEXER_BASE_URL}/addresses/${address}/transactions?page=${page - 1}&count=${count}&order=${order}`;
-        try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                return { data: [], error: `Transactions: ${response.statusText}` };
-            }
-            const data: Transaction[] = await response.json();
-            return { data, error: null };
-        } catch (err) {
-            return { data: [], error: 'Failed to fetch transactions' };
-        }
-    };
-
-    const [amountsResult, utxosResult, transactionsResult] = await Promise.all([
-        fetchAmounts(),
-        fetchUtxos(),
-        fetchTransactions()
-    ]);
-
-    const errors = [
-        utxosResult.error,
-        transactionsResult.error
-    ].filter(e => e !== null);
-    const combinedError = errors.length > 0 ? errors.join('; ') : null;
-
-    return {
-        address,
-        amounts: amountsResult.data,
-        balanceApiUsed: amountsResult.balanceApiUsed,
-        utxos: utxosResult.data,
-        transactions: transactionsResult.data,
-        currentPage: page,
-        count,
-        order,
-        tab,
-        error: combinedError
-    };
+	return {
+		address,
+		stake,
+		account: account as { controlled_amount?: number; withdrawable_amount?: number; pool_id?: string | null } | null,
+		amounts: amounts ?? [],
+		balanceKnown: amounts !== null,
+		tab,
+		page,
+		count,
+		order,
+		rows: rows.rows as Any[] as (Utxo & { block_height?: number; block_time?: number })[],
+		listError: rows.error
+	};
 };

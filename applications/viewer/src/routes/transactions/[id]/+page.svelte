@@ -1,347 +1,209 @@
-<script>
-	import { lovelaceToAda } from '$lib/util';
-	import InputOutput from '../../../components/inputoutput/InputOutput.svelte';
-	import TxnContext from '../../../components/TxnContext.svelte';
-	import Inputs from '../../../components/inputoutput/Inputs.svelte';
-	import Contract from '../../../components/Contract.svelte';
-	import JsonContent from '../../../components/JsonContent.svelte';
-	import AddressLink from '../../../components/AddressLink.svelte';
-	import EmptyState from '../../../components/EmptyState.svelte';
-	import { parseUnit } from '$lib/utils/asset';
-	import { truncate } from '$lib/util';
+<script lang="ts">
+	import { page } from '$app/state';
+	import { num, shorten, parseUnit } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import Tabs from '$lib/ui/Tabs.svelte';
+	import JsonView from '$lib/ui/JsonView.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import AssetChip from '$lib/ui/AssetChip.svelte';
+	import UtxoFlow from '$lib/tx/UtxoFlow.svelte';
+	import UtxoCard from '$lib/tx/UtxoCard.svelte';
+	import BalanceBar from '$lib/tx/BalanceBar.svelte';
+	import ScriptCard from '$lib/tx/ScriptCard.svelte';
+	import DatumDialog from '$lib/tx/DatumDialog.svelte';
+	import { sumLovelace, type Utxo } from '$lib/tx/types';
+	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
+	import CircleCheck from '@lucide/svelte/icons/circle-check';
+	import CircleX from '@lucide/svelte/icons/circle-x';
+	import FileCode from '@lucide/svelte/icons/file-code';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
+	import MessageSquare from '@lucide/svelte/icons/message-square';
+	import Flame from '@lucide/svelte/icons/flame';
 
-	export let data;
-	let { tx, contracts, metadata, withdrawals, mints } = data;
+	let { data } = $props();
+	const tx = $derived(data.tx);
 
-	const INPUT_TAB = 0;
-	const CONTRACT_TAB = 1;
-	const COLLATERAL_TAB = 2;
-	const METADATA_TAB = 3;
-	const REFERENCE_INPUT_TAB = 4;
-	const WITHDRAWALS_TAB = 5;
-	const MINTS_TAB = 6;
-	const JSON_TAB = 7;
-
-	let activeTabIndex = INPUT_TAB;
-	let copied = false;
-
-	const copyToClipboard = (text) => {
-		navigator.clipboard.writeText(text);
-		copied = true;
-		setTimeout(() => (copied = false), 2000);
+	const METADATA_LABELS: Record<string, string> = {
+		'674': 'Message (CIP-20)',
+		'721': 'NFT metadata (CIP-25)',
+		'20': 'Token metadata',
+		'61284': 'Catalyst registration (CIP-15)',
+		'61285': 'Catalyst signature (CIP-15)'
 	};
 
-	const iconCopy = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-	const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+	const withdrawn = $derived(data.withdrawals.reduce((s: bigint, w: { amount: number | string }) => s + BigInt(w.amount ?? 0), 0n));
+	const minted = $derived(data.mints.filter((m: { quantity: number }) => Number(m.quantity) > 0));
+	const burned = $derived(data.mints.filter((m: { quantity: number }) => Number(m.quantity) < 0));
+
+	const tabs = $derived(
+		[
+			{ id: 'utxos', label: 'Inputs & outputs', count: tx.inputs.length + tx.outputs.length },
+			data.scripts.length && { id: 'scripts', label: 'Scripts', count: data.scripts.length },
+			data.mints.length && { id: 'mints', label: 'Mint & burn', count: data.mints.length },
+			data.metadata.length && { id: 'metadata', label: 'Metadata', count: data.metadata.length },
+			data.withdrawals.length && { id: 'withdrawals', label: 'Withdrawals', count: data.withdrawals.length },
+			(tx.collateral_inputs?.length || tx.collateral_return) && { id: 'collateral', label: 'Collateral', count: tx.collateral_inputs?.length ?? 0 },
+			tx.reference_inputs?.length && { id: 'references', label: 'Reference inputs', count: tx.reference_inputs.length },
+			tx.required_signers?.length && { id: 'signers', label: 'Signers', count: tx.required_signers.length },
+			{ id: 'raw', label: 'Raw' }
+		].filter(Boolean) as { id: string; label: string; count?: number }[]
+	);
+
+	let active = $state(page.url.searchParams.get('tab') ?? 'utxos');
+	$effect(() => {
+		if (!tabs.some((t) => t.id === active)) active = 'utxos';
+	});
+
+	let datumOf = $state<Utxo | null>(null);
 </script>
 
-<section class="py-12 px-4 md:px-6 min-h-screen">
-	<div class="container mx-auto max-w-6xl">
-		<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
-			<div class="bg-base-200/50 p-6 border-b border-base-200">
-				<h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
-					Transaction Hash
-				</h2>
-				<div class="flex items-center gap-3">
-					<span class="font-mono text-lg text-base-content break-all">{tx.hash}</span>
-					<button
-						class="p-2 hover:bg-base-300 rounded-md transition-colors duration-200"
-						on:click={() => copyToClipboard(tx.hash)}
-						title="Copy Hash"
-					>
-						{@html copied ? iconCheck : iconCopy}
-					</button>
+<svelte:head><title>Tx {shorten(tx.hash, 8, 6)} · Yaci Viewer</title></svelte:head>
+
+<PageHeader kind="Transaction" title={shorten(tx.hash, 14, 10)}>
+	{#snippet icon()}<ArrowLeftRight class="h-5 w-5" />{/snippet}
+	<div class="flex flex-wrap items-center gap-2">
+		<span class="mono hidden break-all text-xs text-faint md:inline">{tx.hash}</span>
+		<CopyButton value={tx.hash} label="Transaction hash copied" />
+	</div>
+	{#snippet actions()}
+		{#if tx.invalid}
+			<Badge tone="bad"><CircleX class="h-3.5 w-3.5" />Script failed · collateral taken</Badge>
+		{:else}
+			<Badge tone="ok"><CircleCheck class="h-3.5 w-3.5" />Success</Badge>
+		{/if}
+		{#if data.scripts.length}<Badge tone="violet"><FileCode class="h-3.5 w-3.5" />Smart contract</Badge>{/if}
+		{#if minted.length}<Badge tone="brand"><Sparkles class="h-3.5 w-3.5" />Mint</Badge>{/if}
+		{#if burned.length}<Badge tone="warn"><Flame class="h-3.5 w-3.5" />Burn</Badge>{/if}
+		{#if data.metadata.length}<Badge tone="cyan"><MessageSquare class="h-3.5 w-3.5" />Metadata</Badge>{/if}
+	{/snippet}
+</PageHeader>
+
+<div class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+	<Panel title="Overview">
+		<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+			<KV label="Block">
+				{#if tx.block_height >= 0}
+					<a class="y-link mono font-medium" href="/blocks/{tx.block_height}">#{num(tx.block_height)}</a>
+				{:else}<span class="text-muted">Genesis</span>{/if}
+			</KV>
+			<KV label="Time">{#if data.block}<TimeAgo ts={data.block.time} />{:else}—{/if}</KV>
+			<KV label="Epoch / slot">
+				{#if data.block}<span>{data.block.epoch}</span><span class="text-faint"> / </span>{/if}<span class="mono">{num(tx.slot)}</span>
+			</KV>
+			<KV label="Fee"><Ada value={tx.fees} decimals={6} class="font-semibold" /></KV>
+			<KV label="Total output"><Ada value={tx.total_output} decimals={6} /></KV>
+			<KV label="Validity">
+				{#if tx.validity_interval_start || tx.ttl}
+					<span class="mono text-[13px]">{tx.validity_interval_start ? num(tx.validity_interval_start) : '…'} → {tx.ttl ? num(tx.ttl) : '∞'}</span>
+				{:else}<span class="text-muted">No limit</span>{/if}
+			</KV>
+			{#if tx.script_data_hash}<KV label="Script data hash"><Hash value={tx.script_data_hash} /></KV>{/if}
+			{#if tx.auxiliary_data_hash}<KV label="Metadata hash"><Hash value={tx.auxiliary_data_hash} /></KV>{/if}
+			{#if tx.total_collateral}<KV label="Collateral"><Ada value={tx.total_collateral} decimals={6} /></KV>{/if}
+		</dl>
+	</Panel>
+
+	<Panel title="Where the ADA went">
+		<BalanceBar inputs={sumLovelace(tx.inputs)} outputs={sumLovelace(tx.outputs)} fee={BigInt(tx.fees ?? 0)} withdrawals={withdrawn} />
+		{#if data.mints.length}
+			<div class="mt-5 border-t border-line pt-4">
+				<div class="y-label mb-2">Tokens {minted.length && burned.length ? 'minted and burned' : minted.length ? 'minted' : 'burned'}</div>
+				<div class="flex flex-wrap gap-1.5">
+					{#each data.mints.slice(0, 8) as m (m.unit)}
+						<AssetChip unit={m.unit} quantity={(Number(m.quantity) > 0 ? '+' : '') + m.quantity} />
+					{/each}
+					{#if data.mints.length > 8}<button class="text-xs text-brand hover:underline" onclick={() => (active = 'mints')}>+{data.mints.length - 8} more</button>{/if}
 				</div>
 			</div>
+		{/if}
+	</Panel>
+</div>
 
-			<div
-				class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-base-200"
-			>
-				<div class="p-6">
-					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-						Block / Slot
-					</div>
-					<div class="text-base-content font-medium text-lg">
-						<a
-							href="/blocks/{tx.block_height}"
-							class="text-blue-600 hover:text-blue-800 hover:underline"
-						>
-							{tx.block_height}
-						</a>
-						<span class="text-base-content/50 mx-1">/</span>
-						<span>{tx.slot}</span>
-					</div>
-				</div>
-
-				<div class="p-6">
-					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Fee</div>
-					<div class="text-base-content font-medium text-lg">
-						{lovelaceToAda(tx.fees, 4)} <span class="text-sm text-base-content/60">ADA</span>
-					</div>
-				</div>
-
-				<div class="p-6">
-					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">
-						Total Output
-					</div>
-					<div class="text-base-content font-medium text-lg">
-						{lovelaceToAda(tx.total_output, 2)} <span class="text-sm text-base-content/60">ADA</span>
-					</div>
-				</div>
-
-				<div class="p-6">
-					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">TTL</div>
-					<div class="text-base-content font-medium text-lg">{tx.ttl}</div>
-				</div>
+<section class="y-panel overflow-hidden">
+	<Tabs {tabs} bind:active param="tab" />
+	<div class="p-4 sm:p-5">
+		{#if active === 'utxos'}
+			<UtxoFlow inputs={tx.inputs} outputs={tx.outputs} fee={tx.fees} ondatum={(u) => (datumOf = u)} />
+		{:else if active === 'scripts'}
+			<div class="grid gap-4">
+				{#each data.scripts as s, i (s.script_hash + i)}
+					<ScriptCard script={s} maxMem={data.limits.mem} maxSteps={data.limits.steps} />
+				{/each}
 			</div>
-		</div>
-
-		<div class="mb-6 bg-base-200 rounded-xl p-2">
-			<div class="flex flex-wrap gap-2 border-b border-base-300">
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					INPUT_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = INPUT_TAB)}
-				>
-					UTXOs (I/O)
-				</button>
-
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					CONTRACT_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = CONTRACT_TAB)}
-				>
-					Contracts
-					{#if contracts.length > 0}
-						<span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs"
-							>{contracts.length}</span
-						>
-					{/if}
-				</button>
-
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					COLLATERAL_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = COLLATERAL_TAB)}
-				>
-					Collaterals
-				</button>
-
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					METADATA_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = METADATA_TAB)}
-				>
-					Metadata
-				</button>
-
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					REFERENCE_INPUT_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = REFERENCE_INPUT_TAB)}
-				>
-					Reference Inputs
-				</button>
-
-				{#if withdrawals && withdrawals.length > 0}
-					<button
-						class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-						WITHDRAWALS_TAB
-							? 'border-blue-600 text-blue-600'
-							: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-						on:click={() => (activeTabIndex = WITHDRAWALS_TAB)}
-					>
-						Withdrawals
-						<span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs"
-							>{withdrawals.length}</span
-						>
-					</button>
-				{/if}
-
-				{#if mints && mints.length > 0}
-					<button
-						class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-						MINTS_TAB
-							? 'border-blue-600 text-blue-600'
-							: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-						on:click={() => (activeTabIndex = MINTS_TAB)}
-					>
-						Mints
-						<span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs"
-							>{mints.length}</span
-						>
-					</button>
-				{/if}
-
-				<button
-					class="ml-auto px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					JSON_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = JSON_TAB)}
-				>
-					Raw JSON
-				</button>
-			</div>
-		</div>
-
-		<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px]">
-			{#if activeTabIndex == INPUT_TAB}
-				<div class="w-full animate-fade-in">
-					<InputOutput {tx}></InputOutput>
-				</div>
-			{/if}
-
-			{#if activeTabIndex == CONTRACT_TAB}
-				<div class="w-full animate-fade-in">
-					{#if contracts.length === 0}
-						<div class="text-center py-10 text-base-content/50">
-							No contracts found in this transaction.
-						</div>
-					{:else}
-						{#each contracts as contract, index}
-							<div class="mb-8 last:mb-0">
-								{#if index > 0}<div class="border-b border-base-200 mb-6"></div>{/if}
-								<Contract {contract} {index}></Contract>
-							</div>
+		{:else if active === 'mints'}
+			<div class="overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead><tr class="border-b border-line text-left"><th class="y-label py-2 pr-4">Asset</th><th class="y-label py-2 pr-4">Policy</th><th class="y-label py-2 pr-4">Fingerprint</th><th class="y-label py-2 text-right">Quantity</th></tr></thead>
+					<tbody>
+						{#each data.mints as m (m.unit)}
+							<tr class="border-b border-line/60 last:border-0">
+								<td class="py-2.5 pr-4"><a class="y-link font-medium" href="/assets/unit/{m.unit}">{parseUnit(m.unit).name}</a></td>
+								<td class="py-2.5 pr-4"><Hash value={m.policy} href="/assets/policy/{m.policy}" head={8} tail={6} /></td>
+								<td class="py-2.5 pr-4"><Hash value={m.fingerprint ?? m.asset_name} href="/assets/fingerprint/{m.fingerprint ?? m.asset_name}" head={10} tail={6} /></td>
+								<td class="py-2.5 text-right font-semibold tabular-nums {Number(m.quantity) > 0 ? 'text-mint' : 'text-danger'}">{Number(m.quantity) > 0 ? '+' : ''}{num(m.quantity)}</td>
+							</tr>
 						{/each}
-					{/if}
-				</div>
-			{/if}
-
-			{#if activeTabIndex == COLLATERAL_TAB}
-				<div class="w-full animate-fade-in">
-					<Inputs inputs={tx.collateral_inputs}></Inputs>
-				</div>
-			{/if}
-
-			{#if activeTabIndex == METADATA_TAB}
-				<div class="w-full animate-fade-in">
-					{#if !metadata}
-						<div class="text-center py-10 text-base-content/50">No metadata available.</div>
-					{:else}
-						<JsonContent text={metadata} customStyle="bg-black text-gray-100"></JsonContent>
-					{/if}
-				</div>
-			{/if}
-
-			{#if activeTabIndex == REFERENCE_INPUT_TAB}
-				<div class="w-full animate-fade-in">
-					<Inputs inputs={tx.reference_inputs}></Inputs>
-				</div>
-			{/if}
-
-			{#if activeTabIndex == WITHDRAWALS_TAB}
-				<div class="w-full animate-fade-in">
-					{#if !withdrawals || withdrawals.length === 0}
-						<EmptyState title="No Withdrawals" message="No withdrawals found in this transaction." />
-					{:else}
-						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-base-300">
-								<thead class="bg-base-200">
-									<tr>
-										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Address</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
-									</tr>
-								</thead>
-								<tbody class="bg-base-100 divide-y divide-base-300">
-									{#each withdrawals as w}
-										<tr class="hover:bg-base-200">
-											<td class="px-4 py-4 text-sm">
-												<AddressLink address={w.address} maxLength={40} />
-											</td>
-											<td class="px-4 py-4 text-sm font-medium text-base-content">
-												{lovelaceToAda(w.amount, 6)} <span class="text-sm text-base-content/60">ADA</span>
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
+					</tbody>
+				</table>
+			</div>
+		{:else if active === 'metadata'}
+			<div class="grid gap-4">
+				{#each data.metadata as m (m.label)}
+					<div>
+						<div class="mb-2 flex items-center gap-2">
+							<Badge tone="cyan">Label {m.label}</Badge>
+							{#if METADATA_LABELS[m.label]}<span class="text-sm text-muted">{METADATA_LABELS[m.label]}</span>{/if}
 						</div>
-					{/if}
+						<JsonView value={m.json_metadata ?? m.body} label="Label {m.label}" />
+					</div>
+				{/each}
+			</div>
+		{:else if active === 'withdrawals'}
+			<ul class="divide-y divide-line">
+				{#each data.withdrawals as w (w.address)}
+					<li class="flex items-center justify-between gap-3 py-3">
+						<Hash value={w.address} href="/stake/{w.address}" head={14} tail={8} />
+						<Ada value={w.amount} decimals={6} class="font-semibold" />
+					</li>
+				{/each}
+			</ul>
+		{:else if active === 'collateral'}
+			<div class="grid gap-6 lg:grid-cols-2">
+				<div>
+					<div class="y-label mb-2">Collateral inputs</div>
+					<div class="flex flex-col gap-2.5">
+						{#each tx.collateral_inputs ?? [] as u (u.tx_hash + u.output_index)}<UtxoCard utxo={u} side="in" />{/each}
+					</div>
 				</div>
-			{/if}
-
-			{#if activeTabIndex == MINTS_TAB}
-				<div class="w-full animate-fade-in">
-					{#if !mints || mints.length === 0}
-						<EmptyState title="No Mints" message="No mint or burn events found in this transaction." />
-					{:else}
-						<div class="overflow-x-auto">
-							<table class="min-w-full divide-y divide-base-300">
-								<thead class="bg-base-200">
-									<tr>
-										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Asset</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Policy ID</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-										<th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Quantity</th>
-									</tr>
-								</thead>
-								<tbody class="bg-base-100 divide-y divide-base-300">
-									{#each mints as mint}
-										{@const unit = mint.unit || (mint.policy + (mint.asset_name || ''))}
-										{@const parsed = parseUnit(unit)}
-										<tr class="hover:bg-base-200">
-											<td class="px-4 py-4 text-sm">
-												<a href="/assets/unit/{unit}" class="text-blue-600 hover:underline">
-													{parsed.assetNameUtf8 || parsed.assetNameHex || '(empty name)'}
-												</a>
-											</td>
-											<td class="px-4 py-4 text-sm">
-												<a href="/assets/policy/{parsed.policyId}" class="text-blue-600 hover:underline">
-													{truncate(parsed.policyId, 20, '...')}
-												</a>
-											</td>
-											<td class="px-4 py-4 text-sm">
-												{#if mint.mint_type === 'MINT'}
-													<span class="badge badge-success badge-sm">MINT</span>
-												{:else}
-													<span class="badge badge-error badge-sm">BURN</span>
-												{/if}
-											</td>
-											<td class="px-4 py-4 text-sm font-medium text-base-content">
-												{mint.quantity}
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
-					{/if}
+				<div>
+					<div class="y-label mb-2">Collateral return</div>
+					{#if tx.collateral_return}<UtxoCard utxo={tx.collateral_return} side="out" />{:else}<p class="text-sm text-muted">None</p>{/if}
+					<p class="mt-3 text-xs text-muted">Collateral is only taken if a script fails. {tx.invalid ? 'It failed, so it was.' : 'This transaction succeeded, so it was not.'}</p>
 				</div>
-			{/if}
-
-			{#if activeTabIndex == JSON_TAB}
-				<div class="w-full animate-fade-in">
-					<TxnContext {tx}></TxnContext>
-				</div>
-			{/if}
-		</div>
+			</div>
+		{:else if active === 'references'}
+			<p class="mb-3 text-sm text-muted">Read but not spent: these outputs supply reference scripts or datums.</p>
+			<div class="grid gap-2.5 lg:grid-cols-2">
+				{#each tx.reference_inputs ?? [] as u (u.tx_hash + u.output_index)}<UtxoCard utxo={u} side="in" ondatum={(x) => (datumOf = x)} />{/each}
+			</div>
+		{:else if active === 'signers'}
+			<p class="mb-3 text-sm text-muted">Key hashes that must sign this transaction (for scripts that check signatures).</p>
+			<ul class="flex flex-col gap-2">
+				{#each tx.required_signers ?? [] as s (s)}<li class="rounded-xl border border-line bg-surface-2/60 px-3 py-2"><Hash value={s} full /></li>{/each}
+			</ul>
+		{:else if active === 'raw'}
+			<JsonView value={data.tx} label="Transaction" maxHeight={560} />
+		{:else}
+			<Empty />
+		{/if}
 	</div>
 </section>
 
-<style>
-	.animate-fade-in {
-		animation: fadeIn 0.3s ease-in-out;
-	}
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(5px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-</style>
+<DatumDialog bind:utxo={datumOf} />

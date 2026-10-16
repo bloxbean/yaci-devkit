@@ -141,10 +141,26 @@ export function hexToText(hex: string | null | undefined): string | null {
 	}
 }
 
-/** Asset unit (policy + hex name) → { policy, nameHex, name }. "lovelace" → ADA. */
-export function parseUnit(unit: string): { policy: string; nameHex: string; name: string } {
+/** CIP-68 asset name labels: a 4-byte prefix before the readable name. */
+export const CIP68_LABELS: Record<string, string> = {
+	'000643b0': 'reference',
+	'000de140': 'NFT',
+	'0014df10': 'FT',
+	'001bc280': 'RFT'
+};
+
+/** Asset unit (policy + hex name) → { policy, nameHex, name, label }. "lovelace" → ADA. */
+export function parseUnit(unit: string): { policy: string; nameHex: string; name: string; label?: string } {
 	if (!unit || unit === 'lovelace') return { policy: '', nameHex: '', name: 'ADA' };
 	const policy = unit.slice(0, 56);
 	const nameHex = unit.slice(56);
-	return { policy, nameHex, name: hexToText(nameHex) ?? (nameHex ? shorten(nameHex, 6, 4) : shorten(policy, 6, 4)) };
+	const label = CIP68_LABELS[nameHex.slice(0, 8)];
+	const body = label ? nameHex.slice(8) : nameHex;
+	const text = hexToText(body);
+	return {
+		policy,
+		nameHex,
+		label,
+		name: text ?? (nameHex ? shorten(nameHex, 6, 4) : shorten(policy, 6, 4))
+	};
 }

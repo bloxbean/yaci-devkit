@@ -30,5 +30,6 @@ describe('format', () => {
 		expect(hexToText('00ff')).toBeNull();
 		expect(parseUnit('lovelace').name).toBe('ADA');
 		expect(parseUnit('c'.repeat(56) + '4d494e54')).toMatchObject({ policy: 'c'.repeat(56), name: 'MINT' });
+		expect(parseUnit('c'.repeat(56) + '0014df105553444d')).toMatchObject({ name: 'USDM', label: 'FT' });
 	});
 });

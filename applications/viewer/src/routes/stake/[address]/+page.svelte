@@ -1,299 +1,111 @@
 <script lang="ts">
-    import { page } from '$app/stores';
-    import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-    import { lovelaceToAda, truncate } from '$lib/util';
-    import TruncateCopy from '../../../components/TruncateCopy.svelte';
-    import EmptyState from '../../../components/EmptyState.svelte';
+	import { num, shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import Tabs from '$lib/ui/Tabs.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Server from '@lucide/svelte/icons/server';
+	import Users from '@lucide/svelte/icons/users';
+	import Gift from '@lucide/svelte/icons/gift';
 
-    export let data: any;
+	let { data } = $props();
 
-    const REWARDS_TAB = 0;
-    const OTHER_REWARDS_TAB = 1;
-    const WITHDRAWALS_TAB = 2;
-
-    let activeTabIndex = REWARDS_TAB;
-    let loading = false;
-    let address = '';
-    let rewards: any[] = [];
-    let rewardRest: any[] = [];
-    let withdrawals: any[] = [];
-    let currentPage = 1;
-    let count = 15;
-    let order: 'asc' | 'desc' = 'desc';
-
-    $: activeData = activeTabIndex === REWARDS_TAB
-        ? rewards
-        : activeTabIndex === OTHER_REWARDS_TAB
-        ? rewardRest
-        : withdrawals;
-
-    $: hasMore = activeData.length === count;
-
-    function goToPage(newPage: number) {
-        if (newPage < 1 || loading) return;
-        loading = true;
-        const tab = activeTabIndex === REWARDS_TAB ? 'rewards' : activeTabIndex === OTHER_REWARDS_TAB ? 'other_rewards' : 'withdrawals';
-        goto(`/stake/${address}?page=${newPage}&count=${count}&order=${order}&tab=${tab}`);
-    }
-
-    function switchTab(tabIndex: number) {
-        activeTabIndex = tabIndex;
-        loading = true;
-        const tab = tabIndex === REWARDS_TAB ? 'rewards' : tabIndex === OTHER_REWARDS_TAB ? 'other_rewards' : 'withdrawals';
-        goto(`/stake/${address}?page=1&count=${count}&order=${order}&tab=${tab}`);
-    }
-
-    function syncTab(urlTab: string) {
-        if (urlTab === 'other_rewards') activeTabIndex = OTHER_REWARDS_TAB;
-        else if (urlTab === 'withdrawals') activeTabIndex = WITHDRAWALS_TAB;
-        else activeTabIndex = REWARDS_TAB;
-    }
-
-    onMount(() => {
-        syncTab($page.url.searchParams.get('tab') || 'rewards');
-    });
-
-    $: if (data && $page) {
-        loading = false;
-        address = data.address;
-        rewards = data.rewards || [];
-        rewardRest = data.rewardRest || [];
-        withdrawals = data.withdrawals || [];
-        currentPage = data.currentPage;
-        count = data.count;
-        order = data.order;
-        syncTab($page.url.searchParams.get('tab') || 'rewards');
-    }
+	const drepLabel = $derived.by(() => {
+		const d = data.drep;
+		if (!d) return null;
+		if (d.drep_type === 'ABSTAIN' || d.drep_id === 'drep_always_abstain') return 'Always abstain';
+		if (d.drep_type === 'NO_CONFIDENCE' || d.drep_id === 'drep_always_no_confidence') return 'Always no confidence';
+		return null;
+	});
 </script>
 
-<section class="py-8 px-4 md:px-6 min-h-screen">
-    <div class="container mx-auto max-w-6xl">
-        <!-- Header -->
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
-            <div class="bg-base-200/50 p-6 border-b border-base-200">
-                <h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
-                    Stake Address
-                </h2>
-                <div class="flex items-center gap-3">
-                    <TruncateCopy text={address} max={60} />
-                </div>
-            </div>
-        </div>
+<svelte:head><title>Stake {shorten(data.address, 10, 6)} · Yaci Viewer</title></svelte:head>
 
-        <!-- Tabs -->
-        <div class="mb-6 bg-base-200 rounded-xl p-2">
-            <div class="flex flex-wrap gap-2 border-b border-base-300">
-                <button
-                    class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === REWARDS_TAB
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-                    on:click={() => switchTab(REWARDS_TAB)}
-                >
-                    Rewards
-                    {#if rewards.length > 0}
-                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{rewards.length}</span>
-                    {/if}
-                </button>
+<PageHeader kind="Stake account" title={shorten(data.address, 16, 10)}>
+	{#snippet icon()}<KeyRound class="h-5 w-5" />{/snippet}
+	<div class="flex items-start gap-1.5">
+		<span class="mono break-all text-xs text-faint">{data.address}</span>
+		<CopyButton value={data.address} label="Stake address copied" />
+	</div>
+	{#snippet actions()}
+		{#if data.account?.pool_id}<Badge tone="ok">Delegating</Badge>{:else if data.account}<Badge tone="neutral">Not delegated</Badge>{/if}
+	{/snippet}
+</PageHeader>
 
-                <button
-                    class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === OTHER_REWARDS_TAB
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-                    on:click={() => switchTab(OTHER_REWARDS_TAB)}
-                >
-                    Other Rewards
-                    {#if rewardRest.length > 0}
-                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{rewardRest.length}</span>
-                    {/if}
-                </button>
-
-                <button
-                    class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex === WITHDRAWALS_TAB
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-                    on:click={() => switchTab(WITHDRAWALS_TAB)}
-                >
-                    Withdrawals
-                    {#if withdrawals.length > 0}
-                        <span class="ml-1 bg-base-200 text-base-content/70 py-0.5 px-2 rounded-full text-xs">{withdrawals.length}</span>
-                    {/if}
-                </button>
-            </div>
-        </div>
-
-        <!-- Tab Content -->
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px] relative">
-            {#if loading}
-                <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
-                    <span class="loading loading-spinner loading-lg"></span>
-                </div>
-            {/if}
-
-            <!-- Rewards Tab -->
-            {#if activeTabIndex === REWARDS_TAB}
-                <div class="w-full animate-fade-in">
-                    {#if rewards.length === 0}
-                        <EmptyState title="No Rewards" message="No pool rewards found for this stake address." />
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-base-300">
-                                <thead class="bg-base-200">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool ID</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-base-100 divide-y divide-base-300">
-                                    {#each rewards as reward}
-                                        <tr class="hover:bg-base-200">
-                                            <td class="px-4 py-4 text-sm text-base-content font-medium">
-                                                {reward.epoch}
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                <a href="/pools/{reward.pool_id}" class="font-mono text-blue-600 hover:underline" title={reward.pool_id}>
-                                                    {truncate(reward.pool_id, 20, '...')}
-                                                </a>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                {#if reward.type === 'member'}
-                                                    <span class="badge badge-info badge-sm">MEMBER</span>
-                                                {:else if reward.type === 'leader'}
-                                                    <span class="badge badge-warning badge-sm">LEADER</span>
-                                                {:else}
-                                                    <span class="badge badge-ghost badge-sm">{reward.type}</span>
-                                                {/if}
-                                            </td>
-                                            <td class="px-4 py-4 text-sm text-right font-medium text-base-content">
-                                                {lovelaceToAda(reward.amount, 6)} <span class="text-base-content/60">ADA</span>
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-
-            <!-- Other Rewards Tab -->
-            {#if activeTabIndex === OTHER_REWARDS_TAB}
-                <div class="w-full animate-fade-in">
-                    {#if rewardRest.length === 0}
-                        <EmptyState title="No Other Rewards" message="No treasury or reserve rewards found for this stake address." />
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-base-300">
-                                <thead class="bg-base-200">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-base-100 divide-y divide-base-300">
-                                    {#each rewardRest as reward}
-                                        <tr class="hover:bg-base-200">
-                                            <td class="px-4 py-4 text-sm text-base-content font-medium">
-                                                {reward.epoch}
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                <span class="badge badge-ghost badge-sm">{reward.type}</span>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm text-right font-medium text-base-content">
-                                                {lovelaceToAda(reward.amount, 6)} <span class="text-base-content/60">ADA</span>
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-
-            <!-- Withdrawals Tab -->
-            {#if activeTabIndex === WITHDRAWALS_TAB}
-                <div class="w-full animate-fade-in">
-                    {#if withdrawals.length === 0}
-                        <EmptyState title="No Withdrawals" message="No withdrawals found for this stake address." />
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-base-300">
-                                <thead class="bg-base-200">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
-                                        <th class="px-4 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
-                                        <th class="px-4 py-3 text-right text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-base-100 divide-y divide-base-300">
-                                    {#each withdrawals as w}
-                                        <tr class="hover:bg-base-200">
-                                            <td class="px-4 py-4 text-sm">
-                                                <a href="/transactions/{w.tx_hash}" class="text-blue-600 hover:underline">
-                                                    {truncate(w.tx_hash, 20, '...')}
-                                                </a>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm text-base-content">
-                                                {w.epoch}
-                                            </td>
-                                            <td class="px-4 py-4 text-sm">
-                                                <a href="/blocks/{w.block_number}" class="text-blue-500 hover:underline">
-                                                    {w.block_number}
-                                                </a>
-                                            </td>
-                                            <td class="px-4 py-4 text-sm text-right font-medium text-base-content">
-                                                {lovelaceToAda(w.amount, 6)} <span class="text-base-content/60">ADA</span>
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                    {/if}
-                </div>
-            {/if}
-
-            <!-- Pagination -->
-            {#if activeData.length > 0}
-                <div class="mt-6 flex justify-between items-center">
-                    <button
-                        class="btn btn-outline btn-sm"
-                        on:click={() => goToPage(currentPage - 1)}
-                        disabled={currentPage <= 1}
-                    >
-                        &lt; Previous
-                    </button>
-                    <span class="text-sm text-base-content/80">Page {currentPage}</span>
-                    <button
-                        class="btn btn-outline btn-sm"
-                        on:click={() => goToPage(currentPage + 1)}
-                        disabled={!hasMore}
-                    >
-                        Next &gt;
-                    </button>
-                </div>
-            {/if}
-        </div>
-    </div>
+<section class="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+	<div class="y-panel relative overflow-hidden p-5 xl:col-span-2">
+		<div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10 blur-2xl"></div>
+		<div class="y-label">Controlled stake</div>
+		<div class="mt-1 font-display text-4xl font-semibold tracking-tight">
+			{#if data.account}<Ada value={data.account.controlled_amount} decimals={6} />{:else}<span class="text-muted">—</span>{/if}
+		</div>
+		<div class="mt-2 text-sm text-muted">
+			Withdrawable rewards {#if data.account}<Ada value={data.account.withdrawable_amount} decimals={6} class="font-semibold text-ink" />{:else}—{/if}
+		</div>
+	</div>
+	<div class="y-panel p-5">
+		<div class="y-label flex items-center gap-1.5"><Server class="h-3.5 w-3.5" />Stake pool</div>
+		{#if data.account?.pool_id}
+			<a href="/pools/{data.account.pool_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline" title={data.account.pool_id}>{shorten(data.account.pool_id, 12, 8)}</a>
+			<div class="mt-1 text-xs text-muted">earns staking rewards</div>
+		{:else}
+			<div class="mt-2 text-sm text-muted">Not delegated to a pool</div>
+		{/if}
+	</div>
+	<div class="y-panel p-5">
+		<div class="y-label flex items-center gap-1.5"><Users class="h-3.5 w-3.5" />Voting power (DRep)</div>
+		{#if drepLabel}
+			<div class="mt-2 text-sm font-medium">{drepLabel}</div>
+		{:else if data.drep?.drep_id}
+			<a href="/governance/dreps/{data.drep.drep_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline">{shorten(data.drep.drep_id, 12, 8)}</a>
+			<div class="mt-1 text-xs text-muted">since <TimeAgo ts={data.drep.block_time} /></div>
+		{:else}
+			<div class="mt-2 text-sm text-muted">Not delegated to a DRep</div>
+		{/if}
+	</div>
 </section>
 
-<style>
-    .animate-fade-in {
-        animation: fadeIn 0.3s ease-in-out;
-    }
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(5px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-</style>
+<section class="y-panel overflow-hidden">
+	<Tabs tabs={[{ id: 'rewards', label: 'Rewards' }, { id: 'withdrawals', label: 'Withdrawals' }, { id: 'other', label: 'Other rewards' }]} active={data.tab} link />
+	{#if data.listError}
+		<ErrorBox title="Couldn't load this list" message={data.listError} />
+	{:else if data.tab === 'withdrawals'}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'tx', label: 'Transaction' }, { key: 'epoch', label: 'Epoch' }, { key: 'age', label: 'Age', minor: true }, { key: 'amount', label: 'Amount', align: 'right' }]}
+			key={(r) => r.tx_hash}
+			rowHref={(r) => `/transactions/${r.tx_hash}`}
+			emptyTitle="No withdrawals"
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'tx'}<a class="mono text-ink hover:text-brand" href="/transactions/{r.tx_hash}">{shorten(r.tx_hash, 12, 8)}</a>
+				{:else if key === 'epoch'}{r.epoch}
+				{:else if key === 'age'}<TimeAgo ts={r.block_time} class="text-muted" />
+				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{:else}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'epoch', label: 'Epoch' }, { key: 'type', label: 'Type' }, { key: 'pool', label: 'Pool', minor: true }, { key: 'amount', label: 'Amount', align: 'right' }]}
+			key={(r) => `${r.epoch}-${r.type}-${r.pool_id ?? ''}-${r.amount}`}
+			emptyTitle={data.tab === 'other' ? 'No other rewards' : 'No rewards yet'}
+			emptyText={data.tab === 'other' ? 'Refunds, treasury and reserve payouts show up here.' : 'Rewards arrive two epochs after delegating.'}
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'epoch'}<a class="y-link" href="/rewards/epoch/{r.epoch ?? r.earned_epoch}">{r.epoch ?? r.earned_epoch}</a>
+				{:else if key === 'type'}<Badge tone={r.type === 'leader' ? 'violet' : r.type === 'member' ? 'ok' : 'neutral'}><Gift class="h-3 w-3" />{r.type}</Badge>
+				{:else if key === 'pool'}{#if r.pool_id}<a class="mono text-xs text-muted hover:text-brand" href="/pools/{r.pool_id}">{shorten(r.pool_id, 10, 6)}</a>{:else}—{/if}
+				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{/if}
+</section>

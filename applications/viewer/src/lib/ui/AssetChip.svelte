@@ -18,5 +18,11 @@
 		>{info.name.slice(0, 1).toUpperCase()}</span
 	>
 	<span class="truncate font-medium">{info.name}</span>
-	{#if quantity != null}<span class="mono shrink-0 text-muted">×{num(quantity)}</span>{/if}
+	{#if info.label}<span class="shrink-0 rounded bg-surface px-1 text-[9px] font-semibold uppercase text-faint" title="CIP-68 {info.label}">{info.label}</span>{/if}
+	{#if quantity != null}
+		{@const q = String(quantity)}
+		<span class="mono shrink-0 {q.startsWith('-') ? 'text-danger' : q.startsWith('+') ? 'text-mint' : 'text-muted'}"
+			>{q.startsWith('-') || q.startsWith('+') ? q[0] + num(q.slice(1)) : '×' + num(q)}</span
+		>
+	{/if}
 </svelte:element>
