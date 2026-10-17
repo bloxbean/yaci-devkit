@@ -7,6 +7,7 @@
 	import { purposeOf, type RunPlan, type StoreScriptRun } from './replay/build';
 	import type { PageTx } from './replay/load';
 	import { prepareRuns, runAll, type RunResult } from './replay/run';
+	import SourceBadge from './SourceBadge.svelte';
 	import { exact, margin, passed } from './replay/verdict';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
@@ -141,6 +142,7 @@
 				{#if summary.failed}<span class="y-pill border-danger/30 bg-danger/5 text-danger"><CircleX class="h-3.5 w-3.5" />{summary.failed} failed</span>{/if}
 				{#if summary.other}<span class="y-pill border-line text-muted"><CircleSlash class="h-3.5 w-3.5" />{summary.other} couldn’t run</span>{/if}
 			</div>
+			<div class="mt-2"><SourceBadge source={done[0]?.plan.source} /></div>
 		{/if}
 		{#if failure}<p class="mt-3 border-t border-brand/15 pt-3 text-sm text-danger">{failure}</p>{/if}
 	</div>

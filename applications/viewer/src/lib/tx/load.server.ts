@@ -39,6 +39,9 @@ export async function loadTransaction(id: string, fetch: typeof globalThis.fetch
 	]);
 	return {
 		tx,
+		// The transaction's original CBOR, when the store saves it (store.transaction.save-cbor). Streamed: the page
+		// doesn't wait for it.
+		cbor: tryApi<{ cbor_hex?: string; cborHex?: string }>(`/txs/${hash}/cbor/hex`, { fetch }).then((r) => r?.cbor_hex ?? r?.cborHex ?? null),
 		scripts: scripts ?? [],
 		metadata: metadata ?? [],
 		withdrawals: withdrawals ?? [],

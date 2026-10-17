@@ -1,6 +1,9 @@
 import { api, tryApi } from '$lib/api/client';
 import { purposeOf, type ReplayInput, type StoreCert, type StoreProposal, type StoreScriptRun, type StoreUtxo, type StoreVote } from './build';
 import { slotConfigFor, type Genesis } from './slots';
+import { replayInputFromCbor } from './from-cbor';
+import { decodeTransaction } from '$lib/tx/decode';
+import { utxoOf } from '../authoring/utxo';
 
 /*
  * The store data a replay needs beyond what the transaction page already loaded: the epoch's cost models and
@@ -36,21 +39,81 @@ interface BfDelegation {
 	pool_id: string;
 }
 
-export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
+/** The transaction's stored CBOR (hex), when the store saves it (store.transaction.save-cbor); otherwise null. */
+export async function loadTxCbor(hash: string): Promise<string | null> {
+	const r = await tryApi<{ cbor_hex?: string; cborHex?: string }>(`/txs/${hash}/cbor/hex`);
+	const hex = r?.cbor_hex ?? r?.cborHex ?? null;
+	return hex && /^([0-9a-f]{2})+$/i.test(hex) ? hex : null;
+}
+
+/** The epoch's parameters (the latest when the store lacks them, e.g. a devnet's epoch 0) and slot times. */
+async function paramsAndSlots(epoch: number | null) {
+	const [epochParams, genesis] = await Promise.all([epoch != null ? tryApi<ReplayInput['params']>(`/epochs/${epoch}/parameters`) : null, tryApi<Genesis>('/genesis')]);
+	const params = epochParams ?? (await api<ReplayInput['params']>('/epochs/latest/parameters'));
+	return { params, paramsEpoch: epochParams ? epoch : null, genesis, slots: slotConfigFor(genesis?.network_magic, genesis) };
+}
+
+/** Script bodies (and types) the transaction doesn't carry, e.g. reference scripts, fetched by hash. */
+function withScriptBodies(scripts: StoreScriptRun[]): Promise<StoreScriptRun[]> {
+	return Promise.all(
+		scripts.map(async (s) => {
+			if (!s.script_hash || !s.redeemer || (s.script_content && s.type)) return s;
+			const [info, body] = await Promise.all([s.type ? null : tryApi<{ type?: string }>(`/scripts/${s.script_hash}`), s.script_content ? null : tryApi<{ cbor?: string }>(`/scripts/${s.script_hash}/cbor`)]);
+			return { ...s, type: s.type ?? info?.type ?? null, script_content: s.script_content ?? (body?.cbor ? JSON.stringify({ content: body.cbor }) : null) };
+		})
+	);
+}
+
+/**
+ * The replay input of a transaction: from its stored CBOR when the store has it (exact), else rebuilt from Yaci
+ * Store's JSON. `cbor` can be passed in when the caller already loaded it.
+ */
+export async function loadReplayInput(page: PageTx, cbor?: string | null): Promise<ReplayInput> {
+	const hex = cbor === undefined ? await loadTxCbor(page.hash) : cbor;
+	if (hex) {
+		try {
+			return await fromCbor(page, hex);
+		} catch {
+			/* not decodable here: rebuild from the store's JSON */
+		}
+	}
+	return fromStore(page);
+}
+
+async function fromCbor(page: PageTx, hex: string): Promise<ReplayInput> {
+	const tx = decodeTransaction(hex);
+	if (tx.hash !== page.hash) throw new Error('The stored CBOR is of another transaction.');
+	const known = new Map([...page.tx.inputs, ...(page.tx.reference_inputs ?? [])].map((u) => [`${u.tx_hash}#${u.output_index}`, u]));
+	// Inputs the transaction page didn't resolve (rare) are looked up one by one.
+	const unknown = [...tx.inputs, ...tx.referenceInputs].filter((r) => !known.has(`${r.txHash}#${r.index}`));
+	for (const r of await Promise.all(unknown.map((r) => tryApi(`/utxos/${r.txHash}/${r.index}`).then(utxoOf)))) if (r) known.set(`${r.tx_hash}#${r.output_index}`, r);
+	const env = await paramsAndSlots(page.epoch);
+	const { input } = replayInputFromCbor(tx, {
+		resolve: (r) => known.get(`${r.txHash}#${r.index}`) ?? null,
+		params: env.params,
+		paramsEpoch: env.paramsEpoch,
+		slots: env.slots,
+		mainnet: env.genesis?.network_magic === 764824073
+	});
+	// Datums of spent inputs given by hash but not witnessed (the ledger needs them witnessed; this covers stores
+	// that resolve inputs without their datum).
+	const wanted = [...new Set(input.tx.inputs.map((u) => u.data_hash).filter((h): h is string => !!h && !input.datums[h]))];
+	for (const [h, c] of await Promise.all(wanted.map((h) => tryApi<{ cbor: string }>(`/scripts/datum/${h}/cbor`).then((d) => [h, d?.cbor] as const)))) if (c) input.datums[h] = c;
+	return { ...input, scripts: await withScriptBodies(input.scripts) };
+}
+
+async function fromStore(page: PageTx): Promise<ReplayInput> {
 	const { hash, tx } = page;
 	// Certificates and votes are only fetched when a script runs for one: some stores don't allow these
 	// endpoints from the browser (no CORS), and most transactions have neither.
 	const tags = new Set(page.scripts.map((s) => purposeOf((typeof s.redeemer === 'string' ? safeJson(s.redeemer) : s.redeemer)?.tag)));
-	const [epochParams, genesis, votes, stakes, delegations, proposals] = await Promise.all([
-		page.epoch != null ? tryApi<ReplayInput['params']>(`/epochs/${page.epoch}/parameters`) : null,
-		tryApi<Genesis>('/genesis'),
+	const [env, votes, stakes, delegations, proposals] = await Promise.all([
+		paramsAndSlots(page.epoch),
 		tags.has('vote') ? tryApi<StoreVote[]>(`/governance/votes/txs/${hash}`) : null,
 		tags.has('cert') ? tryApi<BfStake[]>(`/blockfrost/txs/${hash}/stakes`) : null,
 		tags.has('cert') ? tryApi<BfDelegation[]>(`/blockfrost/txs/${hash}/delegations`) : null,
 		tags.has('propose') ? tryApi<StoreProposal[]>(`/governance/proposals/${hash}`) : null
 	]);
-	// A store may lack an epoch's parameters (a devnet's epoch 0): use the latest ones, and say so.
-	const params = epochParams ?? (await api<ReplayInput['params']>('/epochs/latest/parameters'));
 
 	// Datums given by hash on inputs and outputs, unless the scripts endpoint already resolved them.
 	const known = new Set(page.scripts.filter((s) => s.datum && s.datum_hash).map((s) => s.datum_hash));
@@ -64,23 +127,18 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 		...(Array.isArray(delegations) ? delegations : []).map((d) => ({ cert_index: d.cert_index, type: 'delegation' as const, address: d.address, pool_id: d.pool_id }))
 	];
 
-	// Some stores leave out the script body (or its type) of a run; fetch those by hash. A proposing run has no
-	// script hash in the store: it is the guardrail its proposal names.
+	// A proposing run has no script hash in the store: it is the guardrail its proposal names.
 	const byIndex = new Map((Array.isArray(proposals) ? proposals : []).map((p) => [Number(p.index), p]));
-	const scripts = await Promise.all(
-		page.scripts.map(async (run) => {
+	const scripts = await withScriptBodies(
+		page.scripts.map((run) => {
 			const r = typeof run.redeemer === 'string' ? safeJson(run.redeemer) : run.redeemer;
 			const guardrail = !run.script_hash && purposeOf(r?.tag) === 'propose' ? byIndex.get(Number(r?.index ?? 0))?.details?.policyHash : null;
-			const s = guardrail ? { ...run, script_hash: guardrail } : run;
-			if (!s.script_hash) return s;
-			if (!s.redeemer || (s.script_content && s.type)) return s;
-			const [info, body] = await Promise.all([s.type ? null : tryApi<{ type?: string }>(`/scripts/${s.script_hash}`), s.script_content ? null : tryApi<{ cbor?: string }>(`/scripts/${s.script_hash}/cbor`)]);
-			return { ...s, type: s.type ?? info?.type ?? null, script_content: s.script_content ?? (body?.cbor ? JSON.stringify({ content: body.cbor }) : null) };
+			return guardrail ? { ...run, script_hash: guardrail } : run;
 		})
 	);
 
 	return {
-		paramsEpoch: epochParams ? page.epoch : null,
+		paramsEpoch: env.paramsEpoch,
 		hash,
 		tx,
 		scripts,
@@ -90,8 +148,9 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 		certificates,
 		proposals: Array.isArray(proposals) ? proposals : [],
 		datums,
-		params,
-		slots: slotConfigFor(genesis?.network_magic, genesis)
+		params: env.params,
+		slots: env.slots,
+		source: 'store'
 	};
 }
 
