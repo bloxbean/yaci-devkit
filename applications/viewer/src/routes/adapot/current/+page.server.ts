@@ -1,28 +1,25 @@
+import { error } from '@sveltejs/kit';
+import { ApiError, api, tryApi } from '$lib/api/client';
+import type { AdaPot } from '$lib/epochs/pots';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-export const load: PageServerLoad = async () => {
-    try {
-        const baseUrl = env.PUBLIC_INDEXER_BASE_URL;
-        const response = await fetch(`${baseUrl}/adapot`);
+/*
+ * The ada pots for the latest epoch, or for ?epoch=N, plus the last 30 epochs for the trend charts.
+ * /adapot/list pages are 1-based. A fresh devnet has no pots until its first epoch boundary.
+ */
+export const load: PageServerLoad = async ({ url, fetch }) => {
+	const raw = url.searchParams.get('epoch');
+	const epoch = raw != null && raw !== '' ? Number(raw) : null;
+	if (epoch != null && (!Number.isInteger(epoch) || epoch < 0)) error(404, 'Epochs are whole numbers, starting at 0.');
 
-        if (response.status === 404) {
-            return {
-                adapot: null,
-                error: 'No AdaPot data available yet. AdaPot is calculated at epoch boundaries — wait for the first epoch to complete.'
-            };
-        }
+	const [pot, history] = await Promise.all([
+		api<AdaPot>(epoch != null ? `/adapot/epochs/${epoch}` : '/adapot', { fetch }).then(
+			(p) => ({ pot: p, error: null as string | null }),
+			(e) => ({ pot: null, error: e instanceof ApiError && e.status === 404 ? null : (e as Error).message })
+		),
+		tryApi<AdaPot[]>('/adapot/list', { fetch, params: { page: 1, count: 30 } })
+	]);
 
-        if (!response.ok) {
-            return { adapot: null, error: 'Failed to fetch current AdaPot' };
-        }
-
-        const data = await response.json();
-        return { adapot: data, error: null };
-    } catch (e) {
-        return {
-            adapot: null,
-            error: e instanceof Error ? e.message : 'An error occurred while loading AdaPot'
-        };
-    }
+	const latest = history?.[0]?.epoch ?? pot.pot?.epoch ?? null;
+	return { pot: pot.pot, error: pot.error, requested: epoch, latest, history: history ?? [] };
 };

@@ -1,9 +1,22 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Yaci Viewer: a live Cardano explorer for your devnet and any Yaci Store." />
+		<script>
+			// Apply the saved or OS theme before first paint, so there's no flash.
+			(function () {
+				try {
+					var t = localStorage.getItem('viewer:theme');
+					if (t !== 'yaci' && t !== 'yaci-dark') {
+						t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'yaci-dark' : 'yaci';
+					}
+					document.documentElement.setAttribute('data-theme', t);
+				} catch (e) {}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

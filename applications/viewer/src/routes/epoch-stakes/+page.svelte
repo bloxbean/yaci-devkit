@@ -1,250 +1,126 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
-    import { page } from "$app/stores";
-    import { onMount } from 'svelte';
-    import { formatAda } from "$lib/util";
-    import { env } from '$env/dynamic/public';
+	import { goto } from '$app/navigation';
+	import { adaCompact, num, percent, shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import Stat from '$lib/ui/Stat.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import { isPoolId, poolBech32 } from '$lib/staking/pool';
+	import Layers from '@lucide/svelte/icons/layers';
+	import ChartColumn from '@lucide/svelte/icons/chart-column';
+	import Search from '@lucide/svelte/icons/search';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
-    export let data;
+	let { data } = $props();
 
-    interface StakeInfo {
-        address: string;
-        epoch: number;
-        amount: number;
-        pool_hash: string;
-        pool_id: string;
-        delegation_epoch: number;
-    }
+	const top = $derived(data.distribution.pools.slice(0, 12));
+	const max = $derived(top[0]?.stake ?? 1);
+	const covered = $derived(data.distribution.pools.reduce((s, p) => s + p.stake, 0));
+	const change = $derived.by(() => {
+		const t = data.trend;
+		if (t.length < 2) return null;
+		const prev = t[t.length - 2].stake;
+		return prev ? ((t[t.length - 1].stake - prev) / prev) * 100 : null;
+	});
 
-    interface TotalStake {
-        epoch: number;
-        active_stake: number;
-    }
-
-    // State
-    let loading = false;
-    let error: string | null = null;
-    let currentEpoch = data?.currentEpoch || 0;
-    let searchEpochInput = currentEpoch.toString();
-    let searchEpoch = currentEpoch;
-    let totalStake: TotalStake | null = null;
-    let stakes: StakeInfo[] = [];
-    let currentPage = parseInt(data.page);
-    const itemsPerPage = parseInt(data.count);
-
-    // Fetch total stake for an epoch
-    async function fetchTotalStake(epoch: number) {
-        try {
-            const url = `${env.PUBLIC_INDEXER_BASE_URL}/epochs/${epoch}/total-stake`;
-            console.log('Fetching total stake:', url);
-            const response = await fetch(url);
-            console.log('Total stake response status:', response.status);
-            if (!response.ok) throw new Error('Failed to fetch total stake');
-            const data = await response.json();
-            console.log('Total stake data:', data);
-            totalStake = data;
-            error = null;
-        } catch (err) {
-            console.error('Total stake error:', err);
-            error = 'Failed to fetch total stake data';
-        }
-    }
-
-    // Fetch stakes for an epoch with pagination
-    async function fetchStakes(epoch: number, page: number) {
-        loading = true;
-        try {
-            const url = `${env.PUBLIC_INDEXER_BASE_URL}/epochs/${epoch}/stake?count=${itemsPerPage}&page=${page}`;
-            console.log('Fetching stakes:', url);
-            const response = await fetch(url);
-            console.log('Stakes response status:', response.status);
-            if (!response.ok) throw new Error('Failed to fetch stakes');
-            const data = await response.json();
-            console.log('Stakes data:', data);
-            stakes = data;
-            error = null;
-        } catch (err) {
-            console.error('Stakes error:', err);
-            error = 'Failed to fetch stake data';
-            stakes = [];
-        } finally {
-            loading = false;
-        }
-    }
-
-    // Handle epoch search
-    async function handleSearch() {
-        const epochNum = parseInt(searchEpochInput);
-        if (isNaN(epochNum)) return;
-        searchEpoch = epochNum;
-        const url = `/epoch-stakes?epoch=${searchEpoch}&page=1&count=${itemsPerPage}`;
-        goto(url);
-    }
-
-    // Handle enter key in search input
-    function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            handleSearch();
-        }
-    }
-
-    // Navigation functions
-    const previous = () => {
-        if (currentPage <= 1 || loading) return;
-        const url = `/epoch-stakes?epoch=${searchEpoch}&page=${currentPage - 1}&count=${itemsPerPage}`;
-        goto(url);
-    };
-
-    const next = () => {
-        if (!hasMore || loading) return;
-        const url = `/epoch-stakes?epoch=${searchEpoch}&page=${currentPage + 1}&count=${itemsPerPage}`;
-        goto(url);
-    };
-
-    // Watch for URL changes and update data
-    $: if ($page.url.searchParams) {
-        const urlEpoch = $page.url.searchParams.get('epoch');
-        const urlPage = $page.url.searchParams.get('page') || '1';
-        
-        if (urlEpoch) {
-            searchEpoch = parseInt(urlEpoch);
-            searchEpochInput = urlEpoch;
-            currentPage = parseInt(urlPage);
-            console.log('URL changed, fetching data for epoch:', searchEpoch, 'page:', currentPage);
-            Promise.all([
-                fetchTotalStake(searchEpoch),
-                fetchStakes(searchEpoch, currentPage)
-            ]);
-        } else {
-            searchEpoch = currentEpoch;
-            searchEpochInput = currentEpoch.toString();
-            currentPage = parseInt(urlPage);
-        }
-    }
-
-    $: hasMore = stakes.length === itemsPerPage;
-
-    // Log environment variable on mount for debugging
-    onMount(() => {
-        console.log('INDEXER_BASE_URL:', env.PUBLIC_INDEXER_BASE_URL);
-    });
+	let lookup = $state('');
+	let problem = $state<string | null>(null);
+	function find(e: Event) {
+		e.preventDefault();
+		const v = lookup.trim();
+		problem = null;
+		if (isPoolId(v)) goto(`/epoch-stakes/pools?id=${v}&epoch=${data.epoch}`);
+		else if (/^(stake|stake_test)1/.test(v)) goto(`/epoch-stakes/accounts?address=${v}&epoch=${data.epoch}`);
+		else problem = 'Enter a pool id or a stake address.';
+	}
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">Epoch Stakes</h1>
+<svelte:head><title>Epoch stakes · epoch {data.epoch} · Yaci Viewer</title></svelte:head>
 
-    <!-- Search Section -->
-    <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6">
-        <div class="flex items-end gap-2">
-            <div class="w-48">
-                <label for="epoch" class="block text-sm font-medium text-base-content/80 mb-2">Epoch Number</label>
-                <div class="flex gap-2">
-                    <input
-                        type="number"
-                        id="epoch"
-                        bind:value={searchEpochInput}
-                        class="input input-bordered input-sm w-full h-8"
-                        placeholder="Enter epoch number"
-                        min="0"
-                        on:keydown={handleKeydown}
-                    />
-                    <button
-                        class="btn btn-primary btn-sm h-8 min-h-0"
-                        on:click={handleSearch}
-                        disabled={loading}
-                    >
-                        {loading ? 'Loading...' : 'Search'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+<PageHeader kind="Staking" title="Stake in epoch {data.epoch}">
+	{#snippet icon()}<Layers class="h-5 w-5" />{/snippet}
+	The stake snapshot used for leader election and rewards{data.epoch === data.current ? ' in the current epoch' : ''}.
+	{#snippet actions()}
+		<a class="y-btn {data.epoch <= 0 ? 'pointer-events-none opacity-40' : ''}" href="?epoch={data.epoch - 1}"><ChevronLeft class="h-4 w-4" /> {data.epoch - 1}</a>
+		<a class="y-btn {data.epoch >= data.current ? 'pointer-events-none opacity-40' : ''}" href="?epoch={data.epoch + 1}">{data.epoch + 1} <ChevronRight class="h-4 w-4" /></a>
+	{/snippet}
+</PageHeader>
 
-    {#if error}
-        <div class="alert alert-error mb-6">
-            <span>{error}</span>
-        </div>
-    {/if}
+<section class="mb-6 grid gap-4 md:grid-cols-3">
+	<Stat
+		label="Active stake"
+		value={data.total != null ? `₳${adaCompact(data.total)}` : '—'}
+		sub={change != null ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}% vs epoch ${data.epoch - 1}` : 'total delegated to pools'}
+		trend={data.trend.map((t) => t.stake)}
+	>
+		{#snippet icon()}<Layers class="h-4 w-4" />{/snippet}
+	</Stat>
+	<Stat
+		label="Pools with stake"
+		value={num(data.distribution.pools.length)}
+		sub={data.distribution.complete ? 'every registered pool' : 'among recently registered pools'}
+	/>
+	<form class="y-panel flex flex-col gap-2 p-4" onsubmit={find}>
+		<span class="y-label">Look up in this epoch</span>
+		<div class="flex gap-2">
+			<input class="y-input h-9 flex-1 font-mono text-[13px] placeholder:font-sans" placeholder="pool1… or stake1…" bind:value={lookup} spellcheck="false" aria-label="Pool id or stake address" />
+			<button class="y-icon-btn" type="submit" aria-label="Look up"><Search class="h-4 w-4" /></button>
+		</div>
+		{#if problem}<span class="text-xs text-danger">{problem}</span>{/if}
+	</form>
+</section>
 
-    <!-- Total Stake Display -->
-    {#if totalStake !== null}
-        <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-lg font-semibold text-base-content mb-2">Total Active Stake</h2>
-            <p class="text-3xl font-bold text-primary">
-                {formatAda(totalStake.active_stake)} ₳
-            </p>
-        </div>
-    {/if}
+<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+	<Panel title="Stake by pool" sub={data.distribution.complete ? 'All pools' : 'Recently registered pools only: there is no full ranking endpoint'}>
+		{#snippet icon()}<ChartColumn class="h-4 w-4" />{/snippet}
+		{#if top.length}
+			<ul class="flex flex-col gap-3">
+				{#each top as p (p.poolHash)}
+					<li>
+						<a href="/epoch-stakes/pools?id={p.poolId ?? poolBech32(p.poolHash)}&epoch={data.epoch}" class="group block">
+							<div class="mb-1 flex items-baseline justify-between gap-3 text-sm">
+								<span class="mono truncate text-[13px] group-hover:text-brand">{shorten(p.poolId ?? poolBech32(p.poolHash), 12, 6)}</span>
+								<span class="shrink-0 tabular-nums"><b class="font-semibold">₳{adaCompact(p.stake)}</b>{#if data.total}<span class="text-faint"> · {percent(p.stake, data.total, 2)}</span>{/if}</span>
+							</div>
+							<div class="h-2 overflow-hidden rounded-full bg-line">
+								<div class="h-full rounded-full bg-grad transition-[width] duration-700" style="width:{Math.max(1, (p.stake / max) * 100)}%"></div>
+							</div>
+						</a>
+					</li>
+				{/each}
+			</ul>
+			{#if data.total && !data.distribution.complete}
+				<p class="mt-4 text-xs text-faint">These pools hold {percent(covered, data.total, 2)} of the active stake.</p>
+			{/if}
+		{:else}
+			<Empty title="No pool stake yet" text="The first stake snapshot is taken at an epoch boundary." />
+		{/if}
+	</Panel>
 
-    <!-- Stakes Table -->
-    <div class="bg-base-100 rounded-lg shadow-md overflow-hidden">
-        {#if loading}
-            <div class="flex justify-center items-center h-32">
-                <span class="loading loading-spinner loading-lg"></span>
-            </div>
-        {:else if stakes.length === 0}
-            <div class="text-center py-8">
-                <p class="text-base-content/70">No stake data available for this epoch.</p>
-            </div>
-        {:else}
-        <!-- Pagination -->
-        <div class="flex justify-end mt-6">
-            <div class="join">
-                <button 
-                    class="join-item btn btn-sm" 
-                    disabled={currentPage <= 1 || loading}
-                    on:click={previous}
-                >
-                    «
-                </button>
-                <button class="join-item btn btn-sm">Page {currentPage}</button>
-                <button 
-                    class="join-item btn btn-sm" 
-                    disabled={!hasMore || loading}
-                    on:click={next}
-                >
-                    »
-                </button>
-            </div>
-        </div>
-            <div class="overflow-x-auto">
-                <table class="table w-full">
-                    <thead>
-                        <tr>
-                            <th class="text-left">Stake Address</th>
-                            <th class="text-right">Amount (₳)</th>
-                            <th class="text-left">Pool ID</th>
-                            <th class="text-center">Delegation Epoch</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#each stakes as stake}
-                            <tr class="hover:bg-base-200">
-                                <td class="text-sm">
-                                    <a 
-                                        href="/epoch-stakes/accounts?address={stake.address}&epoch={searchEpoch}" 
-                                        class="text-primary hover:underline"
-                                    >
-                                        {stake.address}
-                                    </a>
-                                </td>
-                                <td class="text-right">{formatAda(stake.amount)}</td>
-                                <td>
-                                    <a 
-                                        href="/epoch-stakes/pools?id={stake.pool_id}&epoch={searchEpoch}" 
-                                        class="text-primary hover:underline"
-                                    >
-                                        {stake.pool_id}
-                                    </a>
-                                </td>
-                                <td class="text-center">{stake.delegation_epoch}</td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
-
-            
-        {/if}
-    </div>
-</div> 
+	<Panel title="Stake by account" flush>
+		{#if data.listError}
+			<ErrorBox title="Couldn't load accounts" message={data.listError} />
+		{:else}
+			<DataTable
+				rows={data.accounts}
+				columns={[{ key: 'address', label: 'Stake address' }, { key: 'pool', label: 'Pool', minor: true }, { key: 'since', label: 'Since', minor: true }, { key: 'amount', label: 'Stake', align: 'right' }]}
+				key={(r) => r.address}
+				dense
+				emptyTitle="No stake in this epoch"
+			>
+				{#snippet cell(r, key)}
+					{#if key === 'address'}<a class="mono text-[13px] text-ink hover:text-brand" href="/epoch-stakes/accounts?address={r.address}&epoch={data.epoch}">{shorten(r.address, 12, 6)}</a>
+					{:else if key === 'pool'}<a class="mono text-xs text-muted hover:text-brand" href="/epoch-stakes/pools?id={r.pool_id ?? r.pool_hash}&epoch={data.epoch}">{shorten(r.pool_id ?? r.pool_hash, 10, 6)}</a>
+					{:else if key === 'since'}<span class="text-muted">epoch {r.delegation_epoch ?? '—'}</span>
+					{:else}<Ada value={r.amount} class="font-semibold" />{/if}
+				{/snippet}
+			</DataTable>
+			<Pager page={data.page} hasNext={data.accounts.length === data.count} />
+		{/if}
+	</Panel>
+</div>

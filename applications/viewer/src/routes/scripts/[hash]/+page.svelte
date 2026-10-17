@@ -1,130 +1,94 @@
-<script>
-	import TruncateCopy from '../../../components/TruncateCopy.svelte';
-	import JsonContent from '../../../components/JsonContent.svelte';
+<script lang="ts">
+	import { chain } from '$lib/live/chain.svelte';
+	import { bech32Encode } from '$lib/bech32';
+	import { num, shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import JsonView from '$lib/ui/JsonView.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import NativeScriptTree from '$lib/assets/NativeScriptTree.svelte';
+	import { isPlutus, scriptTypeLabel } from '$lib/assets/script';
+	import FileCode from '@lucide/svelte/icons/file-code';
+	import Coins from '@lucide/svelte/icons/coins';
+	import Wallet from '@lucide/svelte/icons/wallet';
 
-	export let data;
-	let { hash, scriptInfo, scriptJson, scriptCbor } = data;
+	let { data } = $props();
 
-	const JSON_TAB = 0;
-	const CBOR_TAB = 1;
+	const label = $derived(scriptTypeLabel(data.type));
+	const plutus = $derived(isPlutus(data.type));
+	const bytes = $derived(data.size ?? (data.cbor ? data.cbor.length / 2 : null));
+	let showCbor = $state(false);
 
-	let activeTabIndex = JSON_TAB;
-	let cborCopied = false;
-
-	const copyCbor = () => {
-		const text = scriptCbor?.cbor || '';
-		navigator.clipboard.writeText(text);
-		cborCopied = true;
-		setTimeout(() => (cborCopied = false), 2000);
-	};
+	// The script's enterprise address (no stake part): where funds locked by this validator usually sit.
+	const scriptAddress = $derived.by(() => {
+		const magic = chain.network?.magic;
+		if (magic == null) return null;
+		const mainnet = magic === 764824073;
+		const header = 0x70 | (mainnet ? 1 : 0);
+		const hashBytes = data.hash.match(/../g)!.map((h) => parseInt(h, 16));
+		return bech32Encode(mainnet ? 'addr' : 'addr_test', new Uint8Array([header, ...hashBytes]));
+	});
 </script>
 
-<section class="py-12 px-4 md:px-6 min-h-screen">
-	<div class="container mx-auto max-w-6xl">
-		<!-- Header -->
-		<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-8">
-			<div class="bg-base-200/50 p-6 border-b border-base-200">
-				<h2 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-2">
-					Script Hash
-				</h2>
-				<div class="flex items-center gap-3">
-					<TruncateCopy text={hash} max={60} />
-				</div>
-			</div>
+<svelte:head><title>Script {shorten(data.hash, 8, 6)} · Yaci Viewer</title></svelte:head>
 
-			<div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-base-200">
-				<div class="p-6">
-					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Type</div>
-					<div class="text-base-content font-medium text-lg">
-						{scriptInfo.type || '—'}
-					</div>
-				</div>
-
-				<div class="p-6">
-					<div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Size</div>
-					<div class="text-base-content font-medium text-lg">
-						{#if scriptInfo.serialised_size}
-							{scriptInfo.serialised_size.toLocaleString()} <span class="text-sm text-base-content/60">bytes</span>
-						{:else}
-							<span class="text-base-content/50">—</span>
-						{/if}
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Tabs -->
-		<div class="mb-6 bg-base-200 rounded-xl p-2">
-			<div class="flex flex-wrap gap-2 border-b border-base-300">
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					JSON_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = JSON_TAB)}
-				>
-					JSON
-				</button>
-
-				<button
-					class="px-5 py-3 text-sm font-medium transition-colors duration-200 border-b-2 {activeTabIndex ===
-					CBOR_TAB
-						? 'border-blue-600 text-blue-600'
-						: 'border-transparent text-base-content/60 hover:text-base-content/80 hover:border-gray-300'}"
-					on:click={() => (activeTabIndex = CBOR_TAB)}
-				>
-					CBOR
-				</button>
-			</div>
-		</div>
-
-		<!-- Tab Content -->
-		<div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 min-h-[300px]">
-			{#if activeTabIndex === JSON_TAB}
-				<div class="w-full animate-fade-in">
-					{#if scriptJson}
-						<JsonContent text={scriptJson} customStyle="bg-black text-gray-100" />
-					{:else}
-						<div class="text-center py-10 text-base-content/50">No JSON representation available.</div>
-					{/if}
-				</div>
-			{/if}
-
-			{#if activeTabIndex === CBOR_TAB}
-				<div class="w-full animate-fade-in">
-					{#if scriptCbor && scriptCbor.cbor}
-						<div class="flex justify-end mb-2">
-							<button
-								class="btn btn-sm btn-outline"
-								on:click={copyCbor}
-							>
-								{cborCopied ? 'Copied!' : 'Copy CBOR'}
-							</button>
-						</div>
-						<div class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-							<pre class="text-sm font-mono whitespace-pre-wrap break-all">{scriptCbor.cbor}</pre>
-						</div>
-					{:else}
-						<div class="text-center py-10 text-base-content/50">No CBOR representation available.</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
+<PageHeader kind="Script" title={shorten(data.hash, 14, 10)}>
+	{#snippet icon()}<FileCode class="h-5 w-5" />{/snippet}
+	<div class="flex items-start gap-1.5">
+		<span class="mono break-all text-xs text-faint">{data.hash}</span>
+		<CopyButton value={data.hash} label="Script hash copied" />
 	</div>
-</section>
+	{#snippet actions()}
+		<Badge tone={plutus ? 'violet' : 'cyan'}>{label}</Badge>
+	{/snippet}
+</PageHeader>
 
-<style>
-	.animate-fade-in {
-		animation: fadeIn 0.3s ease-in-out;
-	}
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(5px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-</style>
+<div class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+	<Panel title="Overview">
+		<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+			<KV label="Type">{label}</KV>
+			<KV label="Size">{#if bytes}<span class="tabular-nums">{num(bytes)}</span> <span class="text-faint">bytes</span>{:else}<span class="text-muted">—</span>{/if}</KV>
+			<KV label="Script hash" wide><Hash value={data.hash} head={16} tail={12} /></KV>
+			{#if scriptAddress}
+				<KV label="Script address" wide><Hash value={scriptAddress} href="/addresses/{scriptAddress}" head={16} tail={10} /></KV>
+			{/if}
+		</dl>
+	</Panel>
+	<Panel title="Used as">
+		<div class="flex flex-col gap-2">
+			<a href="/assets/policy/{data.hash}" class="group flex items-center gap-3 rounded-xl border border-line p-3 transition hover:border-brand/40">
+				<span class="grid h-9 w-9 place-items-center rounded-xl bg-brand/10 text-brand"><Coins class="h-4 w-4" /></span>
+				<span class="min-w-0"><span class="block text-sm font-medium group-hover:text-brand">Minting policy</span><span class="block text-xs text-muted">Tokens minted under this hash</span></span>
+			</a>
+			{#if scriptAddress}
+				<a href="/addresses/{scriptAddress}" class="group flex items-center gap-3 rounded-xl border border-line p-3 transition hover:border-brand/40">
+					<span class="grid h-9 w-9 place-items-center rounded-xl bg-violet/10 text-violet"><Wallet class="h-4 w-4" /></span>
+					<span class="min-w-0"><span class="block text-sm font-medium group-hover:text-brand">Spending validator</span><span class="block text-xs text-muted">Outputs locked at its address (without a stake part)</span></span>
+				</a>
+			{/if}
+		</div>
+	</Panel>
+</div>
+
+{#if !plutus && data.json}
+	<Panel title="Rules" sub="Who must sign, and when this native script allows spending or minting." class="mb-6">
+		<NativeScriptTree script={data.json} />
+		<div class="mt-5"><JsonView value={data.json} label="Script JSON" maxHeight={280} /></div>
+	</Panel>
+{/if}
+
+<Panel title="CBOR" sub={plutus ? 'Compiled Plutus code. Decompile it with a tool such as aiken or plutus-core.' : undefined}>
+	{#snippet actions()}{#if data.cbor}<CopyButton value={data.cbor} label="CBOR copied" />{/if}{/snippet}
+	{#if data.cbor}
+		<code class="block overflow-auto break-all rounded-xl border border-line bg-bg-2 p-4 text-[12px] leading-relaxed text-muted" style="max-height:{showCbor ? 'none' : '160px'}">{data.cbor}</code>
+		{#if data.cbor.length > 600}
+			<button class="mt-2 text-xs font-medium text-brand hover:underline" onclick={() => (showCbor = !showCbor)}>{showCbor ? 'Show less' : 'Show all'}</button>
+		{/if}
+	{:else}
+		<Empty title="No CBOR" text="The store didn't return the script body." />
+	{/if}
+</Panel>

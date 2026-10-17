@@ -1,86 +1,53 @@
 import { error } from '@sveltejs/kit';
+import { paging, tryApi } from '$lib/api/client';
+import { loadList, loadSupply } from '$lib/assets/load';
+import type { MintEvent } from '$lib/assets/types';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-const DEFAULT_COUNT = 15;
-const DEFAULT_ORDER = 'desc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
+const TABS = ['history', 'transactions', 'utxos', 'holders'] as const;
+type Tab = (typeof TABS)[number];
+
+/*
+ * An asset: supply, plus one list for the open tab. Yaci Store pages are 1-based here (page 0 is treated as 1).
+ * Transactions, UTxOs and holders can be too slow on a big chain, so they time out into an inline error.
+ */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
-    const unit = params.unit;
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const count = parseInt(url.searchParams.get('count') || String(DEFAULT_COUNT));
-    const order = url.searchParams.get('order') || DEFAULT_ORDER;
-    const tab = url.searchParams.get('tab') || 'history';
+	const unit = params.unit.trim().toLowerCase();
+	if (!/^[0-9a-f]{56,120}$/.test(unit)) error(404, 'That is not an asset unit (policy id followed by the asset name in hex).');
 
-    if (!unit || !/^[0-9a-fA-F]{57,}$/.test(unit)) {
-        throw error(400, 'Invalid asset unit. Must be 57+ hex characters (policy ID + asset name).');
-    }
-    if (isNaN(page) || page < 1) {
-        throw error(400, 'Invalid page number');
-    }
-    if (isNaN(count) || count < 1 || count > 100) {
-        throw error(400, 'Invalid count');
-    }
+	const tabParam = url.searchParams.get('tab') ?? '';
+	const tab: Tab = (TABS as readonly string[]).includes(tabParam) ? (tabParam as Tab) : 'history';
+	const { page, count } = paging(url, 20);
 
-    const fetchSupply = async () => {
-        try {
-            const res = await fetch(`${INDEXER_BASE_URL}/assets/${unit}/supply`);
-            if (res.ok) return await res.json();
-        } catch { /* ignore */ }
-        return null;
-    };
+	const path = {
+		history: `/assets/${unit}/history`,
+		transactions: `/assets/${unit}/transactions`,
+		utxos: `/assets/${unit}/utxos`,
+		holders: `/assets/${unit}/addresses`
+	}[tab];
+	const listParams: Record<string, string | number> = tab === 'holders' ? { page, count, sort: 'desc' } : tab === 'history' ? { page, count } : { page, count, order: 'desc' };
 
-    const fetchHistory = async () => {
-        try {
-            const res = await fetch(`${INDEXER_BASE_URL}/assets/${unit}/history?page=${page - 1}&count=${count}`);
-            if (res.ok) return await res.json();
-        } catch { /* ignore */ }
-        return [];
-    };
+	const [supply, list, latest] = await Promise.all([
+		loadSupply(`/assets/${unit}/supply`, fetch),
+		loadList<Any>(path, fetch, listParams, tab === 'history' ? 20000 : 12000),
+		// The newest event carries the fingerprint; the history tab already has it.
+		tab === 'history' ? null : tryApi<MintEvent[]>(`/assets/${unit}/history`, { fetch, params: { page: 1, count: 1 } })
+	]);
 
-    const fetchTransactions = async () => {
-        try {
-            const res = await fetch(`${INDEXER_BASE_URL}/assets/${unit}/transactions?page=${page - 1}&count=${count}&order=${order}`);
-            if (res.ok) return await res.json();
-        } catch { /* ignore */ }
-        return [];
-    };
+	const first = (tab === 'history' ? list.rows[0] : latest?.[0]) as MintEvent | undefined;
+	if (supply.notFound && !first) error(404, 'No asset with that unit on this chain.');
 
-    const fetchUtxos = async () => {
-        try {
-            const res = await fetch(`${INDEXER_BASE_URL}/assets/${unit}/utxos?page=${page - 1}&count=${count}&order=${order}`);
-            if (res.ok) {
-                const data = await res.json();
-                return data.map((utxo: any) => ({
-                    ...utxo,
-                    amount: utxo.amount?.map((a: any) => ({
-                        asset_name: a.unit,
-                        quantity: a.quantity,
-                        unit: a.unit
-                    })) || []
-                }));
-            }
-        } catch { /* ignore */ }
-        return [];
-    };
-
-    const [supply, history, transactions, utxos] = await Promise.all([
-        fetchSupply(),
-        fetchHistory(),
-        fetchTransactions(),
-        fetchUtxos()
-    ]);
-
-    return {
-        unit,
-        supply,
-        history,
-        transactions,
-        utxos,
-        currentPage: page,
-        count,
-        order,
-        tab
-    };
+	return {
+		unit,
+		supply,
+		fingerprint: first?.fingerprint ?? null,
+		tab,
+		page,
+		count,
+		rows: list.rows,
+		listError: list.error
+	};
 };

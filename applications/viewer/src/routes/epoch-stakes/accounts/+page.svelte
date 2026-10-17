@@ -1,176 +1,77 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { formatAmount } from '$lib/utils/format';
-    import { truncateAddress } from '$lib/utils/hash';
-    import { onDestroy } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Sparkline from '$lib/ui/Sparkline.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import { poolBech32 } from '$lib/staking/pool';
+	import KeyRound from '@lucide/svelte/icons/key-round';
+	import Search from '@lucide/svelte/icons/search';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 
-    export let data;
+	let { data } = $props();
 
-    let loading = false;
-    let toastMessage = '';
-    let toastVisible = false;
-    let toastTimeout: ReturnType<typeof setTimeout>;
-    let searchAddress = '';
-    let searchEpoch = '';
+	let addressInput = $state('');
+	let epochInput = $state('');
+	let problem = $state<string | null>(null);
+	function find(e: Event) {
+		e.preventDefault();
+		problem = null;
+		const a = addressInput.trim() || data.address || '';
+		const ep = epochInput.trim() || String(data.epoch);
+		if (!/^(stake|stake_test)1/.test(a)) return (problem = 'Stake addresses start with stake1 or stake_test1.');
+		if (!/^\d+$/.test(ep)) return (problem = 'Enter an epoch number.');
+		goto(`/epoch-stakes/accounts?address=${a}&epoch=${ep}`);
+	}
 
-    $: ({ stakeData, address, epoch } = data);
-
-    function showToast(message: string) {
-        if (toastTimeout) clearTimeout(toastTimeout);
-        toastMessage = message;
-        toastVisible = true;
-        toastTimeout = setTimeout(() => {
-            toastVisible = false;
-        }, 3000);
-    }
-
-    async function copyToClipboard(text: string, type: string) {
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast(`${type} copied to clipboard`);
-        } catch (err) {
-            console.error('Failed to copy:', err);
-            showToast('Failed to copy to clipboard');
-        }
-    }
-
-    function handleSearch(e: Event) {
-        e.preventDefault();
-        if (!searchAddress || !searchEpoch) {
-            showToast('Please enter both Stake Address and Epoch');
-            return;
-        }
-        
-        loading = true;
-        const url = new URL(window.location.href);
-        url.searchParams.set('address', searchAddress);
-        url.searchParams.set('epoch', searchEpoch);
-        goto(url.toString()).finally(() => {
-            loading = false;
-        });
-    }
-
-    function handleKeydown(e: KeyboardEvent) {
-        if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
-            e.preventDefault();
-            const form = e.target.closest('form');
-            if (form) {
-                const submitButton = form.querySelector('button[type="submit"]');
-                if (submitButton instanceof HTMLButtonElement) {
-                    submitButton.click();
-                }
-            }
-        }
-    }
-
-    onDestroy(() => {
-        if (toastTimeout) clearTimeout(toastTimeout);
-    });
+	const series = $derived([...data.history].reverse());
+	const poolId = $derived(data.stake ? (data.stake.pool_id ?? poolBech32(data.stake.pool_hash)) : null);
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <!-- Toast Notification -->
-    {#if toastVisible}
-        <div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300">
-            {toastMessage}
-        </div>
-    {/if}
+<svelte:head><title>Account stake · epoch {data.epoch} · Yaci Viewer</title></svelte:head>
 
-    <div class="bg-base-100 rounded-lg shadow-md p-6 mb-6 max-w-2xl mx-auto">
-        <h2 class="text-2xl font-semibold mb-6">Search Stake Address</h2>
-        <form id="searchForm" on:submit={handleSearch} class="space-y-4">
-            <div>
-                <label for="address" class="block text-sm font-medium text-base-content/80 mb-2">Stake Address</label>
-                <input
-                    type="text"
-                    id="address"
-                    bind:value={searchAddress}
-                    class="input input-bordered w-full h-8"
-                    placeholder="Enter stake address"
-                    on:keydown={handleKeydown}
-                />
-            </div>
-            <div>
-                <label for="epoch" class="block text-sm font-medium text-base-content/80 mb-2">Epoch Number</label>
-                <div class="flex gap-2 items-center">
-                    <input
-                        type="number"
-                        id="epoch"
-                        bind:value={searchEpoch}
-                        class="input input-bordered w-32 h-8"
-                        placeholder="Enter epoch"
-                        min="0"
-                        on:keydown={handleKeydown}
-                    />
-                    <button
-                        type="submit"
-                        class="btn btn-primary px-4 h-8 min-h-0 flex items-center"
-                        disabled={loading}
-                    >
-                        {loading ? 'Loading...' : 'Search'}
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
+<PageHeader kind="Epoch stakes" title={data.address && data.valid ? `Account stake in epoch ${data.epoch}` : 'Account stake by epoch'}>
+	{#snippet icon()}<KeyRound class="h-5 w-5" />{/snippet}
+	{#if data.address && data.valid}<a class="y-link mono text-[13px]" href="/stake/{data.address}">{shorten(data.address, 14, 8)}</a>{:else}A stake account's stake in one epoch's snapshot.{/if}
+</PageHeader>
 
-    {#if stakeData}
-        <div class="bg-base-100 rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-semibold mb-4">Stake Address Details</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <p class="text-sm text-base-content/70">Stake Address</p>
-                    <div class="flex items-center gap-2">
-                        <p class="font-medium max-w-full overflow-hidden" title={stakeData.address}>
-                            <span class="block md:hidden">{truncateAddress(stakeData.address, 12, 12)}</span>
-                            <span class="hidden md:block">{stakeData.address}</span>
-                        </p>
-                        <button
-                            class="text-primary hover:text-primary-focus flex-shrink-0"
-                            on:click={() => copyToClipboard(stakeData.address, 'Stake Address')}
-                            title="Copy Stake Address"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-sm text-base-content/70">Epoch</p>
-                    <p class="font-medium">{stakeData.epoch}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-base-content/70">Amount</p>
-                    <p class="font-medium">{formatAmount(stakeData.amount)} ₳</p>
-                </div>
-                <div>
-                    <p class="text-sm text-base-content/70">Delegation Epoch</p>
-                    <p class="font-medium">{stakeData.delegation_epoch}</p>
-                </div>
-                <div class="md:col-span-2">
-                    <p class="text-sm text-base-content/70">Pool ID</p>
-                    <div class="flex items-center gap-2">
-                        <a
-                            href={`/epoch-stakes/pools?id=${stakeData.pool_id}&epoch=${stakeData.epoch}`}
-                            class="text-primary hover:text-primary-focus max-w-full overflow-hidden"
-                            title={stakeData.pool_id}
-                        >
-                            <span class="block md:hidden">{truncateAddress(stakeData.pool_id, 12, 12)}</span>
-                            <span class="hidden md:block">{stakeData.pool_id}</span>
-                        </a>
-                        <button
-                            class="text-primary hover:text-primary-focus flex-shrink-0"
-                            on:click={() => copyToClipboard(stakeData.pool_id, 'Pool ID')}
-                            title="Copy Pool ID"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {/if}
-</div> 
+<form class="y-panel mb-6 flex flex-col gap-2 p-4 sm:flex-row sm:items-center" onsubmit={find}>
+	<input class="y-input flex-1 font-mono text-[13px] placeholder:font-sans" placeholder={data.address ?? 'stake1… or stake_test1…'} bind:value={addressInput} spellcheck="false" aria-label="Stake address" />
+	<input class="y-input sm:w-32" inputmode="numeric" placeholder="Epoch {data.epoch}" bind:value={epochInput} aria-label="Epoch" />
+	<button class="y-btn y-btn-primary" type="submit"><Search class="h-4 w-4" /> Show</button>
+</form>
+{#if problem || !data.valid}<p class="-mt-4 mb-6 text-sm text-danger">{problem ?? 'That is not a stake address.'}</p>{/if}
+
+{#if data.address && data.valid}
+	{#if data.stake}
+		<div class="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+			<Panel title="Snapshot">
+				<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+					<KV label="Stake"><span class="font-display text-2xl font-semibold"><Ada value={data.stake.amount} decimals={6} /></span></KV>
+					<KV label="Epoch"><span class="font-medium">{data.stake.epoch}</span></KV>
+					<KV label="Pool">{#if poolId}<a class="y-link mono text-[13px]" href="/pools/{poolId}">{shorten(poolId, 12, 8)}</a>{:else}—{/if}</KV>
+					<KV label="Delegating since"><span>epoch {data.stake.delegation_epoch ?? '—'}</span></KV>
+				</dl>
+				<a class="y-btn mt-6" href="/stake/{data.address}">Rewards and withdrawals <ArrowRight class="h-4 w-4" /></a>
+			</Panel>
+			<Panel title="Recent epochs">
+				{#if series.length > 1}<div class="mb-3"><Sparkline values={series.map((s) => Number(s.amount))} width={320} height={56} /></div>{/if}
+				<ul class="divide-y divide-line/70 text-sm">
+					{#each data.history as h (h.epoch)}
+						<li class="flex items-center justify-between py-2">
+							<a class="text-muted hover:text-brand" href="/epoch-stakes/accounts?address={data.address}&epoch={h.epoch}">epoch {h.epoch}</a>
+							<Ada value={h.amount} class="font-medium" />
+						</li>
+					{/each}
+				</ul>
+			</Panel>
+		</div>
+	{:else}
+		<div class="y-panel"><Empty title="No stake in this epoch" text="The account wasn't delegated in this snapshot, or the epoch hasn't been snapshotted yet." /></div>
+	{/if}
+{:else if !data.address}
+	<div class="y-panel"><Empty title="Pick a stake account" text="Enter a stake address above, or choose one from the epoch stake overview." /></div>
+{/if}

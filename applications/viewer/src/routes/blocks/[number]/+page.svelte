@@ -1,206 +1,127 @@
-<script>
-    import moment from 'moment';
-    import { lovelaceToAda } from "../../../util/ada_util.js";
-    import { truncate } from "../../../util/util.js";
-    import AddressLink from "../../../components/AddressLink.svelte";
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { chain } from '$lib/live/chain.svelte';
+	import { num, shorten, dateTime } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import Ring from '$lib/ui/Ring.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Box from '@lucide/svelte/icons/box';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
-    export let data;
-    let {block, txs} = data;
+	let { data } = $props();
+	const b = $derived(data.block);
 
-    function getDate(time) {
-        if (!time) return '';
+	const tip = $derived(chain.tip?.number ?? b.number);
+	const confirmations = $derived(Math.max(0, tip - b.number));
+	const isTip = $derived(confirmations === 0);
+	const fill = $derived(Math.min(1, (Number(b.size) || 0) / data.maxBlockSize));
+	let advanced = $state(false);
 
-        const date = new Date(time * 1000);
-        const options = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric',
-            hour12: false
-        };
+	function onKey(e: KeyboardEvent) {
+		if ((e.target as HTMLElement).closest('input,textarea')) return;
+		if (e.key === 'ArrowLeft' && b.number > 0) goto(`/blocks/${b.number - 1}`);
+		if (e.key === 'ArrowRight' && !isTip) goto(`/blocks/${b.number + 1}`);
+	}
 
-        return date.toLocaleString(undefined, options);
-    }
-
-    let copiedHash = false;
-    let copiedPrevHash = false;
-
-    const copyToClipboard = (text, type) => {
-        if (!text) return;
-        navigator.clipboard.writeText(text);
-        if (type === 'hash') {
-            copiedHash = true;
-            setTimeout(() => copiedHash = false, 2000);
-        } else {
-            copiedPrevHash = true;
-            setTimeout(() => copiedPrevHash = false, 2000);
-        }
-    };
-
-    const iconCopy = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-    const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+	const columns = [
+		{ key: 'hash', label: 'Transaction' },
+		{ key: 'to', label: 'Sent to', minor: true },
+		{ key: 'fee', label: 'Fee', align: 'right' as const, minor: true },
+		{ key: 'out', label: 'Output', align: 'right' as const }
+	];
 </script>
 
-<section class="py-10 px-4 md:px-6 min-h-screen">
-    <div class="container mx-auto max-w-6xl">
-        
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-base-200">
-                <div class="p-6">
-                    <h2 class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-2">Block Hash</h2>
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="font-mono text-sm md:text-base text-base-content break-all">{block.hash}</span>
-                        <button 
-                            class="p-2 hover:bg-base-200 rounded-md transition-colors duration-200 shrink-0" 
-                            on:click={() => copyToClipboard(block.hash, 'hash')}
-                            title="Copy Hash">
-                            {@html copiedHash ? iconCheck : iconCopy}
-                        </button>
-                    </div>
-                </div>
+<svelte:window onkeydown={onKey} />
+<svelte:head><title>Block #{num(b.number)} · Yaci Viewer</title></svelte:head>
 
-                <div class="p-6 bg-base-200/50">
-                    <h2 class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-2">Previous Hash</h2>
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="font-mono text-sm md:text-base text-base-content/60 break-all">
-                            {block.previous_block ? block.previous_block : 'Genesis Block'}
-                        </span>
-                        {#if block.previous_block}
-                            <button 
-                                class="p-2 hover:bg-base-300 rounded-md transition-colors duration-200 shrink-0" 
-                                on:click={() => copyToClipboard(block.previous_block, 'prev')}
-                                title="Copy Previous Hash">
-                                {@html copiedPrevHash ? iconCheck : iconCopy}
-                            </button>
-                        {/if}
-                    </div>
-                </div>
-            </div>
-        </div>
+<PageHeader kind="Block" title="#{num(b.number)}">
+	{#snippet icon()}<Box class="h-5 w-5" />{/snippet}
+	<TimeAgo ts={b.time} /> · {dateTime(b.time)}
+	{#snippet actions()}
+		<a class="y-btn {b.number <= 0 ? 'pointer-events-none opacity-40' : ''}" href="/blocks/{b.number - 1}" title="Previous block (←)"><ChevronLeft class="h-4 w-4" /> Prev</a>
+		<a class="y-btn {isTip ? 'pointer-events-none opacity-40' : ''}" href="/blocks/{b.number + 1}" title="Next block (→)">Next <ChevronRight class="h-4 w-4" /></a>
+	{/snippet}
+</PageHeader>
 
-        <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden mb-10">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-base-200 border-b border-base-200">
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Number</div>
-                    <div class="text-base-content font-medium text-xl">{block.number}</div>
-                </div>
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Epoch</div>
-                    <div class="text-base-content font-medium text-xl">{block.epoch}</div>
-                </div>
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Slot</div>
-                    <div class="text-base-content font-medium text-xl">{block.slot}</div>
-                </div>
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Era</div>
-                    <div class="text-base-content font-medium text-xl capitalize">{block.era}</div>
-                </div>
-            </div>
+<div class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+	<Panel title="Block details">
+		<dl class="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-3">
+			<KV label="Hash" wide><Hash value={b.hash} head={16} tail={12} /></KV>
+			<KV label="Epoch"><span class="font-medium">{b.epoch}</span></KV>
+			<KV label="Slot"><span class="mono">{num(b.slot)}</span>{#if b.epoch_slot != null}<span class="text-faint"> · {num(b.epoch_slot)} in epoch</span>{/if}</KV>
+			<KV label="Transactions"><span class="font-semibold">{b.tx_count}</span></KV>
+			<KV label="Fees"><Ada value={b.fees} decimals={6} /></KV>
+			<KV label="Output"><Ada value={b.output} decimals={2} /></KV>
+			<KV label="Previous block" wide>{#if b.previous_block}<Hash value={b.previous_block} href="/blocks/{b.previous_block}" head={16} tail={12} />{:else}—{/if}</KV>
+			<KV label="Protocol version"><span class="mono">{b.protocol_version ?? '—'}</span></KV>
+			<KV label="Producer" wide><Hash value={b.slot_leader} head={16} tail={10} /></KV>
+		</dl>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-base-200">
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1"># of Txs</div>
-                    <div class="text-base-content font-medium text-xl">{block.tx_count}</div>
-                </div>
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Size</div>
-                    <div class="text-base-content font-medium text-xl">{block.size} <span class="text-sm font-normal text-base-content/60">bytes</span></div>
-                </div>
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Protocol Version</div>
-                    <div class="text-base-content font-medium text-xl">{block.protocol_version}</div>
-                </div>
-                <div class="p-6 hover:bg-base-200/50 transition-colors">
-                    <div class="text-xs font-bold text-base-content/50 uppercase tracking-wider mb-1">Timestamp</div>
-                    <div class="text-base-content font-medium text-sm mt-1">
-                        {getDate(block.time)}
-                        <span class="block text-base-content/60 text-xs mt-1">{moment(block.time * 1000).fromNow()}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<button class="mt-6 flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink" onclick={() => (advanced = !advanced)}>
+			<ChevronDown class="h-3.5 w-3.5 transition {advanced ? 'rotate-180' : ''}" /> Consensus fields
+		</button>
+		{#if advanced}
+			<dl class="mt-4 grid animate-fade-up gap-x-6 gap-y-4 border-t border-line pt-4 sm:grid-cols-2">
+				<KV label="Issuer key"><Hash value={b.issuer_vkey} /></KV>
+				<KV label="Block body hash"><Hash value={b.block_body_hash} /></KV>
+				<KV label="VRF key"><Hash value={b.block_vrf} /></KV>
+				<KV label="Operational cert"><Hash value={b.op_cert} /></KV>
+				<KV label="Op cert counter / KES period"><span class="mono">{b.op_cert_counter ?? '—'} / {b.op_cert_kes_period ?? '—'}</span></KV>
+				<KV label="VRF output"><Hash value={b.vrf_result?.output} /></KV>
+			</dl>
+		{/if}
+	</Panel>
 
-        {#if txs && txs.length > 0}
-            <div class="mt-8">
-                <h3 class="text-lg font-bold text-base-content mb-4 px-1">Transactions in this Block</h3>
-                <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-base-200/80 border-b border-base-200 text-xs uppercase tracking-wider text-base-content/60">
-                                    <th class="py-4 px-6 font-semibold">Tx Hash</th>
-                                    <th class="py-4 px-6 font-semibold">Total Output (ADA)</th>
-                                    <th class="py-4 px-6 font-semibold">Fee (ADA)</th>
-                                    <th class="py-4 px-6 font-semibold">Output Addresses</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-base-200">
-                                {#each txs as tx}
-                                    <tr class="hover:bg-base-200/50 transition-colors group">
-                                        <td class="py-4 px-6 align-top">
-                                            <a href="/transactions/{tx.tx_hash}" class="text-blue-600 hover:text-blue-800 hover:underline font-mono text-sm">
-                                                {truncate(tx.tx_hash, 20, "...")}
-                                            </a>
-                                        </td>
-                                        <td class="py-4 px-6 align-top font-medium text-base-content">
-                                            {lovelaceToAda(tx.total_output)}
-                                        </td>
-                                        <td class="py-4 px-6 align-top font-medium text-base-content">
-                                            {lovelaceToAda(tx.fee)}
-                                        </td>
-                                        <td class="py-4 px-6 align-top text-sm text-base-content/60 font-mono">
-                                            <div class="max-h-24 overflow-y-auto pr-2 scrollbar-thin">
-                                                {#each tx.output_addresses as address}
-                                                    <div class="mb-1 last:mb-0 hover:text-base-content transition-colors" title="{address}">
-                                                        {truncate(address, 25, "...")}
-                                                    </div>
-                                                {/each}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {/each}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        {/if}
+	<div class="flex flex-col gap-6">
+		<Panel title="Confirmations">
+			{#snippet icon()}<ShieldCheck class="h-4 w-4" />{/snippet}
+			<div class="flex items-center gap-5">
+				<Ring value={Math.min(1, confirmations / 100)} size={96} stroke={9}>
+					<span class="font-display text-xl font-semibold tabular-nums">{confirmations > 999 ? '999+' : confirmations}</span>
+				</Ring>
+				<p class="text-sm text-muted">
+					{#if isTip}This is the newest block. It is the chain tip.{:else if confirmations < 100}{num(confirmations)} block{confirmations === 1 ? '' : 's'} built on top. Settles after a few more.{:else}{num(confirmations)} blocks on top. Final for all practical purposes.{/if}
+				</p>
+			</div>
+		</Panel>
+		<Panel title="Block size">
+			<div class="flex items-end justify-between">
+				<div class="font-display text-2xl font-semibold tabular-nums">{(Number(b.size) / 1024).toFixed(2)} <span class="text-sm text-muted">KB</span></div>
+				<div class="text-sm text-muted">{(fill * 100).toFixed(2)}% of {(data.maxBlockSize / 1024).toFixed(0)} KB</div>
+			</div>
+			<div class="mt-3 h-2.5 overflow-hidden rounded-full bg-line"><div class="h-full rounded-full bg-grad" style="width:{Math.max(1, fill * 100)}%"></div></div>
+		</Panel>
+	</div>
+</div>
 
-    </div>
+<section class="y-panel overflow-hidden">
+	<header class="y-panel-head">
+		<div class="flex items-center gap-2.5">
+			<span class="grid h-7 w-7 place-items-center rounded-lg bg-brand/10 text-brand"><ArrowLeftRight class="h-4 w-4" /></span>
+			<h2 class="font-display text-[15px] font-semibold">Transactions <span class="text-muted">· {data.txs.length}</span></h2>
+		</div>
+	</header>
+	<DataTable rows={data.txs} {columns} key={(t) => t.tx_hash} rowHref={(t) => `/transactions/${t.tx_hash}`} emptyTitle="No transactions in this block" emptyText="Empty blocks are normal on a quiet devnet.">
+		{#snippet cell(t, key)}
+			{#if key === 'hash'}
+				<a class="mono font-medium text-ink hover:text-brand" href="/transactions/{t.tx_hash}">{shorten(t.tx_hash, 12, 10)}</a>
+			{:else if key === 'to'}
+				{@const addrs = t.output_addresses ?? []}
+				<span class="mono text-xs text-muted">{shorten(addrs[0], 12, 6)}</span>{#if addrs.length > 1}<span class="ml-1.5 text-xs text-faint">+{addrs.length - 1}</span>{/if}
+			{:else if key === 'fee'}
+				<Ada value={t.fee} decimals={6} class="text-muted" />
+			{:else if key === 'out'}
+				<Ada value={t.total_output} class="font-semibold" />
+			{/if}
+		{/snippet}
+	</DataTable>
 </section>
-
-{#if txs.length > 0}
-    <section class="container mx-auto text-sm mt-10 mb-10">
-        <div class="overflow-x-auto">
-            <table class="w-full bg-base-100 border border-gray-300">
-                <thead>
-                <tr>
-                    <th class="py-2 px-4 bg-base-200 font-bold">Tx Hash</th>
-                    <th class="py-2 px-4 bg-base-200 font-bold text-center">Total Output (Ada)</th>
-                    <th class="py-2 px-4 bg-base-200 font-bold text-center">Fee (Ada)</th>
-                    <th class="py-2 px-4 bg-base-200 font-bold">Output Addresses</th>
-                </tr>
-                </thead>
-                <tbody>
-                {#each txs as tx, index}
-                    <tr class="{index % 2 === 0 ? 'bg-base-200' : 'bg-base-100'}">
-                        <td class="py-2 px-4">
-                            <a href="/transactions/{tx.tx_hash}" class="text-blue-500">{tx.tx_hash}</a>
-                        </td>
-                        <td class="py-2 px-4 text-center">{lovelaceToAda(tx.total_output)}</td>
-                        <td class="py-2 px-4 text-center">{lovelaceToAda(tx.fee)}</td>
-                        <td class="py-2 px-4">
-                            {#each tx.output_addresses as address}
-                                <AddressLink {address} maxLength={25} /><br>
-                            {/each}
-                        </td>
-                    </tr>
-                {/each}
-                </tbody>
-            </table>
-        </div>
-    </section>
-{/if}

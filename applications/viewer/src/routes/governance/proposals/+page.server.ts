@@ -1,42 +1,28 @@
+import { error } from '@sveltejs/kit';
+import { api, paging } from '$lib/api/client';
+import { ACTION_LABEL, toProposal } from '$lib/governance/labels';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
-import type { Proposal } from './types';
 
-export const load: PageServerLoad = async ({ url }) => {
-    const page = url.searchParams.get('page') || '1';
-    const count = url.searchParams.get('count') || '10';
-    const order = url.searchParams.get('order') || 'desc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
-    try {
-        const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-        if (!INDEXER_BASE_URL) {
-            throw new Error('PUBLIC_INDEXER_BASE_URL environment variable is not set');
-        }
-
-        const response = await fetch(`${INDEXER_BASE_URL}/governance-state/proposals?page=${page}&count=${count}&order=${order}`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch proposals (Status: ${response.status})`);
-        }
-
-        const proposals: Proposal[] = await response.json();
-        if (!Array.isArray(proposals)) {
-            throw new Error('Invalid data format received from server');
-        }
-
-        return {
-            proposals,
-            page,
-            count,
-            order
-        };
-    } catch (error) {
-        console.error('Error loading proposals:', error);
-        return {
-            proposals: [],
-            page,
-            count,
-            order,
-            error: error instanceof Error ? error.message : 'An error occurred while loading proposals'
-        };
-    }
+/*
+ * All governance actions (with status), only the ones being voted on now, or one action type.
+ * /governance-state/proposals and /governance/proposals/gov-action-type are 1-based; /current is not paged.
+ */
+export const load: PageServerLoad = async ({ url, fetch }) => {
+	const view = url.searchParams.get('view') === 'live' ? 'live' : 'all';
+	const type = url.searchParams.get('type') ?? '';
+	const validType = type in ACTION_LABEL ? type : '';
+	const { page, count } = paging(url, 20);
+	const order = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+	try {
+		let rows: Any[];
+		if (view === 'live') rows = (await api<Any[]>('/governance-state/proposals/current', { fetch })) ?? [];
+		else if (validType) rows = (await api<Any[]>(`/governance/proposals/gov-action-type/${validType}`, { fetch, params: { page, count, order } })) ?? [];
+		else rows = (await api<Any[]>('/governance-state/proposals', { fetch, params: { page, count, order } })) ?? [];
+		return { view, type: validType, page, count, order, paged: view !== 'live', proposals: rows.map(toProposal) };
+	} catch (e) {
+		error(503, (e as Error).message);
+	}
 };

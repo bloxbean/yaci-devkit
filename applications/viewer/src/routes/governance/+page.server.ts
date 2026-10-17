@@ -1,51 +1,35 @@
+import { tryApi } from '$lib/api/client';
+import { loadCommittee, loadConstitution } from '$lib/governance/data';
+import { toProposal } from '$lib/governance/labels';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-export const load: PageServerLoad = async () => {
-    const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
-    const [proposalsRes, committeeRes, constitutionRes, epochRes] = await Promise.allSettled([
-        fetch(`${INDEXER_BASE_URL}/governance-state/proposals?page=1&count=5&order=desc`),
-        fetch(`${INDEXER_BASE_URL}/governance/committees/current`),
-        fetch(`${INDEXER_BASE_URL}/governance/constitution`),
-        fetch(`${INDEXER_BASE_URL}/epochs/latest`)
-    ]);
-
-    const proposals = proposalsRes.status === 'fulfilled' && proposalsRes.value.ok
-        ? await proposalsRes.value.json()
-        : [];
-
-    const committee = committeeRes.status === 'fulfilled' && committeeRes.value.ok
-        ? await committeeRes.value.json()
-        : null;
-
-    const constitution = constitutionRes.status === 'fulfilled' && constitutionRes.value.ok
-        ? await constitutionRes.value.json()
-        : null;
-
-    const epochData = epochRes.status === 'fulfilled' && epochRes.value.ok
-        ? await epochRes.value.json()
-        : null;
-
-    const currentEpoch = epochData?.epoch ?? 0;
-
-    // Compute active committee member count: deduplicate by hash, keep only active (not expired)
-    let activeCommitteeCount = 0;
-    if (committee?.members) {
-        const uniqueHashes = new Set<string>();
-        for (const member of committee.members) {
-            if (!uniqueHashes.has(member.hash) && member.expired_epoch >= currentEpoch) {
-                uniqueHashes.add(member.hash);
-            }
-        }
-        activeCommitteeCount = uniqueHashes.size;
-    }
-
-    return {
-        proposals,
-        committee,
-        constitution,
-        activeCommitteeCount,
-        currentEpoch
-    };
+/* Governance at a glance. Every section degrades on its own: a devnet often has no stats, constitution or votes. */
+export const load: PageServerLoad = async ({ fetch }) => {
+	const [stats, proposals, active, committee, constitution, special, votes] = await Promise.all([
+		tryApi<Any>('/governance-state/stats', { fetch }),
+		tryApi<Any[]>('/governance-state/proposals', { fetch, params: { page: 1, count: 6, order: 'desc' } }),
+		tryApi<Any[]>('/governance-state/proposals/current', { fetch }),
+		loadCommittee(fetch),
+		loadConstitution(fetch),
+		tryApi<Any[]>('/governance-state/dreps/special', { fetch }),
+		tryApi<Any[]>('/governance/votes', { fetch, params: { page: 1, count: 6, order: 'desc' } })
+	]);
+	return {
+		stats: stats as {
+			epoch?: number;
+			drep_stats?: { total_dreps: number; active_dreps: number; inactive_dreps: number; retired_dreps: number; total_voting_power: number };
+			proposal_stats?: { active_proposals: number; ratified_proposals: number; expired_proposals: number };
+			committee_stats?: { total_members: number; active_members: number; expired_members: number };
+			vote_stats?: { total_votes_current_epoch: number; drep_votes: number; spo_votes: number; committee_votes: number };
+		} | null,
+		proposals: (proposals ?? []).map(toProposal),
+		activeCount: active?.length ?? null,
+		committee,
+		constitution,
+		special: (special ?? []) as { drep_type: string; voting_power: number }[],
+		votes: (votes ?? []) as Any[]
+	};
 };

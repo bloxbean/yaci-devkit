@@ -1,69 +1,58 @@
-## Getting Started
+# Yaci Viewer
 
-### Installation
+A live Cardano explorer for your Yaci DevKit devnet, or any [Yaci Store](https://github.com/bloxbean/yaci-store).
 
-To install Yaci Viewer globally, run:
+- **Live dashboard:** new blocks slide in as they're made, with block time, transaction and block-load trends,
+  epoch progress and ADA supply.
+- **Search everything:** press <kbd>/</kbd> or <kbd>⌘</kbd><kbd>K</kbd> (or just paste) a block number or hash,
+  transaction, address, stake address, pool, DRep, policy, asset, fingerprint, script, datum or epoch.
+- **Transactions you can read:** inputs flow into outputs, scripts show their execution budget, redeemers and datums
+  are decoded from CBOR, plus mints, metadata, collateral, reference inputs and the raw JSON.
+- Addresses, stake accounts, assets, epochs and protocol parameters, pools, rewards, certificates, Ada pots and
+  Conway governance.
+- Light and dark themes; works on a phone.
+
+## Run it
 
 ```bash
 npm install -g @bloxbean/yaci-viewer
-```
-
-### Running Yaci Viewer
-
-1. Start the Yaci DevKit.
-2. Run the following command:
-
-```bash
 yaci-viewer
 ```
 
-By default, Yaci Viewer connects to a Yaci-Store backend running on `localhost` at port `8080`.
+Yaci Viewer reads from Yaci Store at `http://localhost:8080/api/v1` and serves the UI at `http://localhost:3000`.
+Set `PORT` to use another port, for example `PORT=5173 yaci-viewer` to match the Docker distribution.
 
----
+The Docker distribution of Yaci DevKit already includes Yaci Viewer at `http://localhost:5173`.
 
-## Configuration Options
+## Configuration
 
-If you need to connect to a Yaci-Store backend running on a different host or port, you can configure Yaci Viewer in one of the following ways:
+Set these in the environment, or in a `.env` file in the directory you start Yaci Viewer from:
 
-### Option 1: Using a `.env` File
+| Variable | Default | What it is |
+|---|---|---|
+| `PUBLIC_INDEXER_BASE_URL` | `http://localhost:8080/api/v1` | Yaci Store REST API, used by the server |
+| `PUBLIC_INDEXER_CLIENT_BASE_URL` | same as above | Yaci Store as the browser sees it, when that differs (e.g. Docker) |
+| `PUBLIC_INDEXER_WS_URL` | `ws://localhost:8080/ws/liveblocks` | Live updates. Leave empty for a store without the live module; the viewer polls instead |
+| `PUBLIC_MAINTENANCE_MSG` | | Optional banner shown on every page |
+| `PORT`, `HOST` | `3000`, `0.0.0.0` | Where Yaci Viewer listens |
 
-Create a `.env` file in the same directory where you are starting Yaci Viewer, and specify the following environment variables:
-
-- `PUBLIC_INDEXER_BASE_URL`: The base URL for the indexer API. Default: `http://localhost:8080/api/v1`.
-- `PUBLIC_INDEXER_WS_URL`: The WebSocket URL for live updates. Default: `ws://localhost:8080/ws/liveblocks`.
-
-### Option 2: Using Command-Line Arguments
-
-You can also specify the indexer base URL and WebSocket URL directly via command-line arguments:
-
-```bash
-yaci-viewer --indexerBaseUrl http://new-url.com/api/v1 --indexerWsUrl ws://new-url.com/ws/liveblocks
-```
-
----
-
-## Notes
-
-- Ensure that the YaciDevKit or Yaci-Store backend is running and accessible before starting Yaci Viewer.
-
-## Developing
-
-Once you've checked out the project and installed dependencies with `npm install`  start a development server:
+The base and WebSocket URLs can also be passed on the command line:
 
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+yaci-viewer --indexerBaseUrl http://my-store:8080/api/v1 --indexerWsUrl ws://my-store:8080/ws/liveblocks
 ```
 
-> **Note:** Ensure that Yaci DevKit is running and that you have created a `.env` file with the indexer URLs in the viewer folder. For the required environment variables, refer to the `env.example` file.
-
-## Building
-
-To create a production version of the app:
+## Develop
 
 ```bash
-npm run build
+npm install
+PUBLIC_INDEXER_BASE_URL=http://localhost:8080/api/v1 npm run dev   # http://localhost:5173
+npm run check        # svelte-check
+npm run test:unit    # vitest
+npm test             # Playwright smoke tests (needs a running Yaci Store)
+npm run build        # production build in build/, run with `node build`
 ```
 
+SvelteKit 2, Svelte 5 and Tailwind. Shared code lives in `src/lib`: `api/` (Yaci Store client), `live/` (WebSocket
+with a polling fallback), `ui/` (components), `shell/` (layout, navigation, search) and `format.ts`, `cbor.ts`,
+`bech32.ts`.

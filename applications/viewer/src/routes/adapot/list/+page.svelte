@@ -1,158 +1,73 @@
 <script lang="ts">
-    import { formatAda, formatLovelace } from '$lib/util';
-    import { goto } from '$app/navigation';
+	import { adaCompact, num } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import TrendChart from '$lib/epochs/TrendChart.svelte';
+	import { toAda, type AdaPot } from '$lib/epochs/pots';
+	import PiggyBank from '@lucide/svelte/icons/piggy-bank';
+	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 
-    interface AdaPotData {
-        epoch: number;
-        totalAmount: number;
-        currentEpoch: number;
-        details: {
-            depositsStake: number;
-            fees: number;
-            treasury: number;
-            reserves: number;
-            circulation: number;
-            distributedRewards: number;
-            undistributedRewards: number;
-            poolRewardsPot: number;
-        };
-    }
+	let { data } = $props();
 
-    export let data;
-
-    let adapots: AdaPotData[] = [];
-    let currentPage = 1;
-    let itemsPerPage = 15;
-    let error: string | null = null;
-
-    $: adapots = data.adapots ?? [];
-    $: currentPage = parseInt(data.page || '1');
-    $: itemsPerPage = parseInt(data.count || '15');
-    $: error = data.error ?? null;
-
-    function goToPage(page: number) {
-        if (page < 1 || (page > currentPage && adapots.length < itemsPerPage)) return;
-        const params = new URLSearchParams();
-        params.set('page', page.toString());
-        params.set('count', itemsPerPage.toString());
-        goto(`/adapot/list?${params.toString()}`);
-    }
+	const fmt = (v: number) => `₳${adaCompact(v * 1_000_000)}`;
+	const series = (key: keyof AdaPot) => data.rows.map((r) => ({ x: r.epoch, y: toAda(r[key] as number) }));
+	const cols: { key: keyof AdaPot | 'epoch'; label: string; minor?: boolean }[] = [
+		{ key: 'treasury', label: 'Treasury' },
+		{ key: 'reserves', label: 'Reserves' },
+		{ key: 'circulation', label: 'Circulation', minor: true },
+		{ key: 'rewards_pot', label: 'Rewards pot', minor: true },
+		{ key: 'distributed_rewards', label: 'Distributed', minor: true },
+		{ key: 'fees', label: 'Fees', minor: true },
+		{ key: 'deposits_stake', label: 'Deposits', minor: true }
+	];
+	const columns = [{ key: 'epoch', label: 'Epoch' }, ...cols.map((c) => ({ key: c.key as string, label: c.label, align: 'right' as const, minor: c.minor }))];
+	// Change from the previous (older) row, to show which way the treasury and reserves are moving.
+	const delta = (i: number, key: keyof AdaPot) => {
+		const cur = Number(data.rows[i]?.[key]);
+		const prev = Number(data.rows[i + 1]?.[key]);
+		return Number.isFinite(cur) && Number.isFinite(prev) && prev ? cur - prev : null;
+	};
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">AdaPot History</h1>
+<svelte:head><title>Ada pot history · Yaci Viewer</title></svelte:head>
 
-    {#if error}
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <strong class="font-bold">Error: </strong>
-            <span class="block sm:inline">{error}</span>
-        </div>
-    {:else if adapots.length === 0}
-        <div class="text-center py-8">
-            <p class="text-base-content/70">No AdaPot data available for this page.</p>
-        </div>
-    {:else}
+<PageHeader kind="Staking" title="Ada pot history">
+	{#snippet icon()}<PiggyBank class="h-5 w-5" />{/snippet}
+	Treasury, reserves and rewards at each epoch boundary.
+	{#snippet actions()}<a class="y-btn" href="/adapot/current">Latest pots <ArrowRight class="h-4 w-4" /></a>{/snippet}
+</PageHeader>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full bg-base-100 border border-base-300">
-                <thead class="bg-base-200">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Epoch</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Treasury</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Reserves</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Circulation</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Fees</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Total Rewards</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Distributed</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Undistributed</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Pool Rewards</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-base-100 divide-y divide-base-300">
-                    {#each adapots as adapot}
-                        <tr class="hover:bg-base-200">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
-                                {adapot.epoch}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.treasury)}>
-                                    {formatAda(adapot.details.treasury)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.reserves)}>
-                                    {formatAda(adapot.details.reserves)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.circulation)}>
-                                    {formatAda(adapot.details.circulation)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.fees)}>
-                                    {formatAda(adapot.details.fees)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.totalAmount)}>
-                                    {formatAda(adapot.totalAmount)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.distributedRewards)}>
-                                    {formatAda(adapot.details.distributedRewards)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.undistributedRewards)}>
-                                    {formatAda(adapot.details.undistributedRewards)}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                <div class="tooltip" data-tip={formatLovelace(adapot.details.poolRewardsPot)}>
-                                    {formatAda(adapot.details.poolRewardsPot)}
-                                </div>
-                            </td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
-        </div>
+{#if data.rows.length > 1}
+	<Panel title="This page" class="mb-6">
+		<div class="grid gap-6 md:grid-cols-2">
+			<TrendChart label="Treasury" points={series('treasury')} color="rgb(var(--c-cyan))" format={fmt} />
+			<TrendChart label="Reserves" points={series('reserves')} color="rgb(var(--c-violet))" format={fmt} />
+		</div>
+	</Panel>
+{/if}
 
-        <!-- Pagination Controls (Bottom) -->
-        <div class="flex justify-center mt-6">
-            <div class="join">
-            <button 
-                class="join-item btn btn-sm"
-                on:click={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-            >
-                «
-            </button>
-            <span class="join-item btn btn-sm">Page {currentPage}</span>
-            <button 
-                class="join-item btn btn-sm"
-                on:click={() => goToPage(currentPage + 1)}
-                disabled={adapots.length < itemsPerPage} 
-            >
-                »
-            </button>
-            </div>
-        </div>
-    
-    {/if}
-</div>
-
-<style>
-    .container {
-        max-width: 1400px;
-    }
-    
-    th {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background-color: #f9fafb;
-    }
-</style> 
+<section class="y-panel overflow-hidden">
+	<DataTable
+		rows={data.rows}
+		{columns}
+		key={(r) => r.epoch}
+		rowHref={(r) => `/adapot/current?epoch=${r.epoch}`}
+		emptyTitle="No ada pots yet"
+		emptyText="Ada pots are calculated at epoch boundaries. On a new devnet, wait for the first epoch to finish."
+	>
+		{#snippet cell(r, key)}
+			{#if key === 'epoch'}
+				<a class="y-link font-semibold tabular-nums" href="/adapot/current?epoch={r.epoch}">{num(r.epoch)}</a>
+			{:else}
+				{@const v = r[key as keyof AdaPot]}
+				{@const i = data.rows.indexOf(r)}
+				{@const d = key === 'treasury' || key === 'reserves' ? delta(i, key) : null}
+				<span class="tabular-nums">{v != null ? `₳${adaCompact(v)}` : '—'}</span>
+				{#if d}<div class="text-[11px] tabular-nums {d > 0 ? 'text-mint' : 'text-danger'}">{d > 0 ? '+' : '−'}₳{adaCompact(Math.abs(d))}</div>{/if}
+			{/if}
+		{/snippet}
+	</DataTable>
+	<Pager page={data.page} hasNext={data.rows.length === data.count} />
+</section>

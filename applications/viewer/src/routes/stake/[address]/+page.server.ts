@@ -1,53 +1,38 @@
 import { error } from '@sveltejs/kit';
+import { api, paging, tryApi } from '$lib/api/client';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-const DEFAULT_COUNT = 15;
-const DEFAULT_ORDER = 'desc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
+const TABS = { rewards: 'rewards', withdrawals: 'withdrawals', other: 'reward_rest' } as const;
+
+/* A stake account: what it controls, where it delegates (pool and DRep), and its rewards history. */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
-    const address = params.address;
+	const address = params.address.trim();
+	if (!/^(stake|stake_test)1/.test(address)) error(404, 'That is not a stake address.');
 
-    if (!address || !address.startsWith('stake')) {
-        throw error(400, 'Invalid stake address');
-    }
+	const tab = (url.searchParams.get('tab') ?? 'rewards') as keyof typeof TABS;
+	const endpoint = TABS[tab] ?? TABS.rewards;
+	const { page, count } = paging(url, 20);
 
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const count = parseInt(url.searchParams.get('count') || String(DEFAULT_COUNT));
-    const order = url.searchParams.get('order') || DEFAULT_ORDER;
-    const tab = url.searchParams.get('tab') || 'rewards';
+	const [account, drep, rows] = await Promise.all([
+		tryApi<Any>(`/accounts/${address}`, { fetch }),
+		tryApi<Any[]>(`/governance/delegation-votes/address/${address}`, { fetch, params: { page: 1, count: 1, order: 'desc' } }),
+		api<Any[]>(`/accounts/${address}/${endpoint}`, { fetch, params: { page, count, order: 'desc' } }).then(
+			(r) => ({ rows: r ?? [], error: null as string | null }),
+			(e) => ({ rows: [] as Any[], error: (e as Error).message })
+		)
+	]);
 
-    if (isNaN(page) || page < 1) {
-        throw error(400, 'Invalid page number');
-    }
-    if (isNaN(count) || count < 1 || count > 100) {
-        throw error(400, 'Invalid count number');
-    }
-    if (order !== 'asc' && order !== 'desc') {
-        throw error(400, 'Invalid order parameter');
-    }
-
-    const [rewards, rewardRest, withdrawals] = await Promise.all([
-        fetch(`${INDEXER_BASE_URL}/accounts/${address}/rewards?page=${page - 1}&count=${count}&order=${order}`)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => []),
-        fetch(`${INDEXER_BASE_URL}/accounts/${address}/reward_rest?page=${page - 1}&count=${count}&order=${order}`)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => []),
-        fetch(`${INDEXER_BASE_URL}/accounts/${address}/withdrawals?page=${page - 1}&count=${count}&order=${order}`)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => []),
-    ]);
-
-    return {
-        address,
-        rewards,
-        rewardRest,
-        withdrawals,
-        currentPage: page,
-        count,
-        order,
-        tab
-    };
+	return {
+		address,
+		account: account as { controlled_amount?: number; withdrawable_amount?: number; pool_id?: string | null } | null,
+		drep: (drep?.[0] ?? null) as { drep_id?: string; drep_hash?: string; drep_type?: string; block_time?: number } | null,
+		tab: tab in TABS ? tab : 'rewards',
+		page,
+		count,
+		rows: rows.rows,
+		listError: rows.error
+	};
 };

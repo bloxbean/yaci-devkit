@@ -1,0 +1,10 @@
+node_modules
+build
+.svelte-kit
+test-results
+.playwright-mcp
+playwright-report
+deno.lock
+.env
+.env.*
+*.log

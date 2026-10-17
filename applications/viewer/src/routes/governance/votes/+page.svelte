@@ -1,172 +1,54 @@
 <script lang="ts">
-    import {goto} from "$app/navigation";
-    import {page} from "$app/stores";
-    import {truncate} from "$lib/util";
-    import {EyeIcon} from "svelte-feather-icons";
-    import { onMount } from 'svelte';
+	import { shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import AnchorLink from '$lib/governance/AnchorLink.svelte';
+	import { actionHref, voteLabel, voteTone, voterGroup, voterHref, VOTER_LABEL } from '$lib/governance/labels';
+	import Vote from '@lucide/svelte/icons/vote';
 
-    export let data;
-
-    interface Vote {
-        tx_hash: string;
-        block_number: number;
-        gov_action_tx_hash: string;
-        gov_action_index: number;
-        voter_type: string;
-        vote: string;
-        voter_hash: string;
-        anchor_url?: string;
-        anchor_hash?: string;
-    }
-
-    interface PageLink {
-        href: string;
-        active: boolean;
-    }
-
-    $: activeUrl = $page.url.searchParams.get('page');
-    let pages: PageLink[] = [];
-
-    $:{
-        pages.forEach((pageLink) => {
-            let splitUrl = pageLink.href.split('?');
-            let queryString = splitUrl.slice(1).join('?');
-            const hrefParams = new URLSearchParams(queryString);
-            let hrefValue = hrefParams.get('page');
-            if (hrefValue === activeUrl) {
-                pageLink.active = true
-            } else {
-                pageLink.active = false
-            }
-        })
-        pages = pages
-    }
-
-    // --- Pagination State --- 
-    let loading = false;
-    let currentPage = 1;
-    const ITEMS_PER_PAGE = 15;
-
-    onMount(() => {
-        // Initialize currentPage from URL or data
-        currentPage = parseInt(data.page || "1", 10);
-        loading = false;
-    });
-
-    // --- Has More Logic --- 
-    $: hasMore = data.votes && data.votes.length > 0;
-
-    // --- Navigation Function --- 
-    function goToPage(targetPage: number) {
-        if (targetPage < 1 || loading) return;
-        loading = true;
-        const url = `/governance/votes?page=${targetPage}&count=${ITEMS_PER_PAGE}`;
-        goto(url);
-    }
-
-    // --- Reactive Update Block --- 
-    $: if (data && $page) {
-        currentPage = parseInt(data.page || "1", 10);
-        loading = false;
-    }
-
-    // Initialize votes array if undefined
-    if (!data.votes) data.votes = [];
+	let { data } = $props();
+	const groupTone = { drep: 'violet', spo: 'cyan', cc: 'brand' } as const;
 </script>
 
+<svelte:head><title>Votes · Yaci Viewer</title></svelte:head>
 
-<section class="container mx-auto text-sm">
-    <h2 class="text-xl font-bold text-center text-base-content/60 mb-4">Votes</h2>
-    <div class="flex justify-end mt-6">
-        <div class="join">
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={currentPage <= 1 || loading}
-                on:click={() => goToPage(currentPage - 1)}
-            >
-                «
-            </button>
-            <button class="join-item btn btn-sm no-animation">
-                Page {currentPage}
-            </button>
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={!hasMore || loading}
-                on:click={() => goToPage(currentPage + 1)}
-            >
-                »
-            </button>
-        </div>
-    </div>
-    <div class="overflow-x-auto bg-base-100 shadow-md rounded-lg mb-4 relative">
-        {#if loading}
-            <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
-                <span class="loading loading-spinner loading-lg"></span>
-            </div>
-        {/if}
-        <table class="min-w-full divide-y divide-base-300">
-            <thead class="bg-base-200">
-            <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Transaction Hash</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Gov Action Id</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Voter Type</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Vote</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Voter Hash</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Anchor URL</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Anchor Hash</th>
-            </tr>
-            </thead>
-            <tbody class="bg-base-100 divide-y divide-base-300">
-            {#each data.votes as vote: Vote, index}
-                <tr class="hover:bg-base-200">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
-                        <a href="/transactions/{vote.tx_hash}" class="text-blue-500 hover:underline">
-                            <span>{truncate(vote.tx_hash, 30, "...")}</span>
-                        </a>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                        <a href="/blocks/{vote.block_number}" class="text-blue-500 hover:underline">
-                            {vote.block_number}
-                        </a>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(vote.gov_action_tx_hash, 10, "...")}#{vote.gov_action_index}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{vote.voter_type}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{vote.vote}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(vote.voter_hash, 30, "...")}</td>
-                    {#if vote.anchor_url}
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-500">
-                            <a href="{vote.anchor_url}" target="_blank" class="hover:underline">{truncate(vote.anchor_url, 20, "...")}</a>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{truncate(vote.anchor_hash, 20, "...")}</td>
-                    {:else }
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 text-center">-</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 text-center">-</td>
-                    {/if}
-                </tr>
-            {/each}
-            </tbody>
-        </table>
-    </div>
-    <div class="flex justify-end mt-6">
-        <div class="join">
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={currentPage <= 1 || loading}
-                on:click={() => goToPage(currentPage - 1)}
-            >
-                «
-            </button>
-            <button class="join-item btn btn-sm no-animation">
-                Page {currentPage}
-            </button>
-            <button 
-                class="join-item btn btn-sm" 
-                disabled={!hasMore || loading}
-                on:click={() => goToPage(currentPage + 1)}
-            >
-                »
-            </button>
-        </div>
-    </div>
+<PageHeader kind="Governance" title="Votes">
+	{#snippet icon()}<Vote class="h-5 w-5" />{/snippet}
+	Votes cast by DReps, stake pools and the constitutional committee, newest first.
+</PageHeader>
+
+<section class="y-panel overflow-hidden">
+	<DataTable
+		rows={data.votes}
+		columns={[
+			{ key: 'vote', label: 'Vote' },
+			{ key: 'voter', label: 'Voter' },
+			{ key: 'action', label: 'On action' },
+			{ key: 'rationale', label: 'Rationale', minor: true },
+			{ key: 'age', label: 'When', align: 'right' }
+		]}
+		key={(v) => v.id ?? v.tx_hash + v.voter_hash + v.gov_action_index}
+		rowHref={(v) => actionHref(v.gov_action_tx_hash, v.gov_action_index)}
+		emptyTitle="No votes yet"
+		emptyText="Votes appear once DReps, pools or the committee vote on a governance action."
+	>
+		{#snippet cell(v, key)}
+			{#if key === 'vote'}<Badge tone={voteTone(v.vote)}>{voteLabel(v.vote)}</Badge>
+			{:else if key === 'voter'}
+				{@const g = voterGroup(v.voter_type)}
+				{@const href = voterHref(v)}
+				<div class="flex items-center gap-2">
+					<Badge tone={groupTone[g]} class="py-0 text-[10px]">{g === 'cc' ? 'CC' : g === 'spo' ? 'SPO' : 'DRep'}</Badge>
+					{#if href}<a class="mono text-[13px] text-ink hover:text-brand" {href} title={v.drep_id ?? v.voter_hash}>{shorten(v.drep_id ?? v.voter_hash, 12, 6)}</a>{:else}<span class="mono text-[13px]" title={v.voter_hash}>{shorten(v.voter_hash, 12, 6)}</span>{/if}
+				</div>
+				<span class="sr-only">{VOTER_LABEL[g]}</span>
+			{:else if key === 'action'}<a class="mono text-[13px] text-muted hover:text-brand" href={actionHref(v.gov_action_tx_hash, v.gov_action_index)}>{shorten(v.gov_action_tx_hash, 8, 6)}#{v.gov_action_index}</a>
+			{:else if key === 'rationale'}<AnchorLink url={v.anchor_url} hash={v.anchor_hash} />
+			{:else}<a class="text-muted hover:text-brand" href="/transactions/{v.tx_hash}"><TimeAgo ts={v.block_time} /></a>{/if}
+		{/snippet}
+	</DataTable>
+	<Pager page={data.page} hasNext={data.votes.length === data.count} />
 </section>

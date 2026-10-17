@@ -1,237 +1,58 @@
 <script lang="ts">
-    import { page } from '$app/stores';
-    import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
-    import { formatAda, formatLovelace, truncate } from '$lib/util';
+	import { shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import { poolBech32 } from '$lib/staking/pool';
+	import Gift from '@lucide/svelte/icons/gift';
+	import Server from '@lucide/svelte/icons/server';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
-    // Type definition for data from server
-    export let data: {
-        error: string | null;
-        rewards: Array<{
-            address: string;
-            reward: number;
-            type: string;
-            earned_epoch: number;
-        }>;
-        poolId: string;
-        epoch: number;
-        currentPage: number;
-        count: number;
-    };
-
-    // Interface matching updated server/API structure
-    interface PoolEpochReward {
-        address: string;
-        reward: number;
-        type: string;
-        earned_epoch: number;
-    }
-
-    let loading = false;
-    let error: string | null = null;
-    let rewards: PoolEpochReward[] = [];
-    let poolId = data?.poolId;
-    let epoch = data?.epoch;
-    let currentPage = 1;
-    const count = data?.count || 15;
-
-    // Add toast state
-    let showToast = false;
-    let toastTimeout: number;
-    let toastMessage = '';
-
-    // Add clipboard function with toast
-    async function copyToClipboard(text: string, message: string) {
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast = true;
-            toastMessage = message;
-            // Clear any existing timeout
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-            // Hide toast after 2 seconds
-            toastTimeout = setTimeout(() => {
-                showToast = false;
-            }, 2000);
-        } catch (err) {
-            console.error('Failed to copy text: ', err);
-        }
-    }
-
-    onMount(() => {
-        currentPage = data?.currentPage || 1;
-        if (data) {
-            error = data.error;
-            rewards = data.rewards || [];
-        }
-        loading = false;
-
-        return () => {
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-        };
-    });
-
-    // Function to navigate to a different page
-    function goToPage(newPage: number) {
-        if (newPage < 1 || loading) return;
-        loading = true;
-        // Pass poolId and epoch along with page/count
-        const url = `/rewards/pool/${poolId}/epoch/${epoch}?page=${newPage}&count=${count}`;
-        goto(url);
-    }
-
-    // Determine if more data likely exists
-    $: hasMore = rewards.length === count;
-
-    // Update component state when data or URL changes
-    $: if (data && $page && !loading) {
-        currentPage = data.currentPage;
-        error = data.error;
-        rewards = data.rewards || [];
-        poolId = data.poolId; // Update poolId/epoch in case they could change (unlikely here)
-        epoch = data.epoch;
-        loading = false;
-    }
-
+	let { data } = $props();
+	const id = $derived(poolBech32(data.poolId));
+	const pageTotal = $derived(data.rows.reduce((s, r) => s + BigInt(r.reward ?? r.amount ?? 0), 0n));
+	const isLast = $derived(data.latest != null && data.epoch >= data.latest);
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <!-- Toast Notification -->
-    {#if showToast}
-        <div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 z-50">
-            {toastMessage}
-        </div>
-    {/if}
+<svelte:head><title>Pool rewards · epoch {data.epoch} · Yaci Viewer</title></svelte:head>
 
-    <div class="mb-4">
-        <a href="/rewards" class="btn btn-sm btn-outline btn-primary">&larr; Back to Rewards Explorer</a>
-    </div>
-    <h1 class="text-3xl font-bold mb-1">Rewards for Pool in Epoch {epoch}</h1>
-    <div class="mb-6 flex items-center gap-2">
-        <span class="text-base-content/70">Pool ID:</span>
-        <div class="flex items-center gap-2">
-            <a href="/pools/{poolId}" class="text-blue-500 hover:underline break-all">{poolId}</a>
-            <button 
-                class="text-base-content/50 hover:text-base-content/70" 
-                on:click={() => copyToClipboard(poolId, 'Pool ID copied to clipboard!')}
-                title="Copy pool ID"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-            </button>
-        </div>
-    </div>
+<PageHeader kind="Pool rewards" title="Epoch {data.epoch}">
+	{#snippet icon()}<Gift class="h-5 w-5" />{/snippet}
+	<a class="y-link mono inline-flex items-center gap-1.5 text-[13px]" href="/pools/{id}"><Server class="h-3.5 w-3.5" />{shorten(id, 14, 8)}</a>
+	{#snippet actions()}
+		<a class="y-btn {data.epoch <= 0 ? 'pointer-events-none opacity-40' : ''}" href="/rewards/pool/{data.poolId}/epoch/{data.epoch - 1}"><ChevronLeft class="h-4 w-4" /> {data.epoch - 1}</a>
+		<a class="y-btn {isLast ? 'pointer-events-none opacity-40' : ''}" href="/rewards/pool/{data.poolId}/epoch/{data.epoch + 1}">{data.epoch + 1} <ChevronRight class="h-4 w-4" /></a>
+	{/snippet}
+</PageHeader>
 
-    {#if error && !loading}
-        <div class="alert alert-error mb-4 shadow-lg">
-            <!-- Error Display -->
-             <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>{error}</span>
-            </div>
-        </div>
-    {/if}
-
-    <!-- Pagination Controls (Top) -->
-    {#if !loading && rewards.length > 0} 
-        <div class="mt-0 mb-6 flex justify-between items-center">
-            <button 
-                class="btn btn-outline btn-sm"
-                on:click={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-            >
-                &lt; Previous
-            </button>
-            <span class="text-sm text-base-content/80">Page {currentPage}</span>
-            <button 
-                class="btn btn-outline btn-sm"
-                on:click={() => goToPage(currentPage + 1)}
-                disabled={!hasMore} 
-            >
-                Next &gt;
-            </button>
-        </div>
-    {/if}
-
-    <!-- Content Area -->
-    <div class="bg-base-100 shadow-md rounded-lg p-4 min-h-[400px]">
-        {#if loading}
-             <div class="flex justify-center items-center h-64">
-                 <span class="loading loading-spinner loading-lg"></span>
-            </div>
-        {:else if !rewards || rewards.length === 0}
-            <p class="text-base-content/60">No rewards found for this pool in this epoch.</p>
-        {:else}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-base-300">
-                    <thead class="bg-base-200">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Stake Address</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
-                             <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Earned Epoch</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-base-100 divide-y divide-base-300">
-                        {#each rewards as item (item.address + item.earned_epoch)} 
-                            <tr class="hover:bg-base-200">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-base-content">
-                                    <div class="flex items-center gap-2">
-                                        <a href="/rewards/account/{item.address}" class="text-blue-500 hover:underline">{truncate(item.address, 60, '...')}</a>
-                                        <button 
-                                            class="text-base-content/50 hover:text-base-content/70" 
-                                            on:click={() => copyToClipboard(item.address, 'Stake address copied to clipboard!')}
-                                            title="Copy stake address"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 capitalize">{item.type}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60 tooltip" data-tip={formatLovelace(item.reward)}>
-                                    {formatAda(item.reward)}
-                                </td>
-                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">{item.earned_epoch}</td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
-        {/if}
-
-        <!-- Pagination Controls (Bottom) -->
-        {#if !loading && rewards.length > 0} 
-            <div class="mt-6 flex justify-between items-center">
-                <button 
-                    class="btn btn-outline btn-sm"
-                    on:click={() => goToPage(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                >
-                    &lt; Previous
-                </button>
-                <span class="text-sm text-base-content/80">Page {currentPage}</span>
-                <button 
-                    class="btn btn-outline btn-sm"
-                    on:click={() => goToPage(currentPage + 1)}
-                    disabled={!hasMore} 
-                >
-                    Next &gt;
-                </button>
-            </div>
-        {/if}
-    </div>
-</div>
-
-<style>
-    /* Add transition for smooth appearance/disappearance */
-    .fixed {
-        transition: opacity 0.3s ease-in-out;
-        z-index: 50;
-    }
-</style> 
+<section class="y-panel overflow-hidden">
+	{#if data.listError}
+		<ErrorBox title="Couldn't load rewards" message={data.listError} />
+	{:else}
+		{#if data.rows.length}
+			<div class="flex items-center justify-between border-b border-line px-4 py-3 text-sm">
+				<span class="text-muted">{data.rows.length} reward{data.rows.length === 1 ? '' : 's'} on this page</span>
+				<span>Total <Ada value={pageTotal} decimals={6} class="font-semibold" /></span>
+			</div>
+		{/if}
+		<DataTable
+			rows={data.rows}
+			columns={[{ key: 'address', label: 'Stake address' }, { key: 'type', label: 'Type' }, { key: 'earned', label: 'Earned in', minor: true }, { key: 'amount', label: 'Amount', align: 'right' }]}
+			key={(r) => `${r.address}-${r.type}-${r.earned_epoch}`}
+			emptyTitle="No rewards for this pool in this epoch"
+			emptyText="Rewards are paid two epochs after they are earned, and only if the pool made blocks."
+		>
+			{#snippet cell(r, key)}
+				{#if key === 'address'}<a class="mono text-[13px] text-ink hover:text-brand" href="/stake/{r.address}">{shorten(r.address, 14, 8)}</a>
+				{:else if key === 'type'}<Badge tone={r.type === 'leader' ? 'violet' : 'ok'}>{r.type}</Badge>
+				{:else if key === 'earned'}<span class="text-muted">{r.earned_epoch ?? '—'}</span>
+				{:else}<Ada value={r.reward ?? r.amount} decimals={6} class="font-semibold" />{/if}
+			{/snippet}
+		</DataTable>
+		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+	{/if}
+</section>
