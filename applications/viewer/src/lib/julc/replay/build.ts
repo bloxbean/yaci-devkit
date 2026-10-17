@@ -164,7 +164,8 @@ function scriptCbor(s: StoreScriptRun): string | null {
 	}
 }
 
-function value(amount: StoreUtxo['amount']): MockValue {
+/** A store amount list as a julc value, in ledger order. */
+export function value(amount: StoreUtxo['amount']): MockValue {
 	const assets = amount
 		.filter((a) => a.unit !== 'lovelace')
 		.map((a) => ({ policyId: a.unit.slice(0, 56), tokenName: a.unit.slice(56), quantity: String(a.quantity) }))

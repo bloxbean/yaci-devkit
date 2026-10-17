@@ -173,6 +173,10 @@ export interface Snapshot {
 	status: string | null;
 	error: string | null;
 	stopReason: string | null;
+	/** Source-debug sessions: the Java line this step belongs to. */
+	javaLocation?: { fileName: string | null; line: number; column: number; fragment: string | null } | null;
+	/** Source-debug sessions: whether Java locals can be read at this step. */
+	localsAvailability?: string | null;
 }
 
 export interface Breakpoints {
@@ -237,6 +241,11 @@ export interface JulcClient {
 	debug?: {
 		act(request: { sessionId: string; action: 'timeline'; step?: bigint }): Promise<DebugReply>;
 	};
+	/** Full engine only: compile julc Java (or other julc languages) in the browser. */
+	compiler?: {
+		check(request: { source: string; language: string }): Promise<CheckResponse>;
+		compile(request: { source: string; language: string; blueprint?: boolean }): Promise<CompileResponse>;
+	};
 	/** Full engine only. */
 	uplc?: {
 		evaluateTransaction(request: TransactionRequest): Promise<Evaluation>;
@@ -249,4 +258,42 @@ export interface JulcClient {
 export interface JulcError extends Error {
 	code?: string;
 	status?: number;
+}
+
+/** A compiler message, with its position in the source (1-based). */
+export interface CompilerDiagnostic {
+	level: string | null;
+	code: string | null;
+	message: string | null;
+	startLine: number | null;
+	startCol: number | null;
+	endLine: number | null;
+	endCol: number | null;
+	suggestion: string | null;
+}
+export interface Field {
+	name: string | null;
+	type: string | null;
+}
+/** What `compiler.check` learns from a validator's source: purpose, parameters, datum and redeemer shapes. */
+export interface CheckResponse {
+	valid: boolean;
+	contractName: string | null;
+	purpose: string | null;
+	params: Field[] | null;
+	datumName: string | null;
+	datumFields: Field[] | null;
+	redeemerVariants: { name: string | null; tag: number; fields: Field[] | null }[] | null;
+	redeemerFields: Field[] | null;
+	diagnostics: CompilerDiagnostic[] | null;
+}
+export interface CompileResponse {
+	uplcText: string | null;
+	blueprintJson: string | null;
+	/** CBOR of the script, before parameters are applied; null when compilation failed. */
+	compiledCode: string | null;
+	scriptHash: string | null;
+	scriptSizeBytes: number;
+	params: Field[] | null;
+	diagnostics: CompilerDiagnostic[] | null;
 }
