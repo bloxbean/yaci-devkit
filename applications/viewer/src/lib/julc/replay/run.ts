@@ -97,7 +97,7 @@ async function fixContexts(plans: RunPlan[], results: Record<string, RunResult>,
 	}
 	for (const plan of withContext) {
 		const first = results[plan.key];
-		const fixed = fixContext(first.evaluation!.scriptContextCbor!, plan.language!, entries, plan.hashedDatums, plan.witnessDatums);
+		const fixed = fixContext(first.evaluation!.scriptContextCbor!, plan.language!, entries, plan.hashedDatums, plan.witnessDatums, plan.proposals);
 		if (!fixed) continue;
 		const args = argsFor(plan, fixed.cbor);
 		if (!args) continue;
@@ -109,7 +109,8 @@ async function fixContexts(plans: RunPlan[], results: Record<string, RunResult>,
 				fixed.sortedValues && 'put asset values in ledger order',
 				fixed.completedRedeemers && `added the other ${plans.length - 1} redeemer${plans.length > 2 ? 's' : ''}`,
 				fixed.restoredDatums && 'added the datums given by hash under their on-chain hashes',
-				fixed.v1Shape && 'gave V1 withdrawals and datums their list shape'
+				fixed.v1Shape && 'gave V1 withdrawals and datums their list shape',
+				fixed.restoredProposals && 'put the proposal’s governance action'
 			].filter((d): d is string => !!d);
 			const what = did.length > 1 ? `${did.slice(0, -1).join(', ')} and ${did.at(-1)}` : did[0];
 			set(plan.key, {

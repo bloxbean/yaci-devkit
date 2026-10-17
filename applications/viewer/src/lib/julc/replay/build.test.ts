@@ -5,6 +5,8 @@ import { slotConfigFor, slotToPosixMs } from './slots';
 import withdrawZero from './fixtures/mainnet-withdrawZero.json';
 import v3 from './fixtures/mainnet-v3.json';
 import mint from './fixtures/mainnet-mint.json';
+import proposal from './fixtures/mainnet-proposal.json';
+import { decodePlutusData, type PlutusData } from '$lib/cbor';
 
 /*
  * Fixtures are Mainnet transactions captured from Yaci Store with the same requests as load.ts (script bodies
@@ -101,7 +103,7 @@ describe('buildRuns', () => {
 		expect(buildRuns(byron)[0].skip).toMatch(/Byron/);
 		expect(buildRuns({ ...input, slots: null })[0].skip).toMatch(/Slot times/);
 		const propose = { ...input, scripts: [{ ...input.scripts[0], redeemer: { tag: 'propose', index: 0, data: 'd87980', ex_units: { mem: 1, steps: 1 } } }] };
-		expect(buildRuns(propose)[0].skip).toMatch(/Proposal/);
+		expect(buildRuns(propose)[0].skip).toMatch(/proposal #0/);
 		const cert = { ...input, scripts: [{ ...input.scripts[0], redeemer: { tag: 'cert', index: 0, data: 'd87980', ex_units: { mem: 1, steps: 1 } } }] };
 		expect(buildRuns(cert)[0].skip).toMatch(/certificate/);
 	});
@@ -112,7 +114,7 @@ describe('buildRuns', () => {
 		const [run] = buildRuns(input);
 		expect(run.key).toBe('propose#0');
 		expect(run.language).toBe('V3');
-		expect(run.skip).toMatch(/Proposal/);
+		expect(run.skip).toMatch(/proposal #0/);
 	});
 
 	it('treats a 0 TTL and validity start (how Yaci Store reports none) as no bound', () => {
@@ -135,5 +137,35 @@ describe('buildRuns', () => {
 		const tx = run.request!.transaction;
 		expect(tx.votes.map((v) => v.voter)).toEqual([`script:${input.scripts[0].script_hash}`, `key:${'aa'.repeat(28)}`]);
 		expect(tx.purpose).toEqual({ type: 'vote', target: `script:${input.scripts[0].script_hash}`, voterType: 'drep' });
+	});
+});
+
+describe('buildRuns: proposals', () => {
+	// gov_action14dr5yg75pchr2sz42djtuflpvx5qnsek29qg7s7cft8lzrqt5vrqqtqntpk: guardrail run reproduced exactly in the browser.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const f = proposal as any;
+	const input = (proposals = f.proposals): ReplayInput => ({
+		...inputOf(f),
+		// The store has no script hash or body for proposing runs; load.ts takes the hash from the proposal and fetches the body.
+		scripts: f.scripts.map((s: object) => ({ ...s, script_hash: f.proposals[0].details.policyHash, type: 'plutusV3', script_content: JSON.stringify({ content: '4e4d01000033222220051200120011' }) })),
+		proposals
+	});
+
+	it('rebuilds a proposing run with the real governance action for the context fix', () => {
+		const [run] = buildRuns(input());
+		expect(run.key).toBe('propose#0');
+		expect(run.language).toBe('V3');
+		expect(run.scriptHash).toBe('fa24fb305126805cf2164c161d852a0e7330cf988f1fe558cf7d4a64');
+		expect(run.request!.transaction.purpose).toEqual({ type: 'propose', index: 0 });
+		expect(run.request!.transaction.proposals[0]).toMatchObject({ deposit: '100000000000', actionType: 'parameterChange', guardrail: run.scriptHash });
+		const procedure = decodePlutusData(run.proposals[0]) as { fields: PlutusData[] };
+		expect(procedure.fields[0]).toEqual({ int: '100000000000' });
+		const action = procedure.fields[2] as { constructor: number; fields: PlutusData[] };
+		expect(action.constructor).toBe(0);
+		expect((action.fields[1] as { map: { k: { int: string } }[] }).map.map((e) => e.k.int)).toEqual(['16', '20', '21']);
+	});
+
+	it('skips a proposing run when the store has no proposals', () => {
+		expect(buildRuns(input([]))[0].skip).toMatch(/proposal #0/);
 	});
 });

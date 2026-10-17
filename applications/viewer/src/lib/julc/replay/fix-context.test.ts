@@ -80,3 +80,37 @@ describe('fixContext', () => {
 		expect(info[10]).toEqual(map([b(hashB), c(0)], [b(hashA), i(7)]));
 	});
 });
+
+describe('fixContext: proposals', () => {
+	// julc's placeholder: a parameter change without changes.
+	const placeholder = () => c(0, i(100), c(0, b('aa'.repeat(28))), c(0, c(1), map(), c(0, b('fa'.repeat(28)))));
+	const real = c(0, i(100), c(0, b('aa'.repeat(28))), c(0, c(1), map([i(11), list(i(1), i(10))]), c(0, b('fa'.repeat(28)))));
+	function proposingContext(): string {
+		const info: PlutusData[] = Array.from({ length: 16 }, () => list());
+		info[3] = i(0);
+		info[9] = map([c(5, i(0), placeholder()), c(0)]);
+		info[13] = list(placeholder());
+		return encodePlutusData(c(0, c(0, ...info), c(0), c(5, i(0), placeholder())));
+	}
+
+	it('puts the real procedure into the proposal list, the redeemer purpose and the ScriptInfo', () => {
+		const fixed = fixContext(proposingContext(), 'V3', null, [], [], [encodePlutusData(real)])!;
+		expect(fixed.restoredProposals).toBe(true);
+		const ctx = decodePlutusData(fixed.cbor) as { fields: PlutusData[] };
+		const info = (ctx.fields[0] as { fields: PlutusData[] }).fields;
+		expect(info[13]).toEqual(list(real));
+		expect((info[9] as { map: { k: PlutusData }[] }).map[0].k).toEqual(c(5, i(0), real));
+		expect(ctx.fields[2]).toEqual(c(5, i(0), real));
+	});
+
+	it('leaves V2 contexts and missing proposals alone', () => {
+		expect(fixContext(proposingContext(), 'V3', null, [], [], [])).toBeNull();
+		expect(fixContext(proposingContext(), 'V3', null, [], [], [encodePlutusData(real), encodePlutusData(real)])?.cbor).toBe(encodePlutusData((() => {
+			const d = decodePlutusData(proposingContext()) as { fields: PlutusData[] };
+			const info = (d.fields[0] as { fields: PlutusData[] }).fields;
+			(info[9] as { map: { k: PlutusData }[] }).map[0].k = c(5, i(0), real);
+			d.fields[2] = c(5, i(0), real);
+			return d as PlutusData;
+		})()));
+	});
+});

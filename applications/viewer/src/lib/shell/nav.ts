@@ -15,6 +15,7 @@ import ScrollText from '@lucide/svelte/icons/scroll-text';
 import Users from '@lucide/svelte/icons/users';
 import Vote from '@lucide/svelte/icons/vote';
 import Scale from '@lucide/svelte/icons/scale';
+import ShieldCheck from '@lucide/svelte/icons/shield-check';
 import Gavel from '@lucide/svelte/icons/gavel';
 import Link2 from '@lucide/svelte/icons/link-2';
 import Timer from '@lucide/svelte/icons/timer';
@@ -75,7 +76,8 @@ export const NAV: NavGroup[] = [
 			{ label: 'DRep activity', href: '/governance/drep-registrations', icon: UserPlus, match: ['/governance/drep-'], keywords: 'drep registrations updates retirements' },
 			{ label: 'Votes', href: '/governance/votes', icon: Vote },
 			{ label: 'Committee', href: '/governance/committee', icon: Gavel, keywords: 'cc constitutional' },
-			{ label: 'Constitution', href: '/governance/constitution', icon: Scale }
+			{ label: 'Constitution', href: '/governance/constitution', icon: Scale },
+			{ label: 'Guardrail check', href: '/governance/guardrail', icon: ShieldCheck, keywords: 'constitution policy script parameter change treasury' }
 		]
 	}
 ];

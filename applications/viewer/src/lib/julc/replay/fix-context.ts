@@ -18,6 +18,9 @@ import type { Purpose } from './build';
  *   txInfoData under their on-chain hashes, as the ledger has every datum the transaction witnesses.
  * - V1 shape: julc 0.1.0-pre18 encodes V1's withdrawals and datums as maps, where Plutus V1 has lists of pairs
  *   (fixed on julc main, #233). They are converted, so V1 scripts can read them.
+ * - Proposals (V3): julc builds a parameter change without its changes, and only roughly the other actions, so a
+ *   guardrail script would check an empty proposal. The procedures encoded by governance/action.ts replace julc's
+ *   in txInfoProposalProcedures, in Proposing purposes of the redeemer map and in the ScriptInfo.
  *
  * TxInfo field positions:  V1 [inputs, outputs, fee, mint, …]
  *                          V2 [inputs, refInputs, outputs, fee, mint, certs, wdrl, range, signers, redeemers, …]
@@ -28,6 +31,8 @@ type Constr = { constructor: number; fields: PlutusData[] };
 type Entry = { k: PlutusData; v: PlutusData };
 
 const REDEEMERS = 9;
+const PROPOSALS = 13;
+const PROPOSING = 5;
 const DATA: Record<PlutusVersion, number> = { V1: 8, V2: 10, V3: 10 };
 const LAYOUT: Record<PlutusVersion, { lists: number[]; values: number[]; redeemers: number | null }> = {
 	V1: { lists: [0, 1], values: [2, 3], redeemers: null },
@@ -84,6 +89,7 @@ export interface FixedContext {
 	completedRedeemers: boolean;
 	restoredDatums: boolean;
 	v1Shape?: boolean;
+	restoredProposals?: boolean;
 }
 
 /** Apply the corrections; null when the context isn't in the expected shape or nothing needed changing. */
@@ -92,7 +98,9 @@ export function fixContext(
 	language: PlutusVersion,
 	redeemers: Entry[] | null,
 	hashedDatums: { input: number; hash: string; datum: string }[] = [],
-	witnessDatums: { hash: string; datum: string }[] = []
+	witnessDatums: { hash: string; datum: string }[] = [],
+	/** CBOR of the transaction's ProposalProcedures, in order (V3). */
+	proposals: string[] = []
 ): FixedContext | null {
 	try {
 		const context = decodePlutusData(contextCbor);
@@ -160,8 +168,29 @@ export function fixContext(
 			}
 			if (restoredDatums) data.map.sort(byKey);
 		}
-		if (!sortedValues && !completedRedeemers && !restoredDatums && !v1Shape) return null;
-		return { cbor: encodePlutusData(context), sortedValues, completedRedeemers, restoredDatums, v1Shape };
+		let restoredProposals = false;
+		if (language === 'V3' && proposals.length) {
+			const procedures = proposals.map(decodePlutusData);
+			const list = info.fields[PROPOSALS];
+			if (list && 'list' in list && list.list.length === procedures.length) {
+				info.fields[PROPOSALS] = { list: procedures };
+				restoredProposals = true;
+			}
+			// Proposing [index, procedure], as a redeemer key and as the ScriptInfo.
+			const restore = (purpose: PlutusData | undefined) => {
+				if (!isConstr(purpose) || purpose.constructor !== PROPOSING || purpose.fields.length !== 2) return;
+				const i = Number((purpose.fields[0] as { int?: string }).int ?? -1);
+				if (procedures[i]) {
+					purpose.fields[1] = procedures[i];
+					restoredProposals = true;
+				}
+			};
+			const redeemerMap = info.fields[REDEEMERS];
+			if (isMap(redeemerMap)) for (const e of redeemerMap.map) restore(e.k);
+			if (isConstr(context)) restore(context.fields[2]);
+		}
+		if (!sortedValues && !completedRedeemers && !restoredDatums && !v1Shape && !restoredProposals) return null;
+		return { cbor: encodePlutusData(context), sortedValues, completedRedeemers, restoredDatums, v1Shape, restoredProposals };
 	} catch {
 		return null;
 	}

@@ -1,5 +1,5 @@
 import { api, tryApi } from '$lib/api/client';
-import { purposeOf, type ReplayInput, type StoreCert, type StoreScriptRun, type StoreUtxo, type StoreVote } from './build';
+import { purposeOf, type ReplayInput, type StoreCert, type StoreProposal, type StoreScriptRun, type StoreUtxo, type StoreVote } from './build';
 import { slotConfigFor, type Genesis } from './slots';
 
 /*
@@ -41,12 +41,13 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 	// Certificates and votes are only fetched when a script runs for one: some stores don't allow these
 	// endpoints from the browser (no CORS), and most transactions have neither.
 	const tags = new Set(page.scripts.map((s) => purposeOf((typeof s.redeemer === 'string' ? safeJson(s.redeemer) : s.redeemer)?.tag)));
-	const [epochParams, genesis, votes, stakes, delegations] = await Promise.all([
+	const [epochParams, genesis, votes, stakes, delegations, proposals] = await Promise.all([
 		page.epoch != null ? tryApi<ReplayInput['params']>(`/epochs/${page.epoch}/parameters`) : null,
 		tryApi<Genesis>('/genesis'),
 		tags.has('vote') ? tryApi<StoreVote[]>(`/governance/votes/txs/${hash}`) : null,
 		tags.has('cert') ? tryApi<BfStake[]>(`/blockfrost/txs/${hash}/stakes`) : null,
-		tags.has('cert') ? tryApi<BfDelegation[]>(`/blockfrost/txs/${hash}/delegations`) : null
+		tags.has('cert') ? tryApi<BfDelegation[]>(`/blockfrost/txs/${hash}/delegations`) : null,
+		tags.has('propose') ? tryApi<StoreProposal[]>(`/governance/proposals/${hash}`) : null
 	]);
 	// A store may lack an epoch's parameters (a devnet's epoch 0): use the latest ones, and say so.
 	const params = epochParams ?? (await api<ReplayInput['params']>('/epochs/latest/parameters'));
@@ -63,9 +64,15 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 		...(Array.isArray(delegations) ? delegations : []).map((d) => ({ cert_index: d.cert_index, type: 'delegation' as const, address: d.address, pool_id: d.pool_id }))
 	];
 
-	// Some stores leave out the script body (or its type) of a run; fetch those by hash.
+	// Some stores leave out the script body (or its type) of a run; fetch those by hash. A proposing run has no
+	// script hash in the store: it is the guardrail its proposal names.
+	const byIndex = new Map((Array.isArray(proposals) ? proposals : []).map((p) => [Number(p.index), p]));
 	const scripts = await Promise.all(
-		page.scripts.map(async (s) => {
+		page.scripts.map(async (run) => {
+			const r = typeof run.redeemer === 'string' ? safeJson(run.redeemer) : run.redeemer;
+			const guardrail = !run.script_hash && purposeOf(r?.tag) === 'propose' ? byIndex.get(Number(r?.index ?? 0))?.details?.policyHash : null;
+			const s = guardrail ? { ...run, script_hash: guardrail } : run;
+			if (!s.script_hash) return s;
 			if (!s.redeemer || (s.script_content && s.type)) return s;
 			const [info, body] = await Promise.all([s.type ? null : tryApi<{ type?: string }>(`/scripts/${s.script_hash}`), s.script_content ? null : tryApi<{ cbor?: string }>(`/scripts/${s.script_hash}/cbor`)]);
 			return { ...s, type: s.type ?? info?.type ?? null, script_content: s.script_content ?? (body?.cbor ? JSON.stringify({ content: body.cbor }) : null) };
@@ -81,6 +88,7 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 		mints: page.mints,
 		votes: Array.isArray(votes) ? votes : [],
 		certificates,
+		proposals: Array.isArray(proposals) ? proposals : [],
 		datums,
 		params,
 		slots: slotConfigFor(genesis?.network_magic, genesis)

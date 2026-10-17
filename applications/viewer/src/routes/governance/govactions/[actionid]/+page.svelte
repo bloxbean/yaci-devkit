@@ -12,6 +12,7 @@
 	import CopyButton from '$lib/ui/CopyButton.svelte';
 	import VoteTally from '$lib/governance/VoteTally.svelte';
 	import AnchorLink from '$lib/governance/AnchorLink.svelte';
+	import GuardrailPanel from '$lib/julc/governance/GuardrailPanel.svelte';
 	import { rewardHexToStake } from '$lib/governance/reward';
 	import { actionLabel, actionTone, statusLabel, statusTone, tallyVotes, voteLabel, voteTone, voterGroup, voterHref, VOTER_LABEL } from '$lib/governance/labels';
 	import ScrollText from '@lucide/svelte/icons/scroll-text';
@@ -70,6 +71,8 @@
 		{/if}
 	</Panel>
 </div>
+
+<GuardrailPanel proposal={p} />
 
 {#if withdrawals.length}
 	<Panel title="Treasury withdrawal" sub="Total {withdrawals.length > 1 ? `to ${withdrawals.length} accounts` : ''}" class="mb-6">

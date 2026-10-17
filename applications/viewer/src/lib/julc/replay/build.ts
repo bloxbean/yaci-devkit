@@ -1,4 +1,6 @@
 import { bech32Decode } from '$lib/bech32';
+import { encodePlutusData } from '$lib/cbor';
+import { encodeAction, encodeProcedure, mockActionType } from '../governance/action';
 import type { DataInput, MockCertificate, MockDatum, MockTransaction, MockTxIn, MockTxOut, MockValue, MockVote, PlutusVersion, Target, TransactionRequest } from '../types';
 import { slotToPosixMs, type SlotConfig } from './slots';
 
@@ -47,6 +49,16 @@ export interface StoreCert {
 	pool_id?: string | null;
 }
 
+/** A proposal of the transaction (/governance/proposals/{tx}). */
+export interface StoreProposal {
+	index: number;
+	type: string;
+	deposit: number | string;
+	return_address: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	details?: any;
+}
+
 export interface ReplayInput {
 	hash: string;
 	tx: {
@@ -63,6 +75,8 @@ export interface ReplayInput {
 	mints: { unit: string; quantity: number | string }[];
 	votes: StoreVote[];
 	certificates: StoreCert[];
+	/** The transaction's proposals, needed by proposing (guardrail) scripts. */
+	proposals?: StoreProposal[];
 	/** CBOR of datums known by hash (for inputs that carry a datum hash). */
 	datums: Record<string, string>;
 	/** The epoch the parameters are from; null when the transaction's own epoch wasn't in the store. */
@@ -72,6 +86,7 @@ export interface ReplayInput {
 		protocol_major_ver?: number | null;
 		max_tx_ex_mem?: number | string | null;
 		max_tx_ex_steps?: number | string | null;
+		[param: string]: unknown;
 	} | null;
 	slots: SlotConfig | null;
 }
@@ -100,6 +115,8 @@ export interface RunPlan {
 	 * fix-context.ts under their on-chain hash (V2/V3). An extra entry is harmless; a missing one breaks lookups.
 	 */
 	witnessDatums: { hash: string; datum: string }[];
+	/** CBOR of the transaction's ProposalProcedures, put into the context by fix-context.ts (julc builds them roughly). */
+	proposals: string[];
 	/** null when this run can't be rebuilt; `skip` says why. */
 	request: TransactionRequest | null;
 	skip?: string;
@@ -178,6 +195,12 @@ function credentialKey(stakeAddress: string): string {
 	return (script ? '0' : '1') + hash;
 }
 
+/** A reward account (hex, header byte first) as a julc credential. */
+function rewardCredential(hex: string): string {
+	const script = (parseInt(hex.slice(0, 2), 16) & 0x10) !== 0;
+	return (script ? 'script:' : 'key:') + hex.slice(2);
+}
+
 const VOTERS: Record<string, { voterType: MockVote['voterType']; prefix: string; order: number }> = {
 	CONSTITUTIONAL_COMMITTEE_HOT_SCRIPT_HASH: { voterType: 'committee', prefix: 'script:', order: 0 },
 	CONSTITUTIONAL_COMMITTEE_HOT_KEY_HASH: { voterType: 'committee', prefix: 'key:', order: 1 },
@@ -218,6 +241,7 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 	const refs = [...(tx.reference_inputs ?? [])].sort(byRef);
 	const outputs = [...tx.outputs].sort((a, b) => a.output_index - b.output_index);
 	const runs = input.scripts.map((s) => ({ s, r: redeemerOf(s) })).filter((x) => x.r?.tag);
+	const proposals = [...(input.proposals ?? [])].sort((a, b) => a.index - b.index);
 
 	// Datums the scripts endpoint resolved for spent inputs are as good as /scripts/datum lookups.
 	const datums = { ...input.datums };
@@ -251,8 +275,26 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 		datums: [],
 		txId: input.hash,
 		votes: votes(input.votes),
-		proposals: []
+		proposals: proposals.map((p) => {
+			const c = credentialKey(p.return_address);
+			return {
+				deposit: String(p.deposit),
+				returnCredential: (c.startsWith('0') ? 'script:' : 'key:') + c.slice(1),
+				actionType: mockActionType(p.type),
+				guardrail: p.details?.policyHash ?? null,
+				withdrawals: p.type === 'TREASURY_WITHDRAWALS_ACTION' ? Object.entries(p.details?.withdrawals ?? {}).map(([address, amount]) => ({ credential: rewardCredential(address), amount: String(amount) })) : null
+			};
+		})
 	};
+
+	// The real governance actions, which replace julc's in the context.
+	let procedures: string[] = [];
+	let proceduresError: string | null = null;
+	try {
+		procedures = proposals.map((p) => encodePlutusData(encodeProcedure(p.deposit, p.return_address, encodeAction(p.type, p.details, input.params))));
+	} catch (e) {
+		proceduresError = (e as Error).message;
+	}
 
 	// Datums known by hash go to julc inline (V2/V3) or without their hash (V1), and are restored afterwards.
 	const hashedDatums: RunPlan['hashedDatums'] = [];
@@ -290,12 +332,14 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 			datum: null,
 			hashedDatums: [],
 			witnessDatums: [],
+			proposals: [],
 			request: null,
 			notes: []
 		};
 		const code = scriptCbor(s);
 		const fail = (why: string) => ((plan.skip = why), plan);
-		if (tag === 'propose') return fail('Proposal (guardrail) scripts aren’t supported yet; they are planned with the governance work.');
+		if (tag === 'propose' && !proposals[index]) return fail(`The store did not return proposal #${index} of this transaction.`);
+		if (tag === 'propose' && proceduresError) return fail(`The proposal couldn’t be encoded: ${proceduresError}`);
 		if (!language) return fail('Not a Plutus script.');
 		if (!code) return fail('The store did not return the script code.');
 		if (!r.data) return fail('The store did not return the redeemer data.');
@@ -325,6 +369,9 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 				purpose = { type: 'vote', target: voter.voter, voterType: voter.voterType };
 				break;
 			}
+			case 'propose':
+				purpose = { type: 'propose', index };
+				break;
 			default:
 				return fail(`Unknown purpose “${tag}”.`);
 		}
@@ -334,12 +381,14 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 		if (input.paramsEpoch === null) plan.notes.push('The store has no parameters for this transaction’s epoch, so the latest epoch’s cost model was used.');
 		if (language === 'V1') plan.notes.push('Plutus V1 contexts from julc 0.1.0-pre18 can differ from the ledger’s (V1/V2 translation fixes are on julc main), so some V1 runs fail here although they passed on chain.');
 		if (pv != null && pv !== protocol) plan.notes.push(`Evaluated with protocol ${protocol} rules; the transaction ran under protocol ${pv}.`);
+		if (pv === 10 && language === 'V3') plan.notes.push('Under protocol 10 the ledger costed some builtins differently from julc, so CPU can differ slightly from the declared budget (memory is unaffected).');
 
 		const target: Target = { language: `Plutus${language}`, protocol };
 		const costs = input.params?.cost_models_raw?.[`Plutus${language}`];
 		if (!costs?.length) plan.notes.push('The store has no cost model for this epoch, so julc’s built-in one was used.');
 		plan.hashedDatums = language === 'V1' ? v1HashedDatums : hashedDatums;
 		plan.witnessDatums = witnessDatums;
+		plan.proposals = language === 'V3' ? procedures : [];
 		plan.request = {
 			script: { script: code, language },
 			transaction: { ...common, inputs: language === 'V1' ? v1Inputs : inlinedInputs, purpose, redeemer: cbor(r.data) },

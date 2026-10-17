@@ -89,7 +89,17 @@ export interface MockTransaction {
 	datums: DataInput[];
 	txId: string;
 	votes: MockVote[];
-	proposals: [];
+	proposals: MockProposal[];
+}
+/** A governance proposal; julc builds its action roughly (governance/action.ts encodes the real one). */
+export interface MockProposal {
+	deposit: string;
+	/** "key:<hash>" or "script:<hash>". */
+	returnCredential: string;
+	actionType: string;
+	/** The guardrail (policy) script hash. */
+	guardrail: string | null;
+	withdrawals: { credential: string; amount: string }[] | null;
 }
 
 export interface Target {
@@ -230,6 +240,8 @@ export interface JulcClient {
 	/** Full engine only. */
 	uplc?: {
 		evaluateTransaction(request: TransactionRequest): Promise<Evaluation>;
+		/** julc's sample transaction for a purpose (one key input and output). */
+		defaultTransaction?(request: { purpose: MockPurpose['type'] }): Promise<MockTransaction>;
 	};
 }
 
