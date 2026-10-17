@@ -185,3 +185,22 @@ test('proposal page runs the proposal’s guardrail', async ({ page }) => {
 	await expect(page.locator('[data-verdict=accepted]')).toBeVisible({ timeout: 60_000 });
 	await expect(page.getByText('allowed').first()).toBeVisible();
 });
+
+test('validator lab: compile Java, run it, and find the failing line', async ({ page }) => {
+	test.setTimeout(120_000);
+	await page.goto('/scripts/lab');
+	await page.waitForSelector('html[data-ready]');
+	test.skip(!(await page.evaluate(supported)), 'This browser can’t run the julc engine');
+	const owner = 'a0f1aa7dca95017c11e7e373aebcf0c4568cf47ec12b94f8eb5bba8b';
+	await page.getByRole('button', { name: 'Owner only' }).click();
+	await page.getByPlaceholder('hex, e.g. a key hash').fill(owner, { timeout: 60_000 });
+	await page.getByLabel('Add a signer').fill(owner);
+	await page.getByRole('button', { name: 'Add', exact: true }).click();
+	await expect(page.locator('[data-verdict=accepted]')).toBeVisible({ timeout: 30_000 });
+	await page.getByRole('button', { name: `Remove signer ${owner}` }).click();
+	await expect(page.locator('[data-verdict=rejected]')).toBeVisible({ timeout: 30_000 });
+	await expect(page.getByText('not signed by the owner', { exact: true })).toBeVisible();
+	await expect(page.getByText(/Failed on/)).toBeVisible({ timeout: 30_000 });
+	await page.getByRole('button', { name: 'Debug the Java' }).click();
+	await expect(page.locator('#lab-debugger [data-current]')).toBeVisible({ timeout: 30_000 });
+});

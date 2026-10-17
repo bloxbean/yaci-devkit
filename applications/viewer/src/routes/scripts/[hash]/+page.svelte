@@ -20,6 +20,7 @@
 	import { tryDecodePlutusData } from '$lib/cbor';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import FileCode from '@lucide/svelte/icons/file-code';
+	import FlaskConical from '@lucide/svelte/icons/flask-conical';
 	import Coins from '@lucide/svelte/icons/coins';
 	import Wallet from '@lucide/svelte/icons/wallet';
 
@@ -62,6 +63,7 @@
 	</div>
 	{#snippet actions()}
 		<Badge tone={plutus ? 'violet' : 'cyan'}>{label}</Badge>
+		{#if plutus && data.cbor}<a class="y-btn h-8 text-xs" href="/scripts/lab?script={data.hash}" title="Run this script against UTxOs of your choice"><FlaskConical class="h-3.5 w-3.5" />Validator lab</a>{/if}
 	{/snippet}
 </PageHeader>
 

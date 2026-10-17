@@ -25,6 +25,11 @@ A live Cardano explorer for your Yaci DevKit devnet, or any [Yaci Store](https:/
   - check a draft parameter change or treasury withdrawal against the constitution's guardrail script before it is
     submitted (`/governance/guardrail`): the verdict updates as you type, says which parameter the guardrail rejects,
     and the run can be debugged and shared as a link; proposal pages show what a change does and run its guardrail.
+  - try a validator against real chain state in the validator lab (`/scripts/lab`): write it in Java (compiled in the
+    browser by julc, with typed datum and redeemer views and its `plutus.json`), paste a compiled script or pick one on
+    chain, then spend a real UTxO as if it were locked at it (or mint, or withdraw) with your redeemer, datum, signers,
+    validity range and withdrawals. The verdict, budget and traces update as you type; a rejected Java validator shows
+    the line it failed on, and runs open in the UPLC debugger or the (experimental) Java source debugger.
 - Addresses, stake accounts, assets, epochs and protocol parameters, pools, rewards, certificates, Ada pots and
   Conway governance.
 - Light and dark themes; works on a phone.

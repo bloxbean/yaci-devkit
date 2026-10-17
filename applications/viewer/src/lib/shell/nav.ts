@@ -16,6 +16,7 @@ import Users from '@lucide/svelte/icons/users';
 import Vote from '@lucide/svelte/icons/vote';
 import Scale from '@lucide/svelte/icons/scale';
 import ShieldCheck from '@lucide/svelte/icons/shield-check';
+import FlaskConical from '@lucide/svelte/icons/flask-conical';
 import Gavel from '@lucide/svelte/icons/gavel';
 import Link2 from '@lucide/svelte/icons/link-2';
 import Timer from '@lucide/svelte/icons/timer';
@@ -46,7 +47,8 @@ export const NAV: NavGroup[] = [
 			{ label: 'Epochs', href: '/epochs', icon: Timer, keywords: 'protocol parameters params' },
 			{ label: 'Addresses', href: '/addresses', icon: Wallet, match: ['/stake'], keywords: 'wallet balance utxo' },
 			{ label: 'Assets', href: '/assets', icon: Coins, keywords: 'tokens nft policy mint' },
-			{ label: 'Script monitor', href: '/scripts/monitor', icon: Activity, keywords: 'script lab julc plutus live re-run debugger budget' }
+			{ label: 'Script monitor', href: '/scripts/monitor', icon: Activity, keywords: 'script lab julc plutus live re-run debugger budget' },
+			{ label: 'Validator lab', href: '/scripts/lab', icon: FlaskConical, keywords: 'java julc compile validator test utxo' }
 		]
 	},
 	{

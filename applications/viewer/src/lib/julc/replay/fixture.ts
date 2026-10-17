@@ -11,7 +11,7 @@ export function fixtureOf(txHash: string, result: RunResult, fork: { edits: Fork
 	return {
 		format: 'yaci-viewer/script-run@1',
 		source: { tx: txHash, purpose: plan.purpose, index: plan.index, ...(fork ? { fork } : {}) },
-		script: { hash: plan.scriptHash, language: plan.language, cbor: req.script.script },
+		script: { hash: plan.scriptHash, language: plan.language, cbor: req.script.script, ...(req.script.params?.length ? { params: req.script.params.map((p) => p.value) } : {}) },
 		target: req.target,
 		costModel: req.costModel?.parameters.map(String) ?? null,
 		limits: { cpu: req.maxCpu?.toString() ?? null, mem: req.maxMem?.toString() ?? null },
