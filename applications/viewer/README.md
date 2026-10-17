@@ -14,7 +14,10 @@ A live Cardano explorer for your Yaci DevKit devnet, or any [Yaci Store](https:/
     on chain, and see the exact ScriptContext the validator received;
   - step through any run in a time-travel debugger: step, over, out, continue and back, breakpoints on lines,
     builtins, traces and failures, environment, frames and budget per step, and links to an exact step
-    (`/transactions/<hash>/debug/<purpose>/<index>?step=N`).
+    (`/transactions/<hash>/debug/<purpose>/<index>?step=N`);
+  - fork a transaction in the what-if lab (`/transactions/<hash>/fork`): edit redeemers, datums, signers, the validity
+    range, outputs, mint, withdrawals, fee, the cost model's epoch or the protocol version, and every script runs again
+    as you type, next to the on-chain result; debug the forked runs and export any run as a JSON test fixture.
 - Addresses, stake accounts, assets, epochs and protocol parameters, pools, rewards, certificates, Ada pots and
   Conway governance.
 - Light and dark themes; works on a phone.

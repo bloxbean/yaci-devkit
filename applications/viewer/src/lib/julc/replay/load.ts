@@ -86,3 +86,6 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 		slots: slotConfigFor(genesis?.network_magic, genesis)
 	};
 }
+
+/** Another epoch's parameters (cost models, protocol version), to run a transaction under them. */
+export const loadParams = (epoch: number) => api<ReplayInput['params']>(`/epochs/${epoch}/parameters`);
