@@ -16,7 +16,7 @@
 	import UtxoFlow from '$lib/tx/UtxoFlow.svelte';
 	import UtxoCard from '$lib/tx/UtxoCard.svelte';
 	import BalanceBar from '$lib/tx/BalanceBar.svelte';
-	import ScriptCard from '$lib/tx/ScriptCard.svelte';
+	import ScriptRuns from '$lib/julc/ScriptRuns.svelte';
 	import DatumDialog from '$lib/tx/DatumDialog.svelte';
 	import { sumLovelace, type Utxo } from '$lib/tx/types';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
@@ -132,11 +132,12 @@
 		{#if active === 'utxos'}
 			<UtxoFlow inputs={tx.inputs} outputs={tx.outputs} fee={tx.fees} ondatum={(u) => (datumOf = u)} />
 		{:else if active === 'scripts'}
-			<div class="grid gap-4">
-				{#each data.scripts as s, i (s.script_hash + i)}
-					<ScriptCard script={s} maxMem={data.limits.mem} maxSteps={data.limits.steps} />
-				{/each}
-			</div>
+			<ScriptRuns
+				page={{ hash: tx.hash, tx, scripts: data.scripts, withdrawals: data.withdrawals, mints: data.mints, epoch: data.block?.epoch ?? null }}
+				invalid={!!tx.invalid}
+				maxMem={data.limits.mem}
+				maxSteps={data.limits.steps}
+			/>
 		{:else if active === 'mints'}
 			<div class="overflow-x-auto">
 				<table class="w-full text-sm">

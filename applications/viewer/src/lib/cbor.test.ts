@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodePlutusData, tryDecodePlutusData } from './cbor';
+import { decodePlutusData, encodePlutusData, tryDecodePlutusData, type PlutusData } from './cbor';
 
 describe('decodePlutusData', () => {
 	it('decodes constructors', () => {
@@ -26,5 +26,31 @@ describe('decodePlutusData', () => {
 		expect(tryDecodePlutusData('zz')).toBeNull();
 		expect(tryDecodePlutusData('60')).toBeNull(); // text string
 		expect(tryDecodePlutusData(null)).toBeNull();
+	});
+});
+
+describe('encodePlutusData', () => {
+	it('encodes the way the Plutus libraries do', () => {
+		expect(encodePlutusData({ constructor: 0, fields: [] })).toBe('d87980');
+		expect(encodePlutusData({ constructor: 0, fields: [{ int: '42' }, { bytes: 'cafe' }] })).toBe('d8799f182a42cafeff');
+		expect(encodePlutusData({ constructor: 7, fields: [] })).toBe('d9050080');
+		expect(encodePlutusData({ constructor: 200, fields: [] })).toBe('d8668218c880');
+		expect(encodePlutusData({ int: '-1' })).toBe('20');
+		expect(encodePlutusData({ map: [{ k: { int: '1' }, v: { int: '2' } }] })).toBe('a10102');
+		expect(encodePlutusData({ int: (1n << 64n).toString() })).toBe('c249010000000000000000');
+		expect(encodePlutusData({ int: (-(1n << 64n) - 1n).toString() })).toBe('c349010000000000000000');
+		expect(encodePlutusData({ int: (-(1n << 64n)).toString() })).toBe('3bffffffffffffffff');
+	});
+
+	it('round-trips through the decoder, including chunked bytes', () => {
+		const samples: PlutusData[] = [
+			{ bytes: 'ab'.repeat(100) },
+			{ constructor: 2, fields: [{ list: [{ map: [] }, { int: '18446744073709551615' }, { int: '-18446744073709551617' }] }] },
+			{ map: [{ k: { bytes: '' }, v: { constructor: 130, fields: [{ int: '0' }] } }, { k: { bytes: '' }, v: { list: [] } }] }
+		];
+		for (const d of samples) expect(decodePlutusData(encodePlutusData(d))).toEqual(d);
+		const long = encodePlutusData({ bytes: 'ab'.repeat(100) });
+		expect(long.startsWith('5f5840')).toBe(true);
+		expect(long.endsWith('ff')).toBe(true);
 	});
 });

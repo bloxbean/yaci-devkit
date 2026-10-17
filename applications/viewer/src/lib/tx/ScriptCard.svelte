@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import Hash from '$lib/ui/Hash.svelte';
 	import Badge from '$lib/ui/Badge.svelte';
 	import PlutusView from '$lib/ui/PlutusView.svelte';
@@ -16,11 +17,14 @@
 	let {
 		script,
 		maxMem = 14_000_000,
-		maxSteps = 10_000_000_000
+		maxSteps = 10_000_000_000,
+		children = undefined
 	}: {
-		script: { script_hash: string; type?: string; redeemer?: string | Redeemer | null; datum?: string | null; datum_hash?: string | null };
+		script: { script_hash: string; type?: string | null; redeemer?: string | Redeemer | null; datum?: string | null; datum_hash?: string | null };
 		maxMem?: number;
 		maxSteps?: number;
+		/** Extra content at the bottom, e.g. a Script Lab re-run result. */
+		children?: Snippet;
 	} = $props();
 
 	const r = $derived.by<Redeemer | null>(() => {
@@ -67,4 +71,5 @@
 		{#if r?.data}<PlutusView cbor={r.data} label="Redeemer" />{/if}
 		{#if script.datum}<PlutusView cbor={script.datum} label="Datum {script.datum_hash ? '· ' + script.datum_hash.slice(0, 8) + '…' : ''}" />{/if}
 	</div>
+	{#if children}{@render children()}{/if}
 </article>

@@ -8,8 +8,10 @@ A live Cardano explorer for your Yaci DevKit devnet, or any [Yaci Store](https:/
   transaction, address, stake address, pool, DRep, policy, asset, fingerprint, script, datum or epoch.
 - **Transactions you can read:** inputs flow into outputs, scripts show their execution budget, redeemers and datums
   are decoded from CBOR, plus mints, metadata, collateral, reference inputs and the raw JSON.
-- **Script Lab:** decode any Plutus script into searchable UPLC, see the builtins it uses and verify its hash. It runs
-  in your browser with the [julc](https://github.com/bloxbean/julc) WebAssembly engine.
+- **Script Lab:** in your browser, with the [julc](https://github.com/bloxbean/julc) WebAssembly engine:
+  - decode any Plutus script into searchable UPLC, see the builtins it uses and verify its hash;
+  - re-run every script of a transaction with the cost model of its epoch, compare the budget with what was declared
+    on chain, and see the exact ScriptContext the validator received.
 - Addresses, stake accounts, assets, epochs and protocol parameters, pools, rewards, certificates, Ada pots and
   Conway governance.
 - Light and dark themes; works on a phone.
@@ -69,7 +71,12 @@ into `static/julc/` (git-ignored). The engine is only downloaded by the browser 
   release's `julc-wasm-<version>-SHA256SUMS.txt`.
 - The engine needs WebAssembly GC and exception handling (exnref): current Chrome, Edge, Firefox and Safari. Other
   browsers get a message instead. Playwright's bundled Chromium is too old, so run the Script Lab test with Chrome:
-  `SCRIPT_LAB_HASH=<plutus script hash> PW_CHANNEL=chrome npx playwright test script-lab`.
+  `SCRIPT_LAB_HASH=<plutus script hash> SCRIPT_LAB_TX=<tx with redeemers> PW_CHANNEL=chrome npx playwright test script-lab`.
+- Re-runs rebuild the transaction from Yaci Store data (`src/lib/julc/replay/`). Until julc builds contexts exactly
+  as the ledger does ([julc#244](https://github.com/bloxbean/julc/issues/244)), the viewer corrects julc's context
+  (asset order, the other redeemers, datums given by hash, Plutus V1 shapes) and runs the script again; each result
+  says what was corrected. Proposal (guardrail) scripts and most certificate kinds aren't replayed yet, and Plutus V1
+  (pre-2023 history) is partly reproduced.
 
 SvelteKit 2, Svelte 5 and Tailwind. Shared code lives in `src/lib`: `api/` (Yaci Store client), `live/` (WebSocket
 with a polling fallback), `ui/` (components), `shell/` (layout, navigation, search), `julc/` (Script Lab) and `format.ts`, `cbor.ts`,
