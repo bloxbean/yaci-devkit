@@ -12,6 +12,10 @@ A live Cardano explorer for your Yaci DevKit devnet, or any [Yaci Store](https:/
   - decode any Plutus script into searchable UPLC, see the builtins it uses and verify its hash;
   - re-run every script of a transaction with the cost model of its epoch, compare the budget with what was declared
     on chain, and see the exact ScriptContext the validator received;
+  - when Yaci Store saves transaction CBOR (`store.transaction.save-cbor`), replays use the transaction's own bytes
+    (exact redeemers, witnessed datums, outputs, certificates and proposals) and a CBOR tab shows those bytes as a tree,
+    checked against the transaction id; otherwise the transaction is rebuilt from the store's JSON, and every replay
+    says which source it used;
   - step through any run in a time-travel debugger: step, over, out, continue and back, breakpoints on lines,
     builtins, traces and failures, environment, frames and budget per step, and links to an exact step
     (`/transactions/<hash>/debug/<purpose>/<index>?step=N`);

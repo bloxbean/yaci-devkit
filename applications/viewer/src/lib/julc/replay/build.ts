@@ -44,7 +44,8 @@ export interface StoreVote {
 
 export interface StoreCert {
 	cert_index: number;
-	type: 'registration' | 'deregistration' | 'delegation';
+	/** 'other': a certificate kind julc can't put into a context yet (julc#244), kept so indexes stay right. */
+	type: 'registration' | 'deregistration' | 'delegation' | 'other';
 	address: string;
 	pool_id?: string | null;
 }
@@ -89,6 +90,12 @@ export interface ReplayInput {
 		[param: string]: unknown;
 	} | null;
 	slots: SlotConfig | null;
+	/** Where the transaction came from: its stored CBOR (exact) or Yaci Store's JSON (rebuilt). */
+	source?: 'cbor' | 'store';
+	/** The datums the transaction witnesses, when known exactly (from its CBOR); otherwise they are inferred. */
+	witnessDatums?: { hash: string; datum: string }[];
+	/** The ProposalProcedures as Plutus data CBOR, when known exactly (from its CBOR); otherwise encoded from JSON. */
+	procedures?: string[];
 }
 
 export type Purpose = 'spend' | 'mint' | 'reward' | 'cert' | 'vote' | 'propose';
@@ -122,6 +129,8 @@ export interface RunPlan {
 	skip?: string;
 	/** What may differ from the ledger's context, shown with the result. */
 	notes: string[];
+	/** Rebuilt from the transaction's stored CBOR (exact) or from Yaci Store's JSON (the store has no CBOR). */
+	source?: 'cbor' | 'store';
 }
 
 const hexCmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
@@ -225,8 +234,8 @@ function votes(list: StoreVote[]): MockVote[] {
 
 function certificates(list: StoreCert[]): { certs: MockCertificate[]; complete: boolean } {
 	const sorted = [...list].sort((a, b) => a.cert_index - b.cert_index);
-	const complete = sorted.every((c, i) => c.cert_index === i);
-	const certs = sorted.map<MockCertificate>((c) =>
+	const complete = sorted.every((c, i) => c.cert_index === i && c.type !== 'other');
+	const certs = sorted.filter((c) => c.type !== 'other').map<MockCertificate>((c) =>
 		c.type === 'delegation'
 			? { type: 'delegStaking', credential: c.address, poolId: c.pool_id ?? null }
 			: { type: c.type === 'registration' ? 'regStaking' : 'unregStaking', credential: c.address }
@@ -292,7 +301,7 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 	let procedures: string[] = [];
 	let proceduresError: string | null = null;
 	try {
-		procedures = proposals.map((p) => encodePlutusData(encodeProcedure(p.deposit, p.return_address, encodeAction(p.type, p.details, input.params))));
+		procedures = input.procedures ?? proposals.map((p) => encodePlutusData(encodeProcedure(p.deposit, p.return_address, encodeAction(p.type, p.details, input.params))));
 	} catch (e) {
 		proceduresError = (e as Error).message;
 	}
@@ -312,10 +321,13 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 		return { ...i, datum: { kind: 'hash' as const, hash: '', data: i.datum.data } };
 	});
 
-	const witnessDatums = [...new Set([...inputs, ...outputs].map((u) => u.data_hash).filter((h): h is string => !!h && !!datums[h]))].map((hash) => ({
-		hash,
-		datum: datums[hash]
-	}));
+	const witnessDatums =
+		input.witnessDatums ??
+		[...new Set([...inputs, ...outputs].map((u) => u.data_hash).filter((h): h is string => !!h && !!datums[h]))].map((hash) => ({
+			hash,
+			datum: datums[hash]
+		}));
+	const source = input.source ?? 'store';
 
 	return runs.map(({ s, r }) => {
 		const tag = purposeOf(r.tag) ?? (String(r.tag) as Purpose);
@@ -335,7 +347,8 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 			witnessDatums: [],
 			proposals: [],
 			request: null,
-			notes: []
+			notes: [],
+			source
 		};
 		const code = scriptCbor(s);
 		const fail = (why: string) => ((plan.skip = why), plan);

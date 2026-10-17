@@ -5,6 +5,7 @@
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import Hash from '$lib/ui/Hash.svelte';
 	import DataEditor from './DataEditor.svelte';
+	import SourceBadge from '../SourceBadge.svelte';
 	import Debugger from '../debug/Debugger.svelte';
 	import { julc, wasmSupported } from '../engine.svelte';
 	import { buildRuns, type ReplayInput, type RunPlan } from '../replay/build';
@@ -380,6 +381,7 @@
 						{#if editCount}<button class="y-btn h-8 px-2.5 text-xs" onclick={resetAll}><RotateCcw class="h-3.5 w-3.5" />Reset</button>{/if}
 					</span>
 				</div>
+				{#if plans[0]?.source}<div class="mt-3 border-t border-brand/15 pt-3"><SourceBadge source={plans[0].source} /></div>{/if}
 			</div>
 
 			{#each plans as p (p.key)}

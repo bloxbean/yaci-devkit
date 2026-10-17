@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SourceBadge from '$lib/julc/SourceBadge.svelte';
 	import { onDestroy, onMount, untrack } from 'svelte';
 	import { chain } from '$lib/live/chain.svelte';
 	import { num, shorten } from '$lib/format';
@@ -125,6 +126,7 @@
 						<a class="mono font-medium text-brand hover:underline" href="/transactions/{e.hash}?tab=scripts">{shorten(e.hash, 10, 8)}</a>
 						<a class="text-xs text-muted hover:text-ink" href="/blocks/{e.block}">block #{num(e.block)}</a>
 						<span class="text-xs text-faint"><TimeAgo ts={e.time} /></span>
+						<SourceBadge source={e.source} compact />
 						<span class="ml-auto text-xs tabular-nums text-faint">{e.ms} ms</span>
 						<a class="flex items-center gap-1 text-xs font-medium text-muted hover:text-brand" href="/transactions/{e.hash}/fork"><GitFork class="h-3.5 w-3.5" />Fork</a>
 					</div>

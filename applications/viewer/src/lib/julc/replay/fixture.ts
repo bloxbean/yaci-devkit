@@ -20,7 +20,9 @@ export function fixtureOf(txHash: string, result: RunResult, fork: { edits: Fork
 		scriptContext: evaluation?.scriptContextCbor ?? null,
 		expected: evaluation ? { status: evaluation.status, accepted: evaluation.accepted, cpu: evaluation.cpu.toString(), mem: evaluation.mem.toString(), traces: evaluation.traces ?? [] } : null,
 		declared: plan.declared ? { cpu: plan.declared.steps.toString(), mem: plan.declared.mem.toString() } : null,
-		notes: plan.notes
+		notes: plan.notes,
+		/** cbor: replayed from the transaction's stored CBOR; store: rebuilt from Yaci Store's JSON. */
+		transactionSource: plan.source ?? 'store'
 	};
 }
 
