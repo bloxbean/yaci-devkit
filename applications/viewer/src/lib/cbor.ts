@@ -144,3 +144,75 @@ export function tryDecodePlutusData(hex: string | null | undefined): PlutusData 
 		return null;
 	}
 }
+
+// Not `'constructor' in d`: every object inherits a `constructor` property.
+const isConstr = (d: PlutusData): d is { constructor: number; fields: PlutusData[] } => typeof (d as { constructor: unknown }).constructor === 'number';
+
+/*
+ * Encode Plutus data to CBOR hex the way the Plutus libraries do: indefinite-length lists (definite when empty),
+ * byte strings over 64 bytes in 64-byte chunks, integers beyond 64 bits as bignums, and constructor tags
+ * 121-127 / 1280-1400 / 102. Used to hand a modified ScriptContext back to the julc VM.
+ */
+export function encodePlutusData(d: PlutusData): string {
+	const out: number[] = [];
+	const head = (major: number, n: bigint) => {
+		const m = major << 5;
+		if (n < 24n) out.push(m | Number(n));
+		else if (n < 0x100n) out.push(m | 24, Number(n));
+		else if (n < 0x10000n) out.push(m | 25, Number(n >> 8n), Number(n & 0xffn));
+		else if (n < 0x100000000n) out.push(m | 26, ...[24n, 16n, 8n, 0n].map((s) => Number((n >> s) & 0xffn)));
+		else out.push(m | 27, ...[56n, 48n, 40n, 32n, 24n, 16n, 8n, 0n].map((s) => Number((n >> s) & 0xffn)));
+	};
+	const bytes = (b: number[]) => {
+		if (b.length <= 64) {
+			head(2, BigInt(b.length));
+			out.push(...b);
+			return;
+		}
+		out.push(0x5f);
+		for (let i = 0; i < b.length; i += 64) {
+			const chunk = b.slice(i, i + 64);
+			head(2, BigInt(chunk.length));
+			out.push(...chunk);
+		}
+		out.push(0xff);
+	};
+	const list = (items: PlutusData[]) => {
+		if (!items.length) return out.push(0x80);
+		out.push(0x9f);
+		items.forEach(write);
+		out.push(0xff);
+	};
+	const write = (x: PlutusData): void => {
+		if (isConstr(x)) {
+			const c = x.constructor;
+			if (c <= 6) head(6, BigInt(121 + c));
+			else if (c <= 127) head(6, BigInt(1280 + c - 7));
+			else {
+				head(6, 102n);
+				out.push(0x82);
+				head(0, BigInt(c));
+			}
+			list(x.fields);
+		} else if ('int' in x) {
+			const v = BigInt(x.int);
+			const n = v < 0n ? -1n - v : v;
+			if (n < 1n << 64n) head(v < 0n ? 1 : 0, n);
+			else {
+				head(6, v < 0n ? 3n : 2n);
+				const hex = n.toString(16);
+				bytes((hex.length % 2 ? '0' + hex : hex).match(/../g)!.map((h) => parseInt(h, 16)));
+			}
+		} else if ('bytes' in x) bytes((x.bytes.match(/../g) ?? []).map((h) => parseInt(h, 16)));
+		else if ('list' in x) list(x.list);
+		else {
+			head(5, BigInt(x.map.length));
+			for (const { k, v } of x.map) {
+				write(k);
+				write(v);
+			}
+		}
+	};
+	write(d);
+	return out.map((b) => b.toString(16).padStart(2, '0')).join('');
+}

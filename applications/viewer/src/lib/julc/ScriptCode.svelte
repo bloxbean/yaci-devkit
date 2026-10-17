@@ -96,7 +96,7 @@
 			</button>
 			<label class="mt-3 flex items-center gap-2 text-xs text-muted">
 				<input type="checkbox" class="accent-[rgb(var(--c-brand))]" checked={auto} onchange={(e) => toggleAuto(e.currentTarget.checked)} />
-				Always decode scripts automatically
+				Run Script Lab automatically
 			</label>
 		</div>
 	{:else if failure}
