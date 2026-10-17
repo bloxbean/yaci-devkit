@@ -11,7 +11,8 @@
 	import CopyButton from '$lib/ui/CopyButton.svelte';
 	import Empty from '$lib/ui/Empty.svelte';
 	import NativeScriptTree from '$lib/assets/NativeScriptTree.svelte';
-	import { isPlutus, scriptTypeLabel } from '$lib/assets/script';
+	import { isPlutus, plutusVersionOf, scriptTypeLabel } from '$lib/assets/script';
+	import ScriptCode from '$lib/julc/ScriptCode.svelte';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import Coins from '@lucide/svelte/icons/coins';
 	import Wallet from '@lucide/svelte/icons/wallet';
@@ -20,6 +21,7 @@
 
 	const label = $derived(scriptTypeLabel(data.type));
 	const plutus = $derived(isPlutus(data.type));
+	const plutusVersion = $derived(plutusVersionOf(data.type));
 	const bytes = $derived(data.size ?? (data.cbor ? data.cbor.length / 2 : null));
 	let showCbor = $state(false);
 
@@ -81,14 +83,18 @@
 	</Panel>
 {/if}
 
-<Panel title="CBOR" sub={plutus ? 'Compiled Plutus code. Decompile it with a tool such as aiken or plutus-core.' : undefined}>
-	{#snippet actions()}{#if data.cbor}<CopyButton value={data.cbor} label="CBOR copied" />{/if}{/snippet}
-	{#if data.cbor}
-		<code class="block overflow-auto break-all rounded-xl border border-line bg-bg-2 p-4 text-[12px] leading-relaxed text-muted" style="max-height:{showCbor ? 'none' : '160px'}">{data.cbor}</code>
-		{#if data.cbor.length > 600}
-			<button class="mt-2 text-xs font-medium text-brand hover:underline" onclick={() => (showCbor = !showCbor)}>{showCbor ? 'Show less' : 'Show all'}</button>
+{#if plutus && data.cbor}
+	<ScriptCode hash={data.hash} cbor={data.cbor} language={plutusVersion} />
+{:else}
+	<Panel title="CBOR">
+		{#snippet actions()}{#if data.cbor}<CopyButton value={data.cbor} label="CBOR copied" />{/if}{/snippet}
+		{#if data.cbor}
+			<code class="block overflow-auto break-all rounded-xl border border-line bg-bg-2 p-4 text-[12px] leading-relaxed text-muted" style="max-height:{showCbor ? 'none' : '160px'}">{data.cbor}</code>
+			{#if data.cbor.length > 600}
+				<button class="mt-2 text-xs font-medium text-brand hover:underline" onclick={() => (showCbor = !showCbor)}>{showCbor ? 'Show less' : 'Show all'}</button>
+			{/if}
+		{:else}
+			<Empty title="No CBOR" text="The store didn't return the script body." />
 		{/if}
-	{:else}
-		<Empty title="No CBOR" text="The store didn't return the script body." />
-	{/if}
-</Panel>
+	</Panel>
+{/if}

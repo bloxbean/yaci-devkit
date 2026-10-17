@@ -8,3 +8,4 @@ deno.lock
 .env
 .env.*
 *.log
+static/julc
