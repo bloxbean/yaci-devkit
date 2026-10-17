@@ -17,7 +17,11 @@ A live Cardano explorer for your Yaci DevKit devnet, or any [Yaci Store](https:/
     (`/transactions/<hash>/debug/<purpose>/<index>?step=N`);
   - fork a transaction in the what-if lab (`/transactions/<hash>/fork`): edit redeemers, datums, signers, the validity
     range, outputs, mint, withdrawals, fee, the cost model's epoch or the protocol version, and every script runs again
-    as you type, next to the on-chain result; debug the forked runs and export any run as a JSON test fixture.
+    as you type, next to the on-chain result; debug the forked runs and export any run as a JSON test fixture;
+  - watch scripts live in the script monitor (`/scripts/monitor`): every new script transaction is re-run as its
+    block arrives, with its budget against the per-transaction limits (made for devnets; sampled on public networks);
+  - see a script's recent activity (budgets, redeemer variants) on its page, and attach its CIP-57 blueprint
+    (`plutus.json`) to show datums and redeemers with type, variant and field names.
 - Addresses, stake accounts, assets, epochs and protocol parameters, pools, rewards, certificates, Ada pots and
   Conway governance.
 - Light and dark themes; works on a phone.

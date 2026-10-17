@@ -19,6 +19,7 @@ import Gavel from '@lucide/svelte/icons/gavel';
 import Link2 from '@lucide/svelte/icons/link-2';
 import Timer from '@lucide/svelte/icons/timer';
 import UserPlus from '@lucide/svelte/icons/user-plus';
+import Activity from '@lucide/svelte/icons/activity';
 
 export interface NavItem {
 	label: string;
@@ -43,7 +44,8 @@ export const NAV: NavGroup[] = [
 			{ label: 'Transactions', href: '/transactions', icon: ArrowLeftRight, keywords: 'txs' },
 			{ label: 'Epochs', href: '/epochs', icon: Timer, keywords: 'protocol parameters params' },
 			{ label: 'Addresses', href: '/addresses', icon: Wallet, match: ['/stake'], keywords: 'wallet balance utxo' },
-			{ label: 'Assets', href: '/assets', icon: Coins, keywords: 'tokens nft policy mint' }
+			{ label: 'Assets', href: '/assets', icon: Coins, keywords: 'tokens nft policy mint' },
+			{ label: 'Script monitor', href: '/scripts/monitor', icon: Activity, keywords: 'script lab julc plutus live re-run debugger budget' }
 		]
 	},
 	{

@@ -12,6 +12,7 @@
 	import { runAll, type RunResult } from '../replay/run';
 	import { applyEdits, countEdits, refOf, type ForkEdits } from '../replay/fork';
 	import { downloadJson, fixtureOf } from '../replay/fixture';
+	import { outcome, passed } from '../replay/verdict';
 	import { slotToPosixMs } from '../replay/slots';
 	import GitFork from '@lucide/svelte/icons/git-fork';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
@@ -190,8 +191,6 @@
 	}
 
 	// --- results ---
-	const passed = (r?: RunResult) => !!r && r.state === 'done' && !!r.evaluation && (r.evaluation.accepted ?? r.evaluation.status === 'success');
-	const outcome = (r?: RunResult) => (!r ? 'none' : r.state === 'done' ? (passed(r) ? 'passed' : r.evaluation?.status === 'budgetExhausted' ? 'out of budget' : 'failed') : 'couldn’t run');
 	const delta = (a?: bigint, b?: bigint) => (a == null || b == null || a === 0n ? null : Number(((b - a) * 10000n) / a) / 100);
 	const changedOutcomes = $derived(plans.filter((p) => outcome(original[p.key]) !== outcome(forked[p.key])).length);
 

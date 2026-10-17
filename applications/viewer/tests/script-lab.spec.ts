@@ -125,3 +125,35 @@ test('forks a transaction: an edit re-runs every script and shows what changed',
 	const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export fixture' }).first().click()]);
 	expect(download.suggestedFilename()).toMatch(/\.json$/);
 });
+
+test('script page: activity, and a blueprint names the redeemer variants', async ({ page }) => {
+	test.skip(!hash, 'Set SCRIPT_LAB_HASH to a Plutus script hash on the configured store');
+	await page.goto(`/scripts/${hash}`);
+	await page.waitForSelector('html[data-ready]');
+	const activity = page.locator('section').filter({ hasText: 'Declared CPU per execution' });
+	await expect(activity).toBeVisible({ timeout: 30_000 });
+	await expect(activity.getByText(/^Constr \d+$/).first()).toBeVisible();
+
+	// Attach a blueprint naming constructor 0 of the redeemer; the variants list then uses its name.
+	const blueprint = {
+		preamble: { title: 'test/blueprint', plutusVersion: 'v2' },
+		validators: [{ title: 'test.spend', hash, redeemer: { schema: { title: 'Action', anyOf: [{ title: 'Go', dataType: 'constructor', index: 0, fields: [] }, { title: 'Stop', dataType: 'constructor', index: 1, fields: [] }] } } }]
+	};
+	await page.locator('input[type=file]').setInputFiles({ name: 'plutus.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(blueprint)) });
+	await expect(page.getByText('test/blueprint · 1 validator')).toBeVisible();
+	await expect(activity.getByText(/^Action\.(Go|Stop)$/).first()).toBeVisible();
+	await page.getByRole('button', { name: 'Remove blueprint test/blueprint' }).click();
+	await expect(page.getByText('test/blueprint · 1 validator')).toHaveCount(0);
+});
+
+test('script monitor watches new blocks', async ({ page }) => {
+	await page.goto('/scripts/monitor');
+	if (!(await page.evaluate(supported))) {
+		await expect(page.getByText(/can’t run the julc engine/)).toBeVisible();
+		return;
+	}
+	await expect(page.getByText(/^Watching/)).toBeVisible({ timeout: 30_000 });
+	await expect(page.getByText('Blocks watched')).toBeVisible();
+	await page.getByRole('button', { name: 'Pause' }).click();
+	await expect(page.getByText('Paused')).toBeVisible();
+});
