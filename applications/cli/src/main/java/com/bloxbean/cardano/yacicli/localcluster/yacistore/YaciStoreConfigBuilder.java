@@ -79,6 +79,9 @@ public class YaciStoreConfigBuilder {
 
         storeProperties.put("store.live.enabled", "true");
 
+        // Keep raw tx CBOR so tools (e.g. the viewer) can replay and debug script executions exactly
+        storeProperties.put("store.transaction.save-cbor", "true");
+
         if (yanoOnly) {
             // Explicitly disable N2C-based local epoch endpoint — no Haskell node socket in yano-only mode.
             // The n2c profile (baked into Yaci Store binary) sets this to true by default,
