@@ -245,7 +245,7 @@
 		<div>
 			<p class="font-medium">Can’t debug this run</p>
 			<p class="mt-1 text-muted">{failure}</p>
-			<a class="mt-3 inline-block text-xs font-medium text-brand hover:underline" href="/transactions/{page.hash}?tab=scripts">Back to the transaction’s scripts</a>
+			{#if page.hash}<a class="mt-3 inline-block text-xs font-medium text-brand hover:underline" href="/transactions/{page.hash}?tab=scripts">Back to the transaction’s scripts</a>{/if}
 		</div>
 	</div>
 {:else}

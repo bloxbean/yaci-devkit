@@ -6,12 +6,16 @@ import { expect, test } from '@playwright/test';
  *   SCRIPT_LAB_HASH=<56-hex Plutus script hash> SCRIPT_LAB_TX=<tx hash with Plutus redeemers> \
  *   SCRIPT_LAB_RUN=<purpose/index of one of its runs, default spend/0> PW_CHANNEL=chrome npx playwright test script-lab
  *
+ * The guardrail tests need a constitution with a guardrail script (Mainnet's: committee min size 5 is allowed, 1 is
+ * not); SCRIPT_LAB_PROPOSAL=<tx>_<index> names a parameter-change proposal for the proposal page.
+ *
  * The julc engine needs WebAssembly GC and exnref, which Playwright's bundled Chromium 128 lacks, so use a current
  * browser channel (PW_CHANNEL=chrome). Without support the test checks the "can't run" message instead.
  */
 const hash = process.env.SCRIPT_LAB_HASH;
 const txHash = process.env.SCRIPT_LAB_TX;
 const run = process.env.SCRIPT_LAB_RUN ?? 'spend/0';
+const proposal = process.env.SCRIPT_LAB_PROPOSAL;
 
 const supported = () =>
 	WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0])) &&
@@ -156,4 +160,28 @@ test('script monitor watches new blocks', async ({ page }) => {
 	await expect(page.getByText('Blocks watched')).toBeVisible();
 	await page.getByRole('button', { name: 'Pause' }).click();
 	await expect(page.getByText('Paused')).toBeVisible();
+});
+
+test('guardrail check: a draft is accepted, then rejected, and the rejection can be debugged', async ({ page }) => {
+	await page.goto('/governance/guardrail?p.committeeMinSize=5');
+	await page.waitForSelector('html[data-ready]');
+	test.skip(!(await page.getByText('the constitution’s guardrail', { exact: true }).count()), 'This chain’s constitution has no guardrail script');
+	test.skip(!(await page.evaluate(supported)), 'This browser can’t run the julc engine');
+	await expect(page.locator('[data-verdict=accepted]')).toBeVisible({ timeout: 60_000 });
+	await page.getByLabel('New value for Committee min size').fill('1');
+	await expect(page.locator('[data-verdict=rejected]')).toBeVisible({ timeout: 30_000 });
+	await expect(page).toHaveURL(/p\.committeeMinSize=1/);
+	await page.getByRole('button', { name: 'Debug the rejection' }).click();
+	await expect(page.locator('#guardrail-debugger').getByText(/failure at/)).toBeVisible({ timeout: 30_000 });
+});
+
+test('proposal page runs the proposal’s guardrail', async ({ page }) => {
+	test.skip(!proposal, 'Set SCRIPT_LAB_PROPOSAL to a parameter-change proposal (<tx>_<index>) with a guardrail');
+	await page.goto(`/governance/govactions/${proposal}`);
+	await page.waitForSelector('html[data-ready]');
+	await expect(page.getByText('Proposed changes')).toBeVisible();
+	test.skip(!(await page.evaluate(supported)), 'This browser can’t run the julc engine');
+	await page.getByRole('button', { name: 'Run the guardrail' }).click();
+	await expect(page.locator('[data-verdict=accepted]')).toBeVisible({ timeout: 60_000 });
+	await expect(page.getByText('allowed').first()).toBeVisible();
 });

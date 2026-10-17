@@ -15,6 +15,7 @@ const plan = (over: Partial<RunPlan>): RunPlan => ({
 	datum: '01',
 	hashedDatums: [],
 	witnessDatums: [],
+	proposals: [],
 	request: { script: { script: '4e4d01000033222220051200120011', language: 'V2' }, transaction: {} as never, target: { language: 'PlutusV2', protocol: 11 }, costModel: null, maxCpu: 10n },
 	notes: [],
 	...over
