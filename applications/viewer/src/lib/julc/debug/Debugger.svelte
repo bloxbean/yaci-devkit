@@ -10,6 +10,7 @@
 	import Timeline from './Timeline.svelte';
 	import { julc, wasmSupported } from '../engine.svelte';
 	import { prepareRuns, runAll, vmRequest, type RunResult } from '../replay/run';
+	import type { RunPlan } from '../replay/build';
 	import type { PageTx } from '../replay/load';
 	import type { Breakpoints, DebugReply, DebugSession, Snapshot, Timeline as RunTimeline } from '../types';
 	import SkipBack from '@lucide/svelte/icons/skip-back';
@@ -31,7 +32,21 @@
 	 * Step through one script run of a transaction. The run is rebuilt exactly as on the Scripts tab (same corrected
 	 * context), then julc's VM replays it: every step is addressable, so ?step=N links to an exact machine state.
 	 */
-	let { page, purpose, index }: { page: PageTx; purpose: string; index: number } = $props();
+	let {
+		page,
+		purpose,
+		index,
+		prepared = undefined,
+		syncUrl: keepUrl = true
+	}: {
+		page: PageTx;
+		purpose: string;
+		index: number;
+		/** A run that is already rebuilt and evaluated (e.g. a forked one): debug it as is. Plain objects, not state. */
+		prepared?: { plan: RunPlan; result: RunResult };
+		/** Keep ?step= in the URL (off when the run isn't addressable by URL, like a fork). */
+		syncUrl?: boolean;
+	} = $props();
 
 	const key = $derived(`${purpose}#${index}`);
 	let phase = $state<'checking' | 'preparing' | 'ready' | 'error'>('checking');
@@ -75,23 +90,29 @@
 		phase = 'preparing';
 		failure = null;
 		try {
-			const plans = await prepareRuns(page);
-			const plan = plans.find((p) => p.key === key);
-			if (!plan) return fail(`This transaction has no ${purpose} script run #${index}.`);
-			if (!plan.request) return fail(plan.skip ?? 'This run can’t be rebuilt.');
-			const results: Record<string, RunResult> = {};
-			const engineFailure = await runAll(plans, (k, r) => (results[k] = r));
-			if (engineFailure) return fail(engineFailure);
+			let plan: RunPlan | undefined;
+			let result: RunResult | undefined;
+			if (prepared) ({ plan, result } = prepared);
+			else {
+				const plans = await prepareRuns(page);
+				plan = plans.find((p) => p.key === key);
+				if (!plan) return fail(`This transaction has no ${purpose} script run #${index}.`);
+				if (!plan.request) return fail(plan.skip ?? 'This run can’t be rebuilt.');
+				const results: Record<string, RunResult> = {};
+				const engineFailure = await runAll(plans, (k, r) => (results[k] = r));
+				if (engineFailure) return fail(engineFailure);
+				result = results[key];
+			}
+			if (!plan?.request) return fail(plan?.skip ?? 'This run can’t be rebuilt.');
 			// Keep the plain object for engine requests: reactive state is a proxy, which can't be posted to a worker.
-			const result = results[key];
 			run = result;
 			if (!result?.args) return fail(result?.error ?? 'julc could not build the context for this run.');
 
-			const decoded = await julc.run((c) => c.vm.decode({ script: plan.request!.script }));
+			const decoded = await julc.run((c) => c.vm.decode({ script: plan!.request!.script }));
 			uplc = decoded.uplcText ?? '';
 			builtins = decoded.info?.builtins ?? [];
 
-			const opened = await julc.run((c) => c.vm.debug(vmRequest(plan, result.args!)));
+			const opened = await julc.run((c) => c.vm.debug(vmRequest(plan!, result!.args!)));
 			if (opened.ok === false) return fail(opened.error ?? 'julc could not open a debug session.');
 			session = opened;
 			// A new session hasn't run yet; the `timeline` action runs it once (total steps, traces, failure).
@@ -100,9 +121,9 @@
 			apply(await session.snapshot());
 
 			// Start where the link points: ?step=N, or ?at=failure for the failing step.
-			const wanted = appPage.url.searchParams.get('step');
+			const wanted = keepUrl ? appPage.url.searchParams.get('step') : null;
 			if (wanted && /^\d+$/.test(wanted)) await act((s) => s.goto(BigInt(Math.min(Number(wanted), last))));
-			else if (appPage.url.searchParams.get('at') === 'failure' && errorStep != null) await act((s) => s.goto(BigInt(errorStep)));
+			else if ((keepUrl ? appPage.url.searchParams.get('at') === 'failure' : prepared?.result.evaluation?.status !== 'success') && errorStep != null) await act((s) => s.goto(BigInt(errorStep)));
 			phase = 'ready';
 		} catch (e) {
 			fail((e as Error)?.message ?? String(e));
@@ -151,6 +172,7 @@
 
 	let urlTimer: ReturnType<typeof setTimeout> | undefined;
 	function syncUrl() {
+		if (!keepUrl) return;
 		clearTimeout(urlTimer);
 		urlTimer = setTimeout(() => {
 			const u = new URL(appPage.url);
@@ -242,7 +264,7 @@
 			{/if}
 			<span class="ml-2 text-sm tabular-nums">Step <b>{num(step)}</b> <span class="text-faint">/ {num(last)}</span></span>
 			{#if busy}<LoaderCircle class="h-4 w-4 animate-spin text-brand" />{/if}
-			<button class="y-btn ml-auto h-9 px-3" title="Copy a link to this step" onclick={shareLink}><Link class="h-4 w-4" />Link to this step</button>
+			{#if keepUrl}<button class="y-btn ml-auto h-9 px-3" title="Copy a link to this step" onclick={shareLink}><Link class="h-4 w-4" />Link to this step</button>{/if}
 		</div>
 		<div class="mt-3"><Timeline total={last + 1} current={step} traces={traceSteps} error={errorStep} onseek={goto} /></div>
 		<div class="mt-1 hidden flex-wrap gap-x-4 gap-y-1 text-[11px] text-faint sm:flex">

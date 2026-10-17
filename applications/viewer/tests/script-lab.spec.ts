@@ -97,3 +97,31 @@ test('steps through a script run, with breakpoints and step links', async ({ pag
 	await page.goto(`/transactions/${txHash}/debug/${run}?step=5`);
 	await expect(page.getByText(/^Step 5 \//)).toBeVisible({ timeout: 90_000 });
 });
+
+test('forks a transaction: an edit re-runs every script and shows what changed', async ({ page }) => {
+	test.skip(!txHash, 'Set SCRIPT_LAB_TX to a transaction with Plutus redeemers on the configured store');
+	await page.goto(`/transactions/${txHash}/fork`);
+	if (!(await page.evaluate(supported))) {
+		await expect(page.getByText(/can’t run the julc engine/)).toBeVisible();
+		return;
+	}
+	await expect(page.getByText('Fork vs on chain')).toBeVisible({ timeout: 90_000 });
+	await expect(page.getByText('No changes yet: edit anything on the left')).toBeVisible();
+
+	// Replace the first redeemer with something no validator expects.
+	const editor = page.getByRole('textbox', { name: /#\d+ · / }).first();
+	await editor.fill('{"constructor": 99, "fields": [{"int": 1}]}');
+	await expect(page.getByText(/^1 change/)).toBeVisible();
+	await expect(page.locator('article').getByText('Fork', { exact: true }).first()).toBeVisible();
+
+	// Invalid input is reported and not run.
+	await editor.fill('{"constructor": ');
+	await expect(page.getByText(/JSON|Unexpected/).first()).toBeVisible();
+
+	await page.getByRole('button', { name: 'Reset' }).first().click();
+	await expect(page.getByText('No changes yet: edit anything on the left')).toBeVisible();
+
+	// A run of the fork can be exported as a fixture.
+	const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export fixture' }).first().click()]);
+	expect(download.suggestedFilename()).toMatch(/\.json$/);
+});

@@ -17,6 +17,7 @@
 	import Info from '@lucide/svelte/icons/info';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import Bug from '@lucide/svelte/icons/bug';
+	import GitFork from '@lucide/svelte/icons/git-fork';
 
 	/*
 	 * The transaction's script runs, each re-executable in the browser with julc: the transaction is rebuilt from
@@ -139,6 +140,7 @@
 						<input type="checkbox" class="accent-[rgb(var(--c-brand))]" checked={auto} onchange={(e) => toggleAuto(e.currentTarget.checked)} />
 						Run Script Lab automatically
 					</label>
+					<a class="flex items-center gap-1.5 text-xs font-medium text-brand hover:underline" href="/transactions/{page.hash}/fork"><GitFork class="h-3.5 w-3.5" />Fork this transaction</a>
 				</div>
 			{/if}
 		</div>
