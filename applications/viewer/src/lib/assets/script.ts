@@ -7,3 +7,9 @@ export function scriptTypeLabel(type: string | null | undefined): string {
 }
 
 export const isPlutus = (type: string | null | undefined) => String(type ?? '').toLowerCase().includes('plutus');
+
+/** 'V1' | 'V2' | 'V3' for Plutus script types (plutusV2, PLUTUS_V3, PlutusScriptV1), else null. */
+export function plutusVersionOf(type: string | null | undefined): 'V1' | 'V2' | 'V3' | null {
+	const m = String(type ?? '').match(/plutus\D*v?_?([123])/i);
+	return m ? (`V${m[1]}` as 'V1' | 'V2' | 'V3') : null;
+}

@@ -1,0 +1,8 @@
+{
+	"comment": "julc WebAssembly engine used by Script Lab. Downloaded from the GitHub release by scripts/fetch-julc.mjs and checked against sha256. To upgrade, change tag, version, file and sha256 together (sha256 from the release's julc-wasm-<version>-SHA256SUMS.txt).",
+	"repo": "bloxbean/julc",
+	"tag": "v0.1.0-pre18",
+	"version": "0.1.0-pre18",
+	"file": "julc-wasm-0.1.0-pre18.tar.gz",
+	"sha256": "475cb97719f882ae889f24a341b6f2713e3a7ac0164d32f25e048792936ffa28"
+}

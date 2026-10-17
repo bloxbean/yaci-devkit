@@ -14,7 +14,9 @@ const config: PlaywrightTestConfig = {
 		{
 			name: 'chromium',
 			use: {
-				browserName: 'chromium'
+				browserName: 'chromium',
+				// e.g. PW_CHANNEL=chrome for features the bundled Chromium lacks (the julc engine needs Wasm exnref)
+				channel: process.env.PW_CHANNEL || undefined
 			}
 		}
 	]

@@ -11,7 +11,9 @@
   "homepage": "https://devkit.yaci.xyz/",
   "repository": "github:bloxbean/yaci-devkit",
   "scripts": {
+    "predev": "node scripts/fetch-julc.mjs --optional",
     "dev": "vite dev --host 0.0.0.0",
+    "prebuild": "node scripts/fetch-julc.mjs",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "playwright test",
