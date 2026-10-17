@@ -132,6 +132,66 @@ export interface Evaluation {
 	costModelId?: string;
 }
 
+/** The whole run, known after the first session action. Steps are 0-based machine transitions. */
+export interface Timeline {
+	totalSteps: bigint;
+	traceSteps: bigint[] | null;
+	errorStep: bigint | null;
+	status: string | null;
+	truncated: boolean;
+	cpu: bigint;
+	mem: bigint;
+}
+
+export interface Snapshot {
+	step: bigint;
+	/** 'compute' (about to evaluate a term) or 'return' (returning a value to a frame). */
+	phase: string | null;
+	/** Position in the formatted UPLC (decode / prettyPrint text), 1-based lines and columns. */
+	span: Span | null;
+	termKind: string | null;
+	value: string | null;
+	environment: { name: string | null; value: string | null }[] | null;
+	frames: { kind: string | null; detail: string | null; span: Span | null }[] | null;
+	stackDepth: number;
+	cpu: bigint;
+	mem: bigint;
+	cpuDelta: bigint;
+	memDelta: bigint;
+	traces: string[] | null;
+	finished: boolean;
+	status: string | null;
+	error: string | null;
+	stopReason: string | null;
+}
+
+export interface Breakpoints {
+	lines?: number[];
+	builtins?: string[];
+	onTrace?: boolean;
+	onError?: boolean;
+}
+
+export interface DebugReply {
+	ok: boolean;
+	error: string | null;
+	timeline: Timeline | null;
+	snapshot: Snapshot | null;
+}
+
+/** A debug session in the engine's worker. Going back replays from step 0, which is fast (milliseconds). */
+export interface DebugSession {
+	sessionId: string;
+	isOpen(): boolean;
+	step(): Promise<DebugReply>;
+	goto(step: bigint): Promise<DebugReply>;
+	continue(breakpoints?: Breakpoints): Promise<DebugReply>;
+	over(breakpoints?: Breakpoints): Promise<DebugReply>;
+	out(breakpoints?: Breakpoints): Promise<DebugReply>;
+	snapshot(): Promise<DebugReply>;
+	close(): Promise<{ closed: boolean }>;
+}
+
 export type FeatureGroup = 'vm' | 'debug' | 'compiler' | 'uplc' | 'sourceDebug' | 'sourceDebugLocals';
 
 export interface Features {
@@ -160,6 +220,12 @@ export interface JulcClient {
 		prettyPrint(request: { script: ScriptInput; width?: number }): Promise<{ uplcText: string }>;
 		/** Apply the script to raw arguments (V3: the context; V1/V2: datum, redeemer, context). */
 		evaluate(request: Omit<TransactionRequest, 'transaction'> & { args: DataInput[] }): Promise<Evaluation>;
+		/** Same request as evaluate; the script isn't run until the first action. */
+		debug(request: Omit<TransactionRequest, 'transaction'> & { args: DataInput[] }): Promise<DebugSession & { ok?: boolean; error?: string | null }>;
+	};
+	/** Low-level session protocol; the `timeline` action runs the whole script once and returns its timeline. */
+	debug?: {
+		act(request: { sessionId: string; action: 'timeline'; step?: bigint }): Promise<DebugReply>;
 	};
 	/** Full engine only. */
 	uplc?: {
