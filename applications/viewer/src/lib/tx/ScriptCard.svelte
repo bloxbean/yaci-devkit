@@ -3,6 +3,9 @@
 	import Hash from '$lib/ui/Hash.svelte';
 	import Badge from '$lib/ui/Badge.svelte';
 	import PlutusView from '$lib/ui/PlutusView.svelte';
+	import { blueprints } from '$lib/julc/blueprint/store.svelte';
+	import type { Schema } from '$lib/julc/blueprint/blueprint';
+	import { purposeOf } from '$lib/julc/replay/build';
 	import { num } from '$lib/format';
 	import Cpu from '@lucide/svelte/icons/cpu';
 	import MemoryStick from '@lucide/svelte/icons/memory-stick';
@@ -38,6 +41,11 @@
 		}
 		return script.redeemer;
 	});
+	// A blueprint attached in this browser names the redeemer's and datum's types and fields.
+	const bp = $derived(blueprints.find(script.script_hash, purposeOf(r?.tag)));
+	const schemaOf = (s: Schema | null | undefined) =>
+		bp && s ? { schema: s, definitions: bp.blueprint.definitions, source: `${bp.blueprint.title} · ${bp.validator.title}` } : null;
+
 	const version = $derived((script.type ?? '').replace('PLUTUS_', 'Plutus ').replace('_', ' ').replace('NATIVE_SCRIPT', 'Native'));
 	const memPct = $derived(r?.ex_units ? (r.ex_units.mem / maxMem) * 100 : 0);
 	const stepPct = $derived(r?.ex_units ? (r.ex_units.steps / maxSteps) * 100 : 0);
@@ -68,8 +76,8 @@
 	{/if}
 
 	<div class="mt-4 grid items-start gap-3 {script.datum ? 'xl:grid-cols-2' : ''}">
-		{#if r?.data}<PlutusView cbor={r.data} label="Redeemer" />{/if}
-		{#if script.datum}<PlutusView cbor={script.datum} label="Datum {script.datum_hash ? '· ' + script.datum_hash.slice(0, 8) + '…' : ''}" />{/if}
+		{#if r?.data}<PlutusView cbor={r.data} label="Redeemer" schema={schemaOf(bp?.validator.redeemer)} />{/if}
+		{#if script.datum}<PlutusView cbor={script.datum} label="Datum {script.datum_hash ? '· ' + script.datum_hash.slice(0, 8) + '…' : ''}" schema={schemaOf(bp?.validator.datum)} />{/if}
 	</div>
 	{#if children}{@render children()}{/if}
 </article>

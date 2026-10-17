@@ -1,6 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { tryApi } from '$lib/api/client';
 import { must } from '$lib/api/load';
+import { isPlutus } from '$lib/assets/script';
+import { loadScriptActivity } from '$lib/julc/activity.server';
 import type { PageServerLoad } from './$types';
 
 /* A script by hash: its type and size, the JSON for native scripts, and the CBOR. */
@@ -18,5 +20,13 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 		tryApi<{ cbor: string | null }>(`/scripts/${hash}/cbor`, { fetch })
 	]);
 
-	return { hash, type: info.type ?? null, size: info.serialised_size ?? null, json: json?.json ?? null, cbor: cbor?.cbor ?? null };
+	return {
+		hash,
+		type: info.type ?? null,
+		size: info.serialised_size ?? null,
+		json: json?.json ?? null,
+		cbor: cbor?.cbor ?? null,
+		// Streamed: the page renders without waiting for the execution history.
+		activity: isPlutus(info.type) ? loadScriptActivity(hash, fetch) : null
+	};
 };

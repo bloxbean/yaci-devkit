@@ -7,6 +7,7 @@
 	import { purposeOf, type RunPlan, type StoreScriptRun } from './replay/build';
 	import type { PageTx } from './replay/load';
 	import { prepareRuns, runAll, type RunResult } from './replay/run';
+	import { exact, margin, passed } from './replay/verdict';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
@@ -54,18 +55,6 @@
 
 	const runnable = $derived(page.scripts.filter((s) => keyOf(s)).length);
 	const done = $derived(Object.values(results));
-	const passed = (r: Result) => r.state === 'done' && !!r.evaluation && (r.evaluation.accepted ?? r.evaluation.status === 'success');
-	const exact = (r: Result) => passed(r) && r.plan.declared != null && r.evaluation!.cpu === r.plan.declared.steps && r.evaluation!.mem === r.plan.declared.mem;
-	/**
-	 * Transaction builders often declare the evaluated budget plus a safety margin (e.g. +20%). When memory and CPU
-	 * are both scaled by the same factor, the run is a reproduction too; returns the margin in percent.
-	 */
-	function margin(r: Result): number | null {
-		if (!passed(r) || !r.plan.declared || exact(r) || !r.evaluation!.mem || !r.evaluation!.cpu) return null;
-		const m = Number(r.plan.declared.mem) / Number(r.evaluation!.mem);
-		const c = Number(r.plan.declared.steps) / Number(r.evaluation!.cpu);
-		return m > 1.001 && Math.abs(m - c) < 0.0005 ? Math.round((m - 1) * 1000) / 10 : null;
-	}
 	const summary = $derived({
 		exact: done.filter(exact).length,
 		margin: done.filter((r) => margin(r) != null).length,

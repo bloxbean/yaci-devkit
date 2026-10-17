@@ -13,6 +13,12 @@
 	import NativeScriptTree from '$lib/assets/NativeScriptTree.svelte';
 	import { isPlutus, plutusVersionOf, scriptTypeLabel } from '$lib/assets/script';
 	import ScriptCode from '$lib/julc/ScriptCode.svelte';
+	import ScriptActivity from '$lib/julc/ScriptActivity.svelte';
+	import BlueprintPanel from '$lib/julc/blueprint/BlueprintPanel.svelte';
+	import { blueprints } from '$lib/julc/blueprint/store.svelte';
+	import { variantOf } from '$lib/julc/blueprint/blueprint';
+	import { tryDecodePlutusData } from '$lib/cbor';
+	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import Coins from '@lucide/svelte/icons/coins';
 	import Wallet from '@lucide/svelte/icons/wallet';
@@ -24,6 +30,16 @@
 	const plutusVersion = $derived(plutusVersionOf(data.type));
 	const bytes = $derived(data.size ?? (data.cbor ? data.cbor.length / 2 : null));
 	let showCbor = $state(false);
+
+	// With a blueprint attached, redeemer variants get their names (e.g. Action.Swap).
+	const variantName = $derived.by(() => {
+		const found = blueprints.find(data.hash);
+		if (!found?.validator.redeemer) return undefined;
+		return (cbor: string) => {
+			const d = tryDecodePlutusData(cbor);
+			return d ? variantOf(d, found.validator.redeemer, found.blueprint.definitions) : null;
+		};
+	});
 
 	// The script's enterprise address (no stake part): where funds locked by this validator usually sit.
 	const scriptAddress = $derived.by(() => {
@@ -85,6 +101,16 @@
 
 {#if plutus && data.cbor}
 	<ScriptCode hash={data.hash} cbor={data.cbor} language={plutusVersion} />
+	<div class="mt-6"><BlueprintPanel hash={data.hash} /></div>
+	{#if data.activity}
+		<div class="mt-6">
+			{#await data.activity}
+				<Panel title="Activity" sub="Loading recent executions…"><Skeleton rows={4} /></Panel>
+			{:then activity}
+				{#if activity}<ScriptActivity {activity} {variantName} />{/if}
+			{/await}
+		</div>
+	{/if}
 {:else}
 	<Panel title="CBOR">
 		{#snippet actions()}{#if data.cbor}<CopyButton value={data.cbor} label="CBOR copied" />{/if}{/snippet}

@@ -89,3 +89,15 @@ export async function loadReplayInput(page: PageTx): Promise<ReplayInput> {
 
 /** Another epoch's parameters (cost models, protocol version), to run a transaction under them. */
 export const loadParams = (epoch: number) => api<ReplayInput['params']>(`/epochs/${epoch}/parameters`);
+
+/** A transaction as the re-run needs it, loaded in the browser (the transaction page loads the same on the server). */
+export async function loadPageTx(hash: string, epoch: number | null = null, scripts?: StoreScriptRun[]): Promise<PageTx> {
+	const [tx, s, withdrawals, mints] = await Promise.all([
+		api<PageTx['tx'] & { block_height: number }>(`/txs/${hash}`),
+		scripts ? Promise.resolve(scripts) : tryApi<StoreScriptRun[]>(`/txs/${hash}/scripts`),
+		tryApi<PageTx['withdrawals']>(`/txs/${hash}/withdrawals`),
+		tryApi<{ unit: string; quantity: number | string }[]>(`/assets/txs/${hash}`)
+	]);
+	const e = epoch ?? (await tryApi<{ epoch: number }>(`/blocks/${tx.block_height}`))?.epoch ?? null;
+	return { hash, tx, scripts: s ?? [], withdrawals: withdrawals ?? [], mints: (mints ?? []).map((m) => ({ unit: m.unit, quantity: m.quantity })), epoch: e };
+}
