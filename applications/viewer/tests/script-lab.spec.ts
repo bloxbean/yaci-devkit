@@ -4,13 +4,14 @@ import { expect, test } from '@playwright/test';
  * Script Lab (julc engine). Needs data on the configured store:
  *
  *   SCRIPT_LAB_HASH=<56-hex Plutus script hash> SCRIPT_LAB_TX=<tx hash with Plutus redeemers> \
- *   PW_CHANNEL=chrome npx playwright test script-lab
+ *   SCRIPT_LAB_RUN=<purpose/index of one of its runs, default spend/0> PW_CHANNEL=chrome npx playwright test script-lab
  *
  * The julc engine needs WebAssembly GC and exnref, which Playwright's bundled Chromium 128 lacks, so use a current
  * browser channel (PW_CHANNEL=chrome). Without support the test checks the "can't run" message instead.
  */
 const hash = process.env.SCRIPT_LAB_HASH;
 const txHash = process.env.SCRIPT_LAB_TX;
+const run = process.env.SCRIPT_LAB_RUN ?? 'spend/0';
 
 const supported = () =>
 	WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0])) &&
@@ -63,4 +64,36 @@ test('re-runs every script of a transaction and compares with the declared budge
 	// What the validator saw: the ScriptContext julc built, decoded.
 	await page.getByText('What the validator saw (ScriptContext)').first().click();
 	await expect(page.getByText(/ScriptContext · /).first()).toBeVisible();
+});
+
+test('steps through a script run, with breakpoints and step links', async ({ page }) => {
+	test.skip(!txHash, 'Set SCRIPT_LAB_TX (and SCRIPT_LAB_RUN) to a run on the configured store');
+	await page.goto(`/transactions/${txHash}/debug/${run}`);
+	if (!(await page.evaluate(supported))) {
+		await expect(page.getByText(/can’t run the julc engine/)).toBeVisible();
+		return;
+	}
+	const stepButton = page.getByRole('button', { name: 'Step', exact: true });
+	await expect(stepButton).toBeVisible({ timeout: 90_000 });
+	const position = page.getByText(/^Step [\d,]+ \/ [\d,]+$/);
+	await expect(position).toHaveText(/^Step 0 \//);
+
+	await page.keyboard.press('ArrowRight');
+	await page.keyboard.press('ArrowRight');
+	await expect(position).toHaveText(/^Step 2 \//);
+	await expect(page).toHaveURL(/step=2/);
+
+	await page.keyboard.press('End');
+	await expect(page.getByText(/The script finished successfully|The script failed|Error/).first()).toBeVisible();
+
+	// Break on the first builtin the script uses, then continue from the start.
+	await page.keyboard.press('Home');
+	const builtin = page.getByRole('button', { pressed: false }).filter({ hasText: /^[a-z][A-Za-z0-9_]+$/ }).first();
+	await builtin.click();
+	await page.keyboard.press('c');
+	await expect(page.getByText('builtin', { exact: true }).first()).toBeVisible();
+
+	// A step link opens that exact step.
+	await page.goto(`/transactions/${txHash}/debug/${run}?step=5`);
+	await expect(page.getByText(/^Step 5 \//)).toBeVisible({ timeout: 90_000 });
 });

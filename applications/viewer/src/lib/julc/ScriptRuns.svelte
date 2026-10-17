@@ -4,10 +4,9 @@
 	import ScriptCard from '$lib/tx/ScriptCard.svelte';
 	import PlutusView from '$lib/ui/PlutusView.svelte';
 	import { julc, wasmSupported } from './engine.svelte';
-	import { buildRuns, purposeOf, type RunPlan, type StoreScriptRun } from './replay/build';
-	import { loadReplayInput, type PageTx } from './replay/load';
-	import { TAG_ORDER, fixContext, ownRedeemer } from './replay/fix-context';
-	import type { Evaluation } from './types';
+	import { purposeOf, type RunPlan, type StoreScriptRun } from './replay/build';
+	import type { PageTx } from './replay/load';
+	import { prepareRuns, runAll, type RunResult } from './replay/run';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
@@ -17,6 +16,7 @@
 	import BadgeCheck from '@lucide/svelte/icons/badge-check';
 	import Info from '@lucide/svelte/icons/info';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+	import Bug from '@lucide/svelte/icons/bug';
 
 	/*
 	 * The transaction's script runs, each re-executable in the browser with julc: the transaction is rebuilt from
@@ -30,15 +30,7 @@
 		maxSteps
 	}: { page: PageTx; invalid?: boolean; maxMem: number; maxSteps: number } = $props();
 
-	interface Result {
-		state: 'running' | 'done' | 'error' | 'skipped';
-		plan: RunPlan;
-		evaluation?: Evaluation;
-		error?: string;
-		ms?: number;
-		/** The context was corrected and the script run again (julc#244 workarounds). */
-		fixed?: boolean;
-	}
+	type Result = RunResult;
 
 	let installed = $state<boolean | null>(null);
 	let supported = $state(true);
@@ -94,84 +86,15 @@
 		phase = 'loading';
 		let plans: RunPlan[];
 		try {
-			plans = buildRuns(await loadReplayInput(page));
+			plans = await prepareRuns(page);
 		} catch (e) {
 			failure = `Couldn’t load what the re-run needs from Yaci Store: ${(e as Error)?.message ?? e}`;
 			phase = 'idle';
 			return;
 		}
-		for (const plan of plans) results[plan.key] = plan.request ? { state: 'running', plan } : { state: 'skipped', plan, error: plan.skip };
 		phase = 'running';
-		for (const plan of plans) {
-			if (!plan.request) continue;
-			const started = performance.now();
-			try {
-				const evaluation = await julc.run((c) => {
-					if (!c.uplc) throw new Error('This julc engine can’t evaluate transactions (VM-only build).');
-					return c.uplc.evaluateTransaction(plan.request!);
-				});
-				const ms = Math.round(performance.now() - started);
-				results[plan.key] = evaluation.ok === false && evaluation.error ? { state: 'error', plan, error: evaluation.error, ms } : { state: 'done', plan, evaluation, ms };
-			} catch (e) {
-				results[plan.key] = { state: 'error', plan, error: (e as Error)?.message ?? String(e) };
-				if (julc.status === 'unsupported' || julc.status === 'error') {
-					failure = julc.error ?? (e as Error)?.message;
-					break;
-				}
-			}
-		}
-		await fixContexts(plans);
+		failure = await runAll(plans, (key, r) => (results[key] = r));
 		phase = 'done';
-	}
-
-	/*
-	 * julc#244 workarounds (see replay/fix-context.ts): put values in ledger order and, when every run produced its
-	 * context, give each context the complete redeemer map. Runs whose context changed are evaluated again with the
-	 * VM. Redeemers are only merged when all scripts share one Plutus version (V2 or V3): purposes are encoded
-	 * differently per version.
-	 */
-	async function fixContexts(plans: RunPlan[]) {
-		const runnable = plans.filter((p) => p.request && results[p.key]?.evaluation?.scriptContextCbor);
-		const language = plans[0]?.language;
-		let entries: NonNullable<ReturnType<typeof ownRedeemer>>[] | null = null;
-		if (plans.length > 1 && runnable.length === plans.length && language !== 'V1' && plans.every((p) => p.language === language)) {
-			const ordered = [...plans].sort((a, b) => TAG_ORDER[a.purpose] - TAG_ORDER[b.purpose] || a.index - b.index);
-			const found = ordered.map((p) => ownRedeemer(results[p.key].evaluation!.scriptContextCbor!));
-			if (found.every((e) => e)) entries = found as NonNullable<(typeof found)[number]>[];
-		}
-		for (const plan of runnable) {
-			const first = results[plan.key];
-			const fixed = fixContext(first.evaluation!.scriptContextCbor!, plan.language!, entries, plan.hashedDatums, plan.witnessDatums);
-			if (!fixed) continue;
-			const req = plan.request!;
-			const cbor = (value: string) => ({ format: 'cbor' as const, value });
-			const args =
-				plan.language === 'V3' ? [cbor(fixed.cbor)] : plan.purpose === 'spend' ? (plan.datum ? [cbor(plan.datum), cbor(plan.redeemer!), cbor(fixed.cbor)] : null) : [cbor(plan.redeemer!), cbor(fixed.cbor)];
-			if (!args) continue;
-			const started = performance.now();
-			try {
-				const evaluation = await julc.run((c) => c.vm.evaluate({ script: req.script, args, target: req.target, costModel: req.costModel, maxCpu: req.maxCpu, maxMem: req.maxMem }));
-				if (evaluation.ok === false && evaluation.error) continue;
-				const did = [
-					fixed.sortedValues && 'put asset values in ledger order',
-					fixed.completedRedeemers && `added the other ${plans.length - 1} redeemer${plans.length > 2 ? 's' : ''}`,
-					fixed.restoredDatums && 'added the datums given by hash under their on-chain hashes',
-					fixed.v1Shape && 'gave V1 withdrawals and datums their list shape'
-				].filter(Boolean);
-				results[plan.key] = {
-					...first,
-					evaluation: { ...evaluation, scriptContextCbor: fixed.cbor, language: first.evaluation!.language },
-					ms: Math.round(performance.now() - started),
-					fixed: true,
-					plan: {
-						...plan,
-						notes: [`The viewer ${did.length > 1 ? did.slice(0, -1).join(', ') + ' and ' + did.at(-1) : did[0]} in the context, which julc doesn’t do yet (julc#244).`, ...plan.notes.filter((n) => !(fixed.completedRedeemers && n.includes('julc#244')))]
-					}
-				};
-			} catch {
-				/* keep the first result */
-			}
-		}
 	}
 
 	function toggleAuto(on: boolean) {
@@ -258,7 +181,16 @@
 						{:else}
 							<CircleX class="h-4 w-4 text-danger" /><span class="font-medium text-danger">{r.evaluation?.status === 'budgetExhausted' ? 'Out of budget' : 'Failed'}</span>
 						{/if}
-						{#if r.ms != null}<span class="ml-auto text-xs tabular-nums text-faint">{r.ms} ms</span>{/if}
+						<span class="ml-auto flex items-center gap-3">
+							{#if r.ms != null}<span class="text-xs tabular-nums text-faint">{r.ms} ms</span>{/if}
+							{#if r.args && r.state === 'done'}
+								<a
+									class="y-btn h-7 gap-1.5 px-2.5 text-xs"
+									href="/transactions/{page.hash}/debug/{r.plan.purpose}/{r.plan.index}{passed(r) ? '' : '?at=failure'}"
+									title="Step through this run in the debugger"><Bug class="h-3.5 w-3.5" />{passed(r) ? 'Debug' : 'Debug the failure'}</a
+								>
+							{/if}
+						</span>
 					</div>
 
 					{#if r.error}<p class="mt-2 break-words text-sm text-muted">{r.error}</p>{/if}
