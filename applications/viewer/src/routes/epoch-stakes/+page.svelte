@@ -15,6 +15,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -84,7 +85,7 @@
 					<li>
 						<a href="/epoch-stakes/pools?id={p.poolId ?? poolBech32(p.poolHash)}&epoch={data.epoch}" class="group block">
 							<div class="mb-1 flex items-baseline justify-between gap-3 text-sm">
-								<span class="mono truncate text-[13px] group-hover:text-brand">{shorten(p.poolId ?? poolBech32(p.poolHash), 12, 6)}</span>
+								<span class="flex min-w-0 items-center gap-1.5"><span class="mono truncate text-[13px] group-hover:text-brand">{shorten(p.poolId ?? poolBech32(p.poolHash), 12, 6)}</span><NameTag kind="pool" id={p.poolId ?? p.poolHash} /></span>
 								<span class="shrink-0 tabular-nums"><b class="font-semibold">₳{adaCompact(p.stake)}</b>{#if data.total}<span class="text-faint"> · {percent(p.stake, data.total, 2)}</span>{/if}</span>
 							</div>
 							<div class="h-2 overflow-hidden rounded-full bg-line">

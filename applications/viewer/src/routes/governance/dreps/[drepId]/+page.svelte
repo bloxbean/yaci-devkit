@@ -15,6 +15,7 @@
 	import AnchorLink from '$lib/governance/AnchorLink.svelte';
 	import { actionHref, credLabel, statusLabel, statusTone, voteLabel, voteTone } from '$lib/governance/labels';
 	import Users from '@lucide/svelte/icons/users';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 	const d = $derived(data.drep);
@@ -30,6 +31,7 @@
 		<CopyButton value={d.drep_id} label="DRep id copied" />
 	</div>
 	{#snippet actions()}
+		<NameTag kind="drep" id={d.drep_id} class="text-xs" />
 		<Badge tone={statusTone(d.status)}>{statusLabel(d.status)}</Badge>
 		<Badge tone="neutral">{credLabel(d.drep_type)}</Badge>
 	{/snippet}
@@ -81,6 +83,7 @@
 			{#snippet cell(v, key)}
 				{#if key === 'vote'}<Badge tone={voteTone(v.vote)}>{voteLabel(v.vote)}</Badge>
 				{:else if key === 'action'}<a class="mono text-[13px] text-ink hover:text-brand" href={actionHref(v.proposal_tx_hash, v.proposal_cert_index)}>{shorten(v.proposal_id ?? v.proposal_tx_hash, 14, 8)}</a>
+					<NameTag kind="action" id="{v.proposal_tx_hash}#{v.proposal_cert_index}" block class="max-w-[24rem] text-xs text-muted" />
 				{:else}<a class="mono text-xs text-muted hover:text-brand" href="/transactions/{v.tx_hash}">{shorten(v.tx_hash, 8, 6)}</a>{/if}
 			{/snippet}
 		</DataTable>

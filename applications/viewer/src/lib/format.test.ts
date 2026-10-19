@@ -33,3 +33,14 @@ describe('format', () => {
 		expect(parseUnit('c'.repeat(56) + '0014df105553444d')).toMatchObject({ name: 'USDM', label: 'FT' });
 	});
 });
+
+describe('tokenAmount', () => {
+	it('applies the registered decimals', async () => {
+		const { tokenAmount } = await import('./format');
+		expect(tokenAmount('123456789', 6)).toBe('123.456789');
+		expect(tokenAmount('1000000000', 6)).toBe('1,000');
+		expect(tokenAmount('45000000000000000000', 6)).toBe('45,000,000,000,000');
+		expect(tokenAmount('5', 0)).toBe('5');
+		expect(tokenAmount('-1500', 3)).toBe('−1.5');
+	});
+});

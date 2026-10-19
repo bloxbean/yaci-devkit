@@ -12,6 +12,7 @@
 	import Gift from '@lucide/svelte/icons/gift';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -75,7 +76,7 @@
 			{#snippet cell(r, key)}
 				{#if key === 'address'}<a class="mono text-[13px] text-ink hover:text-brand" href="/stake/{r.address}">{shorten(r.address, 14, 8)}</a>
 				{:else if key === 'type'}<Badge tone={tone(r.type)}>{r.type}</Badge>
-				{:else if key === 'pool'}{#if r.pool_id}{@const id = poolBech32(r.pool_id)}<a class="mono text-xs text-muted hover:text-brand" href="/pools/{id}">{shorten(id, 10, 6)}</a>{:else}<span class="text-faint">—</span>{/if}
+				{:else if key === 'pool'}{#if r.pool_id}{@const id = poolBech32(r.pool_id)}<a class="mono text-xs text-muted hover:text-brand" href="/pools/{id}">{shorten(id, 10, 6)}</a> <NameTag kind="pool" {id} />{:else}<span class="text-faint">—</span>{/if}
 				{:else if key === 'earned'}<span class="text-muted">{r.earned_epoch ?? '—'}</span>
 				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
 			{/snippet}

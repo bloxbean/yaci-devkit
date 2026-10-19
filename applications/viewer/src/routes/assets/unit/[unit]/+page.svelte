@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { num, parseUnit, shorten } from '$lib/format';
+	import { num, parseUnit, shorten, tokenAmount } from '$lib/format';
+	import { tokenName } from '$lib/names/names.svelte';
 	import PageHeader from '$lib/ui/PageHeader.svelte';
 	import KV from '$lib/ui/KV.svelte';
 	import Hash from '$lib/ui/Hash.svelte';
@@ -27,7 +28,10 @@
 		{ id: 'utxos', label: 'UTxOs' },
 		{ id: 'holders', label: 'Holders' }
 	];
-	const supplyText = $derived(data.supply.value != null ? num(data.supply.value) : '—');
+	// On Mainnet, a token in the Cardano token registry: its ticker, name and decimals.
+	const registered = $derived(tokenName(data.unit));
+	const decimals = $derived(registered?.decimals ?? 0);
+	const supplyText = $derived(data.supply.value != null ? (decimals ? tokenAmount(data.supply.value, decimals) : num(data.supply.value)) : '—');
 </script>
 
 <svelte:head><title>{info.name} · Asset · Yaci Viewer</title></svelte:head>
@@ -38,7 +42,13 @@
 		<span class="mono break-all text-xs text-faint">{data.unit}</span>
 		<CopyButton value={data.unit} label="Asset unit copied" />
 	</div>
+	{#if registered}
+		<div class="mt-1 text-xs text-muted" title="From the Cardano token registry (CIP-26)" data-name="token">
+			{[registered.ticker, registered.name].filter(Boolean).join(' · ')}{#if registered.decimals}{' · '}{registered.decimals} decimals{/if}
+		</div>
+	{/if}
 	{#snippet actions()}
+		{#if registered?.ticker}<Badge tone="cyan">{registered.ticker}</Badge>{/if}
 		{#if info.label}<Badge tone="violet">CIP-68 {info.label}</Badge>{/if}
 		{#if supplyZero}<Badge tone="warn">Fully burned</Badge>{/if}
 	{/snippet}
@@ -56,7 +66,7 @@
 			>
 				{supplyText}
 			</div>
-			<div class="mt-1 text-xs text-muted">{data.supply.value != null ? 'units in circulation, before decimals' : 'The store did not report a supply.'}</div>
+			<div class="mt-1 text-xs text-muted">{data.supply.value == null ? 'The store did not report a supply.' : decimals ? `in circulation (${registered?.ticker ?? 'token'}, ${decimals} decimals)` : 'units in circulation, before decimals'}</div>
 		</div>
 	</div>
 	<div class="y-panel p-5">

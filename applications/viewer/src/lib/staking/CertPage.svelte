@@ -10,6 +10,7 @@
 	import BadgeCheck from '@lucide/svelte/icons/badge-check';
 	import { CERTS, CERT_ORDER, type CertKind } from './certs';
 	import { isGenesisTx, marginPct, poolBech32 } from './pool';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	/* One page for all five certificate lists, with a switcher between them. */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,7 +73,7 @@
 				{#if key === 'subject'}
 					{#if isPool}
 						{@const id = r.pool_id_bech32 ?? poolBech32(r.pool_id)}
-						<a class="mono text-[13px] font-medium text-ink hover:text-brand" href="/pools/{id}" title={id}>{shorten(id, 12, 8)}</a>
+						<a class="mono text-[13px] font-medium text-ink hover:text-brand" href="/pools/{id}" title={id}>{shorten(id, 12, 8)}</a> <NameTag kind="pool" {id} />
 					{:else}
 						<a class="mono text-[13px] font-medium text-ink hover:text-brand" href="/stake/{r.address}" title={r.address}>{shorten(r.address, 14, 8)}</a>
 					{/if}
@@ -82,7 +83,7 @@
 					{#if r.deposit != null}<Ada value={r.deposit} />{:else}<span class="text-faint">—</span>{/if}
 				{:else if key === 'pool'}
 					{@const id = poolBech32(r.pool_id)}
-					<a class="mono text-xs text-brand hover:underline" href="/pools/{id}" title={id}>{shorten(id, 10, 6)}</a>
+					<a class="mono text-xs text-brand hover:underline" href="/pools/{id}" title={id}>{shorten(id, 10, 6)}</a> <NameTag kind="pool" {id} />
 				{:else if key === 'pledge'}
 					<Ada value={r.pledge} decimals={0} class="font-semibold" />
 				{:else if key === 'cost'}

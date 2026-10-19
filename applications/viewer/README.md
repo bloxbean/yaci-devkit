@@ -64,6 +64,8 @@ Set these in the environment, or in a `.env` file in the directory you start Yac
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | Where Yaci Viewer listens |
 | `HEAVY_ADDRESS_GUARD` | `true` | Protects a large Yaci Store from busy addresses (below). `false` restores the plain behaviour |
 | `YACI_ANALYTICS` | `auto` | `off` stops Yaci Viewer from using the store's analytics query API (below) even when the store has it |
+| `NAMES` | `auto` | `off` turns off names on Mainnet (below). On other networks they are always off |
+| `NAMES_DIR` | `.cache/names` | Where the names are saved between restarts. Without a writable folder they are kept in memory only |
 
 ### Busy addresses on a large Yaci Store
 
@@ -104,6 +106,29 @@ The same API adds charts and numbers, again only where the store has it:
 They read the store's daily exports, which DuckDB aggregates in well under a second. Yaci Viewer keeps the answers in
 memory and serves them while it refreshes them in the background: network-wide ones for an hour, one script's, pool's or
 account's for 30 minutes (`src/lib/server/insights.ts`). Pages stream them in, so they never hold up a page.
+
+### Names on Mainnet
+
+On Mainnet, Yaci Viewer shows names next to ids (never instead of them):
+
+| Name | Where it comes from | Shown on |
+|---|---|---|
+| dApp label for a script, e.g. "Minswap Order Contract v2" | [Strica's Cardano Contracts Registry](https://github.com/StricaHQ/cardano-contracts-registry) and [Cardano Fans' registry](https://github.com/Cardano-Fans/crfa-offchain-data-registry) (Strica's wins on overlap) | Transaction inputs, outputs and scripts; address, stake, script and policy pages; most-run scripts |
+| DRep name | `givenName` in the DRep's CIP-119 metadata | DRep list and page, votes, certificates, voting power, stake accounts |
+| Pool ticker | The pool's CIP-6 metadata | Block producer, stake accounts, delegations, epoch stakes, rewards, pool certificates, votes |
+| Governance action title | `title` in the action's CIP-108 metadata | Proposals, votes, the action's page, a DRep's votes |
+| Token ticker and decimals | The [Cardano token registry](https://tokens.cardano.org) (CIP-26) | Every token chip (quantities with decimals), the asset page |
+
+DRep names, pool tickers and action titles are what their owners wrote; Yaci Viewer keeps one only when its document
+matches the hash on chain, and labels it as self-declared. Documents are fetched by the server with the same
+protections as the anchor viewer: public addresses only, size and time limits.
+
+The server loads them in the background after it starts, after checking with the store that the network is Mainnet
+(`network_magic` 764824073); on any other network nothing is fetched. dApp labels are refreshed daily, DRep names and
+action titles every 6 hours, pool tickers every 12 (the first run reads every pool registration, a few minutes); a
+document that couldn't be read is tried again after a day (pools: three). Tokens are looked up when a page shows them
+and kept for a week. Everything is saved in `NAMES_DIR`, so after a restart the names are there at once and only what
+changed is read again. Until they are loaded, pages show the ids as before.
 
 The base and WebSocket URLs can also be passed on the command line:
 

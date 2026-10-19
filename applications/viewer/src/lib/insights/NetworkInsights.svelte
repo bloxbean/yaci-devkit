@@ -5,6 +5,7 @@
 	import Stat from '$lib/ui/Stat.svelte';
 	import ChartCard from './ChartCard.svelte';
 	import { dayLabel, epochLabel } from './labels';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	/*
 	 * The dashboard's analytics section, where the store has Yaci Store analytics: daily transactions, script use and
@@ -100,6 +101,7 @@
 					<li class="flex items-center gap-3 px-4 py-2.5 text-sm">
 						<span class="w-5 shrink-0 text-right text-xs text-faint tabular-nums">{i + 1}</span>
 						<a class="mono w-44 shrink-0 truncate text-ink hover:text-brand" href="/scripts/{t.script_hash}" title={t.script_hash}>{shorten(t.script_hash, 10, 6)}</a>
+							<NameTag kind="script" id={t.script_hash} class="hidden sm:inline-flex" />
 						<span class="hidden h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-bg-2 sm:block">
 							<span class="block h-full rounded-full bg-violet/70" style="width:{(t.runs / maxTopRuns) * 100}%"></span>
 						</span>

@@ -10,6 +10,7 @@
 	import { credLabel } from './labels';
 	import { drepIdFromHash } from './drep';
 	import UserPlus from '@lucide/svelte/icons/user-plus';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	/* DRep registrations, updates and retirements: one list, with a switch between the three. */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,7 +58,7 @@
 		emptyText={TEXT[kind].empty}
 	>
 		{#snippet cell(r, key)}
-			{#if key === 'drep'}<a class="mono text-[13px] font-medium text-ink hover:text-brand" href="/governance/dreps/{drepId(r)}">{shorten(drepId(r), 14, 8)}</a>
+			{#if key === 'drep'}<a class="mono text-[13px] font-medium text-ink hover:text-brand" href="/governance/dreps/{drepId(r)}">{shorten(drepId(r), 14, 8)}</a> <NameTag kind="drep" id={drepId(r)} />
 			{:else if key === 'deposit'}<Ada value={r.deposit} decimals={0} />
 			{:else if key === 'anchor'}<AnchorLink url={r.anchor_url} hash={r.anchor_hash} />
 			{:else if key === 'type'}<span class="text-muted">{credLabel(r.cred_type)}</span>

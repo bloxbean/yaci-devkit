@@ -16,6 +16,7 @@
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 	const b = $derived(data.block);
@@ -63,7 +64,7 @@
 			<KV label="Output"><Ada value={b.output} decimals={2} /></KV>
 			<KV label="Previous block" wide>{#if b.previous_block}<Hash value={b.previous_block} href="/blocks/{b.previous_block}" head={16} tail={12} />{:else}—{/if}</KV>
 			<KV label="Protocol version"><span class="mono">{b.protocol_version ?? '—'}</span></KV>
-			<KV label="Producer" wide><Hash value={b.slot_leader} head={16} tail={10} /></KV>
+			<KV label="Producer" wide><Hash value={b.slot_leader} head={16} tail={10} /> <NameTag kind="pool" id={b.slot_leader} /></KV>
 		</dl>
 
 		<button class="mt-6 flex items-center gap-1.5 text-xs font-medium text-muted hover:text-ink" onclick={() => (advanced = !advanced)}>

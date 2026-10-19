@@ -11,6 +11,7 @@
 	import UserPlus from '@lucide/svelte/icons/user-plus';
 	import Power from '@lucide/svelte/icons/power';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -49,7 +50,7 @@
 						<a href="/pools/{id}" class="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-2/70">
 							<span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-surface-2 text-faint group-hover:border-brand/40 group-hover:text-brand"><Server class="h-4 w-4" /></span>
 							<span class="min-w-0 flex-1">
-								<span class="mono block truncate text-[13px] font-medium group-hover:text-brand">{shorten(id, 14, 8)}</span>
+								<span class="flex min-w-0 items-center gap-1.5"><span class="mono truncate text-[13px] font-medium group-hover:text-brand">{shorten(id, 14, 8)}</span><NameTag kind="pool" {id} /></span>
 								<span class="block text-xs text-muted">margin {marginPct(r.margin)} · cost <Ada value={r.cost} decimals={0} /></span>
 							</span>
 							<span class="shrink-0 text-right">
@@ -74,6 +75,7 @@
 					{@const id = r.pool_id_bech32 ?? poolBech32(r.pool_id)}
 					<li class="flex items-center gap-3 px-5 py-3">
 						<a href="/pools/{id}" class="mono min-w-0 flex-1 truncate text-[13px] font-medium hover:text-brand">{shorten(id, 12, 6)}</a>
+						<NameTag kind="pool" {id} />
 						{#if data.epoch != null && r.retirement_epoch <= data.epoch}<Badge tone="neutral">retired {r.retirement_epoch}</Badge>{:else}<Badge tone="warn">retires {r.retirement_epoch}</Badge>{/if}
 					</li>
 				{/each}

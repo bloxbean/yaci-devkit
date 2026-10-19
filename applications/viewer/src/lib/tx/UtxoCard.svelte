@@ -3,6 +3,7 @@
 	import Ada from '$lib/ui/Ada.svelte';
 	import AssetChip from '$lib/ui/AssetChip.svelte';
 	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import NameTag from '$lib/names/NameTag.svelte';
 	import Braces from '@lucide/svelte/icons/braces';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import CornerDownRight from '@lucide/svelte/icons/corner-down-right';
@@ -38,7 +39,7 @@
 				<CopyButton value={utxo.address} size="xs" label="Address copied" />
 			</div>
 			<div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
-				{#if isScript}<span class="y-pill border-violet/25 bg-violet/10 py-0 text-violet">script</span>{/if}
+				{#if isScript}<span class="y-pill border-violet/25 bg-violet/10 py-0 text-violet">script</span><NameTag kind="script" id={utxo.address} />{/if}
 				{#if tag}<span class="y-pill border-line bg-surface-2 py-0 text-muted">{tag}</span>{/if}
 				{#if utxo.stake_address}
 					<a href="/stake/{utxo.stake_address}" class="truncate text-faint hover:text-brand" title={utxo.stake_address}

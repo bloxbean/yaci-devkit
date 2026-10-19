@@ -11,6 +11,7 @@
 	import Server from '@lucide/svelte/icons/server';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 	const id = $derived(poolBech32(data.poolId));
@@ -22,7 +23,7 @@
 
 <PageHeader kind="Pool rewards" title="Epoch {data.epoch}">
 	{#snippet icon()}<Gift class="h-5 w-5" />{/snippet}
-	<a class="y-link mono inline-flex items-center gap-1.5 text-[13px]" href="/pools/{id}"><Server class="h-3.5 w-3.5" />{shorten(id, 14, 8)}</a>
+	<a class="y-link mono inline-flex items-center gap-1.5 text-[13px]" href="/pools/{id}"><Server class="h-3.5 w-3.5" />{shorten(id, 14, 8)}</a> <NameTag kind="pool" {id} />
 	{#snippet actions()}
 		<a class="y-btn {data.epoch <= 0 ? 'pointer-events-none opacity-40' : ''}" href="/rewards/pool/{data.poolId}/epoch/{data.epoch - 1}"><ChevronLeft class="h-4 w-4" /> {data.epoch - 1}</a>
 		<a class="y-btn {isLast ? 'pointer-events-none opacity-40' : ''}" href="/rewards/pool/{data.poolId}/epoch/{data.epoch + 1}">{data.epoch + 1} <ChevronRight class="h-4 w-4" /></a>

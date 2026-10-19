@@ -18,6 +18,7 @@
 	import Server from '@lucide/svelte/icons/server';
 	import Users from '@lucide/svelte/icons/users';
 	import Gift from '@lucide/svelte/icons/gift';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -48,6 +49,7 @@
 		<CopyButton value={data.address} label="Stake address copied" />
 	</div>
 	{#snippet actions()}
+		<NameTag kind="script" id={data.address} class="text-xs" />
 		{#if account?.pool_id}<Badge tone="ok">Delegating</Badge>{:else if account}<Badge tone="neutral">Not delegated</Badge>{/if}
 	{/snippet}
 </PageHeader>
@@ -74,7 +76,7 @@
 		<div class="y-label flex items-center gap-1.5"><Server class="h-3.5 w-3.5" />Stake pool</div>
 		{#if account?.pool_id}
 			<a href="/pools/{account.pool_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline" title={account.pool_id}>{shorten(account.pool_id, 12, 8)}</a>
-			<div class="mt-1 text-xs text-muted">earns staking rewards</div>
+			<div class="mt-1 flex items-center gap-1.5 text-xs text-muted">earns staking rewards <NameTag kind="pool" id={account.pool_id} /></div>
 		{:else if accountResult.value === undefined}
 			<div class="y-skel mt-3 h-4 w-40"></div>
 		{:else if !account}
@@ -89,7 +91,7 @@
 			<div class="mt-2 text-sm font-medium">{drepLabel}</div>
 		{:else if data.drep?.drep_id}
 			<a href="/governance/dreps/{data.drep.drep_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline">{shorten(data.drep.drep_id, 12, 8)}</a>
-			<div class="mt-1 text-xs text-muted">since <TimeAgo ts={data.drep.block_time} /></div>
+			<div class="mt-1 flex items-center gap-1.5 text-xs text-muted"><NameTag kind="drep" id={data.drep.drep_id} />since <TimeAgo ts={data.drep.block_time} /></div>
 		{:else}
 			<div class="mt-2 text-sm text-muted">Not delegated to a DRep</div>
 		{/if}
@@ -138,7 +140,7 @@
 			{#snippet cell(r, key)}
 				{#if key === 'epoch'}<a class="y-link" href="/rewards/epoch/{r.epoch ?? r.earned_epoch}">{r.epoch ?? r.earned_epoch}</a>
 				{:else if key === 'type'}<Badge tone={r.type === 'leader' ? 'violet' : r.type === 'member' ? 'ok' : 'neutral'}><Gift class="h-3 w-3" />{r.type}</Badge>
-				{:else if key === 'pool'}{#if r.pool_id}<a class="mono text-xs text-muted hover:text-brand" href="/pools/{r.pool_id}">{shorten(r.pool_id, 10, 6)}</a>{:else}—{/if}
+				{:else if key === 'pool'}{#if r.pool_id}<a class="mono text-xs text-muted hover:text-brand" href="/pools/{r.pool_id}">{shorten(r.pool_id, 10, 6)}</a> <NameTag kind="pool" id={r.pool_id} />{:else}—{/if}
 				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
 			{/snippet}
 		</DataTable>

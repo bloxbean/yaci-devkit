@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Hash from '$lib/ui/Hash.svelte';
 	import Badge from '$lib/ui/Badge.svelte';
+	import NameTag from '$lib/names/NameTag.svelte';
 	import PlutusView from '$lib/ui/PlutusView.svelte';
 	import { blueprints } from '$lib/julc/blueprint/store.svelte';
 	import type { Schema } from '$lib/julc/blueprint/blueprint';
@@ -56,6 +57,7 @@
 	<header class="flex flex-wrap items-center gap-2">
 		{#if r?.tag}<Badge tone={purposeTone[r.tag as keyof typeof purposeTone] ?? 'neutral'}>{r.tag}{r.index != null ? ` #${r.index}` : ''}</Badge>{/if}
 		{#if version}<Badge tone="neutral">{version}</Badge>{/if}
+		<NameTag kind="script" id={script.script_hash} />
 		<span class="ml-auto text-sm"><Hash value={script.script_hash} href="/scripts/{script.script_hash}" head={10} tail={8} /></span>
 	</header>
 

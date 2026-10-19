@@ -13,6 +13,7 @@
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -37,7 +38,7 @@
 
 <PageHeader kind="Epoch stakes" title={data.id && data.valid ? `Pool stake in epoch ${data.epoch}` : 'Pool stake by epoch'}>
 	{#snippet icon()}<Server class="h-5 w-5" />{/snippet}
-	{#if data.id && data.valid}<a class="y-link mono text-[13px]" href="/pools/{poolId}">{shorten(poolId, 14, 8)}</a>{:else}A pool's stake and delegators in one epoch's snapshot.{/if}
+	{#if data.id && data.valid}<a class="y-link mono text-[13px]" href="/pools/{poolId}">{shorten(poolId, 14, 8)}</a> <NameTag kind="pool" id={poolId} />{:else}A pool's stake and delegators in one epoch's snapshot.{/if}
 	{#snippet actions()}
 		{#if data.id && data.valid}
 			<a class="y-btn {data.epoch <= 0 ? 'pointer-events-none opacity-40' : ''}" href={qs(data.epoch - 1)}><ChevronLeft class="h-4 w-4" /> {data.epoch - 1}</a>

@@ -11,6 +11,7 @@
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import Search from '@lucide/svelte/icons/search';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -52,7 +53,7 @@
 				<dl class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
 					<KV label="Stake"><span class="font-display text-2xl font-semibold"><Ada value={data.stake.amount} decimals={6} /></span></KV>
 					<KV label="Epoch"><span class="font-medium">{data.stake.epoch}</span></KV>
-					<KV label="Pool">{#if poolId}<a class="y-link mono text-[13px]" href="/pools/{poolId}">{shorten(poolId, 12, 8)}</a>{:else}—{/if}</KV>
+					<KV label="Pool">{#if poolId}<a class="y-link mono text-[13px]" href="/pools/{poolId}">{shorten(poolId, 12, 8)}</a> <NameTag kind="pool" id={poolId} />{:else}—{/if}</KV>
 					<KV label="Delegating since"><span>epoch {data.stake.delegation_epoch ?? '—'}</span></KV>
 				</dl>
 				<a class="y-btn mt-6" href="/stake/{data.address}">Rewards and withdrawals <ArrowRight class="h-4 w-4" /></a>

@@ -5,6 +5,7 @@
 	import TimeAgo from '$lib/ui/TimeAgo.svelte';
 	import { shorten } from '$lib/format';
 	import { actionHref, actionLabel, actionTone, statusLabel, statusTone, type Proposal } from './labels';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	/* Governance actions as a list: type, status, deposit and when it was proposed. */
 	let { proposals, compact = false, emptyText = undefined }: { proposals: Proposal[]; compact?: boolean; emptyText?: string } = $props();
@@ -29,6 +30,7 @@
 		{#if key === 'action'}
 			<a href={actionHref(p.tx_hash, p.index)} class="group flex min-w-0 flex-col gap-1">
 				<span class="flex items-center gap-2"><Badge tone={actionTone(p.type)}>{actionLabel(p.type)}</Badge></span>
+				<NameTag kind="action" id="{p.tx_hash}#{p.index}" block class="max-w-[28rem] font-medium group-hover:text-brand" />
 				<span class="mono text-xs text-muted group-hover:text-brand">{shorten(p.tx_hash, 10, 6)}#{p.index}</span>
 			</a>
 		{:else if key === 'status'}

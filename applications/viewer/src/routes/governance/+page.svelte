@@ -20,6 +20,7 @@
 	import Vote from '@lucide/svelte/icons/vote';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import UserPlus from '@lucide/svelte/icons/user-plus';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 	// Streamed, and only where the store has Yaci Store analytics (null otherwise).
@@ -118,6 +119,7 @@
 							<span class="min-w-0 flex-1">
 								<span class="block truncate text-sm">{VOTER_LABEL[voterGroup(v.voter_type)].replace(/s$/, '')} <span class="mono text-muted">{shorten(v.drep_id ?? v.voter_hash, 10, 6)}</span></span>
 								<span class="mono block truncate text-xs text-faint">on {shorten(v.gov_action_tx_hash, 8, 6)}#{v.gov_action_index}</span>
+								<NameTag kind="action" id="{v.gov_action_tx_hash}#{v.gov_action_index}" block class="text-xs text-muted" />
 							</span>
 							<TimeAgo ts={v.block_time} class="shrink-0 text-xs text-muted" />
 						</a>

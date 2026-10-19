@@ -3,6 +3,7 @@
 	import { bech32Encode } from '$lib/bech32';
 	import { num, shorten } from '$lib/format';
 	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import NameTag from '$lib/names/NameTag.svelte';
 	import Panel from '$lib/ui/Panel.svelte';
 	import KV from '$lib/ui/KV.svelte';
 	import Hash from '$lib/ui/Hash.svelte';
@@ -66,6 +67,7 @@
 		<CopyButton value={data.hash} label="Script hash copied" />
 	</div>
 	{#snippet actions()}
+		<NameTag kind="script" id={data.hash} class="text-xs" />
 		<Badge tone={plutus ? 'violet' : 'cyan'}>{label}</Badge>
 		{#if plutus && data.cbor}<a class="y-btn h-8 text-xs" href="/scripts/lab?script={data.hash}" title="Run this script against UTxOs of your choice"><FlaskConical class="h-3.5 w-3.5" />Validator lab</a>{/if}
 	{/snippet}
