@@ -8,7 +8,6 @@ import {
 	poolBlocksSql,
 	poolStakeSql,
 	scriptDailySql,
-	stakeConcentrationSql,
 	stakeHistorySql,
 	stakeRewardsByEpochSql,
 	topScriptsSql
@@ -51,7 +50,6 @@ describe('chart queries', () => {
 	});
 
 	it('look for the latest epoch from a lower bound', () => {
-		expect(stakeConcentrationSql(659, t)).toContain('SELECT max(epoch) AS e FROM parquet_epoch_stake WHERE epoch >= 659');
 		expect(drepPowerSql(659, 10, t)).toContain('SELECT max(epoch) AS e FROM parquet_drep_dist WHERE epoch >= 659');
 		expect(drepPowerSql(659, 10, t)).toMatch(/ORDER BY amount DESC LIMIT 10$/);
 	});
@@ -69,6 +67,6 @@ describe('chart queries', () => {
 	});
 
 	it('are single statements', () => {
-		for (const sql of [dailyTxsSql('2026-07-21', t), stakeConcentrationSql(659, t), drepPowerSql(659, 10, t), stakeHistorySql(STAKE, 612, t)]) expect(sql).not.toContain(';');
+		for (const sql of [dailyTxsSql('2026-07-21', t), drepPowerSql(659, 10, t), stakeHistorySql(STAKE, 612, t)]) expect(sql).not.toContain(';');
 	});
 });

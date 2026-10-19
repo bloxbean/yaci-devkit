@@ -8,7 +8,7 @@
 
 	/*
 	 * The dashboard's analytics section, where the store has Yaci Store analytics: daily transactions, script use and
-	 * fees over 90 days, the ada pots, stake concentration, block production, and the scripts run most often.
+	 * fees over 90 days, the ada pots, block production, and the scripts run most often.
 	 */
 	let { insights: s }: { insights: NetworkInsights } = $props();
 
@@ -72,18 +72,10 @@
 		</div>
 	{/if}
 
-	<div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+	<div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 		{#if lastPot}
 			<Stat label="Treasury" value={ada(lastPot.treasury)} sub="epoch {lastPot.epoch}" trend={pots.map((p) => p.treasury)} color="rgb(var(--c-mint))" href="/adapot" />
 			<Stat label="Reserves" value={ada(lastPot.reserves)} sub="epoch {lastPot.epoch}" trend={pots.map((p) => p.reserves)} color="rgb(var(--c-blue))" href="/adapot" />
-		{/if}
-		{#if s.concentration}
-			<Stat
-				label="Nakamoto coefficient"
-				value={num(s.concentration.nakamoto)}
-				sub="of {num(s.concentration.pools)} pools hold half the stake"
-				href="/pools"
-			/>
 		{/if}
 		{#if lastEpoch}
 			<Stat

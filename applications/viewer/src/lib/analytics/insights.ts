@@ -34,19 +34,6 @@ export function epochBlocksSql(fromEpoch: number, t: Tables): string {
 FROM ${t.block} WHERE epoch >= ${intLiteral(fromEpoch)} GROUP BY epoch ORDER BY epoch`;
 }
 
-/**
- * How concentrated stake is in the latest exported epoch (at or after `minEpoch`): pools with stake, the share of the
- * 10 largest, and the Nakamoto coefficient (the fewest pools holding more than half the stake).
- */
-export function stakeConcentrationSql(minEpoch: number, t: Tables): string {
-	return `WITH e AS (SELECT max(epoch) AS e FROM ${t.epochStake} WHERE epoch >= ${intLiteral(minEpoch)}),
-p AS (SELECT pool_id, sum(amount) AS stake FROM ${t.epochStake} WHERE epoch = (SELECT e FROM e) GROUP BY pool_id),
-r AS (SELECT stake, sum(stake) OVER (ORDER BY stake DESC) AS cum, sum(stake) OVER () AS total, row_number() OVER (ORDER BY stake DESC) AS rank FROM p)
-SELECT (SELECT e FROM e) AS epoch, count(*) AS pools, max(total) AS total_stake,
-  sum(stake) FILTER (WHERE rank <= 10) / max(total) AS top10_share, min(rank) FILTER (WHERE cum > total / 2) AS nakamoto
-FROM r`;
-}
-
 /** The DReps (and the abstain / no-confidence options) with the most voting power in the latest exported epoch. */
 export function drepPowerSql(minEpoch: number, limit: number, t: Tables): string {
 	return `WITH e AS (SELECT max(epoch) AS e FROM ${t.drepDist} WHERE epoch >= ${intLiteral(minEpoch)})

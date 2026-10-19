@@ -44,14 +44,6 @@ export interface EpochPoint {
 	txs: number;
 }
 
-export interface StakeConcentration {
-	epoch: number;
-	pools: number;
-	totalStake: number;
-	top10Share: number;
-	nakamoto: number;
-}
-
 export interface NetworkInsights extends AnalyticsSource {
 	/** Days covered by `days` (from, to). */
 	from: string;
@@ -61,7 +53,6 @@ export interface NetworkInsights extends AnalyticsSource {
 	topScriptDays: number;
 	pots: PotPoint[] | null;
 	epochs: EpochPoint[] | null;
-	concentration: StakeConcentration | null;
 }
 
 export interface DRepPower extends AnalyticsSource {

@@ -95,7 +95,7 @@ The same API adds charts and numbers, again only where the store has it:
 
 | Page | What |
 |---|---|
-| Dashboard | Transactions, script runs, script CPU and fees per day (90 days); treasury and reserves; the Nakamoto coefficient; pools making blocks; the most-run scripts (7 days) |
+| Dashboard | Transactions, script runs, script CPU and fees per day (90 days); treasury and reserves; pools making blocks; the most-run scripts (7 days) |
 | Governance | Voting power: the 10 largest DReps and options, with their share |
 | Script | Runs, CPU steps and the costliest run per day (90 days) |
 | Pool | Blocks, active stake and delegators per epoch (50 epochs) |

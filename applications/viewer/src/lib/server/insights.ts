@@ -8,7 +8,6 @@ import {
 	poolBlocksSql,
 	poolStakeSql,
 	scriptDailySql,
-	stakeConcentrationSql,
 	stakeHistorySql,
 	stakeRewardsByEpochSql,
 	topScriptsSql
@@ -52,7 +51,7 @@ const maybe = (sql: string, ttlMs: number, fetch: Fetch, maxRows?: number) => ro
 
 const sourceOf = (info: AnalyticsInfo): AnalyticsSource => ({ exportedTo: info.exportedTo, live: false });
 
-/** Network-wide: daily transactions and script use, the most-run scripts, the ada pots, blocks per epoch, stake concentration. */
+/** Network-wide: daily transactions and script use, the most-run scripts, the ada pots, blocks per epoch. */
 export async function networkInsights(fetch: Fetch, currentEpoch: number | null): Promise<NetworkInsights | null> {
 	const info = await analyticsInfo(fetch);
 	if (!info) return null;
@@ -60,19 +59,17 @@ export async function networkInsights(fetch: Fetch, currentEpoch: number | null)
 	const ttl = INSIGHTS.networkTtlMs;
 	const from = addDays(today(), -INSIGHTS.days);
 	const fromEpoch = Math.max(0, (currentEpoch ?? 0) - INSIGHTS.epochs);
-	const [txs, scripts, top, pots, epochs, concentration] = await Promise.all([
+	const [txs, scripts, top, pots, epochs] = await Promise.all([
 		maybe(dailyTxsSql(from, t), ttl, fetch),
 		maybe(dailyScriptsSql(from, t), ttl, fetch),
 		maybe(topScriptsSql(addDays(today(), -INSIGHTS.topScriptDays), 10, t), ttl, fetch),
 		maybe(adaPotsSql(t), ttl, fetch),
-		currentEpoch != null ? maybe(epochBlocksSql(fromEpoch, t), ttl, fetch) : null,
-		currentEpoch != null ? maybe(stakeConcentrationSql(currentEpoch - 3, t), ttl, fetch) : null
+		currentEpoch != null ? maybe(epochBlocksSql(fromEpoch, t), ttl, fetch) : null
 	]);
 	const byDate = new Map<string, DayPoint>();
 	const day = (date: string) => byDate.get(date) ?? byDate.set(date, { date, txs: 0, fees: 0, runs: 0, scriptTxs: 0, steps: 0, mem: 0 }).get(date)!;
 	for (const r of txs ?? []) Object.assign(day(String(r.date)), { txs: n(r.txs), fees: n(r.fees) });
 	for (const r of scripts ?? []) Object.assign(day(String(r.date)), { runs: n(r.runs), scriptTxs: n(r.txs), steps: n(r.steps), mem: n(r.mem) });
-	const c = concentration?.[0];
 	return {
 		...sourceOf(info),
 		from,
@@ -80,8 +77,7 @@ export async function networkInsights(fetch: Fetch, currentEpoch: number | null)
 		topScripts: top?.map((r) => ({ script_hash: String(r.script_hash), runs: n(r.runs), txs: n(r.txs), steps: n(r.steps), mem: n(r.mem) })) ?? null,
 		topScriptDays: INSIGHTS.topScriptDays,
 		pots: pots?.map((r) => ({ epoch: n(r.epoch), treasury: n(r.treasury), reserves: n(r.reserves), fees: n(r.fees), rewards: n(r.rewards) })) ?? null,
-		epochs: epochs?.map((r) => ({ epoch: n(r.epoch), blocks: n(r.blocks), pools: n(r.pools), txs: n(r.txs) })) ?? null,
-		concentration: c?.epoch != null ? { epoch: n(c.epoch), pools: n(c.pools), totalStake: n(c.total_stake), top10Share: n(c.top10_share), nakamoto: n(c.nakamoto) } : null
+		epochs: epochs?.map((r) => ({ epoch: n(r.epoch), blocks: n(r.blocks), pools: n(r.pools), txs: n(r.txs) })) ?? null
 	};
 }
 
