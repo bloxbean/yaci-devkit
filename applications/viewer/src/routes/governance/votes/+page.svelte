@@ -8,6 +8,7 @@
 	import AnchorLink from '$lib/governance/AnchorLink.svelte';
 	import { actionHref, voteLabel, voteTone, voterGroup, voterHref, VOTER_LABEL } from '$lib/governance/labels';
 	import Vote from '@lucide/svelte/icons/vote';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 	const groupTone = { drep: 'violet', spo: 'cyan', cc: 'brand' } as const;
@@ -43,9 +44,11 @@
 				<div class="flex items-center gap-2">
 					<Badge tone={groupTone[g]} class="py-0 text-[10px]">{g === 'cc' ? 'CC' : g === 'spo' ? 'SPO' : 'DRep'}</Badge>
 					{#if href}<a class="mono text-[13px] text-ink hover:text-brand" {href} title={v.drep_id ?? v.voter_hash}>{shorten(v.drep_id ?? v.voter_hash, 12, 6)}</a>{:else}<span class="mono text-[13px]" title={v.voter_hash}>{shorten(v.voter_hash, 12, 6)}</span>{/if}
+					{#if g === 'drep'}<NameTag kind="drep" id={v.drep_id ?? v.voter_hash} />{:else if g === 'spo'}<NameTag kind="pool" id={v.voter_hash} />{/if}
 				</div>
 				<span class="sr-only">{VOTER_LABEL[g]}</span>
 			{:else if key === 'action'}<a class="mono text-[13px] text-muted hover:text-brand" href={actionHref(v.gov_action_tx_hash, v.gov_action_index)}>{shorten(v.gov_action_tx_hash, 8, 6)}#{v.gov_action_index}</a>
+				<NameTag kind="action" id="{v.gov_action_tx_hash}#{v.gov_action_index}" block class="max-w-[22rem] text-xs text-muted" />
 			{:else if key === 'rationale'}<AnchorLink url={v.anchor_url} hash={v.anchor_hash} />
 			{:else}<a class="text-muted hover:text-brand" href="/transactions/{v.tx_hash}"><TimeAgo ts={v.block_time} /></a>{/if}
 		{/snippet}

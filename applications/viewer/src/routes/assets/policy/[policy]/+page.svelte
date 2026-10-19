@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { num, parseUnit } from '$lib/format';
 	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import NameTag from '$lib/names/NameTag.svelte';
 	import Panel from '$lib/ui/Panel.svelte';
 	import Badge from '$lib/ui/Badge.svelte';
 	import Pager from '$lib/ui/Pager.svelte';
@@ -30,6 +31,7 @@
 		<CopyButton value={data.policy} label="Policy id copied" />
 	</div>
 	{#snippet actions()}
+		<NameTag kind="script" id={data.policy} class="text-xs" />
 		{#if kind}<Badge tone={kind.startsWith('Plutus') ? 'violet' : 'cyan'}><FileCode class="h-3.5 w-3.5" />{kind}</Badge>{/if}
 	{/snippet}
 </PageHeader>

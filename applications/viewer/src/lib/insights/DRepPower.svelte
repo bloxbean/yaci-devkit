@@ -2,6 +2,7 @@
 	import type { DRepPower } from '$lib/analytics/types';
 	import { adaCompact, num, percent, shorten } from '$lib/format';
 	import AnalyticsNote from '$lib/ui/AnalyticsNote.svelte';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	/* Who holds the voting power: the DReps (and the abstain / no-confidence options) with the most delegated stake. */
 	let { power }: { power: DRepPower } = $props();
@@ -27,6 +28,7 @@
 				<span class="w-5 shrink-0 text-right text-xs text-faint tabular-nums">{i + 1}</span>
 				{#if d.drep_id}
 					<a class="mono w-48 shrink-0 truncate text-ink hover:text-brand" href="/governance/dreps/{d.drep_id}" title={d.drep_id}>{shorten(d.drep_id, 12, 6)}</a>
+					<NameTag kind="drep" id={d.drep_id} class="hidden sm:inline-flex" />
 				{:else}
 					<span class="w-48 shrink-0 truncate font-medium">{special[d.drep_type] ?? d.drep_type}</span>
 				{/if}

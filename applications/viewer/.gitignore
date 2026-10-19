@@ -12,3 +12,4 @@ vite.config.ts.timestamp-*
 /static/julc
 /test-results
 /playwright-report
+/.cache

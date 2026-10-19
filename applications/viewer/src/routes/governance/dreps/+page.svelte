@@ -10,6 +10,7 @@
 	import { drepIdCandidates } from '$lib/governance/drep';
 	import Users from '@lucide/svelte/icons/users';
 	import Search from '@lucide/svelte/icons/search';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 
@@ -82,6 +83,7 @@
 					<span class="grid h-8 w-8 place-items-center rounded-lg border border-line bg-surface-2 text-faint group-hover:border-brand/40 group-hover:text-brand"><Users class="h-4 w-4" /></span>
 					<span class="mono text-[13px] font-medium text-ink group-hover:text-brand">{shorten(d.drep_id, 14, 8)}</span>
 				</a>
+				<NameTag kind="drep" id={d.drep_id} class="ml-10 mt-1" />
 			{:else if key === 'status'}<Badge tone={statusTone(d.status)}>{statusLabel(d.status)}</Badge>
 			{:else if key === 'power'}<Ada value={d.voting_power} decimals={0} class="font-semibold" />
 			{:else if key === 'deposit'}<Ada value={d.deposit} decimals={0} class="text-muted" />

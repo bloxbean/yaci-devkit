@@ -18,6 +18,7 @@
 	import ScrollText from '@lucide/svelte/icons/scroll-text';
 	import Vote from '@lucide/svelte/icons/vote';
 	import Coins from '@lucide/svelte/icons/coins';
+	import NameTag from '$lib/names/NameTag.svelte';
 
 	let { data } = $props();
 	const p = $derived(data.proposal);
@@ -40,6 +41,7 @@
 
 <PageHeader kind="Governance action" title={actionLabel(p.type)}>
 	{#snippet icon()}<ScrollText class="h-5 w-5" />{/snippet}
+	<NameTag kind="action" id="{p.tx_hash}#{p.index}" block wrap class="mb-1 text-base font-medium" />
 	<div class="flex flex-wrap items-center gap-1.5">
 		<span class="mono text-xs text-faint">{p.gov_action_id ?? `${p.tx_hash}#${p.index}`}</span>
 		<CopyButton value={p.gov_action_id ?? `${p.tx_hash}#${p.index}`} label="Action id copied" />
@@ -113,6 +115,7 @@
 				<div class="flex flex-col">
 					<span class="text-xs text-muted">{VOTER_LABEL[voterGroup(v.voter_type)].replace(/s$/, '')}</span>
 					{#if href}<a class="mono text-[13px] text-ink hover:text-brand" {href}>{shorten(v.drep_id ?? v.voter_hash, 12, 6)}</a>{:else}<span class="mono text-[13px]" title={v.voter_hash}>{shorten(v.voter_hash, 12, 6)}</span>{/if}
+					{#if voterGroup(v.voter_type) === 'drep'}<NameTag kind="drep" id={v.drep_id ?? v.voter_hash} class="mt-0.5 self-start" />{:else if voterGroup(v.voter_type) === 'spo'}<NameTag kind="pool" id={v.voter_hash} class="mt-0.5 self-start" />{/if}
 				</div>
 			{:else if key === 'rationale'}<AnchorLink url={v.anchor_url} hash={v.anchor_hash} />
 			{:else if key === 'age'}<a class="text-muted hover:text-brand" href="/transactions/{v.tx_hash}"><TimeAgo ts={v.block_time} /></a>{/if}

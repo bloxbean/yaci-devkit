@@ -1,5 +1,12 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, ServerInit } from '@sveltejs/kit';
+import { building } from '$app/environment';
+import { names } from '$lib/server/names';
 import { linkHeaderToTags, injectIntoHead } from '$lib/server/preloads';
+
+/* Names for ids (dApps, DReps, pools, governance actions, tokens) load in the background on Mainnet: see names/. */
+export const init: ServerInit = () => {
+	if (!building) names.start();
+};
 
 /*
  * SvelteKit sends a page's CSS and JS preloads as one `Link` response header (it only writes them into <head> when

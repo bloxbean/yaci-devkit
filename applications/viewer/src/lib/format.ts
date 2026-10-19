@@ -63,6 +63,17 @@ export function compact(n: number | string | null | undefined, digits = 1): stri
 	return v % 1 === 0 ? String(v) : v.toFixed(2);
 }
 
+/** A token quantity in its smallest unit → "1,234.5678" with the registry's decimals (trailing zeros trimmed). */
+export function tokenAmount(quantity: Amountish, decimals: number): string {
+	let v = toBig(quantity);
+	const neg = v < 0n;
+	if (neg) v = -v;
+	if (!(decimals > 0)) return (neg ? '−' : '') + group(v.toString());
+	const scale = 10n ** BigInt(decimals);
+	const frac = (v % scale).toString().padStart(decimals, '0').replace(/0+$/, '');
+	return (neg ? '−' : '') + group((v / scale).toString()) + (frac ? '.' + frac : '');
+}
+
 /** Integer-ish values with thousands separators. Accepts big strings. */
 export function num(n: number | string | bigint | null | undefined): string {
 	if (n === null || n === undefined || n === '') return '—';
