@@ -40,48 +40,10 @@ export function addDays(day: string, days: number): string {
 
 /** The table names to read: the live view where it is known to answer quickly, otherwise the exported data. */
 export interface Tables {
-	/** Outputs, newest included where possible. */
-	outputs: string;
-	/** Outputs, exported data only (for joins). */
-	outputsHistory: string;
-	/** Spent outputs. */
-	spends: string;
 	reward: string;
 	rewardRest: string;
 	stakeBalance: string;
 	delegation: string;
-}
-
-/**
- * Transactions that paid the address (its outputs) or spent from it, newest first, between two days (inclusive) and
- * before a slot. Spends only count outputs created since `lookbackFrom`: matching every spend against the address's
- * whole history is too slow for busy addresses.
- */
-export function addressTxsSql(q: { address: string; from: string; to: string; lookbackFrom: string; beforeSlot?: number; limit: number; tables: Tables }): string {
-	const a = addressLiteral(q.address);
-	const from = dateLiteral(q.from);
-	const to = dateLiteral(q.to);
-	const before = q.beforeSlot != null ? intLiteral(q.beforeSlot) : null;
-	const t = q.tables;
-	return `WITH mine AS (
-  SELECT tx_hash, output_index FROM ${t.outputsHistory}
-  WHERE owner_addr = ${a} AND date >= ${dateLiteral(q.lookbackFrom)} AND date <= ${to}
-  GROUP BY tx_hash, output_index
-), paid AS (
-  SELECT tx_hash, max(slot) AS slot, max(block_time) AS block_time, true AS received, false AS sent FROM ${t.outputs}
-  WHERE owner_addr = ${a} AND date >= ${from} AND date <= ${to}${before ? ` AND slot < ${before}` : ''}
-  GROUP BY tx_hash
-), spent AS (
-  SELECT i.spent_tx_hash AS tx_hash, max(i.spent_at_slot) AS slot, max(i.spent_block_time) AS block_time, false AS received, true AS sent
-  FROM ${t.spends} i JOIN mine m ON m.tx_hash = i.tx_hash AND m.output_index = i.output_index
-  WHERE i.date >= ${from} AND i.date <= ${to}${before ? ` AND i.spent_at_slot < ${before}` : ''}
-  GROUP BY i.spent_tx_hash
-)
-SELECT tx_hash, max(slot) AS slot, max(block_time) AS block_time, bool_or(received) AS received, bool_or(sent) AS sent
-FROM (SELECT * FROM paid UNION ALL SELECT * FROM spent)
-GROUP BY tx_hash
-ORDER BY slot DESC
-LIMIT ${intLiteral(q.limit)}`;
 }
 
 /** A stake account's rewards (or, with `rest`, its other rewards: refunds, treasury and reserve payouts) over epochs. */

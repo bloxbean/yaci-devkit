@@ -2,10 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { paging, tryApi } from '$lib/api/client';
 import type { Slow } from '$lib/api/slow';
 import { stakeAddressOf } from '$lib/bech32';
-import type { AnalyticsSource } from '$lib/analytics/types';
-import { analyticsAddressTxs, txCursorOf } from '$lib/server/analytics-sections';
 import { GUARD, guardEnabled, guardedApi, indexerGuard, settle } from '$lib/server/heavy-guard';
-import { stakeAccountSection } from '$lib/server/stake-account';
 import { utxoBalance, type UtxoBalance } from '$lib/tx/balance';
 import type { Amount, Utxo } from '$lib/tx/types';
 import type { PageServerLoad } from './$types';
@@ -15,9 +12,8 @@ type Any = any;
 
 const TABS = ['txs', 'utxos', 'tokens'] as const;
 
-type Row = Utxo & { block_height?: number; block_time?: number; slot?: number; received?: boolean; sent?: boolean };
-/** A list section: its rows, and where they came from when not from the regular endpoint. */
-type List = { rows: Row[]; analytics: (AnalyticsSource & { from: string; to: string; lookbackFrom: string; older: string | null }) | null };
+type Row = Utxo & { block_height?: number; block_time?: number };
+type Account = { controlled_amount?: number; withdrawable_amount?: number; pool_id?: string | null };
 /** null amounts: the balance couldn't be worked out. */
 type Balance = Omit<UtxoBalance, 'amounts' | 'utxos'> & { amounts: Amount[] | null; utxos?: number };
 
@@ -25,9 +21,7 @@ type Balance = Omit<UtxoBalance, 'amounts' | 'utxos'> & { amounts: Amount[] | nu
  * Busy addresses on a large Yaci Store can take hours for /amounts, /transactions and /accounts/{stake}, and the store
  * keeps running a query after the viewer gives up (bloxbean/yaci-store#1269). So only /balance (quick, even as a 503)
  * holds up the page; the rest stream in. The balance comes from /balance when the store aggregates balances, otherwise
- * from summing the address's UTxOs (never /amounts while the guard is on). When the transaction list is too slow and
- * the store has its analytics API, the recent transactions come from there instead (paged by a day/slot cursor).
- * Yaci Store pages are 1-based.
+ * from summing the address's UTxOs (never /amounts while the guard is on). Yaci Store pages are 1-based.
  */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const address = params.address.trim();
@@ -74,29 +68,21 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	// The open tab's list, streamed: even UTxOs can be slow when the store is busy, mostly on deep pages, so a UTxO page
 	// that timed out is skipped for a couple of minutes (that page only).
 	const utxosPath = `/addresses/${address}/utxos`;
-	const fromStore = (p: Promise<Row[] | null>): Promise<Slow<List>> => settle(p.then((rows) => ({ rows: rows ?? [], analytics: null })));
 	const utxoList =
 		tab === 'utxos'
-			? fromStore(guardedApi<Row[]>(`${utxosPath} page ${page} of ${count} ${order}`, utxosPath, { fetch, params: { page, count, order }, timeoutMs: timeouts.utxos, heavyMs: GUARD.utxoHeavyMs }))
+			? settle(guardedApi<Row[]>(`${utxosPath} page ${page} of ${count} ${order}`, utxosPath, { fetch, params: { page, count, order }, timeoutMs: timeouts.utxos, heavyMs: GUARD.utxoHeavyMs }).then((r) => r ?? []))
 			: null;
-	// Too slow from the store: the recent transactions from analytics, if the store has it, otherwise the notice.
-	const fromAnalytics = (otherwise: Slow<List>): Promise<Slow<List>> =>
-		settle(analyticsAddressTxs(address, { fetch, limit: count, cursor })).then((r) =>
-			r.ok && r.value ? { ok: true, value: { rows: r.value.rows as unknown as Row[], analytics: r.value } } : otherwise
-		);
-	const cursor = txCursorOf(url);
-	const tooSlow: Slow<List> = { ok: false, reason: 'heavy', message: 'Skipped: this address timed out recently' };
-	const txList: Promise<Slow<List>> | null =
+	const txList: Slow<Row[]> | Promise<Slow<Row[]>> | null =
 		tab !== 'txs'
 			? null
-			: cursor || heavy
-				? fromAnalytics(tooSlow)
-				: fromStore(guardedApi<Row[]>(txKey, txKey, { fetch, params: { page, count, order }, timeoutMs: timeouts.transactions })).then((r) =>
-						!r.ok && r.reason === 'heavy' ? fromAnalytics(r) : r
-					);
+			: heavy
+				? { ok: false, reason: 'heavy', message: 'Skipped: this address timed out recently' }
+				: settle(guardedApi<Row[]>(txKey, txKey, { fetch, params: { page, count, order }, timeoutMs: timeouts.transactions }).then((r) => r ?? []));
 
-	// The stake account can take ~30 s for a busy one: always streamed, kept for a minute, and from analytics when too slow.
-	const account = stake ? stakeAccountSection(stake, fetch) : null;
+	// The stake account can take ~30 s for a busy one: always streamed, and kept for a minute.
+	const account = stake
+		? settle(guardedApi<Account | null>(`/accounts/${stake}`, `/accounts/${stake}`, { fetch, timeoutMs: timeouts.account, cacheMs: GUARD.accountCacheMs }))
+		: null;
 
 	const amounts = await balance();
 
@@ -109,6 +95,6 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		page,
 		count,
 		order,
-		list: utxoList ?? txList ?? ({ ok: true, value: { rows: [], analytics: null } } as Slow<List>)
+		list: utxoList ?? txList ?? ({ ok: true, value: [] } as Slow<Row[]>)
 	};
 };

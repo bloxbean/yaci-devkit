@@ -18,7 +18,6 @@
 	import Empty from '$lib/ui/Empty.svelte';
 	import DatumDialog from '$lib/tx/DatumDialog.svelte';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
-	import AnalyticsNote from '$lib/ui/AnalyticsNote.svelte';
 	import SlowNotice from '$lib/ui/SlowNotice.svelte';
 	import { resolved } from '$lib/ui/resolved.svelte';
 	import { assetsOf, lovelaceOf, type Utxo } from '$lib/tx/types';
@@ -41,10 +40,7 @@
 	const amounts = $derived(balance.value?.amounts ?? []);
 	const lovelace = $derived(lovelaceOf(amounts));
 	const tokens = $derived(assetsOf(amounts).sort((a, b) => parseUnit(a.unit).name.localeCompare(parseUnit(b.unit).name)));
-	const rows = $derived(list.value?.ok ? list.value.value.rows : []);
-	// Set when the transaction list came from analytics because the store's own list is too slow.
-	const txAnalytics = $derived(list.value?.ok ? list.value.value.analytics : null);
-	const shortDay = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+	const rows = $derived(list.value?.ok ? list.value.value : []);
 	const partialNote = $derived(
 		balance.value && !balance.value.exact && balance.value.amounts
 			? `Lower bound: the sum of the newest ${num(balance.value.utxos ?? 0)} unspent outputs. This address has more than the viewer totals here.`
@@ -108,7 +104,6 @@
 				<div class="mt-1 text-xs text-faint" title={accountResult.value.message}>{accountResult.value.reason === 'error' ? 'Couldn’t load the stake account' : 'The stake account is too slow to load right now'}</div>
 			{:else if account?.controlled_amount != null}
 				<div class="mt-1 text-xs text-muted">controls <Ada value={account.controlled_amount} /></div>
-				{#if account.analytics}<div class="mt-2"><AnalyticsNote source={account.analytics} compact /></div>{/if}
 			{/if}
 		{:else}
 			<div class="mt-2 text-sm text-muted">{info.era === 'byron' ? 'Byron addresses cannot stake.' : 'This address has no stake part.'}</div>
@@ -150,16 +145,9 @@
 			</SlowNotice>
 		{/if}
 	{:else if data.tab === 'txs'}
-		{#if txAnalytics}
-			<AnalyticsNote source={txAnalytics}>
-				{shortDay(txAnalytics.from)} – {shortDay(txAnalytics.to)}: payments to this address{txAnalytics.live ? ' (live)' : ''}, and spends from it{txAnalytics.exportedTo ? ` up to ${shortDay(txAnalytics.exportedTo)}` : ''} of outputs from {shortDay(txAnalytics.lookbackFrom)} on.
-			</AnalyticsNote>
-		{/if}
 		<DataTable
 			{rows}
-			columns={txAnalytics
-				? [{ key: 'hash', label: 'Transaction' }, { key: 'direction', label: 'This address' }, { key: 'age', label: 'Age', align: 'right' }]
-				: [{ key: 'hash', label: 'Transaction' }, { key: 'block', label: 'Block' }, { key: 'age', label: 'Age', align: 'right' }]}
+			columns={[{ key: 'hash', label: 'Transaction' }, { key: 'block', label: 'Block' }, { key: 'age', label: 'Age', align: 'right' }]}
 			key={(r) => r.tx_hash}
 			rowHref={(r) => `/transactions/${r.tx_hash}`}
 			emptyTitle="No transactions"
@@ -168,19 +156,10 @@
 			{#snippet cell(r, key)}
 				{#if key === 'hash'}<a class="mono font-medium text-ink hover:text-brand" href="/transactions/{r.tx_hash}">{shorten(r.tx_hash, 14, 10)}</a>
 				{:else if key === 'block'}<a class="y-link mono" href="/blocks/{r.block_height}">#{num(r.block_height)}</a>
-				{:else if key === 'direction'}
-					<span class="flex gap-1">{#if r.received}<Badge tone="ok">Received</Badge>{/if}{#if r.sent}<Badge tone="warn">Spent from</Badge>{/if}</span>
 				{:else if key === 'age'}<TimeAgo ts={r.block_time} class="text-muted" />{/if}
 			{/snippet}
 		</DataTable>
-		{#if txAnalytics}
-			<div class="flex items-center justify-end gap-2 border-t border-line px-4 py-3">
-				{#if pageState.url.searchParams.has('day')}<a class="y-btn h-8 text-xs" href="?tab=txs" data-sveltekit-noscroll>Newest</a>{/if}
-				{#if txAnalytics.older}<a class="y-btn h-8 text-xs" href="?{txAnalytics.older}" data-sveltekit-noscroll>Older</a>{/if}
-			</div>
-		{:else}
-			<Pager page={data.page} hasNext={rows.length === data.count} />
-		{/if}
+		<Pager page={data.page} hasNext={rows.length === data.count} />
 	{:else if data.tab === 'utxos'}
 		<DataTable
 			{rows}

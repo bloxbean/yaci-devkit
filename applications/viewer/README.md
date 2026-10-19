@@ -83,11 +83,9 @@ The limits are in `src/lib/server/heavy-guard.ts`. Set `HEAVY_ADDRESS_GUARD=fals
 queries.
 
 When the store has its analytics query API enabled (`yaci.store.analytics.query.rest-api-enabled`, not available on
-the devkit's own store), Yaci Viewer uses it where a regular endpoint is too slow:
-
-- a busy address's **transactions**: those that paid it (up to now, where the store joins live data) or spent from it
-  (up to the last daily export), newest first, with "Older" to page back;
-- a busy **stake account**: what it controls and its pool, as of the last export, and its **rewards**, 20 epochs a page.
+the devkit's own store), Yaci Viewer uses it where a regular endpoint is too slow for a busy **stake account**: what it
+controls and its pool, as of the last export, and its **rewards**, 20 epochs a page. (Address pages don't use it: the
+answers would be partial, and DuckDB isn't meant to serve every page view.)
 
 Those sections are labelled "From Yaci Store analytics" with how fresh the data is. Analytics queries are bounded by the
 store's own 30 s timeout, at most two run at once, and answers are kept for 10 minutes. Yaci Viewer checks whether the

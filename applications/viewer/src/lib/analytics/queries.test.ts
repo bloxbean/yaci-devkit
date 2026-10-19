@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addressLiteral, addressTxsSql, dateLiteral, QueryValueError, stakeAccountSql, stakeLiteral, stakeRewardsSql, type Tables } from './queries';
+import { addDays, addressLiteral, dateLiteral, QueryValueError, stakeAccountSql, stakeLiteral, stakeRewardsSql, type Tables } from './queries';
 
 const A = 'addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a';
 const S = 'stake1u9f9v0z5zzlldgx58n8tklphu8mf7h4jvp2j2gddluemnssjfnkzz';
 const tables: Tables = {
-	outputs: 'address_utxo',
-	outputsHistory: 'parquet_address_utxo',
-	spends: 'parquet_tx_input',
 	reward: 'reward',
 	rewardRest: 'parquet_reward_rest',
 	stakeBalance: 'parquet_stake_address_balance',
@@ -41,27 +38,6 @@ describe('values written into SQL', () => {
 		expect(addDays('2026-10-18', -6)).toBe('2026-10-12');
 		expect(addDays('2026-01-03', -7)).toBe('2025-12-27');
 		expect(addDays('2024-02-28', 1)).toBe('2024-02-29');
-	});
-});
-
-describe('addressTxsSql', () => {
-	const sql = addressTxsSql({ address: A, from: '2026-10-12', to: '2026-10-18', lookbackFrom: '2026-07-14', beforeSlot: 200816000, limit: 21, tables });
-
-	it('filters both sides by address, days and cursor', () => {
-		expect(sql).toContain(`FROM address_utxo\n  WHERE owner_addr = '${A}' AND date >= DATE '2026-10-12' AND date <= DATE '2026-10-18' AND slot < 200816000`);
-		expect(sql).toContain("FROM parquet_tx_input i JOIN mine m");
-		expect(sql).toContain("WHERE i.date >= DATE '2026-10-12' AND i.date <= DATE '2026-10-18' AND i.spent_at_slot < 200816000");
-		expect(sql).toContain(`FROM parquet_address_utxo\n  WHERE owner_addr = '${A}' AND date >= DATE '2026-07-14'`);
-		expect(sql).toMatch(/ORDER BY slot DESC\nLIMIT 21$/);
-	});
-
-	it('leaves the cursor out on the first page', () => {
-		const first = addressTxsSql({ address: A, from: '2026-10-12', to: '2026-10-18', lookbackFrom: '2026-07-14', limit: 21, tables });
-		expect(first).not.toContain('slot <');
-	});
-
-	it('is a single statement', () => {
-		expect(sql).not.toContain(';');
 	});
 });
 

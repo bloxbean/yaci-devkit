@@ -7,7 +7,7 @@ import { IndexerGuard } from './indexer-guard';
  * Yaci Store's analytics query API (DuckDB over the store's daily Parquet exports, optionally joined with live
  * PostgreSQL), where the store has it enabled. The devkit's own store doesn't, and answers 404, so everything that
  * uses it is a fallback: the viewer asks the regular endpoints first and comes here when one is too slow for a busy
- * address (bloxbean/yaci-store#1269). Every query is bounded by the store's own timeout, unlike those endpoints.
+ * stake account (bloxbean/yaci-store#1269). Every query is bounded by the store's own timeout, unlike those endpoints.
  *
  * YACI_ANALYTICS=off turns it off even when the store has it.
  */
@@ -29,7 +29,7 @@ export const ANALYTICS = {
  * Tables read through the live views (exports joined with PostgreSQL for the newest data). Others are read from the
  * exports only: on yaci-store 3.0.0-beta5 some live queries outlive the store's timeout (bloxbean/yaci-store#1270).
  */
-const LIVE_OK = new Set(['address_utxo', 'reward']);
+const LIVE_OK = new Set(['reward']);
 
 export interface AnalyticsInfo {
 	/** The store joins its exports with live PostgreSQL (its exported tables are then also `parquet_<table>`). */
@@ -78,9 +78,6 @@ async function probe(fetch: typeof globalThis.fetch): Promise<AnalyticsInfo | nu
 export function tablesFor(live: boolean): Tables {
 	const read = (t: string) => (live && !LIVE_OK.has(t) ? `parquet_${t}` : t);
 	return {
-		outputs: read('address_utxo'),
-		outputsHistory: live ? 'parquet_address_utxo' : 'address_utxo',
-		spends: read('tx_input'),
 		reward: read('reward'),
 		rewardRest: read('reward_rest'),
 		stakeBalance: read('stake_address_balance'),
