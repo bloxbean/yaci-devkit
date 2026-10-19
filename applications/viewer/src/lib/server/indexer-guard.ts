@@ -66,6 +66,11 @@ export class IndexerGuard {
 		this.set(`heavy ${key}`, { kind: 'heavy', until: this.now() + heavyMs });
 	}
 
+	/** Stop skipping this key (a visitor asked to try again). */
+	forget(key: string) {
+		this.entries.delete(`heavy ${key}`);
+	}
+
 	/**
 	 * Runs `run` for `url` (the full request, paging included) under `key` (the endpoint without paging), unless the
 	 * key is heavy (HeavyError), an answer is cached, or the same url is already in flight. A timeout (ApiError with

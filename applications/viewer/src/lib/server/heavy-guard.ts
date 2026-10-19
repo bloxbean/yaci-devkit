@@ -16,6 +16,11 @@ export const GUARD = {
 	heavyMs: 15 * 60_000,
 	/** The same for a page of UTxOs, which is usually quick: a timeout there more likely means a busy store. */
 	utxoHeavyMs: 2 * 60_000,
+	/**
+	 * The same after the store's own timeout on a Blockfrost-compatible call. Its query has already stopped, and a second
+	 * try often finds the data cached, so it is skipped only briefly (and visitors can try again at once).
+	 */
+	blockfrostHeavyMs: 60_000,
 	/** How long a stake account's answer is kept (a busy one can take ~30 s). */
 	accountCacheMs: 60_000,
 	/** How long the UTxO pages after the first, read for a balance, are kept. */
@@ -29,7 +34,9 @@ export const GUARD = {
 		utxos: 30_000,
 		transactions: 15_000,
 		account: 40_000,
-		accountLists: 15_000
+		accountLists: 15_000,
+		/** Blockfrost-compatible calls: the store gives up on them itself after 15 s. */
+		blockfrost: 20_000
 	}
 } as const;
 
