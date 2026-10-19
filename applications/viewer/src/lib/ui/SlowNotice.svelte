@@ -4,9 +4,10 @@
 
 	/*
 	 * In place of a list Yaci Store is too slow to return (bloxbean/yaci-store#1269): it timed out, so the viewer
-	 * won't ask again for a while ('heavy'), or the viewer is already waiting on other slow calls ('busy').
+	 * won't ask again for a while ('heavy'), or the viewer is already waiting on other slow calls ('busy'). `bounded`:
+	 * the store stops these queries itself (its Blockfrost-compatible API, 15 s), so trying again is fine.
 	 */
-	let { reason, children = undefined }: { reason: 'heavy' | 'busy'; children?: Snippet } = $props();
+	let { reason, bounded = false, children = undefined }: { reason: 'heavy' | 'busy'; bounded?: boolean; children?: Snippet } = $props();
 </script>
 
 <div class="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center" data-heavy-notice={reason}>
@@ -16,6 +17,8 @@
 		<p class="mx-auto mt-1 max-w-lg text-sm text-muted">
 			{#if reason === 'busy'}
 				The viewer is already waiting on other slow requests. Try again in a minute.
+			{:else if bounded}
+				Yaci Store gave up after 15 seconds. A second try is often quicker, once the store has this address’s data at hand.
 			{:else}
 				Yaci Store didn’t answer in time. With a long history it can take hours
 				(<a class="y-link" href="https://github.com/bloxbean/yaci-store/issues/1269" target="_blank" rel="noopener noreferrer">yaci-store#1269</a>), so the viewer won’t ask again for a while.

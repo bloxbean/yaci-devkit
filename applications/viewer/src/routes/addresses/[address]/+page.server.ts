@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { paging, tryApi, type ApiOptions } from '$lib/api/client';
 import type { Slow } from '$lib/api/slow';
 import { stakeAddressOf } from '$lib/bech32';
-import { BlockfrostAbsent, bfApi } from '$lib/server/blockfrost';
+import { BlockfrostAbsent, bfApi, blockfrostPresent } from '$lib/server/blockfrost';
 import { GUARD, guardEnabled, guardedApi, indexerGuard, settle } from '$lib/server/heavy-guard';
 import { utxoBalance, type UtxoBalance } from '$lib/tx/balance';
 import type { Amount, Utxo } from '$lib/tx/types';
@@ -33,13 +33,23 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 
 	const guarded = guardEnabled();
 	const txKey = `/addresses/${address}/transactions`;
-	// The transaction list timed out for this address recently: its tab says so instead of asking again.
-	const heavy = guarded && indexerGuard.isHeavy(txKey);
+	const utxosPath = `/addresses/${address}/utxos`;
 	// The page opens on the UTxOs: quick even for busy addresses, where the transaction list can take minutes.
 	const asked = url.searchParams.get('tab') ?? '';
 	const tab = (TABS as readonly string[]).includes(asked) ? (asked as (typeof TABS)[number]) : 'utxos';
 	const { page, count } = paging(url, 20);
 	const order = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+	const utxoListKey = `${utxosPath} page ${page} of ${count} ${order}`;
+
+	// "Try again" on a list or balance the store was too slow for. Offered only where the calls go to the
+	// Blockfrost-compatible API, whose queries the store stops itself after 15 s; the native ones keep running.
+	const canRetry = guarded && blockfrostPresent();
+	if (canRetry && url.searchParams.has('retry')) {
+		const balancePages = Array.from({ length: GUARD.balancePages }, (_, i) => `${utxosPath} balance page ${i + 1}`);
+		for (const k of [txKey, utxoListKey, `/blockfrost/addresses/${address}`, ...balancePages]) indexerGuard.forget(k);
+	}
+	// The transaction list timed out for this address recently: its tab says so instead of asking again.
+	const heavy = guarded && indexerGuard.isHeavy(txKey);
 	const stake = stakeAddressOf(address);
 	const timeouts = GUARD.timeoutMs;
 
@@ -96,11 +106,10 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 
 	// The open tab's list, streamed: even UTxOs can be slow when the store is busy, mostly on deep pages, so a UTxO page
 	// that timed out is skipped for a couple of minutes (that page only).
-	const utxosPath = `/addresses/${address}/utxos`;
 	const utxoList =
 		tab === 'utxos'
 			? settle(
-					either<Row[]>(`${utxosPath} page ${page} of ${count} ${order}`, `/addresses/${address}/utxos`, utxosPath, {
+					either<Row[]>(utxoListKey, `/addresses/${address}/utxos`, utxosPath, {
 						fetch,
 						params: { page, count, order },
 						timeoutMs: timeouts.utxos,
@@ -128,6 +137,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		page,
 		count,
 		order,
+		canRetry,
 		list: utxoList ?? txList ?? ({ ok: true, value: [] } as Slow<Row[]>)
 	};
 };

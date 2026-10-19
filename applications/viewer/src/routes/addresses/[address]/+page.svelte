@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page as pageState } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { addressInfo } from '$lib/address';
 	import { num, shorten, parseUnit } from '$lib/format';
 	import PageHeader from '$lib/ui/PageHeader.svelte';
@@ -56,6 +56,20 @@
 	}
 
 	let datumOf = $state<Utxo | null>(null);
+
+	// "Try again" asks the server to stop skipping this address's slow calls (?retry). Once the page has loaded, the
+	// parameter comes off the address bar, so a reload or a tab change doesn't force it again.
+	const retryHref = $derived.by(() => {
+		const u = new URL(pageState.url);
+		u.searchParams.set('retry', '1');
+		return u.pathname + u.search;
+	});
+	$effect(() => {
+		if (!pageState.url.searchParams.has('retry')) return;
+		const u = new URL(pageState.url);
+		u.searchParams.delete('retry');
+		replaceState(u.pathname + u.search, pageState.state);
+	});
 	let tokenFilter = $state('');
 	const shownTokens = $derived(
 		tokenFilter ? tokens.filter((t) => (parseUnit(t.unit).name + t.unit).toLowerCase().includes(tokenFilter.toLowerCase())) : tokens
@@ -141,7 +155,8 @@
 		{#if list.value.reason === 'error'}
 			<ErrorBox title="Couldn't load this list" message={list.value.message} />
 		{:else}
-			<SlowNotice reason={list.value.reason}>
+			<SlowNotice reason={list.value.reason} bounded={data.canRetry}>
+				{#if data.canRetry}<a class="y-btn y-btn-primary" href={retryHref} data-sveltekit-noscroll>Try again</a>{/if}
 				{#if data.tab === 'txs'}<a class="y-btn" href="?tab=utxos">Show UTxOs instead</a>{/if}
 			</SlowNotice>
 		{/if}

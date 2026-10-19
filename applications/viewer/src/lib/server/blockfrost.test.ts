@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BlockfrostAbsent, bfApi, resetBlockfrost } from './blockfrost';
+import { BlockfrostAbsent, bfApi, blockfrostPresent, resetBlockfrost } from './blockfrost';
 import { indexerGuard } from './heavy-guard';
 import { HeavyError } from './indexer-guard';
 
@@ -28,6 +28,14 @@ describe('bfApi', () => {
 		expect(indexerGuard.isHeavy('k-slow')).toBe(true);
 		await expect(bfApi('k-slow', '/addresses/a4/transactions', { fetch })).rejects.toBeInstanceOf(HeavyError);
 		expect(fetch).toHaveBeenCalledTimes(1);
+	});
+
+	it('counts as present once the store answers, and not after "No endpoint"', async () => {
+		expect(blockfrostPresent()).toBe(false);
+		await bfApi('k-p1', '/addresses/p1', { fetch: reply(200, {}) });
+		expect(blockfrostPresent()).toBe(true);
+		await expect(bfApi('k-p2', '/addresses/p2', { fetch: reply(404, { detail: 'No endpoint GET /x.' }) })).rejects.toBeInstanceOf(BlockfrostAbsent);
+		expect(blockfrostPresent()).toBe(false);
 	});
 
 	it('passes other errors on', async () => {

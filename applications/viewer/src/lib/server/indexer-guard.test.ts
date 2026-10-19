@@ -17,6 +17,15 @@ const deferred = <T>() => {
 };
 
 describe('IndexerGuard', () => {
+	it('stops skipping a key when asked to', async () => {
+		const { guard } = setup();
+		guard.markHeavy('/addresses/a/transactions');
+		expect(guard.isHeavy('/addresses/a/transactions')).toBe(true);
+		guard.forget('/addresses/a/transactions');
+		expect(guard.isHeavy('/addresses/a/transactions')).toBe(false);
+		expect(await guard.call('/addresses/a/transactions', '/addresses/a/transactions?page=1', async () => 'ok')).toBe('ok');
+	});
+
 	it('skips a key for 15 minutes after a timeout, then tries again', async () => {
 		const { guard, advance } = setup();
 		let calls = 0;
