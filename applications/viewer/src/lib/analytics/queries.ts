@@ -26,6 +26,12 @@ export function dateLiteral(day: string): string {
 	return `DATE '${day}'`;
 }
 
+/** A 28-byte hash in hex (script hash, pool hash). */
+export function hashLiteral(hash: string): string {
+	if (!/^[0-9a-f]{56}$/.test(hash)) throw new QueryValueError(`Not a 28-byte hex hash: ${hash}`);
+	return `'${hash}'`;
+}
+
 export function intLiteral(n: number): string {
 	if (!Number.isSafeInteger(n)) throw new QueryValueError(`Not an integer: ${n}`);
 	return String(n);
@@ -40,6 +46,12 @@ export function addDays(day: string, days: number): string {
 
 /** The table names to read: the live view where it is known to answer quickly, otherwise the exported data. */
 export interface Tables {
+	transaction: string;
+	transactionScripts: string;
+	block: string;
+	adapot: string;
+	epochStake: string;
+	drepDist: string;
 	reward: string;
 	rewardRest: string;
 	stakeBalance: string;

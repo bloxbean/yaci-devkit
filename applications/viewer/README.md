@@ -91,6 +91,20 @@ Those sections are labelled "From Yaci Store analytics" with how fresh the data 
 store's own 30 s timeout, at most two run at once, and answers are kept for 10 minutes. Yaci Viewer checks whether the
 store has the API every 10 minutes (one `SELECT 1`), and does nothing different when it doesn't.
 
+The same API adds charts and numbers, again only where the store has it:
+
+| Page | What |
+|---|---|
+| Dashboard | Transactions, script runs, script CPU and fees per day (90 days); treasury and reserves; the Nakamoto coefficient; pools making blocks; the most-run scripts (7 days) |
+| Governance | Voting power: the 10 largest DReps and options, with their share |
+| Script | Runs, CPU steps and the costliest run per day (90 days) |
+| Pool | Blocks, active stake and delegators per epoch (50 epochs) |
+| Stake account | Rewards and active stake per epoch (50 epochs) |
+
+They read the store's daily exports, which DuckDB aggregates in well under a second. Yaci Viewer keeps the answers in
+memory and serves them while it refreshes them in the background: network-wide ones for an hour, one script's, pool's or
+account's for 30 minutes (`src/lib/server/insights.ts`). Pages stream them in, so they never hold up a page.
+
 The base and WebSocket URLs can also be passed on the command line:
 
 ```bash

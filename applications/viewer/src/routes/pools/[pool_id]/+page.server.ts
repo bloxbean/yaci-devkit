@@ -3,6 +3,7 @@ import { api, paging, tryApi } from '$lib/api/client';
 import { must } from '$lib/api/load';
 import { isPoolId } from '$lib/staking/pool';
 import { fetchPoolMetadata } from '$lib/staking/poolMetadata.server';
+import { poolInsights } from '$lib/server/insights';
 import type { PageServerLoad } from './$types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,6 +64,8 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		blocks: blocks ? [...blocks].reverse() : null,
 		metadata,
 		rows: rows.rows,
-		listError: rows.error
+		listError: rows.error,
+		// Blocks, stake and delegators over 50 epochs, from Yaci Store analytics where the store has it. Streamed.
+		history: /^[0-9a-f]{56}$/.test(hash) ? poolInsights(hash, fetch, epoch || null).catch(() => null) : null
 	};
 };

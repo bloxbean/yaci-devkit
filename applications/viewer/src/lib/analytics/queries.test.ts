@@ -4,6 +4,12 @@ import { addDays, addressLiteral, dateLiteral, QueryValueError, stakeAccountSql,
 const A = 'addr1z84q0denmyep98ph3tmzwsmw0j7zau9ljmsqx6a4rvaau66j2c79gy9l76sdg0xwhd7r0c0kna0tycz4y5s6mlenh8pq777e2a';
 const S = 'stake1u9f9v0z5zzlldgx58n8tklphu8mf7h4jvp2j2gddluemnssjfnkzz';
 const tables: Tables = {
+	transaction: 'parquet_transaction',
+	transactionScripts: 'parquet_transaction_scripts',
+	block: 'parquet_block',
+	adapot: 'parquet_adapot',
+	epochStake: 'parquet_epoch_stake',
+	drepDist: 'parquet_drep_dist',
 	reward: 'reward',
 	rewardRest: 'parquet_reward_rest',
 	stakeBalance: 'parquet_stake_address_balance',

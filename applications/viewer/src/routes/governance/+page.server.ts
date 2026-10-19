@@ -1,6 +1,7 @@
 import { tryApi } from '$lib/api/client';
 import { loadCommittee, loadConstitution } from '$lib/governance/data';
 import { toProposal } from '$lib/governance/labels';
+import { drepPower } from '$lib/server/insights';
 import type { PageServerLoad } from './$types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,6 +31,8 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		committee,
 		constitution,
 		special: (special ?? []) as { drep_type: string; voting_power: number }[],
-		votes: (votes ?? []) as Any[]
+		votes: (votes ?? []) as Any[],
+		// Who holds the voting power, from Yaci Store analytics where the store has it (null otherwise). Streamed.
+		drepPower: drepPower(fetch, stats?.epoch != null ? Number(stats.epoch) : null).catch(() => null)
 	};
 };

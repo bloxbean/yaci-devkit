@@ -5,6 +5,7 @@ import type { AnalyticsSource } from '$lib/analytics/types';
 import { analyticsRewards, REWARD_EPOCHS } from '$lib/server/analytics-sections';
 import { GUARD, guardedApi, settle } from '$lib/server/heavy-guard';
 import { stakeAccountSection } from '$lib/server/stake-account';
+import { stakeInsights } from '$lib/server/insights';
 import type { PageServerLoad } from './$types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,10 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		page,
 		count,
 		list,
-		rewardEpochs: REWARD_EPOCHS
+		rewardEpochs: REWARD_EPOCHS,
+		// Rewards and active stake over 50 epochs, from Yaci Store analytics where the store has it. Streamed.
+		history: tryApi<Any>('/epochs/latest', { fetch, timeoutMs: GUARD.timeoutMs.balance })
+			.then((latest) => stakeInsights(address, fetch, latest?.epoch != null ? Number(latest.epoch) : null))
+			.catch(() => null)
 	};
 };
