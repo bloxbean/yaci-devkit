@@ -63,6 +63,7 @@ Set these in the environment, or in a `.env` file in the directory you start Yac
 | `PUBLIC_JULC_BASE_URL` | `/julc/` | Where the browser loads the julc engine from, if not served by Yaci Viewer itself |
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | Where Yaci Viewer listens |
 | `HEAVY_ADDRESS_GUARD` | `true` | Protects a large Yaci Store from busy addresses (below). `false` restores the plain behaviour |
+| `YACI_ANALYTICS` | `auto` | `off` stops Yaci Viewer from using the store's analytics query API (below) even when the store has it |
 
 ### Busy addresses on a large Yaci Store
 
@@ -80,6 +81,17 @@ minutes to hours for busy addresses, and the store keeps running the query after
 
 The limits are in `src/lib/server/heavy-guard.ts`. Set `HEAVY_ADDRESS_GUARD=false` once the store cancels abandoned
 queries.
+
+When the store has its analytics query API enabled (`yaci.store.analytics.query.rest-api-enabled`, not available on
+the devkit's own store), Yaci Viewer uses it where a regular endpoint is too slow:
+
+- a busy address's **transactions**: those that paid it (up to now, where the store joins live data) or spent from it
+  (up to the last daily export), newest first, with "Older" to page back;
+- a busy **stake account**: what it controls and its pool, as of the last export, and its **rewards**, 20 epochs a page.
+
+Those sections are labelled "From Yaci Store analytics" with how fresh the data is. Analytics queries are bounded by the
+store's own 30 s timeout, at most two run at once, and answers are kept for 10 minutes. Yaci Viewer checks whether the
+store has the API every 10 minutes (one `SELECT 1`), and does nothing different when it doesn't.
 
 The base and WebSocket URLs can also be passed on the command line:
 

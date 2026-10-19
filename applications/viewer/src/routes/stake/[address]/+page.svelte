@@ -11,6 +11,7 @@
 	import ErrorBox from '$lib/ui/ErrorBox.svelte';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import SlowNotice from '$lib/ui/SlowNotice.svelte';
+	import AnalyticsNote from '$lib/ui/AnalyticsNote.svelte';
 	import { resolved } from '$lib/ui/resolved.svelte';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import Server from '@lucide/svelte/icons/server';
@@ -23,7 +24,9 @@
 	const accountResult = resolved(() => data.account);
 	const list = resolved(() => data.list);
 	const account = $derived(accountResult.value?.ok ? accountResult.value.value : null);
-	const rows = $derived(list.value?.ok ? list.value.value : []);
+	const rows = $derived(list.value?.ok ? list.value.value.rows : []);
+	// Set when the rewards came from analytics (20 epochs a page) because the store's own list is too slow.
+	const listAnalytics = $derived(list.value?.ok ? list.value.value.analytics : null);
 
 	const drepLabel = $derived.by(() => {
 		const d = data.drep;
@@ -58,6 +61,8 @@
 		<div class="mt-2 text-sm text-muted">
 			{#if accountResult.value && !accountResult.value.ok}
 				<span title={accountResult.value.message}>{accountResult.value.reason === 'error' ? 'Couldn’t load this stake account.' : 'This stake account is too slow to load on this Yaci Store right now (yaci-store#1269).'}</span>
+			{:else if account?.analytics}
+				<AnalyticsNote source={account.analytics} compact />
 			{:else}
 				Withdrawable rewards {#if account}<Ada value={account.withdrawable_amount} decimals={6} class="font-semibold text-ink" />{:else}—{/if}
 			{/if}
@@ -116,6 +121,9 @@
 		</DataTable>
 		<Pager page={data.page} hasNext={rows.length === data.count} />
 	{:else}
+		{#if listAnalytics}
+			<AnalyticsNote source={listAnalytics}>Epochs {listAnalytics.fromEpoch} to {listAnalytics.toEpoch}, {data.rewardEpochs} epochs a page.</AnalyticsNote>
+		{/if}
 		<DataTable
 			{rows}
 			columns={[{ key: 'epoch', label: 'Epoch' }, { key: 'type', label: 'Type' }, { key: 'pool', label: 'Pool', minor: true }, { key: 'amount', label: 'Amount', align: 'right' }]}
@@ -130,6 +138,6 @@
 				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
 			{/snippet}
 		</DataTable>
-		<Pager page={data.page} hasNext={rows.length === data.count} />
+		<Pager page={data.page} hasNext={listAnalytics ? listAnalytics.fromEpoch > 0 : rows.length === data.count} />
 	{/if}
 </section>

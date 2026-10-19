@@ -39,6 +39,8 @@ export interface ApiOptions {
 	params?: Params;
 	timeoutMs?: number;
 	signal?: AbortSignal;
+	/** POSTs this as JSON instead of a GET. */
+	body?: unknown;
 }
 
 function buildUrl(path: string, params?: Params): string {
@@ -49,7 +51,7 @@ function buildUrl(path: string, params?: Params): string {
 	return url.toString();
 }
 
-/** GET a JSON resource. Throws ApiError on HTTP errors and timeouts. */
+/** GET a JSON resource (or POST `body` as JSON). Throws ApiError on HTTP errors and timeouts. */
 export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Promise<T> {
 	const f = opts.fetch ?? fetch;
 	const ctrl = new AbortController();
@@ -67,7 +69,11 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
 	opts.signal?.addEventListener('abort', () => ctrl.abort());
 	const url = buildUrl(path, opts.params);
 	try {
-		const res = await Promise.race([f(url, { signal: ctrl.signal, headers: { accept: 'application/json' } }), timedOut]);
+		const init: RequestInit =
+			opts.body === undefined
+				? { signal: ctrl.signal, headers: { accept: 'application/json' } }
+				: { method: 'POST', signal: ctrl.signal, headers: { accept: 'application/json', 'content-type': 'application/json' }, body: JSON.stringify(opts.body) };
+		const res = await Promise.race([f(url, init), timedOut]);
 		if (!res.ok) {
 			let detail = res.statusText;
 			try {
