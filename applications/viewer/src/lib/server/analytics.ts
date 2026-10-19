@@ -61,7 +61,9 @@ async function probe(fetch: typeof globalThis.fetch): Promise<AnalyticsInfo | nu
 	try {
 		await query('SELECT 1 AS ok', { fetch, timeoutMs: 8_000 });
 	} catch (e) {
-		if (e instanceof ApiError && e.status === 404) return null;
+		// 404: the store doesn't have the API. 401/403: it does, but not for this caller (for example a reverse proxy
+		// that keeps it internal). Either way, there is nothing to use until the next probe.
+		if (e instanceof ApiError && [401, 403, 404].includes(e.status)) return null;
 		throw e;
 	}
 	// With live data on, the exports are also available on their own as parquet_<table>.
