@@ -56,6 +56,7 @@ describe('registries', () => {
 				contracts: [
 					{ name: 'Order Contract', version: 2, scriptHash: h('a') },
 					{ name: 'contract', version: 1, scriptHash: h('b') },
+					{ name: 'minswap batcher', version: 1, scriptHash: h('f') },
 					{ name: 'Bad', version: 1, scriptHash: 'xyz' }
 				]
 			}),
@@ -71,8 +72,9 @@ describe('registries', () => {
 		const names = stricaNames(strica);
 		expect(names.get(h('a'))).toEqual({ label: 'Minswap Order Contract v2', project: 'Minswap', category: 'DEX', url: 'https://minswap.org', source: 'strica' });
 		expect(names.get(h('b'))?.label).toBe('Minswap');
+		expect(names.get(h('f'))?.label).toBe('minswap batcher');
 		expect(names.get(h('c'))?.project).toBe('Long Name');
-		expect(names.size).toBe(3);
+		expect(names.size).toBe(4);
 	});
 
 	it('labels CRFA scripts and minting policies, and Strica wins on overlap', () => {

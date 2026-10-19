@@ -60,7 +60,8 @@ export function stricaNames(files: TarFile[]): Map<string, ScriptName> {
 			if (!HASH.test(hash)) continue;
 			const name = str(c.name, 60);
 			const version = Number(c.version);
-			const label = [prefix, name && name.toLowerCase() !== 'contract' ? name : null].filter(Boolean).join(' ');
+			// "contract" is the registry's word for an unnamed contract; a name that already starts with the prefix stands alone.
+			const label = !name || name.toLowerCase() === 'contract' ? prefix : name.toLowerCase().startsWith(prefix.toLowerCase()) ? name : `${prefix} ${name}`;
 			out.set(hash, {
 				label: version > 1 ? `${label} v${version}` : label,
 				project,
