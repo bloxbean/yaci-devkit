@@ -9,12 +9,21 @@
 	import TimeAgo from '$lib/ui/TimeAgo.svelte';
 	import CopyButton from '$lib/ui/CopyButton.svelte';
 	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import Skeleton from '$lib/ui/Skeleton.svelte';
+	import SlowNotice from '$lib/ui/SlowNotice.svelte';
+	import { resolved } from '$lib/ui/resolved.svelte';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import Server from '@lucide/svelte/icons/server';
 	import Users from '@lucide/svelte/icons/users';
 	import Gift from '@lucide/svelte/icons/gift';
 
 	let { data } = $props();
+
+	// Streamed in after the page renders: undefined while loading.
+	const accountResult = resolved(() => data.account);
+	const list = resolved(() => data.list);
+	const account = $derived(accountResult.value?.ok ? accountResult.value.value : null);
+	const rows = $derived(list.value?.ok ? list.value.value : []);
 
 	const drepLabel = $derived.by(() => {
 		const d = data.drep;
@@ -34,7 +43,7 @@
 		<CopyButton value={data.address} label="Stake address copied" />
 	</div>
 	{#snippet actions()}
-		{#if data.account?.pool_id}<Badge tone="ok">Delegating</Badge>{:else if data.account}<Badge tone="neutral">Not delegated</Badge>{/if}
+		{#if account?.pool_id}<Badge tone="ok">Delegating</Badge>{:else if account}<Badge tone="neutral">Not delegated</Badge>{/if}
 	{/snippet}
 </PageHeader>
 
@@ -43,17 +52,26 @@
 		<div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10 blur-2xl"></div>
 		<div class="y-label">Controlled stake</div>
 		<div class="mt-1 font-display text-4xl font-semibold tracking-tight">
-			{#if data.account}<Ada value={data.account.controlled_amount} decimals={6} />{:else}<span class="text-muted">—</span>{/if}
+			{#if accountResult.value === undefined}<span class="y-skel inline-block h-9 w-56 align-middle" aria-label="Loading the stake account"></span>
+			{:else if account}<Ada value={account.controlled_amount} decimals={6} />{:else}<span class="text-muted">—</span>{/if}
 		</div>
 		<div class="mt-2 text-sm text-muted">
-			Withdrawable rewards {#if data.account}<Ada value={data.account.withdrawable_amount} decimals={6} class="font-semibold text-ink" />{:else}—{/if}
+			{#if accountResult.value && !accountResult.value.ok}
+				<span title={accountResult.value.message}>{accountResult.value.reason === 'error' ? 'Couldn’t load this stake account.' : 'This stake account is too slow to load on this Yaci Store right now (yaci-store#1269).'}</span>
+			{:else}
+				Withdrawable rewards {#if account}<Ada value={account.withdrawable_amount} decimals={6} class="font-semibold text-ink" />{:else}—{/if}
+			{/if}
 		</div>
 	</div>
 	<div class="y-panel p-5">
 		<div class="y-label flex items-center gap-1.5"><Server class="h-3.5 w-3.5" />Stake pool</div>
-		{#if data.account?.pool_id}
-			<a href="/pools/{data.account.pool_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline" title={data.account.pool_id}>{shorten(data.account.pool_id, 12, 8)}</a>
+		{#if account?.pool_id}
+			<a href="/pools/{account.pool_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline" title={account.pool_id}>{shorten(account.pool_id, 12, 8)}</a>
 			<div class="mt-1 text-xs text-muted">earns staking rewards</div>
+		{:else if accountResult.value === undefined}
+			<div class="y-skel mt-3 h-4 w-40"></div>
+		{:else if !account}
+			<div class="mt-2 text-sm text-muted">—</div>
 		{:else}
 			<div class="mt-2 text-sm text-muted">Not delegated to a pool</div>
 		{/if}
@@ -73,11 +91,17 @@
 
 <section class="y-panel overflow-hidden">
 	<Tabs tabs={[{ id: 'rewards', label: 'Rewards' }, { id: 'withdrawals', label: 'Withdrawals' }, { id: 'other', label: 'Other rewards' }]} active={data.tab} link />
-	{#if data.listError}
-		<ErrorBox title="Couldn't load this list" message={data.listError} />
+	{#if list.value === undefined}
+		<Skeleton rows={8} />
+	{:else if !list.value.ok}
+		{#if list.value.reason === 'error'}
+			<ErrorBox title="Couldn't load this list" message={list.value.message} />
+		{:else}
+			<SlowNotice reason={list.value.reason} />
+		{/if}
 	{:else if data.tab === 'withdrawals'}
 		<DataTable
-			rows={data.rows}
+			{rows}
 			columns={[{ key: 'tx', label: 'Transaction' }, { key: 'epoch', label: 'Epoch' }, { key: 'age', label: 'Age', minor: true }, { key: 'amount', label: 'Amount', align: 'right' }]}
 			key={(r) => r.tx_hash}
 			rowHref={(r) => `/transactions/${r.tx_hash}`}
@@ -90,10 +114,10 @@
 				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
 			{/snippet}
 		</DataTable>
-		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+		<Pager page={data.page} hasNext={rows.length === data.count} />
 	{:else}
 		<DataTable
-			rows={data.rows}
+			{rows}
 			columns={[{ key: 'epoch', label: 'Epoch' }, { key: 'type', label: 'Type' }, { key: 'pool', label: 'Pool', minor: true }, { key: 'amount', label: 'Amount', align: 'right' }]}
 			key={(r) => `${r.epoch}-${r.type}-${r.pool_id ?? ''}-${r.amount}`}
 			emptyTitle={data.tab === 'other' ? 'No other rewards' : 'No rewards yet'}
@@ -106,6 +130,6 @@
 				{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
 			{/snippet}
 		</DataTable>
-		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+		<Pager page={data.page} hasNext={rows.length === data.count} />
 	{/if}
 </section>
