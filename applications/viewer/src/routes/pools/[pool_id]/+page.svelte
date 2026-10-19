@@ -14,6 +14,8 @@
 	import ErrorBox from '$lib/ui/ErrorBox.svelte';
 	import Empty from '$lib/ui/Empty.svelte';
 	import { marginPct, poolStatus } from '$lib/staking/pool';
+	import PoolHistory from '$lib/insights/PoolHistory.svelte';
+	import { resolved } from '$lib/ui/resolved.svelte';
 	import Server from '@lucide/svelte/icons/server';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Layers from '@lucide/svelte/icons/layers';
@@ -24,6 +26,8 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
 	let { data } = $props();
+	// Streamed, and only where the store has Yaci Store analytics (null otherwise).
+	const history = resolved(() => data.history);
 	const p = $derived(data.pool);
 	const m = $derived(data.metadata);
 	const status = $derived(poolStatus(p.retire_epoch, data.epoch));
@@ -113,6 +117,8 @@
 		</Panel>
 	</div>
 </div>
+
+{#if history.value}<PoolHistory history={history.value} />{/if}
 
 <section class="y-panel overflow-hidden">
 	<Tabs

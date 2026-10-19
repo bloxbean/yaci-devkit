@@ -9,6 +9,8 @@
 	import Empty from '$lib/ui/Empty.svelte';
 	import ProposalTable from '$lib/governance/ProposalTable.svelte';
 	import AnchorLink from '$lib/governance/AnchorLink.svelte';
+	import DRepPower from '$lib/insights/DRepPower.svelte';
+	import { resolved } from '$lib/ui/resolved.svelte';
 	import { actionHref, voteLabel, voteTone, voterGroup, VOTER_LABEL } from '$lib/governance/labels';
 	import Landmark from '@lucide/svelte/icons/landmark';
 	import ScrollText from '@lucide/svelte/icons/scroll-text';
@@ -20,6 +22,8 @@
 	import UserPlus from '@lucide/svelte/icons/user-plus';
 
 	let { data } = $props();
+	// Streamed, and only where the store has Yaci Store analytics (null otherwise).
+	const power = resolved(() => data.drepPower);
 
 	const d = $derived(data.stats?.drep_stats);
 	const p = $derived(data.stats?.proposal_stats);
@@ -138,6 +142,8 @@
 		{/each}
 	</div>
 </div>
+
+{#if power.value}<DRepPower power={power.value} />{/if}
 
 {#if noConfidence != null}
 	<p class="mt-6 text-xs text-faint">Also delegated: ₳{adaCompact(noConfidence)} to "always no confidence".</p>

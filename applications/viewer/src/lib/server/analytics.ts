@@ -78,6 +78,12 @@ async function probe(fetch: typeof globalThis.fetch): Promise<AnalyticsInfo | nu
 export function tablesFor(live: boolean): Tables {
 	const read = (t: string) => (live && !LIVE_OK.has(t) ? `parquet_${t}` : t);
 	return {
+		transaction: read('transaction'),
+		transactionScripts: read('transaction_scripts'),
+		block: read('block'),
+		adapot: read('adapot'),
+		epochStake: read('epoch_stake'),
+		drepDist: read('drep_dist'),
 		reward: read('reward'),
 		rewardRest: read('reward_rest'),
 		stakeBalance: read('stake_address_balance'),
@@ -102,4 +108,9 @@ function query<T>(sql: string, opts: { fetch: typeof globalThis.fetch; maxRows?:
  */
 export function analyticsSql<T>(sql: string, opts: { fetch: typeof globalThis.fetch; maxRows?: number; cacheMs?: number }): Promise<T[]> {
 	return guard.call(sql, sql, () => query<T>(sql, opts), { cacheMs: opts.cacheMs ?? ANALYTICS.cacheMs, waitMs: ANALYTICS.waitMs });
+}
+
+/** The current UTC day, as an ISO date. */
+export function today(): string {
+	return new Date().toISOString().slice(0, 10);
 }

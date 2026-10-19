@@ -14,6 +14,8 @@
 	import { isPlutus, plutusVersionOf, scriptTypeLabel } from '$lib/assets/script';
 	import ScriptCode from '$lib/julc/ScriptCode.svelte';
 	import ScriptActivity from '$lib/julc/ScriptActivity.svelte';
+	import ScriptUsage from '$lib/insights/ScriptUsage.svelte';
+	import { resolved } from '$lib/ui/resolved.svelte';
 	import BlueprintPanel from '$lib/julc/blueprint/BlueprintPanel.svelte';
 	import { blueprints } from '$lib/julc/blueprint/store.svelte';
 	import { variantOf } from '$lib/julc/blueprint/blueprint';
@@ -25,6 +27,8 @@
 	import Wallet from '@lucide/svelte/icons/wallet';
 
 	let { data } = $props();
+	// Streamed, and only where the store has Yaci Store analytics (null otherwise).
+	const usage = resolved(() => data.usage);
 
 	const label = $derived(scriptTypeLabel(data.type));
 	const plutus = $derived(isPlutus(data.type));
@@ -113,6 +117,7 @@
 			{/await}
 		</div>
 	{/if}
+	{#if usage.value}<ScriptUsage usage={usage.value} />{/if}
 {:else}
 	<Panel title="CBOR">
 		{#snippet actions()}{#if data.cbor}<CopyButton value={data.cbor} label="CBOR copied" />{/if}{/snippet}

@@ -12,6 +12,7 @@
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import SlowNotice from '$lib/ui/SlowNotice.svelte';
 	import AnalyticsNote from '$lib/ui/AnalyticsNote.svelte';
+	import StakeHistory from '$lib/insights/StakeHistory.svelte';
 	import { resolved } from '$lib/ui/resolved.svelte';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import Server from '@lucide/svelte/icons/server';
@@ -27,6 +28,7 @@
 	const rows = $derived(list.value?.ok ? list.value.value.rows : []);
 	// Set when the rewards came from analytics (20 epochs a page) because the store's own list is too slow.
 	const listAnalytics = $derived(list.value?.ok ? list.value.value.analytics : null);
+	const history = resolved(() => data.history);
 
 	const drepLabel = $derived.by(() => {
 		const d = data.drep;
@@ -93,6 +95,8 @@
 		{/if}
 	</div>
 </section>
+
+{#if history.value}<StakeHistory history={history.value} />{/if}
 
 <section class="y-panel overflow-hidden">
 	<Tabs tabs={[{ id: 'rewards', label: 'Rewards' }, { id: 'withdrawals', label: 'Withdrawals' }, { id: 'other', label: 'Other rewards' }]} active={data.tab} link />

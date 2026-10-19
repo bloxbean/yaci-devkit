@@ -9,6 +9,8 @@
 	import EpochCard from '$lib/dashboard/EpochCard.svelte';
 	import TxFeed from '$lib/dashboard/TxFeed.svelte';
 	import SupplyCard from '$lib/dashboard/SupplyCard.svelte';
+	import NetworkInsights from '$lib/insights/NetworkInsights.svelte';
+	import { resolved } from '$lib/ui/resolved.svelte';
 	import { shell } from '$lib/shell/ui.svelte';
 	import Box from '@lucide/svelte/icons/box';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
@@ -27,6 +29,8 @@
 	const txs: LiveTx[] = $derived(chain.txs.length ? chain.txs : data.txs.map((t: unknown) => toTx(t, 0)));
 	const tip = $derived(blocks[0]);
 	const epoch = $derived(data.epoch ? { epoch: data.epoch.epoch, start: data.epoch.start_time, end: data.epoch.end_time } : null);
+	// Streamed, and only where the store has Yaci Store analytics (null otherwise).
+	const insights = resolved(() => data.insights);
 
 	// Trends over the recent blocks, oldest first.
 	const recent = $derived(blocks.slice(0, 20).reverse());
@@ -130,4 +134,6 @@
 			</Panel>
 		</div>
 	</section>
+
+	{#if insights.value}<NetworkInsights insights={insights.value} />{/if}
 {/if}
