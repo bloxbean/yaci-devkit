@@ -1,0 +1,6 @@
+# Per-address and per-account pages can start slow queries on a large Yaci Store
+# (bloxbean/yaci-store#1269), so crawlers are kept off them.
+User-agent: *
+Disallow: /addresses/
+Disallow: /stake/
+Disallow: /epoch-stakes/accounts

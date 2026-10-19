@@ -24,7 +24,9 @@ export class ApiError extends Error {
 	constructor(
 		message: string,
 		public status: number,
-		public path: string
+		public path: string,
+		/** The viewer gave up waiting. The store may still be working on it: Yaci Store doesn't cancel the query. */
+		public timedOut = false
 	) {
 		super(message);
 	}
@@ -86,7 +88,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
 	} catch (e) {
 		if (e instanceof ApiError) throw e;
 		const aborted = (e as Error)?.name === 'AbortError';
-		throw new ApiError(aborted ? 'The request timed out' : 'Yaci Store is not reachable', 0, path);
+		throw new ApiError(aborted ? 'The request timed out' : 'Yaci Store is not reachable', 0, path, aborted);
 	} finally {
 		clearTimeout(timer);
 	}

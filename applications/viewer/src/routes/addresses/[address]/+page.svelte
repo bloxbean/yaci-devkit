@@ -17,6 +17,9 @@
 	import ErrorBox from '$lib/ui/ErrorBox.svelte';
 	import Empty from '$lib/ui/Empty.svelte';
 	import DatumDialog from '$lib/tx/DatumDialog.svelte';
+	import Skeleton from '$lib/ui/Skeleton.svelte';
+	import SlowNotice from '$lib/ui/SlowNotice.svelte';
+	import { resolved } from '$lib/ui/resolved.svelte';
 	import { assetsOf, lovelaceOf, type Utxo } from '$lib/tx/types';
 	import Wallet from '@lucide/svelte/icons/wallet';
 	import FileCode from '@lucide/svelte/icons/file-code';
@@ -29,8 +32,20 @@
 	let { data } = $props();
 
 	const info = $derived(addressInfo(data.address));
-	const lovelace = $derived(lovelaceOf(data.amounts));
-	const tokens = $derived(assetsOf(data.amounts).sort((a, b) => parseUnit(a.unit).name.localeCompare(parseUnit(b.unit).name)));
+	// Sections that may stream in after the page renders: undefined while they load.
+	const balance = resolved(() => data.balance);
+	const list = resolved(() => data.list);
+	const accountResult = resolved(() => data.account);
+	const account = $derived(accountResult.value?.ok ? accountResult.value.value : null);
+	const amounts = $derived(balance.value?.amounts ?? []);
+	const lovelace = $derived(lovelaceOf(amounts));
+	const tokens = $derived(assetsOf(amounts).sort((a, b) => parseUnit(a.unit).name.localeCompare(parseUnit(b.unit).name)));
+	const rows = $derived(list.value?.ok ? list.value.value : []);
+	const partialNote = $derived(
+		balance.value && !balance.value.exact && balance.value.amounts
+			? `Lower bound: the sum of the newest ${num(balance.value.utxos ?? 0)} unspent outputs. This address has more than the viewer totals here.`
+			: null
+	);
 
 	function toggleOrder() {
 		const u = new URL(pageState.url);
@@ -64,19 +79,31 @@
 	<div class="y-panel relative overflow-hidden p-5 xl:col-span-2">
 		<div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-brand/10 blur-2xl"></div>
 		<div class="y-label">Balance</div>
-		<div class="mt-1 font-display text-4xl font-semibold tracking-tight">
-			{#if data.balanceKnown}<Ada value={lovelace} decimals={6} />{:else}<span class="text-muted">—</span>{/if}
+		<div class="mt-1 font-display text-4xl font-semibold tracking-tight" data-balance={balance.value === undefined ? 'loading' : !balance.value.amounts ? 'unknown' : balance.value.exact ? 'exact' : 'partial'}>
+			{#if balance.value === undefined}<span class="y-skel inline-block h-9 w-56 align-middle" aria-label="Loading balance"></span>
+			{:else if !balance.value.amounts}<span class="text-muted">—</span>
+			{:else}{#if !balance.value.exact}<span class="text-muted" title="At least">≥ </span>{/if}<Ada value={lovelace} decimals={2} />{/if}
 		</div>
+		{#if balance.value?.amounts}
+			<div class="mono mt-1 text-xs text-faint tabular-nums" data-lovelace>{balance.value.exact ? '' : '≥ '}{num(lovelace)} lovelace</div>
+		{/if}
 		<div class="mt-2 text-sm text-muted">
-			{tokens.length ? `${num(tokens.length)} native token${tokens.length === 1 ? '' : 's'}` : 'No native tokens'}
+			{#if balance.value === undefined}Adding up unspent outputs…
+			{:else if !balance.value.amounts}Yaci Store didn’t return a balance for this address.
+			{:else}{tokens.length ? `${!balance.value.exact ? 'At least ' : ''}${num(tokens.length)} native token${tokens.length === 1 ? '' : 's'}` : 'No native tokens'}{#if balance.value.utxos != null}{' · '}{num(balance.value.utxos)}{balance.value.exact ? '' : '+'} UTxO{balance.value.utxos === 1 ? '' : 's'}{/if}{/if}
 		</div>
+		{#if partialNote}<div class="mt-2 text-xs text-muted" data-partial-note>{partialNote}</div>{/if}
 	</div>
 	<div class="y-panel p-5">
 		<div class="y-label flex items-center gap-1.5"><KeyRound class="h-3.5 w-3.5" />Stake account</div>
 		{#if data.stake}
 			<a href="/stake/{data.stake}" class="mono mt-2 block truncate text-sm text-brand hover:underline" title={data.stake}>{shorten(data.stake, 12, 8)}</a>
-			{#if data.account?.controlled_amount != null}
-				<div class="mt-1 text-xs text-muted">controls <Ada value={data.account.controlled_amount} /></div>
+			{#if accountResult.value === undefined}
+				<div class="mt-1 text-xs text-faint">Loading the stake account…</div>
+			{:else if accountResult.value && !accountResult.value.ok}
+				<div class="mt-1 text-xs text-faint" title={accountResult.value.message}>{accountResult.value.reason === 'error' ? 'Couldn’t load the stake account' : 'The stake account is too slow to load right now'}</div>
+			{:else if account?.controlled_amount != null}
+				<div class="mt-1 text-xs text-muted">controls <Ada value={account.controlled_amount} /></div>
 			{/if}
 		{:else}
 			<div class="mt-2 text-sm text-muted">{info.era === 'byron' ? 'Byron addresses cannot stake.' : 'This address has no stake part.'}</div>
@@ -84,11 +111,13 @@
 	</div>
 	<div class="y-panel p-5">
 		<div class="y-label flex items-center gap-1.5"><Server class="h-3.5 w-3.5" />Delegation</div>
-		{#if data.account?.pool_id}
-			<a href="/pools/{data.account.pool_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline">{shorten(data.account.pool_id, 12, 8)}</a>
+		{#if account?.pool_id}
+			<a href="/pools/{account.pool_id}" class="mono mt-2 block truncate text-sm text-brand hover:underline">{shorten(account.pool_id, 12, 8)}</a>
 			<div class="mt-1 text-xs text-muted">delegated stake pool</div>
+		{:else if data.stake && accountResult.value === undefined}
+			<div class="y-skel mt-3 h-4 w-40"></div>
 		{:else}
-			<div class="mt-2 text-sm text-muted">{data.stake ? 'Not delegated' : '—'}</div>
+			<div class="mt-2 text-sm text-muted">{data.stake && accountResult.value?.ok ? 'Not delegated' : '—'}</div>
 		{/if}
 	</div>
 </section>
@@ -105,11 +134,19 @@
 		{/if}
 	</div>
 
-	{#if data.listError}
-		<ErrorBox title="Couldn't load this list" message={data.listError} />
+	{#if data.tab !== 'tokens' && list.value === undefined}
+		<Skeleton rows={8} />
+	{:else if data.tab !== 'tokens' && list.value && !list.value.ok}
+		{#if list.value.reason === 'error'}
+			<ErrorBox title="Couldn't load this list" message={list.value.message} />
+		{:else}
+			<SlowNotice reason={list.value.reason}>
+				{#if data.tab === 'txs'}<a class="y-btn" href="?tab=utxos">Show UTxOs instead</a>{/if}
+			</SlowNotice>
+		{/if}
 	{:else if data.tab === 'txs'}
 		<DataTable
-			rows={data.rows}
+			{rows}
 			columns={[{ key: 'hash', label: 'Transaction' }, { key: 'block', label: 'Block' }, { key: 'age', label: 'Age', align: 'right' }]}
 			key={(r) => r.tx_hash}
 			rowHref={(r) => `/transactions/${r.tx_hash}`}
@@ -122,10 +159,10 @@
 				{:else if key === 'age'}<TimeAgo ts={r.block_time} class="text-muted" />{/if}
 			{/snippet}
 		</DataTable>
-		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+		<Pager page={data.page} hasNext={rows.length === data.count} />
 	{:else if data.tab === 'utxos'}
 		<DataTable
-			rows={data.rows}
+			{rows}
 			columns={[{ key: 'ref', label: 'Output' }, { key: 'value', label: 'ADA', align: 'right' }, { key: 'assets', label: 'Tokens' }, { key: 'datum', label: 'Datum', minor: true }]}
 			key={(r) => r.tx_hash + r.output_index}
 			emptyTitle="No unspent outputs"
@@ -144,9 +181,12 @@
 				{/if}
 			{/snippet}
 		</DataTable>
-		<Pager page={data.page} hasNext={data.rows.length === data.count} />
+		<Pager page={data.page} hasNext={rows.length === data.count} />
 	{:else}
-		{#if !tokens.length}
+		{#if partialNote}<div class="border-b border-line px-4 py-2.5 text-xs text-muted">Tokens in the newest {num(balance.value?.utxos ?? 0)} unspent outputs only.</div>{/if}
+		{#if balance.value === undefined}
+			<Skeleton rows={4} />
+		{:else if !tokens.length}
 			<Empty title="No native tokens" text="This address only holds ADA." />
 		{:else}
 			<div class="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-3">

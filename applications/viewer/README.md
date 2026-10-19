@@ -62,6 +62,24 @@ Set these in the environment, or in a `.env` file in the directory you start Yac
 | `PUBLIC_MAINTENANCE_MSG` | | Optional banner shown on every page |
 | `PUBLIC_JULC_BASE_URL` | `/julc/` | Where the browser loads the julc engine from, if not served by Yaci Viewer itself |
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | Where Yaci Viewer listens |
+| `HEAVY_ADDRESS_GUARD` | `true` | Protects a large Yaci Store from busy addresses (below). `false` restores the plain behaviour |
+
+### Busy addresses on a large Yaci Store
+
+On a Mainnet-sized Yaci Store, `/addresses/{a}/amounts`, `/addresses/{a}/transactions` and `/accounts/{stake}` can take
+minutes to hours for busy addresses, and the store keeps running the query after the viewer gives up
+([yaci-store#1269](https://github.com/bloxbean/yaci-store/issues/1269)). So Yaci Viewer:
+
+- shows address and stake pages at once, and streams the slow parts in, each with its own loading and error state;
+- never calls `/amounts`: without `/balance`, it sums the address's UTxOs, up to 500, and shows a lower bound ("≥")
+  when there are more;
+- remembers an endpoint that timed out for an address for 15 minutes and doesn't ask again (a UTxO page for 2), opens
+  the UTxOs tab instead of the transactions, shares identical requests in flight, keeps stake accounts for a minute,
+  and runs at most 4 such calls at once;
+- keeps crawlers off per-address pages (`robots.txt`).
+
+The limits are in `src/lib/server/heavy-guard.ts`. Set `HEAVY_ADDRESS_GUARD=false` once the store cancels abandoned
+queries.
 
 The base and WebSocket URLs can also be passed on the command line:
 
