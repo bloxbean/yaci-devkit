@@ -10,7 +10,7 @@ import type { PageServerLoad } from './$types';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
-const TABS = ['txs', 'utxos', 'tokens'] as const;
+const TABS = ['utxos', 'tokens', 'txs'] as const;
 
 type Row = Utxo & { block_height?: number; block_time?: number };
 type Account = { controlled_amount?: number; withdrawable_amount?: number; pool_id?: string | null };
@@ -29,10 +29,11 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 
 	const guarded = guardEnabled();
 	const txKey = `/addresses/${address}/transactions`;
-	// The transaction list timed out for this address recently: open the UTxOs instead.
+	// The transaction list timed out for this address recently: its tab says so instead of asking again.
 	const heavy = guarded && indexerGuard.isHeavy(txKey);
+	// The page opens on the UTxOs: quick even for busy addresses, where the transaction list can take minutes.
 	const asked = url.searchParams.get('tab') ?? '';
-	const tab = (TABS as readonly string[]).includes(asked) ? (asked as (typeof TABS)[number]) : heavy ? 'utxos' : 'txs';
+	const tab = (TABS as readonly string[]).includes(asked) ? (asked as (typeof TABS)[number]) : 'utxos';
 	const { page, count } = paging(url, 20);
 	const order = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 	const stake = stakeAddressOf(address);

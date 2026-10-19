@@ -76,9 +76,9 @@ minutes to hours for busy addresses, and the store keeps running the query after
 - shows address and stake pages at once, and streams the slow parts in, each with its own loading and error state;
 - never calls `/amounts`: without `/balance`, it sums the address's UTxOs, up to 500, and shows a lower bound ("≥")
   when there are more;
-- remembers an endpoint that timed out for an address for 15 minutes and doesn't ask again (a UTxO page for 2), opens
-  the UTxOs tab instead of the transactions, shares identical requests in flight, keeps stake accounts for a minute,
-  and runs at most 4 such calls at once;
+- opens address pages on the UTxOs tab (the transactions are the last tab, loaded only when opened);
+- remembers an endpoint that timed out for an address for 15 minutes and doesn't ask again (a UTxO page for 2), shares
+  identical requests in flight, keeps stake accounts for a minute, and runs at most 4 such calls at once;
 - keeps crawlers off per-address pages (`robots.txt`).
 
 The limits are in `src/lib/server/heavy-guard.ts`. Set `HEAVY_ADDRESS_GUARD=false` once the store cancels abandoned

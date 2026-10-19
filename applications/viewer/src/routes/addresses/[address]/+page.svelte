@@ -126,7 +126,7 @@
 <section class="y-panel overflow-hidden">
 	<div class="flex items-center justify-between gap-2 pr-3">
 		<div class="min-w-0 flex-1">
-			<Tabs tabs={[{ id: 'txs', label: 'Transactions' }, { id: 'utxos', label: 'UTxOs' }, { id: 'tokens', label: 'Tokens', count: tokens.length }]} active={data.tab} link />
+			<Tabs tabs={[{ id: 'utxos', label: 'UTxOs' }, { id: 'tokens', label: 'Tokens', count: tokens.length }, { id: 'txs', label: 'Transactions' }]} active={data.tab} link />
 		</div>
 		{#if data.tab !== 'tokens'}
 			<button class="y-btn h-8 shrink-0 text-xs" onclick={toggleOrder} title="Change order"><ArrowUpDown class="h-3.5 w-3.5" />{data.order === 'desc' ? 'Newest first' : 'Oldest first'}</button>
