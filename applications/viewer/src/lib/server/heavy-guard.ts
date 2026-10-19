@@ -29,7 +29,9 @@ export const GUARD = {
 		utxos: 30_000,
 		transactions: 15_000,
 		account: 40_000,
-		accountLists: 15_000
+		accountLists: 15_000,
+		/** Blockfrost-compatible calls: the store gives up on them itself after 15 s. */
+		blockfrost: 20_000
 	}
 } as const;
 

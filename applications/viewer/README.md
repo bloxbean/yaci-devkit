@@ -74,8 +74,12 @@ minutes to hours for busy addresses, and the store keeps running the query after
 ([yaci-store#1269](https://github.com/bloxbean/yaci-store/issues/1269)). So Yaci Viewer:
 
 - shows address and stake pages at once, and streams the slow parts in, each with its own loading and error state;
-- never calls `/amounts`: without `/balance`, it sums the address's UTxOs, up to 500, and shows a lower bound ("≥")
-  when there are more;
+- never calls `/amounts`: without `/balance`, it sums the address's UTxOs when one page (100) holds them all; past that
+  it takes the exact balance from the store's Blockfrost-compatible API (`/blockfrost/addresses/{a}`) when the store has
+  it, and only if that fails sums up to 500 UTxOs and shows a lower bound ("≥");
+- reads UTxOs and transactions from the Blockfrost-compatible API too, when the store has it: the store stops those
+  queries itself after 15 s, so a busy address leaves nothing running (the devkit's own store has no such API, and gets
+  the native endpoints);
 - opens address pages on the UTxOs tab (the transactions are the last tab, loaded only when opened);
 - remembers an endpoint that timed out for an address for 15 minutes and doesn't ask again (a UTxO page for 2), shares
   identical requests in flight, keeps stake accounts for a minute, and runs at most 4 such calls at once;
