@@ -8,6 +8,7 @@ import { expect, test } from '@playwright/test';
  *
  * The guardrail tests need a constitution with a guardrail script (Mainnet's: committee min size 5 is allowed, 1 is
  * not); SCRIPT_LAB_PROPOSAL=<tx>_<index> names a parameter-change proposal for the proposal page.
+ * SCRIPT_LAB_CBOR_TX names a script transaction whose CBOR the store saved (store.transaction.save-cbor).
  *
  * The julc engine needs WebAssembly GC and exnref, which Playwright's bundled Chromium 128 lacks, so use a current
  * browser channel (PW_CHANNEL=chrome). Without support the test checks the "can't run" message instead.
@@ -16,6 +17,7 @@ const hash = process.env.SCRIPT_LAB_HASH;
 const txHash = process.env.SCRIPT_LAB_TX;
 const run = process.env.SCRIPT_LAB_RUN ?? 'spend/0';
 const proposal = process.env.SCRIPT_LAB_PROPOSAL;
+const cborTx = process.env.SCRIPT_LAB_CBOR_TX;
 
 const supported = () =>
 	WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0])) &&
@@ -203,4 +205,16 @@ test('validator lab: compile Java, run it, and find the failing line', async ({ 
 	await expect(page.getByText(/Failed on/)).toBeVisible({ timeout: 30_000 });
 	await page.getByRole('button', { name: 'Debug the Java' }).click();
 	await expect(page.locator('#lab-debugger [data-current]')).toBeVisible({ timeout: 30_000 });
+});
+
+test('stored transaction CBOR: the CBOR tab checks it, and re-runs use it', async ({ page }) => {
+	test.skip(!cborTx, 'Set SCRIPT_LAB_CBOR_TX to a script transaction whose CBOR the store saved');
+	await page.goto(`/transactions/${cborTx}?tab=cbor`);
+	await page.waitForSelector('html[data-ready]');
+	await expect(page.locator('[data-hash-check=ok]')).toBeVisible({ timeout: 30_000 });
+	await expect(page.getByText('transaction body', { exact: true })).toBeVisible();
+	test.skip(!(await page.evaluate(supported)), 'This browser can’t run the julc engine');
+	await page.getByRole('tab', { name: /Scripts/ }).click();
+	await page.getByRole('button', { name: /Re-run/ }).click();
+	await expect(page.locator('[data-source=cbor]')).toBeVisible({ timeout: 60_000 });
 });

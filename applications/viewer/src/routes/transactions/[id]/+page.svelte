@@ -18,6 +18,7 @@
 	import BalanceBar from '$lib/tx/BalanceBar.svelte';
 	import ScriptRuns from '$lib/julc/ScriptRuns.svelte';
 	import DatumDialog from '$lib/tx/DatumDialog.svelte';
+	import TxCborView from '$lib/tx/TxCborView.svelte';
 	import { sumLovelace, type Utxo } from '$lib/tx/types';
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
@@ -42,6 +43,14 @@
 	const minted = $derived(data.mints.filter((m: { quantity: number }) => Number(m.quantity) > 0));
 	const burned = $derived(data.mints.filter((m: { quantity: number }) => Number(m.quantity) < 0));
 
+	// The stored CBOR arrives after the page (undefined while it loads, null when the store doesn't keep it).
+	let cbor = $state<string | null | undefined>(undefined);
+	$effect(() => {
+		const pending = data.cbor;
+		cbor = undefined;
+		pending.then((c) => data.cbor === pending && (cbor = c)).catch(() => (cbor = null));
+	});
+
 	const tabs = $derived(
 		[
 			{ id: 'utxos', label: 'Inputs & outputs', count: tx.inputs.length + tx.outputs.length },
@@ -52,13 +61,14 @@
 			(tx.collateral_inputs?.length || tx.collateral_return) && { id: 'collateral', label: 'Collateral', count: tx.collateral_inputs?.length ?? 0 },
 			tx.reference_inputs?.length && { id: 'references', label: 'Reference inputs', count: tx.reference_inputs.length },
 			tx.required_signers?.length && { id: 'signers', label: 'Signers', count: tx.required_signers.length },
+			cbor && { id: 'cbor', label: 'CBOR' },
 			{ id: 'raw', label: 'Raw' }
 		].filter(Boolean) as { id: string; label: string; count?: number }[]
 	);
 
 	let active = $state(page.url.searchParams.get('tab') ?? 'utxos');
 	$effect(() => {
-		if (!tabs.some((t) => t.id === active)) active = 'utxos';
+		if (!tabs.some((t) => t.id === active) && !(active === 'cbor' && cbor === undefined)) active = 'utxos';
 	});
 
 	let datumOf = $state<Utxo | null>(null);
@@ -199,6 +209,8 @@
 			<ul class="flex flex-col gap-2">
 				{#each tx.required_signers ?? [] as s (s)}<li class="rounded-xl border border-line bg-surface-2/60 px-3 py-2"><Hash value={s} full /></li>{/each}
 			</ul>
+		{:else if active === 'cbor' && cbor}
+			<TxCborView {cbor} hash={tx.hash} />
 		{:else if active === 'raw'}
 			<JsonView value={data.tx} label="Transaction" maxHeight={560} />
 		{:else}

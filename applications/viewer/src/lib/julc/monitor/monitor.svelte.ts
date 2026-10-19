@@ -33,6 +33,8 @@ export interface MonitoredTx {
 	time: number;
 	runs: MonitoredRun[];
 	ms: number;
+	/** Replayed from the stored CBOR or rebuilt from the store's JSON. */
+	source?: 'cbor' | 'store';
 }
 
 /** A run using at least this share of a per-transaction limit is flagged. */
@@ -154,7 +156,7 @@ export class ScriptMonitor {
 				if (top >= NEAR_LIMIT) this.stats.near++;
 				this.stats.peak = Math.max(this.stats.peak, top);
 			}
-			const entry: MonitoredTx = { hash: job.hash, block: job.block.number, time: job.block.time, runs, ms: Math.round(performance.now() - started) };
+			const entry: MonitoredTx = { hash: job.hash, block: job.block.number, time: job.block.time, runs, ms: Math.round(performance.now() - started), source: plans[0]?.source };
 			this.entries = [entry, ...this.entries].slice(0, 100);
 		} catch (e) {
 			const entry: MonitoredTx = {

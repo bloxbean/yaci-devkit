@@ -8,6 +8,7 @@
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import CodeView from '../CodeView.svelte';
 	import Timeline from './Timeline.svelte';
+	import SourceBadge from '../SourceBadge.svelte';
 	import { julc, wasmSupported } from '../engine.svelte';
 	import { prepareRuns, runAll, vmRequest, type RunResult } from '../replay/run';
 	import type { RunPlan } from '../replay/build';
@@ -301,6 +302,7 @@
 		</div>
 
 		<div class="min-w-0 space-y-4">
+			{#if run?.plan.source}<SourceBadge source={run.plan.source} />{/if}
 			{#if run?.plan.notes.length}
 				<ul class="space-y-1 rounded-xl border border-line bg-surface-2/50 p-3 text-xs text-muted">
 					{#each run.plan.notes as note}<li class="flex gap-1.5"><Info class="mt-0.5 h-3.5 w-3.5 shrink-0 text-faint" />{note}</li>{/each}

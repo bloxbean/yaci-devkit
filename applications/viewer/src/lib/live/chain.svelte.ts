@@ -51,6 +51,8 @@ export type LiveStatus = 'idle' | 'connecting' | 'live' | 'polling' | 'offline';
 const MAX_BLOCKS = 40;
 const MAX_TXS = 40;
 const POLL_MS = 4000;
+/** Fetch the blocks in a gap up to this many; a bigger gap (a sleeping laptop, a long-hidden tab) reloads the recent blocks. */
+const MAX_GAP = 16;
 
 export function networkFromMagic(magic: number | null | undefined): Pick<NetworkInfo, 'name' | 'kind'> {
 	switch (magic) {
@@ -132,6 +134,7 @@ class Chain {
 	private pollTimer: ReturnType<typeof setTimeout> | null = null;
 	private retryTimer: ReturnType<typeof setTimeout> | null = null;
 	private pingTimer: ReturnType<typeof setInterval> | null = null;
+	private hiddenAt = 0;
 
 	start() {
 		if (this.started || typeof window === 'undefined') return;
@@ -139,23 +142,57 @@ class Chain {
 		this.status = 'connecting';
 		setInterval(() => (this.tick = Date.now()), 1000);
 		setInterval(() => this.refreshNetwork(), 30000);
+		// Hidden tabs don't poll, and a sleeping computer drops the socket: on return, catch up with the tip at once.
 		document.addEventListener('visibilitychange', () => {
-			if (!document.hidden && this.status === 'polling') this.poll();
+			if (document.hidden) {
+				this.hiddenAt = Date.now();
+				return;
+			}
+			if (this.status === 'polling') this.poll();
+			else if (Date.now() - this.hiddenAt > 10000) this.catchUp();
 		});
 		this.refreshNetwork();
 		this.seed().finally(() => this.connect());
 	}
 
+	private recent() {
+		return Promise.all([
+			api<Any>('/blocks', { params: { page: 1, count: 16 } }),
+			tryApi<Any>('/txs', { params: { page: 1, count: 16 } })
+		]);
+	}
+
 	/** Initial recent blocks and txs over REST, so the UI isn't empty while the socket connects. */
 	private async seed() {
 		try {
-			const [blocks, txs] = await Promise.all([
-				api<Any>('/blocks', { params: { page: 1, count: 16 } }),
-				tryApi<Any>('/txs', { params: { page: 1, count: 16 } })
-			]);
+			const [blocks, txs] = await this.recent();
 			const seeded = (blocks?.blocks ?? []).map((b: Any) => toBlock(b, 0));
 			this.mergeBlocks(seeded);
 			this.mergeTxs((txs?.transaction_summaries ?? []).map((t: Any) => toTx(t, 0)));
+			this.error = null;
+		} catch (e) {
+			this.error = (e as Error).message;
+		}
+	}
+
+	/** Replaces the recent blocks and txs, after the viewer missed too many blocks to fill in. */
+	private async reseed() {
+		const [blocks, txs] = await this.recent();
+		const fresh: LiveBlock[] = (blocks?.blocks ?? []).map((b: Any) => toBlock(b));
+		if (!fresh.length) return;
+		const tip = this.tip;
+		this.blocks = [];
+		this.txs = [];
+		this.mergeBlocks(fresh);
+		this.mergeTxs((txs?.transaction_summaries ?? []).map((t: Any) => toTx(t)));
+		if (tip && this.tip && this.tip.epoch !== tip.epoch) this.refreshNetwork();
+	}
+
+	/** Brings the recent blocks up to the store's tip, whatever the live mode. */
+	private async catchUp() {
+		try {
+			const latest = await api<Any>('/blocks/latest', { timeoutMs: 8000 });
+			await this.addBlock(toBlock(latest), true);
 			this.error = null;
 		} catch (e) {
 			this.error = (e as Error).message;
@@ -229,7 +266,7 @@ class Chain {
 				this.mergeTxs((d.recent_txs ?? []).map((t: Any) => toTx(t, 0)));
 				break;
 			case 'BLOCK_DATA':
-				this.addBlock(toBlock(d));
+				this.addBlock(toBlock(d)).catch(() => {});
 				break;
 			case 'RECENT_TXS_DATA':
 				this.mergeTxs((d.recent_txs ?? []).map((t: Any) => toTx(t)));
@@ -237,10 +274,24 @@ class Chain {
 		}
 	}
 
-	private addBlock(b: LiveBlock) {
-		const prevEpoch = this.tip?.epoch;
+	/**
+	 * Adds a new block. If blocks were missed before it (the socket dropped, the tab was hidden), fills the gap first,
+	 * or reloads the recent blocks when the gap is long, so averages never span a gap.
+	 */
+	private async addBlock(b: LiveBlock, withTxs = false) {
+		const tip = this.tip;
+		if (tip && b.number <= tip.number && this.blocks.some((x) => x.number === b.number)) return this.mergeBlocks([b]);
+		if (tip && b.number - tip.number > MAX_GAP) return this.reseed();
+		if (tip && b.number - tip.number > 1) {
+			const gap = await tryApi<Any>('/blocks', { params: { page: 1, count: b.number - tip.number } });
+			this.mergeBlocks((gap?.blocks ?? []).filter((x: Any) => x.number > tip.number).map((x: Any) => toBlock(x)));
+		}
 		this.mergeBlocks([b]);
-		if (prevEpoch != null && b.epoch !== prevEpoch) this.refreshNetwork();
+		if (tip && b.epoch !== tip.epoch) this.refreshNetwork();
+		if (withTxs && b.txCount > 0) {
+			const txs = await tryApi<Any[]>(`/blocks/${b.number}/txs`);
+			this.mergeTxs((txs ?? []).map((t) => toTx(t)));
+		}
 	}
 
 	private mergeBlocks(list: LiveBlock[]) {
@@ -251,7 +302,7 @@ class Chain {
 			// Keep the first-seen time, but fill in fields (like hash) a later message has.
 			byNumber.set(b.number, prev ? { ...prev, ...b, hash: b.hash ?? prev.hash, receivedAt: prev.receivedAt || b.receivedAt } : b);
 		}
-		this.blocks = [...byNumber.values()].sort((a, b) => b.number - a.number).slice(0, MAX_BLOCKS);
+		this.blocks = contiguous([...byNumber.values()].sort((a, b) => b.number - a.number)).slice(0, MAX_BLOCKS);
 	}
 
 	private mergeTxs(list: LiveTx[]) {
@@ -274,30 +325,16 @@ class Chain {
 	private async poll() {
 		this.stopPolling();
 		if (this.status !== 'polling') return;
-		if (!document.hidden) {
-			try {
-				const latest = await api<Any>('/blocks/latest', { timeoutMs: 8000 });
-				const block = toBlock(latest);
-				const tip = this.tip?.number ?? 0;
-				if (block.number > tip) {
-					// Catch up a short gap so the conveyor doesn't skip blocks.
-					if (tip && block.number - tip > 1 && block.number - tip < 16) {
-						const gap = await tryApi<Any>('/blocks', { params: { page: 1, count: block.number - tip } });
-						this.mergeBlocks((gap?.blocks ?? []).filter((b: Any) => b.number > tip).map((b: Any) => toBlock(b)));
-					}
-					this.addBlock(block);
-					if (block.txCount > 0) {
-						const txs = await tryApi<Any[]>(`/blocks/${block.number}/txs`);
-						this.mergeTxs((txs ?? []).map((t) => toTx(t)));
-					}
-				}
-				this.error = null;
-			} catch (e) {
-				this.error = (e as Error).message;
-			}
-		}
+		if (!document.hidden) await this.catchUp();
 		this.pollTimer = setTimeout(() => this.poll(), POLL_MS);
 	}
+}
+
+/** The newest run of consecutive blocks (newest first): a list with a gap in it would skew every average. */
+export function contiguous(blocks: LiveBlock[]): LiveBlock[] {
+	let n = 1;
+	while (n < blocks.length && blocks[n].number === blocks[n - 1].number - 1) n++;
+	return blocks.slice(0, n);
 }
 
 export const chain = new Chain();
