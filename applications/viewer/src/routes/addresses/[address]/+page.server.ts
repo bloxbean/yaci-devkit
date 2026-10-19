@@ -39,8 +39,8 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const timeouts = GUARD.timeoutMs;
 
 	/**
-	 * The balance now from /balance, or `later`, summed from UTxO pages. The pages go through the guard and are kept for a
-	 * minute: a deep page can be the slow one, and then later visits stop before it.
+	 * The balance now from /balance, or `later`, summed from UTxO pages. Each page goes through the guard and is kept for
+	 * a minute: a deep page can be the slow one, and then later visits stop before it.
 	 */
 	const balance = async (): Promise<{ now: Balance } | { later: Promise<Balance> }> => {
 		const b = await tryApi<Any>(`/addresses/${address}/balance`, { fetch, timeoutMs: timeouts.balance });
@@ -51,7 +51,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		}
 		const pageParams = (p: number) => ({ page: p, count: GUARD.pageSize, order: 'desc' });
 		const utxoPage = (p: number) =>
-			guardedApi<Utxo[]>(`${utxosPath} ${p === 1 ? 'first page' : 'deeper pages'}`, utxosPath, { fetch, params: pageParams(p), timeoutMs: timeouts.utxos, cacheMs: GUARD.balanceCacheMs, heavyMs: GUARD.utxoHeavyMs }).then((r) => r ?? []);
+			guardedApi<Utxo[]>(`${utxosPath} balance page ${p}`, utxosPath, { fetch, params: pageParams(p), timeoutMs: timeouts.utxos, cacheMs: GUARD.balanceCacheMs, heavyMs: GUARD.utxoHeavyMs }).then((r) => r ?? []);
 		const summed = async (): Promise<Balance> => {
 			let first: Utxo[];
 			try {
