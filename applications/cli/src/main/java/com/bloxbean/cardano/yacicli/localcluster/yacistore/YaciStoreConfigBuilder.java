@@ -79,7 +79,10 @@ public class YaciStoreConfigBuilder {
 
         storeProperties.put("store.live.enabled", "true");
 
-        // Keep raw tx CBOR so tools (e.g. the viewer) can replay and debug script executions exactly
+        // Keep raw tx CBOR (/api/v1/txs/{hash}/cbor). The store saves only what the parser returns, and the parser
+        // returns body CBOR only when return-tx-body-cbor is set, so both are needed. Yaci Store 2.0.x saves the
+        // body bytes, not the whole transaction (no witnesses).
+        storeProperties.put("store.cardano.return-tx-body-cbor", "true");
         storeProperties.put("store.transaction.save-cbor", "true");
 
         if (yanoOnly) {
