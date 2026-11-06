@@ -13,7 +13,7 @@ type Any = any;
 export const load: PageServerLoad = async ({ url, fetch }) => {
 	const view = url.searchParams.get('view') === 'live' ? 'live' : 'all';
 	const type = url.searchParams.get('type') ?? '';
-	const validType = type in ACTION_LABEL ? type : '';
+	const validType = Object.hasOwn(ACTION_LABEL, type) ? type : '';
 	const { page, count } = paging(url, 20);
 	const order = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 	try {

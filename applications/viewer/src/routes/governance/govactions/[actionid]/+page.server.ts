@@ -15,7 +15,13 @@ const VOTE_PAGES = 5;
  * of 100 (1-based), up to 500, for the tally.
  */
 export const load: PageServerLoad = async ({ params, fetch }) => {
-	const id = decodeURIComponent(params.actionid).trim();
+	// SvelteKit has decoded the param once; older links encoded it twice. A stray `%` must not turn into a 500.
+	let id = params.actionid.trim();
+	try {
+		id = decodeURIComponent(id).trim();
+	} catch {
+		/* already decoded */
+	}
 	let txHash: string;
 	let index: number;
 	let state: Any = null;

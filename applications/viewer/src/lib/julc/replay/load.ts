@@ -2,7 +2,7 @@ import { api, tryApi } from '$lib/api/client';
 import { purposeOf, type ReplayInput, type StoreCert, type StoreProposal, type StoreScriptRun, type StoreUtxo, type StoreVote } from './build';
 import { slotConfigFor, type Genesis } from './slots';
 import { replayInputFromCbor } from './from-cbor';
-import { decodeTransaction } from '$lib/tx/decode';
+import { decodeTransaction, wholeTxHex } from '$lib/tx/decode';
 import { utxoOf } from '../authoring/utxo';
 
 /*
@@ -42,8 +42,7 @@ interface BfDelegation {
 /** The transaction's stored CBOR (hex), when the store saves it (store.transaction.save-cbor); otherwise null. */
 export async function loadTxCbor(hash: string): Promise<string | null> {
 	const r = await tryApi<{ cbor_hex?: string; cborHex?: string }>(`/txs/${hash}/cbor/hex`);
-	const hex = r?.cbor_hex ?? r?.cborHex ?? null;
-	return hex && /^([0-9a-f]{2})+$/i.test(hex) ? hex : null;
+	return wholeTxHex(r?.cbor_hex ?? r?.cborHex);
 }
 
 /** The epoch's parameters (the latest when the store lacks them, e.g. a devnet's epoch 0) and slot times. */

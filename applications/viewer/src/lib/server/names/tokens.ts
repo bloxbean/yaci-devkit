@@ -14,6 +14,8 @@ const KNOWN_MS = 7 * 24 * 60 * 60_000;
 const UNKNOWN_MS = 24 * 60 * 60_000;
 const MAX_ENTRIES = 20_000;
 const BATCH = 100;
+/** Registry requests in flight at once, for every visitor together: more tokens wait for a later page view. */
+const MAX_LOADS = 2;
 
 export interface TokenEntry {
 	value: TokenName | null;
@@ -35,6 +37,7 @@ export function tokenFromRegistry(s: Any): TokenName | null {
 export class TokenNames {
 	entries = new Map<string, TokenEntry>();
 	private pending = new Map<string, Promise<void>>();
+	private loads = 0;
 
 	constructor(private opts: { fetch: typeof fetch; now?: () => number; timeoutMs?: number; onChange?: () => void } = { fetch }) {}
 
@@ -49,7 +52,7 @@ export class TokenNames {
 	/** Names for these units: what is known now, after asking the registry for the rest (at most `waitMs`). */
 	async get(units: string[], waitMs = 3000): Promise<Record<string, TokenName>> {
 		const ask = units.filter((u) => !this.fresh(this.entries.get(u)) && !this.pending.has(u));
-		for (let i = 0; i < ask.length; i += BATCH) void this.load(ask.slice(i, i + BATCH));
+		for (let i = 0; i < ask.length && this.loads < MAX_LOADS; i += BATCH) void this.load(ask.slice(i, i + BATCH));
 		const waiting = [...new Set(units.map((u) => this.pending.get(u)).filter(Boolean))];
 		if (waiting.length) await Promise.race([Promise.allSettled(waiting), new Promise((r) => setTimeout(r, waitMs))]);
 		const out: Record<string, TokenName> = {};
@@ -61,6 +64,7 @@ export class TokenNames {
 	}
 
 	private load(units: string[]): Promise<void> {
+		this.loads++;
 		const p = (async () => {
 			try {
 				const res = await this.opts.fetch(TOKEN_REGISTRY, {
@@ -82,6 +86,7 @@ export class TokenNames {
 			} catch {
 				// The registry is down or slow: ask again on the next page that shows these tokens.
 			} finally {
+				this.loads--;
 				for (const u of units) this.pending.delete(u);
 			}
 		})();
@@ -91,7 +96,8 @@ export class TokenNames {
 
 	private trim() {
 		if (this.entries.size <= MAX_ENTRIES) return;
-		const oldest = [...this.entries].sort((a, b) => a[1].at - b[1].at).slice(0, this.entries.size - MAX_ENTRIES);
+		// "Not registered" goes first, then the oldest: a flood of made-up units must not push out the real names.
+		const oldest = [...this.entries].sort((a, b) => Number(!!a[1].value) - Number(!!b[1].value) || a[1].at - b[1].at).slice(0, this.entries.size - MAX_ENTRIES);
 		for (const [u] of oldest) this.entries.delete(u);
 	}
 }

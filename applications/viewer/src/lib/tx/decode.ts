@@ -451,6 +451,17 @@ function metadataOf(i: CborItem | undefined): CborItem | null {
 	return null;
 }
 
+/**
+ * The stored CBOR hex when it is a whole transaction (a CBOR array: body, witnesses, …), else null. Yaci Store 2.0.x
+ * saves only the body (a map) even with store.transaction.save-cbor, which can neither be replayed nor shown as the
+ * transaction, so it counts as no CBOR.
+ */
+export function wholeTxHex(hex: string | null | undefined): string | null {
+	if (!hex || !/^([0-9a-f]{2})+$/i.test(hex)) return null;
+	const major = parseInt(hex.slice(0, 2), 16) >> 5;
+	return major === 4 ? hex : null;
+}
+
 /** Decode a transaction from CBOR (hex or bytes). Throws with a readable message when it isn't one. */
 export function decodeTransaction(input: string | Uint8Array): DecodedTx {
 	const all = typeof input === 'string' ? new Uint8Array((input.trim().toLowerCase().match(/../g) ?? []).map((h) => parseInt(h, 16))) : input;

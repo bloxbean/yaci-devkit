@@ -28,7 +28,9 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		utxos: `/assets/${unit}/utxos`,
 		holders: `/assets/${unit}/addresses`
 	}[tab];
-	const listParams: Record<string, string | number> = tab === 'holders' ? { page, count, sort: 'desc' } : tab === 'history' ? { page, count } : { page, count, order: 'desc' };
+	// /assets/{unit}/addresses is the one zero-based list in Yaci Store 2.0.x (AddressAssetController passes `page` on
+	// unchanged): send it page - 1, or page 1 would skip the first holders.
+	const listParams: Record<string, string | number> = tab === 'holders' ? { page: page - 1, count, sort: 'desc' } : tab === 'history' ? { page, count } : { page, count, order: 'desc' };
 
 	const [supply, list, latest] = await Promise.all([
 		loadSupply(`/assets/${unit}/supply`, fetch),

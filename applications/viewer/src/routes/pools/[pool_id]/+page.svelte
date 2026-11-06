@@ -108,7 +108,7 @@
 		</Panel>
 		<Panel title="Metadata">
 			{#if p.metadata_url}
-				<a class="y-link flex items-center gap-1.5 break-all text-sm" href={p.metadata_url} target="_blank" rel="noopener noreferrer nofollow">{p.metadata_url}<ExternalLink class="h-3.5 w-3.5 shrink-0" /></a>
+				<a class="y-link flex items-center gap-1.5 break-all text-sm" href={/^https?:\/\//i.test(p.metadata_url) ? p.metadata_url : undefined} target="_blank" rel="noopener noreferrer nofollow">{p.metadata_url}<ExternalLink class="h-3.5 w-3.5 shrink-0" /></a>
 				<div class="mt-2"><Hash value={p.metadata_hash} head={12} tail={8} /></div>
 				{#if !m}<p class="mt-2 text-xs text-faint">Couldn't read the metadata file, so the name and ticker aren't shown.</p>{/if}
 			{:else}

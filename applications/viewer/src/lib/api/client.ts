@@ -43,8 +43,19 @@ export interface ApiOptions {
 	body?: unknown;
 }
 
+/**
+ * Paths built from route params arrive already decoded (SvelteKit decodes %2F, %3F, %23), and URL() would then resolve
+ * `..` (also written %2e%2e, or with a tab inside: URL() strips tabs and newlines) and treat `?` and `#` as the start of
+ * a query or fragment. Any of these could reach endpoints outside the API on the store's host, so they are refused.
+ */
+const UNSAFE_PATH = /(^|\/)\.{1,2}(\/|$)|%2e|[?#\\\x00-\x1f\x7f]/i;
+
 function buildUrl(path: string, params?: Params): string {
-	const url = new URL(apiBase() + (path.startsWith('/') ? path : `/${path}`));
+	const p = path.startsWith('/') ? path : `/${path}`;
+	if (UNSAFE_PATH.test(p)) throw new ApiError('Invalid path', 400, path);
+	const base = new URL(apiBase());
+	const url = new URL(apiBase() + p);
+	if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname.replace(/\/*$/, '/'))) throw new ApiError('Invalid path', 400, path);
 	for (const [k, v] of Object.entries(params ?? {})) {
 		if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
 	}

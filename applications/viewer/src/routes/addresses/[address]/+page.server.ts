@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { paging, tryApi, type ApiOptions } from '$lib/api/client';
 import type { Slow } from '$lib/api/slow';
 import { stakeAddressOf } from '$lib/bech32';
@@ -30,6 +30,8 @@ type Balance = Omit<UtxoBalance, 'amounts' | 'utxos'> & { amounts: Amount[] | nu
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const address = params.address.trim();
 	if (address.startsWith('stake')) redirect(302, `/stake/${address}`);
+	// Shelley (bech32) or Byron (base58) only: anything else could reshape the store paths built from it.
+	if (!/^(addr|addr_test)1[02-9ac-hj-np-z]+$/.test(address) && !/^[1-9A-HJ-NP-Za-km-z]{20,}$/.test(address)) error(404, 'That is not an address.');
 
 	const guarded = guardEnabled();
 	const txKey = `/addresses/${address}/transactions`;
@@ -40,16 +42,19 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const { page, count } = paging(url, 20);
 	const order = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 	const utxoListKey = `${utxosPath} page ${page} of ${count} ${order}`;
+	// The first page shares txKey, so a busy address skips its tab; a deeper page, slow only because of its offset, is
+	// skipped on its own instead of marking the whole tab for every visitor.
+	const txListKey = page === 1 && order === 'desc' ? txKey : `${txKey} page ${page} of ${count} ${order}`;
 
 	// "Try again" on a list or balance the store was too slow for. Offered only where the calls go to the
 	// Blockfrost-compatible API, whose queries the store stops itself after 15 s; the native ones keep running.
 	const canRetry = guarded && blockfrostPresent();
 	if (canRetry && url.searchParams.has('retry')) {
 		const balancePages = Array.from({ length: GUARD.balancePages }, (_, i) => `${utxosPath} balance page ${i + 1}`);
-		for (const k of [txKey, utxoListKey, `/blockfrost/addresses/${address}`, ...balancePages]) indexerGuard.forget(k);
+		for (const k of [txKey, txListKey, utxoListKey, `/blockfrost/addresses/${address}`, ...balancePages]) indexerGuard.forget(k);
 	}
 	// The transaction list timed out for this address recently: its tab says so instead of asking again.
-	const heavy = guarded && indexerGuard.isHeavy(txKey);
+	const heavy = guarded && indexerGuard.isHeavy(txListKey);
 	const stake = stakeAddressOf(address);
 	const timeouts = GUARD.timeoutMs;
 
@@ -118,8 +123,8 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 				)
 			: null;
 	// The Blockfrost-compatible list when the store has it (the store stops it after 15 s), else the native one. Both
-	// share txKey, so a timeout on either skips the tab for a while.
-	const txs = () => either<Row[]>(txKey, `/addresses/${address}/transactions`, txKey, { fetch, params: { page, count, order }, timeoutMs: timeouts.transactions });
+	// share txListKey, so a timeout on either skips the tab (or that deep page) for a while.
+	const txs = () => either<Row[]>(txListKey, `/addresses/${address}/transactions`, txKey, { fetch, params: { page, count, order }, timeoutMs: timeouts.transactions });
 	const txList: Slow<Row[]> | Promise<Slow<Row[]>> | null =
 		tab !== 'txs' ? null : heavy ? { ok: false, reason: 'heavy', message: 'Skipped: this address timed out recently' } : settle(txs().then((r) => r ?? []));
 

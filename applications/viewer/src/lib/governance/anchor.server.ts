@@ -21,7 +21,31 @@ export interface AnchorResult {
 	hash: string;
 }
 
+/** Lookups running at once: each can hold a socket and up to 1 MB for the whole budget. */
+const MAX_ACTIVE = 6;
+let active = 0;
+/** Documents fetched recently, by URL: anchors don't change, and a popular proposal shouldn't refetch per visitor. */
+const CACHE_MS = 10 * 60_000;
+const CACHE_MAX = 200;
+const cache = new Map<string, { at: number; result: AnchorResult }>();
+
 export async function fetchAnchor(raw: string): Promise<AnchorResult> {
+	const hit = cache.get(raw);
+	if (hit && Date.now() - hit.at < CACHE_MS) return hit.result;
+	if (active >= MAX_ACTIVE) throw new AnchorError('Too many documents are being fetched right now. Try again in a moment.');
+	active++;
+	try {
+		const result = await fetchUncached(raw);
+		cache.delete(raw);
+		cache.set(raw, { at: Date.now(), result });
+		while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value as string);
+		return result;
+	} finally {
+		active--;
+	}
+}
+
+async function fetchUncached(raw: string): Promise<AnchorResult> {
 	const gateways = env.IPFS_GATEWAY ? [env.IPFS_GATEWAY, ...IPFS_GATEWAYS] : IPFS_GATEWAYS;
 	const first = checkAnchorUrl(raw, gateways);
 	if (!first.ok) throw new AnchorError(first.reason);

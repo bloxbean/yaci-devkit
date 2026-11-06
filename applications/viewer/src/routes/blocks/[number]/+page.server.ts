@@ -1,3 +1,4 @@
+import { error } from '@sveltejs/kit';
 import { tryApi } from '$lib/api/client';
 import { must } from '$lib/api/load';
 import type { PageServerLoad } from './$types';
@@ -8,6 +9,7 @@ type Any = any;
 /* A block by number or hash, its transactions, and the max block size for the fill gauge. */
 export const load: PageServerLoad = async ({ params, fetch }) => {
 	const id = params.number.trim();
+	if (!/^(\d+|[0-9a-fA-F]{64})$/.test(id)) error(404, `No block ${id} on this chain.`);
 	const block = await must<Any>(`/blocks/${id}`, { fetch }, `No block ${id} on this chain.`);
 	const [txs, protocol] = await Promise.all([
 		tryApi<Any[]>(`/blocks/${block.number}/txs`, { fetch }),

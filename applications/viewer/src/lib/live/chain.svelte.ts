@@ -261,10 +261,18 @@ class Chain {
 			return;
 		}
 		switch (d.res_type) {
-			case 'INIT_DATA':
-				this.mergeBlocks((d.blocks ?? []).map((b: Any) => toBlock(b, 0)));
+			case 'INIT_DATA': {
+				const init: LiveBlock[] = (d.blocks ?? []).map((b: Any) => toBlock(b, 0));
+				const newest = init.reduce<LiveBlock | null>((m, b) => (!m || b.number > m.number ? b : m), null);
+				// The socket came back after a devnet reset: drop the old chain's blocks and txs.
+				if (newest && replacesChain(this.blocks, newest)) {
+					this.blocks = [];
+					this.txs = [];
+				}
+				this.mergeBlocks(init);
 				this.mergeTxs((d.recent_txs ?? []).map((t: Any) => toTx(t, 0)));
 				break;
+			}
 			case 'BLOCK_DATA':
 				this.addBlock(toBlock(d)).catch(() => {});
 				break;
@@ -280,15 +288,22 @@ class Chain {
 	 */
 	private async addBlock(b: LiveBlock, withTxs = false) {
 		const tip = this.tip;
+		// A devnet reset, or a rollback past the tip: the blocks held are from another chain.
+		if (replacesChain(this.blocks, b)) return this.reseed();
 		if (tip && b.number <= tip.number && this.blocks.some((x) => x.number === b.number)) return this.mergeBlocks([b]);
 		if (tip && b.number - tip.number > MAX_GAP) return this.reseed();
-		if (tip && b.number - tip.number > 1) {
-			const gap = await tryApi<Any>('/blocks', { params: { page: 1, count: b.number - tip.number } });
-			this.mergeBlocks((gap?.blocks ?? []).filter((x: Any) => x.number > tip.number).map((x: Any) => toBlock(x)));
+		const gap = tip ? b.number - tip.number - 1 : 0;
+		if (tip && gap > 0) {
+			const missed = await tryApi<Any>('/blocks', { params: { page: 1, count: b.number - tip.number } });
+			this.mergeBlocks((missed?.blocks ?? []).filter((x: Any) => x.number > tip.number).map((x: Any) => toBlock(x)));
 		}
 		this.mergeBlocks([b]);
 		if (tip && b.epoch !== tip.epoch) this.refreshNetwork();
-		if (withTxs && b.txCount > 0) {
+		if (withTxs && gap > 0) {
+			// Blocks were missed: their transactions too. The latest page covers them (up to MAX_TXS).
+			const txs = await tryApi<Any>('/txs', { params: { page: 1, count: MAX_TXS } });
+			this.mergeTxs((txs?.transaction_summaries ?? []).map((t: Any) => toTx(t)));
+		} else if (withTxs && b.txCount > 0) {
 			const txs = await tryApi<Any[]>(`/blocks/${b.number}/txs`);
 			this.mergeTxs((txs ?? []).map((t) => toTx(t)));
 		}
@@ -328,6 +343,18 @@ class Chain {
 		if (!document.hidden) await this.catchUp();
 		this.pollTimer = setTimeout(() => this.poll(), POLL_MS);
 	}
+}
+
+/**
+ * Whether `b` belongs to a different chain than the blocks held (newest first): it is below the tip and either at a
+ * height we don't hold (a devnet reset starts again from block 0) or with another hash there (a rollback).
+ */
+export function replacesChain(blocks: LiveBlock[], b: LiveBlock): boolean {
+	const tip = blocks[0];
+	if (!tip || b.number >= tip.number) return false;
+	const held = blocks.find((x) => x.number === b.number);
+	if (!held) return true;
+	return !!(held.hash && b.hash && held.hash !== b.hash);
 }
 
 /** The newest run of consecutive blocks (newest first): a list with a gap in it would skew every average. */

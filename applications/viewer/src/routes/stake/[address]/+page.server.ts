@@ -25,12 +25,15 @@ type List = { rows: Any[]; analytics: (AnalyticsSource & { fromEpoch: number; to
  */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
 	const address = params.address.trim();
-	if (!/^(stake|stake_test)1/.test(address)) error(404, 'That is not a stake address.');
+	if (!/^(stake|stake_test)1[02-9ac-hj-np-z]+$/.test(address)) error(404, 'That is not a stake address.');
 
-	const tab = (url.searchParams.get('tab') ?? 'rewards') as keyof typeof TABS;
-	const endpoint = TABS[tab] ?? TABS.rewards;
+	const asked = url.searchParams.get('tab') ?? 'rewards';
+	const tab = (Object.hasOwn(TABS, asked) ? asked : 'rewards') as keyof typeof TABS;
+	const endpoint = TABS[tab];
 	const { page, count } = paging(url, 20);
-	const listKey = `/accounts/${address}/${endpoint}`;
+	const listPath = `/accounts/${address}/${endpoint}`;
+	// A deep page is slow because of its offset: it gets its own guard key, so it can't mark the list for every visitor.
+	const listKey = page === 1 ? listPath : `${listPath} page ${page} of ${count}`;
 
 	const drep = await tryApi<Any[]>(`/governance/delegation-votes/address/${address}`, {
 		fetch,
@@ -46,7 +49,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		if (!r.ok || !r.value) return otherwise;
 		return { ok: true, value: { rows: r.value.rows, analytics: { ...r.value.source, fromEpoch: r.value.fromEpoch, toEpoch: r.value.toEpoch } } };
 	};
-	const list = settle(guardedApi<Any[]>(listKey, listKey, { fetch, params: { page, count, order: 'desc' }, timeoutMs: GUARD.timeoutMs.accountLists }).then((rows) => ({ rows: rows ?? [], analytics: null }))).then(
+	const list = settle(guardedApi<Any[]>(listKey, listPath, { fetch, params: { page, count, order: 'desc' }, timeoutMs: GUARD.timeoutMs.accountLists }).then((rows) => ({ rows: rows ?? [], analytics: null }))).then(
 		(r): Slow<List> | Promise<Slow<List>> => (!r.ok && r.reason === 'heavy' ? fromAnalytics(r) : r)
 	);
 
@@ -54,7 +57,7 @@ export const load: PageServerLoad = async ({ params, url, fetch }) => {
 		address,
 		account: stakeAccountSection(address, fetch),
 		drep: (drep?.[0] ?? null) as { drep_id?: string; drep_hash?: string; drep_type?: string; block_time?: number } | null,
-		tab: tab in TABS ? tab : 'rewards',
+		tab,
 		page,
 		count,
 		list,
