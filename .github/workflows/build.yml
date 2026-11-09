@@ -27,7 +27,9 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
-          distribution: 'liberica'
+          # Same GraalVM as release-cli.yml. Unpinned Liberica broke once its 21.0.13 assets were named 21.0.13.0.3+6.
+          distribution: 'graalvm'
+          version: '21.0.5'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get Tag from version file
         run: |
