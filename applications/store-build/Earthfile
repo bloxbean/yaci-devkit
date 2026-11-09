@@ -12,6 +12,9 @@ store-native:
   RUN git clone --depth 1 --branch ${STORE_BRANCH} https://github.com/bloxbean/yaci-store.git yaci-store
 
   RUN git --git-dir yaci-store/.git rev-parse --short HEAD > yaci-store/store.git.properties
+  # The Gradle wrapper gives up after 10 s without data (its default networkTimeout), which a slow
+  # services.gradle.org download on CI runners regularly hits. Allow 2 minutes.
+  RUN echo "networkTimeout=120000" >> yaci-store/gradle/wrapper/gradle-wrapper.properties
 
   FROM ghcr.io/graalvm/graalvm-community:21
 

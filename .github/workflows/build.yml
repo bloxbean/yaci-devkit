@@ -26,8 +26,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '21'
-          distribution: 'liberica'
+          # Oracle GraalVM for JDK 21.0.5, as in release-cli.yml. Pinned through java-version: the action then downloads
+          # it from download.oracle.com/graalvm/21/archive/. (`version:` only looks among the 10 newest GDS builds, so
+          # an older pin stops resolving; unpinned Liberica broke when its 21.0.13 assets were named 21.0.13.0.3+6.)
+          java-version: '21.0.5'
+          distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get Tag from version file
         run: |

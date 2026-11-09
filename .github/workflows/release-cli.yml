@@ -20,10 +20,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '21'
+          # Pinned through java-version (downloaded from download.oracle.com/graalvm/21/archive/). `version: '21.0.5'`
+          # no longer resolves: the action only looks among the 10 newest GDS builds.
+          java-version: '21.0.5'
           distribution: 'graalvm'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: '21.0.5'
           native-image-job-reports: 'true'
       - name: Get Tag from version file
         run: |
