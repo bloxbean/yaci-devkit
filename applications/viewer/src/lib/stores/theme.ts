@@ -4,33 +4,38 @@ export type Theme = 'yaci' | 'yaci-dark';
 
 const STORAGE_KEY = 'viewer:theme';
 
-function detectInitial(): Theme {
-  if (typeof window === 'undefined') return 'yaci';
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (saved === 'yaci' || saved === 'yaci-dark') return saved;
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'yaci-dark' : 'yaci';
-  } catch {
-    return 'yaci';
-  }
+/* The theme app.html already applied before first paint: saved choice, else the OS preference. */
+function current(): Theme {
+	if (typeof document === 'undefined') return 'yaci';
+	return document.documentElement.getAttribute('data-theme') === 'yaci-dark' ? 'yaci-dark' : 'yaci';
 }
 
-export const theme = writable<Theme>(detectInitial());
+export const theme = writable<Theme>(current());
 
-// Apply to <html data-theme>
-if (typeof window !== 'undefined') {
-  const apply = (t: Theme) => {
-    document.documentElement.setAttribute('data-theme', t);
-    try { window.localStorage.setItem(STORAGE_KEY, t); } catch {}
-  };
-  // initialize
-  apply(detectInitial());
-  // subscribe updates
-  theme.subscribe(apply);
-}
-
+/** Only an explicit toggle is saved, so people who never choose keep following their OS. */
 export function toggleTheme() {
-  theme.update((t) => (t === 'yaci' ? 'yaci-dark' : 'yaci'));
+	theme.update((t) => {
+		const next: Theme = t === 'yaci' ? 'yaci-dark' : 'yaci';
+		document.documentElement.setAttribute('data-theme', next);
+		try {
+			localStorage.setItem(STORAGE_KEY, next);
+		} catch {
+			/* storage unavailable */
+		}
+		return next;
+	});
 }
 
+// Follow OS changes until the user picks a theme.
+if (typeof window !== 'undefined' && window.matchMedia) {
+	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+		try {
+			if (localStorage.getItem(STORAGE_KEY)) return;
+		} catch {
+			/* storage unavailable */
+		}
+		const next: Theme = e.matches ? 'yaci-dark' : 'yaci';
+		document.documentElement.setAttribute('data-theme', next);
+		theme.set(next);
+	});
+}

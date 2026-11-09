@@ -1,97 +1,35 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { classifyAssetId } from '$lib/utils/asset';
+	import LookupHero from '$lib/ui/LookupHero.svelte';
+	import Coins from '@lucide/svelte/icons/coins';
 
-    let input = '';
-    let error = '';
-    let loading = false;
-
-    async function handleSubmit() {
-        const trimmed = input.trim();
-        if (!trimmed) {
-            error = 'Please enter an asset identifier';
-            return;
-        }
-
-        loading = true;
-        error = '';
-
-        const type = classifyAssetId(trimmed);
-        switch (type) {
-            case 'unit':
-                await goto(`/assets/unit/${trimmed}`);
-                break;
-            case 'policy':
-                await goto(`/assets/policy/${trimmed}`);
-                break;
-            case 'fingerprint':
-                await goto(`/assets/fingerprint/${trimmed}`);
-                break;
-            default:
-                error = 'Invalid asset identifier. Please enter a valid unit (57+ hex chars), policy ID (56 hex chars), or fingerprint (asset1...).';
-                loading = false;
-                return;
-        }
-        loading = false;
-    }
+	/* Asset lookup: a unit (policy + name), a policy id, or a CIP-14 fingerprint. */
+	function resolve(raw: string) {
+		const v = raw.trim();
+		if (/^asset1[0-9a-z]{38}$/i.test(v)) return `/assets/fingerprint/${v.toLowerCase()}`;
+		if (/^[0-9a-f]+$/i.test(v)) {
+			if (v.length === 56) return `/assets/policy/${v.toLowerCase()}`;
+			if (v.length > 56 && v.length <= 120) return `/assets/unit/${v.toLowerCase()}`;
+		}
+		return { error: 'Enter a policy id (56 hex characters), a policy id followed by the asset name in hex, or a fingerprint (asset1…).' };
+	}
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">Asset Explorer</h1>
+<svelte:head><title>Assets · Yaci Viewer</title></svelte:head>
 
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <form on:submit|preventDefault={handleSubmit} class="space-y-4">
-                    <div class="form-control">
-                        <label class="label" for="asset-id">
-                            <span class="label-text">Asset Identifier</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="asset-id"
-                            bind:value={input}
-                            placeholder="Enter unit, policy ID, or fingerprint"
-                            class="input input-bordered w-full"
-                            required
-                        />
-                    </div>
-
-                    {#if error}
-                        <div class="alert alert-error">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <span>{error}</span>
-                        </div>
-                    {/if}
-
-                    <div class="card-actions justify-end">
-                        <button type="submit" class="btn btn-primary" disabled={loading}>
-                            {#if loading}
-                                <span class="loading loading-spinner"></span>
-                                Searching...
-                            {:else}
-                                Search
-                            {/if}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="mt-8">
-            <div class="alert alert-info">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <div>
-                    <h3 class="font-bold">Supported formats</h3>
-                    <div class="text-sm">
-                        <ul class="list-disc list-inside mt-2">
-                            <li><strong>Unit</strong> — Policy ID + hex asset name (57+ hex chars)</li>
-                            <li><strong>Policy ID</strong> — 56 hex characters</li>
-                            <li><strong>Fingerprint</strong> — Bech32 asset fingerprint (asset1...)</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<LookupHero
+	kind="Explore"
+	title="Look up a token"
+	text="Supply, mint and burn history, and where a native asset lives. Works for fungible tokens and NFTs, including CIP-68."
+	placeholder="Policy id, asset unit or asset1… fingerprint"
+	icon={Coins}
+	{resolve}
+>
+	<div class="grid gap-3 sm:grid-cols-3">
+		{#each [{ t: 'Policy id', d: '56 hex characters. Shows every asset minted under it.' }, { t: 'Asset unit', d: 'Policy id followed by the asset name in hex.' }, { t: 'Fingerprint', d: 'The asset1… id from CIP-14, as wallets show it.' }] as tip (tip.t)}
+			<div class="y-panel p-4">
+				<div class="text-sm font-semibold">{tip.t}</div>
+				<p class="mt-1 text-xs text-muted">{tip.d}</p>
+			</div>
+		{/each}
+	</div>
+</LookupHero>

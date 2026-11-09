@@ -1,53 +1,70 @@
 import { error } from '@sveltejs/kit';
+import { paging, tryApi } from '$lib/api/client';
+import type { Slow } from '$lib/api/slow';
+import type { AnalyticsSource } from '$lib/analytics/types';
+import { analyticsRewards, REWARD_EPOCHS } from '$lib/server/analytics-sections';
+import { GUARD, guardedApi, settle } from '$lib/server/heavy-guard';
+import { stakeAccountSection } from '$lib/server/stake-account';
+import { stakeInsights } from '$lib/server/insights';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-const DEFAULT_COUNT = 15;
-const DEFAULT_ORDER = 'desc';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
+const TABS = { rewards: 'rewards', withdrawals: 'withdrawals', other: 'reward_rest' } as const;
+
+/** A list section: its rows, and the epochs and source when they came from analytics. */
+type List = { rows: Any[]; analytics: (AnalyticsSource & { fromEpoch: number; toEpoch: number }) | null };
+
+/*
+ * A stake account: what it controls, where it delegates (pool and DRep), and its rewards history. The account and the
+ * list stream in after the page renders: a busy account can take Yaci Store half a minute or more, and the store keeps
+ * running a query after the viewer gives up (bloxbean/yaci-store#1269), so they go through the guard. When they are
+ * too slow and the store has its analytics API, the account and the rewards lists come from there instead (rewards
+ * then page by 20 epochs).
+ */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
-    const address = params.address;
+	const address = params.address.trim();
+	if (!/^(stake|stake_test)1[02-9ac-hj-np-z]+$/.test(address)) error(404, 'That is not a stake address.');
 
-    if (!address || !address.startsWith('stake')) {
-        throw error(400, 'Invalid stake address');
-    }
+	const asked = url.searchParams.get('tab') ?? 'rewards';
+	const tab = (Object.hasOwn(TABS, asked) ? asked : 'rewards') as keyof typeof TABS;
+	const endpoint = TABS[tab];
+	const { page, count } = paging(url, 20);
+	const listPath = `/accounts/${address}/${endpoint}`;
+	// A deep page is slow because of its offset: it gets its own guard key, so it can't mark the list for every visitor.
+	const listKey = page === 1 ? listPath : `${listPath} page ${page} of ${count}`;
 
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const count = parseInt(url.searchParams.get('count') || String(DEFAULT_COUNT));
-    const order = url.searchParams.get('order') || DEFAULT_ORDER;
-    const tab = url.searchParams.get('tab') || 'rewards';
+	const drep = await tryApi<Any[]>(`/governance/delegation-votes/address/${address}`, {
+		fetch,
+		params: { page: 1, count: 1, order: 'desc' },
+		timeoutMs: GUARD.timeoutMs.balance
+	});
 
-    if (isNaN(page) || page < 1) {
-        throw error(400, 'Invalid page number');
-    }
-    if (isNaN(count) || count < 1 || count > 100) {
-        throw error(400, 'Invalid count number');
-    }
-    if (order !== 'asc' && order !== 'desc') {
-        throw error(400, 'Invalid order parameter');
-    }
+	const fromAnalytics = async (otherwise: Slow<List>): Promise<Slow<List>> => {
+		if (endpoint === TABS.withdrawals) return otherwise;
+		const latest = await tryApi<Any>('/epochs/latest', { fetch, timeoutMs: GUARD.timeoutMs.balance });
+		if (latest?.epoch == null) return otherwise;
+		const r = await settle(analyticsRewards(address, { fetch, page, currentEpoch: Number(latest.epoch), rest: endpoint === TABS.other }));
+		if (!r.ok || !r.value) return otherwise;
+		return { ok: true, value: { rows: r.value.rows, analytics: { ...r.value.source, fromEpoch: r.value.fromEpoch, toEpoch: r.value.toEpoch } } };
+	};
+	const list = settle(guardedApi<Any[]>(listKey, listPath, { fetch, params: { page, count, order: 'desc' }, timeoutMs: GUARD.timeoutMs.accountLists }).then((rows) => ({ rows: rows ?? [], analytics: null }))).then(
+		(r): Slow<List> | Promise<Slow<List>> => (!r.ok && r.reason === 'heavy' ? fromAnalytics(r) : r)
+	);
 
-    const [rewards, rewardRest, withdrawals] = await Promise.all([
-        fetch(`${INDEXER_BASE_URL}/accounts/${address}/rewards?page=${page - 1}&count=${count}&order=${order}`)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => []),
-        fetch(`${INDEXER_BASE_URL}/accounts/${address}/reward_rest?page=${page - 1}&count=${count}&order=${order}`)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => []),
-        fetch(`${INDEXER_BASE_URL}/accounts/${address}/withdrawals?page=${page - 1}&count=${count}&order=${order}`)
-            .then(r => r.ok ? r.json() : [])
-            .catch(() => []),
-    ]);
-
-    return {
-        address,
-        rewards,
-        rewardRest,
-        withdrawals,
-        currentPage: page,
-        count,
-        order,
-        tab
-    };
+	return {
+		address,
+		account: stakeAccountSection(address, fetch),
+		drep: (drep?.[0] ?? null) as { drep_id?: string; drep_hash?: string; drep_type?: string; block_time?: number } | null,
+		tab,
+		page,
+		count,
+		list,
+		rewardEpochs: REWARD_EPOCHS,
+		// Rewards and active stake over 50 epochs, from Yaci Store analytics where the store has it. Streamed.
+		history: tryApi<Any>('/epochs/latest', { fetch, timeoutMs: GUARD.timeoutMs.balance })
+			.then((latest) => stakeInsights(address, fetch, latest?.epoch != null ? Number(latest.epoch) : null))
+			.catch(() => null)
+	};
 };

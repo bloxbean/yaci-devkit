@@ -1,193 +1,103 @@
 <script lang="ts">
-    import { formatAda, formatLovelace } from '$lib/util';
-    import type { PageData } from './$types';
+	import { adaCompact, num, percent } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import ErrorBox from '$lib/ui/ErrorBox.svelte';
+	import TrendChart from '$lib/epochs/TrendChart.svelte';
+	import { POTS, toAda } from '$lib/epochs/pots';
+	import PiggyBank from '@lucide/svelte/icons/piggy-bank';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import History from '@lucide/svelte/icons/list-clock';
+	import TrendingUp from '@lucide/svelte/icons/trending-up';
 
-    export let data: PageData;
+	let { data } = $props();
+	const pot = $derived(data.pot);
+	const MAX = 45_000_000_000_000_000;
 
-    $: raw = data.adapot;
-    $: error = data.error;
-    $: adapot = raw ? {
-        epoch: raw.epoch,
-        totalAmount: raw.rewards_pot ?? 0,
-        details: {
-            fees: raw.fees ?? 0,
-            treasury: raw.treasury ?? 0,
-            reserves: raw.reserves ?? 0,
-            circulation: raw.circulation ?? 0,
-            distributedRewards: raw.distributed_rewards ?? 0,
-            undistributedRewards: raw.undistributed_rewards ?? 0,
-            poolRewardsPot: raw.pool_rewards_pot ?? 0
-        }
-    } : null;
+	const bar = $derived(
+		pot
+			? [
+					{ label: 'Circulation', value: Number(pot.circulation ?? 0), cls: 'bg-brand' },
+					{ label: 'Reserves', value: Number(pot.reserves ?? 0), cls: 'bg-violet' },
+					{ label: 'Treasury', value: Number(pot.treasury ?? 0), cls: 'bg-cyan' },
+					{ label: 'Deposits', value: Number(pot.deposits_stake ?? 0), cls: 'bg-blue' }
+				]
+			: []
+	);
+	const series = (key: (typeof POTS)[number]['key']) => data.history.map((h) => ({ x: h.epoch, y: toAda(h[key]) }));
+	const fmt = (v: number) => `₳${adaCompact(v * 1_000_000)}`;
+	const tone: Record<string, string> = { cyan: 'bg-cyan', violet: 'bg-violet', brand: 'bg-brand', mint: 'bg-mint', amber: 'bg-amber', blue: 'bg-blue' };
+	const isLatest = $derived(pot && data.latest != null && pot.epoch === data.latest);
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="flex items-center gap-4 mb-8">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h1 class="text-3xl font-bold">Current AdaPot Details</h1>
-    </div>
+<svelte:head><title>Ada pots · Yaci Viewer</title></svelte:head>
 
-    {#if error}
-        <div class="alert alert-error mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>{error}</span>
-        </div>
-    {/if}
+<PageHeader kind="Staking" title="Ada pots">
+	{#snippet icon()}<PiggyBank class="h-5 w-5" />{/snippet}
+	Where all ADA sits at an epoch boundary: treasury, reserves, circulation and the rewards pot.
+	{#snippet actions()}
+		{#if pot}
+			{#if isLatest}<Badge tone="brand">Latest</Badge>{/if}
+			<a class="y-btn {pot.epoch <= 0 ? 'pointer-events-none opacity-40' : ''}" href="?epoch={pot.epoch - 1}"><ChevronLeft class="h-4 w-4" /> Epoch {pot.epoch - 1}</a>
+			<a class="y-btn {isLatest ? 'pointer-events-none opacity-40' : ''}" href="?epoch={pot.epoch + 1}">Epoch {pot.epoch + 1} <ChevronRight class="h-4 w-4" /></a>
+		{/if}
+		<a class="y-btn" href="/adapot/list"><History class="h-4 w-4" /> History</a>
+	{/snippet}
+</PageHeader>
 
-    {#if adapot}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Epoch Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Current Epoch</h3>
-                    </div>
-                    <p class="text-2xl font-bold text-primary">{adapot.epoch}</p>
-                </div>
-            </div>
+{#if data.error}
+	<div class="y-panel"><ErrorBox title="Couldn't load the ada pots" message={data.error} /></div>
+{:else if !pot}
+	<div class="y-panel">
+		<Empty
+			title={data.requested != null ? `No ada pots for epoch ${data.requested}` : 'No ada pots yet'}
+			text={data.requested != null
+				? 'Yaci Store has no snapshot for that epoch.'
+				: 'Ada pots are calculated at epoch boundaries. On a new devnet, wait for the first epoch to finish.'}
+		>
+			{#if data.requested != null && data.latest != null}<a class="y-btn" href="/adapot/current">Show the latest</a>{/if}
+		</Empty>
+	</div>
+{:else}
+	<Panel title="Epoch {num(pot.epoch)}" sub="Share of the 45B ADA maximum supply" class="mb-6">
+		{#snippet actions()}<a class="y-btn h-8 text-xs" href="/epochs/{pot.epoch}">Epoch details</a>{/snippet}
+		<div class="flex h-3.5 overflow-hidden rounded-full bg-line">
+			{#each bar as b (b.label)}
+				<div class="{b.cls} h-full transition-[width] duration-700" style="width:{(b.value / MAX) * 100}%" title="{b.label} {percent(b.value, MAX)}"></div>
+			{/each}
+		</div>
+		<div class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
+			{#each bar as b (b.label)}
+				<span class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full {b.cls}"></span>{b.label} <b class="font-semibold text-ink">{percent(b.value, MAX, 2)}</b></span>
+			{/each}
+		</div>
+	</Panel>
 
-            <!-- Treasury Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Treasury</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.treasury)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.treasury)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
+	<section class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+		{#each POTS as p (p.key)}
+			{#if pot[p.key] != null}
+				<div class="y-panel p-4">
+					<div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full {tone[p.color]}"></span><span class="y-label">{p.label}</span></div>
+					<div class="mt-2 font-display text-2xl font-semibold tracking-tight"><Ada value={pot[p.key]} decimals={0} /></div>
+					<div class="mt-0.5 text-xs text-muted">{p.hint}</div>
+				</div>
+			{/if}
+		{/each}
+	</section>
 
-            <!-- Reserves Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Reserves</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.reserves)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.reserves)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Circulation Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Circulation</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.circulation)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.circulation)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fees Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Fees</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.fees)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.fees)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Rewards Pot Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Total Rewards Pot</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.totalAmount)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.totalAmount)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Distributed Rewards Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Distributed Rewards</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.distributedRewards)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.distributedRewards)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Undistributed Rewards Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Undistributed Rewards</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.undistributedRewards)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.undistributedRewards)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pool Rewards Pot Card -->
-            <div class="card bg-base-100 shadow-xl">
-                <div class="card-body">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold">Pool Rewards Pot</h3>
-                    </div>
-                    <div class="tooltip" data-tip={formatLovelace(adapot.details.poolRewardsPot)}>
-                        <p class="text-2xl font-bold text-primary">
-                            {formatAda(adapot.details.poolRewardsPot)} ADA
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    {:else}
-        <div class="text-center py-8 text-base-content/60">No AdaPot data available</div>
-    {/if}
-</div> 
+	{#if data.history.length > 1}
+		<Panel title="Trends" sub="Last {data.history.length} epochs. Hover a chart to read a value.">
+			{#snippet icon()}<TrendingUp class="h-4 w-4" />{/snippet}
+			<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+				<TrendChart label="Treasury" points={series('treasury')} color="rgb(var(--c-cyan))" format={fmt} />
+				<TrendChart label="Reserves" points={series('reserves')} color="rgb(var(--c-violet))" format={fmt} />
+				<TrendChart label="Rewards pot" points={series('rewards_pot')} color="rgb(var(--c-mint))" format={fmt} />
+				<TrendChart label="Fees" points={series('fees')} color="rgb(var(--c-amber))" format={fmt} />
+			</div>
+		</Panel>
+	{/if}
+{/if}

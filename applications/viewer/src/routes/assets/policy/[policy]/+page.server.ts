@@ -1,51 +1,21 @@
 import { error } from '@sveltejs/kit';
+import { paging, tryApi } from '$lib/api/client';
+import { loadList, loadSupply } from '$lib/assets/load';
+import type { MintEvent } from '$lib/assets/types';
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/public';
 
-const INDEXER_BASE_URL = env.PUBLIC_INDEXER_BASE_URL;
-const DEFAULT_COUNT = 15;
-
+/* A minting policy: total supply across its assets, its script, and mint/burn history (1-based pages). */
 export const load: PageServerLoad = async ({ params, url, fetch }) => {
-    const policy = params.policy;
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const count = parseInt(url.searchParams.get('count') || String(DEFAULT_COUNT));
+	const policy = params.policy.trim().toLowerCase();
+	if (!/^[0-9a-f]{56}$/.test(policy)) error(404, 'That is not a policy id (56 hex characters).');
+	const { page, count } = paging(url, 20);
 
-    if (!policy || !/^[0-9a-fA-F]{56}$/.test(policy)) {
-        throw error(400, 'Invalid policy ID. Must be exactly 56 hex characters.');
-    }
-    if (isNaN(page) || page < 1) {
-        throw error(400, 'Invalid page number');
-    }
-    if (isNaN(count) || count < 1 || count > 100) {
-        throw error(400, 'Invalid count');
-    }
+	const [supply, history, script] = await Promise.all([
+		loadSupply(`/assets/policy/${policy}/supply`, fetch),
+		loadList<MintEvent>(`/assets/policy/${policy}/history`, fetch, { page, count }),
+		tryApi<{ type?: string; serialised_size?: number | null }>(`/scripts/${policy}`, { fetch })
+	]);
+	if (supply.notFound && !history.rows.length && !script) error(404, 'No assets under that policy on this chain.');
 
-    const fetchSupply = async () => {
-        try {
-            const res = await fetch(`${INDEXER_BASE_URL}/assets/policy/${policy}/supply`);
-            if (res.ok) return await res.json();
-        } catch { /* ignore */ }
-        return null;
-    };
-
-    const fetchHistory = async () => {
-        try {
-            const res = await fetch(`${INDEXER_BASE_URL}/assets/policy/${policy}/history?page=${page - 1}&count=${count}`);
-            if (res.ok) return await res.json();
-        } catch { /* ignore */ }
-        return [];
-    };
-
-    const [supply, history] = await Promise.all([
-        fetchSupply(),
-        fetchHistory()
-    ]);
-
-    return {
-        policy,
-        supply,
-        history,
-        currentPage: page,
-        count
-    };
+	return { policy, supply, script, page, count, rows: history.rows, listError: history.error };
 };

@@ -1,85 +1,74 @@
 <script lang="ts">
-    import TruncateCopy from '../../../components/TruncateCopy.svelte';
-    import EmptyState from '../../../components/EmptyState.svelte';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import Ring from '$lib/ui/Ring.svelte';
+	import Badge from '$lib/ui/Badge.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import { credLabel } from '$lib/governance/labels';
+	import Gavel from '@lucide/svelte/icons/gavel';
 
-    export let data;
+	let { data } = $props();
+	const c = $derived(data.committee);
+	const active = $derived(c?.members.filter((m) => m.active).length ?? 0);
+	const t = $derived(c?.threshold);
 
-    $: currentEpoch = data.currentEpoch ?? 0;
-    $: uniqueMembers = getUniqueMembers(data.committee?.members);
-    $: activeCount = uniqueMembers.filter(m => m.expired_epoch >= currentEpoch).length;
-    $: totalCount = uniqueMembers.length;
-
-    function getUniqueMembers(members: any[] | undefined): any[] {
-        if (!members) return [];
-        const seen = new Set<string>();
-        return members.filter(m => {
-            if (seen.has(m.hash)) return false;
-            seen.add(m.hash);
-            return true;
-        });
-    }
+	// How far through its term each member is, for the bar.
+	const term = (m: { start_epoch: number | null; expired_epoch: number | null }) => {
+		if (c?.epoch == null || m.start_epoch == null || m.expired_epoch == null || m.expired_epoch <= m.start_epoch) return null;
+		return Math.min(1, Math.max(0, (c.epoch - m.start_epoch) / (m.expired_epoch - m.start_epoch)));
+	};
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">Constitutional Committee</h1>
+<svelte:head><title>Constitutional committee · Yaci Viewer</title></svelte:head>
 
-    {#if data.error}
-        <div class="alert alert-error mb-4">
-            <span>{data.error}</span>
-        </div>
-    {/if}
+<PageHeader kind="Governance" title="Constitutional committee">
+	{#snippet icon()}<Gavel class="h-5 w-5" />{/snippet}
+	The committee checks that governance actions follow the constitution{#if c?.epoch != null} · current epoch {c.epoch}{/if}.
+</PageHeader>
 
-    {#if data.committee}
-        <!-- Info Bar -->
-        <div class="flex flex-wrap gap-4 mb-6">
-            <div class="badge badge-lg badge-outline gap-2 p-4">
-                <span class="font-semibold">Threshold:</span>
-                {data.committee.threshold_numerator}/{data.committee.threshold_denominator}
-            </div>
-            <div class="badge badge-lg badge-outline gap-2 p-4">
-                <span class="font-semibold">Active Members:</span>
-                {activeCount}
-            </div>
-        </div>
+{#if !c || !c.members.length}
+	<div class="y-panel"><Empty title="No committee" text="This chain has no constitutional committee yet, or the store doesn't index it." /></div>
+{:else}
+	<div class="mb-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+		<Panel title="Approval threshold">
+			<div class="flex items-center gap-5">
+				<Ring value={t ? t.numerator / t.denominator : 0} size={112} stroke={10}>
+					<span class="font-display text-xl font-semibold">{t ? `${t.numerator}/${t.denominator}` : '—'}</span>
+				</Ring>
+				<p class="text-sm text-muted">An action passes the committee when {t ? `${Math.round((t.numerator / t.denominator) * 100)}%` : 'the threshold'} of active members vote yes.</p>
+			</div>
+		</Panel>
+		<Panel title="Members">
+			<div class="grid grid-cols-3 gap-4 text-center">
+				<div><div class="font-display text-3xl font-semibold">{c.members.length}</div><div class="text-xs text-muted">seats</div></div>
+				<div><div class="font-display text-3xl font-semibold text-mint">{active}</div><div class="text-xs text-muted">active</div></div>
+				<div><div class="font-display text-3xl font-semibold text-muted">{c.members.length - active}</div><div class="text-xs text-muted">term ended</div></div>
+			</div>
+		</Panel>
+	</div>
 
-        <!-- Members Table -->
-        {#if data.committee.members && data.committee.members.length > 0}
-            <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
-                <table class="table w-full">
-                    <thead>
-                        <tr class="bg-base-200">
-                            <th class="font-semibold text-base-content/80">Hash</th>
-                            <th class="font-semibold text-base-content/80">Credential Type</th>
-                            <th class="font-semibold text-base-content/80">Start Epoch</th>
-                            <th class="font-semibold text-base-content/80">Expiry Epoch</th>
-                            <th class="font-semibold text-base-content/80">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {#each data.committee.members as member}
-                            <tr class="hover:bg-base-200">
-                                <td>
-                                    <TruncateCopy text={member.hash} max={38} />
-                                </td>
-                                <td>{member.cred_type || ''}</td>
-                                <td>{member.start_epoch}</td>
-                                <td>{member.expired_epoch}</td>
-                                <td>
-                                    {#if member.expired_epoch >= currentEpoch}
-                                        <span class="badge badge-success">Active</span>
-                                    {:else}
-                                        <span class="badge badge-error">Expired</span>
-                                    {/if}
-                                </td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
-        {:else}
-            <EmptyState title="No members" message="Committee members will appear here once available." />
-        {/if}
-    {:else if !data.error}
-        <EmptyState title="No committee data" message="Committee information will appear here once available." />
-    {/if}
-</div>
+	<section class="y-panel overflow-hidden">
+		<DataTable
+			rows={c.members}
+			columns={[{ key: 'member', label: 'Cold credential' }, { key: 'status', label: 'Status' }, { key: 'type', label: 'Type', minor: true }, { key: 'term', label: 'Term (epochs)' }]}
+			key={(m) => m.hash}
+			emptyTitle="No members"
+		>
+			{#snippet cell(m, key)}
+				{#if key === 'member'}<Hash value={m.hash} head={14} tail={10} />
+				{:else if key === 'status'}<Badge tone={m.active ? 'ok' : 'neutral'}>{m.active ? 'Active' : 'Term ended'}</Badge>
+				{:else if key === 'type'}<span class="text-muted">{credLabel(m.cred_type)}</span>
+				{:else}
+					{@const p = term(m)}
+					<div class="flex w-56 items-center gap-2.5">
+						<span class="w-8 text-right text-xs tabular-nums text-muted">{m.start_epoch ?? '—'}</span>
+						<div class="h-1.5 flex-1 overflow-hidden rounded-full bg-line">{#if p != null}<div class="h-full rounded-full {m.active ? 'bg-grad' : 'bg-faint'}" style="width:{Math.max(2, p * 100)}%"></div>{/if}</div>
+						<span class="w-8 text-xs tabular-nums text-muted">{m.expired_epoch ?? '—'}</span>
+					</div>
+				{/if}
+			{/snippet}
+		</DataTable>
+	</section>
+{/if}

@@ -1,124 +1,58 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
-    import { lovelaceToAda, getDate } from '$lib/util';
-    import TruncateCopy from '../../components/TruncateCopy.svelte';
-    import AddressLink from '../../components/AddressLink.svelte';
-    import EmptyState from '../../components/EmptyState.svelte';
+	import { num, shorten } from '$lib/format';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import DataTable from '$lib/ui/DataTable.svelte';
+	import Pager from '$lib/ui/Pager.svelte';
+	import TimeAgo from '$lib/ui/TimeAgo.svelte';
+	import Ada from '$lib/ui/Ada.svelte';
+	import CopyButton from '$lib/ui/CopyButton.svelte';
+	import ArrowDownLeft from '@lucide/svelte/icons/arrow-down-left';
+	import KeyRound from '@lucide/svelte/icons/key-round';
 
-    export let data: {
-        withdrawals: any[];
-        currentPage: number;
-        count: number;
-    };
+	let { data } = $props();
 
-    let loading = false;
-    $: currentPage = data.currentPage;
-    $: hasMore = data.withdrawals && data.withdrawals.length >= data.count;
-
-    function goToPage(targetPage: number) {
-        if (targetPage < 1 || loading) return;
-        loading = true;
-        goto(`/withdrawals?page=${targetPage}`);
-    }
-
-    $: if (data && $page) {
-        loading = false;
-    }
+	const columns = [
+		{ key: 'account', label: 'Stake account' },
+		{ key: 'tx', label: 'Transaction' },
+		{ key: 'epoch', label: 'Epoch', minor: true },
+		{ key: 'age', label: 'Age', minor: true },
+		{ key: 'amount', label: 'Amount', align: 'right' as const }
+	];
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Recent Withdrawals</h1>
+<svelte:head><title>Withdrawals · Yaci Viewer</title></svelte:head>
 
-    {#if !data.withdrawals || data.withdrawals.length === 0}
-        <EmptyState title="No withdrawals yet" message="Withdrawal events will appear here as they occur." />
-    {:else}
-        <div class="flex justify-end mb-4">
-            <div class="join">
-                <button
-                    class="join-item btn btn-sm"
-                    on:click={() => goToPage(currentPage - 1)}
-                    disabled={currentPage <= 1 || loading}
-                >
-                    «
-                </button>
-                <button class="join-item btn btn-sm">
-                    Page {currentPage}
-                </button>
-                <button
-                    class="join-item btn btn-sm"
-                    on:click={() => goToPage(currentPage + 1)}
-                    disabled={!hasMore || loading}
-                >
-                    »
-                </button>
-            </div>
-        </div>
+<PageHeader kind="Staking" title="Withdrawals">
+	{#snippet icon()}<ArrowDownLeft class="h-5 w-5" />{/snippet}
+	Staking rewards moved from stake accounts into wallets, newest first.
+</PageHeader>
 
-        <div class="bg-base-100 shadow-md rounded-lg overflow-hidden relative">
-            {#if loading}
-                <div class="absolute inset-0 bg-base-100 bg-opacity-75 flex justify-center items-center z-10">
-                    <span class="loading loading-spinner loading-lg"></span>
-                </div>
-            {/if}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-base-300">
-                    <thead class="bg-base-200">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Tx Hash</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Address</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Amount (ADA)</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Block</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-base-content/60 uppercase tracking-wider">Time</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-base-100 divide-y divide-base-300">
-                        {#each data.withdrawals as w, i (w.tx_hash + w.address + i)}
-                            <tr class="hover:bg-base-200">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <a href="/transactions/{w.tx_hash}" class="text-blue-600 hover:underline">
-                                        <TruncateCopy text={w.tx_hash} max={16} />
-                                    </a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <AddressLink address={w.address} maxLength={25} />
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60" title="{w.amount} lovelace">
-                                    {lovelaceToAda(w.amount, 2)}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <a href="/blocks/{w.block_number}" class="text-blue-500 hover:underline">{w.block_number}</a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-base-content/60">
-                                    {getDate(w.block_time)}
-                                </td>
-                            </tr>
-                        {/each}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="flex justify-end mt-4">
-            <div class="join">
-                <button
-                    class="join-item btn btn-sm"
-                    on:click={() => goToPage(currentPage - 1)}
-                    disabled={currentPage <= 1 || loading}
-                >
-                    «
-                </button>
-                <button class="join-item btn btn-sm">
-                    Page {currentPage}
-                </button>
-                <button
-                    class="join-item btn btn-sm"
-                    on:click={() => goToPage(currentPage + 1)}
-                    disabled={!hasMore || loading}
-                >
-                    »
-                </button>
-            </div>
-        </div>
-    {/if}
-</div>
+<section class="y-panel overflow-hidden">
+	<DataTable
+		rows={data.rows}
+		{columns}
+		key={(r) => `${r.tx_hash}-${r.address}`}
+		rowHref={(r) => `/transactions/${r.tx_hash}`}
+		emptyTitle="No withdrawals yet"
+		emptyText="A withdrawal appears once a stake account claims its rewards in a transaction."
+	>
+		{#snippet cell(r, key)}
+			{#if key === 'account'}
+				<span class="flex items-center gap-2.5">
+					<span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-line bg-surface-2 text-faint"><KeyRound class="h-4 w-4" /></span>
+					<a class="mono text-[13px] font-medium text-ink hover:text-brand" href="/stake/{r.address}" title={r.address}>{shorten(r.address, 12, 8)}</a>
+					<CopyButton value={r.address} size="xs" label="Stake address copied" />
+				</span>
+			{:else if key === 'tx'}
+				<a class="mono text-[13px] text-muted hover:text-brand" href="/transactions/{r.tx_hash}">{shorten(r.tx_hash, 10, 8)}</a>
+			{:else if key === 'epoch'}
+				{#if r.epoch != null}<a class="y-link tabular-nums" href="/epochs/{r.epoch}">{num(r.epoch)}</a>{:else}—{/if}
+			{:else if key === 'age'}
+				<TimeAgo ts={r.block_time} class="text-muted" />
+			{:else if key === 'amount'}
+				{#if Number(r.amount) === 0}<span class="text-faint" title="A zero withdrawal, often used to prove control of a script stake account">₳0</span>{:else}<Ada value={r.amount} decimals={6} class="font-semibold" />{/if}
+			{/if}
+		{/snippet}
+	</DataTable>
+	<Pager page={data.page} hasNext={data.rows.length === data.count} />
+</section>

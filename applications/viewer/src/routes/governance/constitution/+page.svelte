@@ -1,62 +1,46 @@
 <script lang="ts">
-    import TruncateCopy from '../../../components/TruncateCopy.svelte';
-    import EmptyState from '../../../components/EmptyState.svelte';
+	import PageHeader from '$lib/ui/PageHeader.svelte';
+	import Panel from '$lib/ui/Panel.svelte';
+	import KV from '$lib/ui/KV.svelte';
+	import Hash from '$lib/ui/Hash.svelte';
+	import Empty from '$lib/ui/Empty.svelte';
+	import { anchorHref } from '$lib/governance/labels';
+	import Scale from '@lucide/svelte/icons/scale';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import FileCode from '@lucide/svelte/icons/file-code';
 
-    export let data;
+	let { data } = $props();
+	const c = $derived(data.constitution);
 </script>
 
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">Constitution</h1>
+<svelte:head><title>Constitution · Yaci Viewer</title></svelte:head>
 
-    {#if data.error}
-        <div class="alert alert-error mb-4">
-            <span>{data.error}</span>
-        </div>
-    {/if}
+<PageHeader kind="Governance" title="Constitution">
+	{#snippet icon()}<Scale class="h-5 w-5" />{/snippet}
+	The document every governance action is measured against, and the guardrail script that enforces parts of it.
+</PageHeader>
 
-    {#if data.constitution}
-        <div class="card bg-base-100 shadow-md">
-            <div class="card-body">
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Active Epoch:</span>
-                        <span>{data.constitution.active_epoch}</span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-start gap-2">
-                        <span class="font-semibold min-w-[140px]">Anchor URL:</span>
-                        <span class="break-all">
-                            {#if data.constitution.anchor_url}
-                                <a href={data.constitution.anchor_url} target="_blank" rel="noopener noreferrer" class="link link-primary">
-                                    {data.constitution.anchor_url}
-                                </a>
-                            {:else}
-                                <span class="text-base-content/50">None</span>
-                            {/if}
-                        </span>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Anchor Hash:</span>
-                        {#if data.constitution.anchor_hash}
-                            <TruncateCopy text={data.constitution.anchor_hash} max={48} />
-                        {:else}
-                            <span class="text-base-content/50">None</span>
-                        {/if}
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <span class="font-semibold min-w-[140px]">Script:</span>
-                        {#if data.constitution.script}
-                            <TruncateCopy text={data.constitution.script} max={48} />
-                        {:else}
-                            <span class="text-base-content/50">None</span>
-                        {/if}
-                    </div>
-                </div>
-            </div>
-        </div>
-    {:else if !data.error}
-        <EmptyState title="No constitution data" message="Constitution information will appear here once available." />
-    {/if}
-</div>
+{#if !c}
+	<div class="y-panel"><Empty title="No constitution" text="No constitution has been enacted on this chain, or the store doesn't index it." /></div>
+{:else}
+	<div class="grid gap-6 lg:grid-cols-2">
+		<Panel title="Document">
+			{#snippet icon()}<FileText class="h-4 w-4" />{/snippet}
+			<dl class="grid gap-5">
+				<KV label="Anchor URL"><span class="mono break-all text-xs">{c.anchor_url ?? '—'}</span></KV>
+				<KV label="Anchor hash"><Hash value={c.anchor_hash} head={16} tail={12} /></KV>
+				<KV label="In force since">Epoch {c.active_epoch ?? '—'}</KV>
+			</dl>
+			{#if c.anchor_url}<a class="y-btn y-btn-primary mt-5" href={anchorHref(c.anchor_url, c.anchor_hash)}><FileText class="h-4 w-4" /> Read the constitution</a>{/if}
+		</Panel>
+		<Panel title="Guardrail script">
+			{#snippet icon()}<FileCode class="h-4 w-4" />{/snippet}
+			{#if c.script}
+				<p class="mb-4 text-sm text-muted">Parameter changes and treasury withdrawals must pass this script.</p>
+				<Hash value={c.script} href="/scripts/{c.script}" full />
+			{:else}
+				<p class="text-sm text-muted">No guardrail script. Proposals are not checked by a script.</p>
+			{/if}
+		</Panel>
+	</div>
+{/if}

@@ -1,50 +1,22 @@
-import { error } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
+import { tryApi } from '$lib/api/client';
+import type { PageServerLoad } from './$types';
 
-export const load = async ({ url }) => {
-    const address = url.searchParams.get('address');
-    const epoch = url.searchParams.get('epoch');
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Any = any;
 
-    if (!address || !epoch) {
-        return {
-            stakeData: null,
-            address: null,
-            epoch: null
-        };
-    }
+/* One stake account's stake in an epoch's snapshot, and a few epochs before it for context. */
+export const load: PageServerLoad = async ({ url, fetch }) => {
+	const latest = await tryApi<Any>('/epochs/latest', { fetch });
+	const current = Number(latest?.epoch ?? 0);
+	const asked = parseInt(url.searchParams.get('epoch') ?? '', 10);
+	const epoch = Number.isFinite(asked) && asked >= 0 ? asked : current;
+	const address = (url.searchParams.get('address') ?? '').trim();
+	const valid = /^(stake|stake_test)1[0-9a-z]+$/.test(address);
+	if (!address || !valid) return { address: address || null, valid: !address || valid, epoch, current, stake: null, history: [] as Any[] };
 
-    try {
-        const stakeUrl = `${env.PUBLIC_INDEXER_BASE_URL}/epochs/${epoch}/accounts/${address}/stake`;
-        console.log('Fetching stake data from:', stakeUrl);
-        
-        const response = await fetch(stakeUrl);
-
-        if (!response.ok) {
-            console.error('Failed to fetch stake data:', {
-                status: response.status,
-                statusText: response.statusText,
-                url: response.url
-            });
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw error(response.status, `Failed to fetch stake data: ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('Stake data response:', data);
-
-        return {
-            stakeData: data,
-            address,
-            epoch
-        };
-    } catch (err) {
-        console.error('Error in load function for stake data:', err);
-        const message = err instanceof Error ? err.message : 'Failed to load stake data';
-        if (err && typeof err === 'object' && 'status' in err && typeof err.status === 'number') {
-            throw error(err.status, message);
-        } else {
-            throw error(500, message);
-        }
-    }
-}; 
+	const history = await Promise.all(
+		[0, 1, 2, 3, 4, 5].map((i) => (epoch - i < 0 ? null : tryApi<Any>(`/epochs/${epoch - i}/accounts/${address}/stake`, { fetch, timeoutMs: 8000 })))
+	);
+	const rows = history.filter((h): h is Any => !!h);
+	return { address, valid, epoch, current, stake: rows.find((r) => r.epoch === epoch) ?? null, history: rows };
+};

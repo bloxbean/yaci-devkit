@@ -27,7 +27,7 @@ HOST_YANO_N2N_PORT=14447
 #######################################################
 PUBLIC_INDEXER_BASE_URL=http://yaci-cli:8080/api/v1
 #URL used in the client side
-PUBLIC_INDEXER_CLIENT_BASE_URL=http://localhost:8080/api/v1
+PUBLIC_INDEXER_CLIENT_BASE_URL=http://localhost:${HOST_STORE_API_PORT}/api/v1
 PUBLIC_INDEXER_WS_URL=ws://localhost:${HOST_STORE_API_PORT}/ws/liveblocks
 IS_DOCKER=true
 
