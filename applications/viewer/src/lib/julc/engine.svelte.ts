@@ -1,11 +1,12 @@
 import { browser } from '$app/environment';
-import { env } from '$env/dynamic/public';
 import type { JulcClient, JulcError, Manifest } from './types';
 
 /*
- * The julc engine (Script Lab), loaded on first use and shared by every page. It runs in its own worker, so a long
- * evaluation never blocks the page. Nothing is downloaded until a feature asks for the client; installs without the
- * engine (JULC_SKIP) report 'absent' and the features hide themselves.
+ * The julc engine (Script Lab), loaded on first use and shared by every page. It comes from the @julclang/julc-wasm
+ * package, which the build bundles: its worker, launcher and WebAssembly module are emitted as assets and served by
+ * this viewer (the engine only loads them from the page's own origin). It runs in its own worker, so a long evaluation
+ * never blocks the page. Nothing is downloaded until a feature asks for the client. The package is imported in the
+ * browser only, never during server rendering.
  */
 
 export type EngineStatus = 'idle' | 'checking' | 'absent' | 'unsupported' | 'loading' | 'ready' | 'error';
@@ -27,19 +28,6 @@ export function wasmSupported(): boolean {
 	}
 }
 
-export function engineBaseUrl(): URL {
-	const configured = env.PUBLIC_JULC_BASE_URL;
-	const raw = (configured || '/julc/').replace(/\/?$/, '/');
-	return new URL(raw, browser ? location.href : 'http://localhost/');
-}
-
-/** Workers must be same-origin; for an engine on another host, start a tiny worker that imports julc's. */
-function workerFactory(url: URL): Worker {
-	if (url.origin === location.origin) return new Worker(url);
-	const shim = new Blob([`importScripts(${JSON.stringify(url.href)});`], { type: 'text/javascript' });
-	return new Worker(URL.createObjectURL(shim));
-}
-
 class JulcEngine {
 	status = $state<EngineStatus>('idle');
 	error = $state<string | null>(null);
@@ -50,19 +38,23 @@ class JulcEngine {
 	#manifest: Promise<Manifest | null> | null = null;
 	#client: Promise<JulcClient> | null = null;
 
-	/** Is an engine installed with this viewer? Reads engine.json (a few hundred bytes). */
+	/**
+	 * The engine this viewer was built with: its manifest, from the package's small `engine` module (the engine itself
+	 * is not downloaded). Null during server rendering, or when that module can't be loaded (e.g. the network failed).
+	 */
 	available(): Promise<Manifest | null> {
 		if (!browser) return Promise.resolve(null);
 		this.#manifest ??= (async () => {
 			if (this.status === 'idle') this.status = 'checking';
 			try {
-				const res = await fetch(new URL('engine.json', engineBaseUrl()), { cache: 'no-cache' });
-				const manifest = res.ok ? ((await res.json()) as Manifest) : null;
+				const { engineFiles } = await import('@julclang/julc-wasm/engine');
+				const manifest: Manifest = engineFiles().manifest;
 				this.manifest = manifest;
-				if (this.status === 'checking') this.status = manifest ? 'idle' : 'absent';
+				if (this.status === 'checking') this.status = 'idle';
 				return manifest;
 			} catch {
 				if (this.status === 'checking') this.status = 'absent';
+				this.#manifest = null;
 				return null;
 			}
 		})();
@@ -125,9 +117,9 @@ class JulcEngine {
 		this.error = null;
 		const started = performance.now();
 		try {
-			const baseUrl = engineBaseUrl();
-			const mod = await import(/* @vite-ignore */ new URL(`julc-wasm.js?engine=${encodeURIComponent(manifest.version)}`, baseUrl).href);
-			const client = (await mod.createJulc({ baseUrl, manifest, workerFactory, timeoutMs: 60_000 })) as JulcClient;
+			const { createJulc } = await import('@julclang/julc-wasm');
+			// The package names its own engine files and checks they are of its release; rest is off in package mode.
+			const client: JulcClient = await createJulc({ timeoutMs: 60_000 });
 			this.loadMs = Math.round(performance.now() - started);
 			this.status = 'ready';
 			return client;

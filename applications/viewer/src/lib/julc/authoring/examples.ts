@@ -1,4 +1,5 @@
-/* Starter validators for the validator lab, in julc Java. Each compiles with julc 0.1.0-pre18. */
+/* Starter validators for the validator lab, in julc Java. Each compiles with julc 0.1.0-pre21, which reads plain Java: every
+ * class is imported, as javac needs (the ledger and stdlib are no longer imported implicitly). */
 
 export interface Example {
 	id: string;
@@ -13,6 +14,13 @@ export const EXAMPLES: Example[] = [
 		name: 'Vesting',
 		summary: 'Spend: the beneficiary can claim after a time; the owner can cancel at any time.',
 		source: `import java.math.BigInteger;
+
+import org.julclang.ledger.ScriptContext;
+import org.julclang.ledger.TxInfo;
+import org.julclang.stdlib.annotation.Entrypoint;
+import org.julclang.stdlib.annotation.SpendingValidator;
+import org.julclang.stdlib.lib.ContextsLib;
+import org.julclang.stdlib.lib.IntervalLib;
 
 @SpendingValidator
 class Vesting {
@@ -42,7 +50,14 @@ class Vesting {
 		id: 'owner',
 		name: 'Owner only',
 		summary: 'Spend: a script parameter fixes the one key that may spend.',
-		source: `@SpendingValidator
+		source: `import org.julclang.core.PlutusData;
+import org.julclang.ledger.ScriptContext;
+import org.julclang.stdlib.annotation.Entrypoint;
+import org.julclang.stdlib.annotation.Param;
+import org.julclang.stdlib.annotation.SpendingValidator;
+import org.julclang.stdlib.lib.ContextsLib;
+
+@SpendingValidator
 class OwnerOnly {
     @Param static byte[] owner;
 
@@ -60,6 +75,12 @@ class OwnerOnly {
 		name: 'Signed mint',
 		summary: 'Mint: minting needs the issuer’s signature; anyone may burn.',
 		source: `import java.math.BigInteger;
+
+import org.julclang.ledger.ScriptContext;
+import org.julclang.stdlib.annotation.Entrypoint;
+import org.julclang.stdlib.annotation.MintingValidator;
+import org.julclang.stdlib.annotation.Param;
+import org.julclang.stdlib.lib.ContextsLib;
 
 @MintingValidator
 class SignedMint {

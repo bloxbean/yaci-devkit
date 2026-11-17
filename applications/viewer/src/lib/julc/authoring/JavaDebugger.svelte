@@ -156,7 +156,7 @@
 {:else}
 	<div class="mb-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/5 px-3 py-2 text-xs text-muted">
 		<FlaskConical class="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
-		<span><b class="font-medium text-ink">Experimental (julc 0.1.0-pre18).</b> {warning ?? 'This debug build is compiled without the optimizer, so its budget differs from your script’s.'} Only some steps map to Java lines (reliably the one a validator fails on), and many locals aren’t tracked yet.</span>
+		<span><b class="font-medium text-ink">Experimental (julc {julc.manifest?.julcVersion ?? ''}).</b> {warning ?? 'This debug build is compiled without the optimizer, so its budget differs from your script’s.'} Only some steps map to Java lines (reliably the one a validator fails on), and many locals aren’t tracked yet.</span>
 	</div>
 	{#if unmapped}<p class="mb-3 text-sm text-muted">julc mapped none of this run’s steps to a Java line, so there is nothing to stop on. The UPLC debugger steps through every term.</p>{/if}
 	<div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
