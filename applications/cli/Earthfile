@@ -53,8 +53,21 @@ cli-native-ci:
   SAVE ARTIFACT build/native/nativeCompile/yaci-cli yaci-cli
   SAVE ARTIFACT build/libs/yaci-cli-${APP_VERSION}.jar yaci-cli.jar
 
+# Runtime JRE for the yaci-cli image: Amazon Corretto 21.0.13.1, which fixes CVE-2026-114938
+# (Java4Shell). Temurin has no fixed 21 build yet. The image is pinned by its multi-arch
+# (amd64 + arm64) index digest. Corretto targets glibc 2.17+, so it runs on ubuntu:22.04.
+# /usr/lib/jvm/java-21-amazon-corretto is an alternatives symlink to an arch-specific directory,
+# and its lib/security/cacerts links to /etc/pki/java/cacerts, which does not exist on Ubuntu.
+# So make a self-contained copy at /opt/java/openjdk with a real truststore file. JAVA_HOME and
+# PATH in docker-build stay the same.
 java-setup:
-    FROM eclipse-temurin:21-jre
+    ARG JAVA_RUNTIME_IMAGE="amazoncorretto:21.0.13-al2023-headless@sha256:71b005271e4df1a2fb44f6d261bad4318e66aff82ea7541b4d2968a9a31357d7"
+    FROM ${JAVA_RUNTIME_IMAGE}
+    RUN mkdir -p /opt/java \
+        && cp -a "$(readlink -f /usr/lib/jvm/java-21-amazon-corretto)" /opt/java/openjdk \
+        && rm /opt/java/openjdk/lib/security/cacerts \
+        && cp -L /etc/pki/java/cacerts /opt/java/openjdk/lib/security/cacerts \
+        && /opt/java/openjdk/bin/java -version
     SAVE ARTIFACT /opt/java/openjdk openjdk
 
 docker-build:
