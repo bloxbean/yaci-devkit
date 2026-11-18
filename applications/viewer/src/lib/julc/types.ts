@@ -1,8 +1,9 @@
 /*
- * The parts of the julc WebAssembly API (julc-wasm.d.ts, API version 0) that the viewer uses. The engine itself is
- * downloaded at build time (scripts/fetch-julc.mjs), so its own typings aren't available to the type checker.
- * Long and BigInteger fields are bigint.
+ * The parts of the julc WebAssembly API (API version 0) that the viewer uses, written against what it reads; the
+ * client of @julclang/julc-wasm must stay assignable to JulcClient (engine.svelte.ts checks it). Long and BigInteger
+ * fields are bigint.
  */
+import type { Features } from '@julclang/julc-wasm';
 
 export type PlutusVersion = 'V1' | 'V2' | 'V3';
 
@@ -206,23 +207,8 @@ export interface DebugSession {
 	close(): Promise<{ closed: boolean }>;
 }
 
-export type FeatureGroup = 'vm' | 'debug' | 'compiler' | 'uplc' | 'sourceDebug' | 'sourceDebugLocals';
-
-export interface Features {
-	api: 0;
-	variant: 'full' | 'vm';
-	groups: FeatureGroup[];
-	defaultProtocol: number;
-}
-
-export interface Manifest {
-	api: 0;
-	version: string;
-	launcher: string;
-	variant: 'full' | 'vm';
-	groups?: FeatureGroup[];
-	julcVersion: string;
-}
+/** The engine's description and capabilities, as @julclang/julc-wasm declares them. */
+export type { FeatureGroup, Features, Manifest } from '@julclang/julc-wasm';
 
 export interface JulcClient {
 	version(): string;
@@ -249,8 +235,8 @@ export interface JulcClient {
 	/** Full engine only. */
 	uplc?: {
 		evaluateTransaction(request: TransactionRequest): Promise<Evaluation>;
-		/** julc's sample transaction for a purpose (one key input and output). */
-		defaultTransaction?(request: { purpose: MockPurpose['type'] }): Promise<MockTransaction>;
+		/** julc's sample transaction for a purpose (one key input and output); the package types every field nullable. */
+		defaultTransaction?(request: { purpose: MockPurpose['type'] }): Promise<unknown>;
 	};
 }
 

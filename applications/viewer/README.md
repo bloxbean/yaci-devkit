@@ -60,7 +60,6 @@ Set these in the environment, or in a `.env` file in the directory you start Yac
 | `PUBLIC_INDEXER_CLIENT_BASE_URL` | same as above | Yaci Store as the browser sees it, when that differs (e.g. Docker) |
 | `PUBLIC_INDEXER_WS_URL` | `ws://localhost:8080/ws/liveblocks` | Live updates. Leave empty for a store without the live module; the viewer polls instead |
 | `PUBLIC_MAINTENANCE_MSG` | | Optional banner shown on every page |
-| `PUBLIC_JULC_BASE_URL` | `/julc/` | Where the browser loads the julc engine from, if not served by Yaci Viewer itself |
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | Where Yaci Viewer listens |
 | `HEAVY_ADDRESS_GUARD` | `true` | Protects a large Yaci Store from busy addresses (below). `false` restores the plain behaviour |
 | `YACI_ANALYTICS` | `auto` | `off` stops Yaci Viewer from using the store's analytics query API (below) even when the store has it |
@@ -153,15 +152,22 @@ npm run build        # production build in build/, run with `node build`
 
 ### Script Lab and the julc engine
 
-Script Lab uses the julc WebAssembly engine. It is not built here: `npm run dev` and `npm run build` run
-`scripts/fetch-julc.mjs`, which downloads the julc release pinned in `julc.lock.json`, checks its SHA-256 and unpacks it
-into `static/julc/` (git-ignored). The engine is only downloaded by the browser when a user decodes a script (about
-5.5 MB with compression, then cached).
+Script Lab uses the julc WebAssembly engine from the npm package
+[`@julclang/julc-wasm`](https://www.npmjs.com/package/@julclang/julc-wasm) (with its client, `@julclang/wasm-client`).
+julc is never built here: the package is an ordinary dependency, pinned to an exact julc release in `package.json`, and
+Vite bundles its worker, launcher and WebAssembly module into the build as assets, served by Yaci Viewer itself (the
+engine only loads them from the page's own origin). The engine is only downloaded by the browser when a feature needs it
+(a 35 MB WebAssembly module, about 9 MB with Brotli, which the production server sends precompressed; then cached).
 
-- A production build fails if the engine can't be installed. Set `JULC_SKIP=1` to build without Script Lab (its
-  panels then say so), or `JULC_ARCHIVE=/path/to/julc-wasm-<version>.tar.gz` to install from a local copy.
-- To upgrade julc, change `tag`, `version`, `file` and `sha256` in `julc.lock.json` together; the checksum is in the
-  release's `julc-wasm-<version>-SHA256SUMS.txt`.
+- To upgrade julc, change the version of `@julclang/julc-wasm` in `package.json` (exact; it brings the client at the
+  same version) and run `npm install`.
+- The Vite dev server must not pre-bundle the julc packages (`optimizeDeps.exclude` in `vite.config.js`): their files
+  are named relative to their own modules. Production builds need nothing.
+- A Content Security Policy in front of Yaci Viewer must allow `script-src 'self' 'wasm-unsafe-eval'`, on the page and
+  on the engine's worker scripts.
+- The validator lab compiles plain Java: a validator imports the ledger and stdlib classes it uses (for example
+  `import org.julclang.stdlib.annotation.SpendingValidator;`). Since julc 0.1.0-pre21 they are no longer imported
+  implicitly, so a source saved in the browser by an earlier version may need its imports added.
 - The engine needs WebAssembly GC and exception handling (exnref): current Chrome, Edge, Firefox and Safari. Other
   browsers get a message instead. Playwright's bundled Chromium is too old, so run the Script Lab test with Chrome:
   `SCRIPT_LAB_HASH=<plutus script hash> SCRIPT_LAB_TX=<tx with redeemers> SCRIPT_LAB_RUN=<purpose/index> SCRIPT_LAB_PROPOSAL=<tx>_<index> PW_CHANNEL=chrome npx playwright test script-lab`.

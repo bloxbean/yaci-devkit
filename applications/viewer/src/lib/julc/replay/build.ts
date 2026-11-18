@@ -393,7 +393,7 @@ export function buildRuns(input: ReplayInput): RunPlan[] {
 		if (runs.length > 1) plan.notes.push('Only this script’s redeemer is in the context (julc#244). A script that reads the other redeemers, such as a withdraw-zero validator, can fail here although it passed on chain.');
 		if (input.certificates.length && !certsComplete) plan.notes.push('Some certificates in this transaction couldn’t be rebuilt, so the context lists only part of them.');
 		if (input.paramsEpoch === null) plan.notes.push('The store has no parameters for this transaction’s epoch, so the latest epoch’s cost model was used.');
-		if (language === 'V1') plan.notes.push('Plutus V1 contexts from julc 0.1.0-pre18 can differ from the ledger’s (V1/V2 translation fixes are on julc main), so some V1 runs fail here although they passed on chain.');
+		if (language === 'V1') plan.notes.push('Plutus V1 contexts built by julc can still differ from the ledger’s, so some V1 runs fail here although they passed on chain.');
 		if (pv != null && pv !== protocol) plan.notes.push(`Evaluated with protocol ${protocol} rules; the transaction ran under protocol ${pv}.`);
 		if (pv === 10 && language === 'V3') plan.notes.push('Under protocol 10 the ledger costed some builtins differently from julc, so CPU can differ slightly from the declared budget (memory is unaffected).');
 
