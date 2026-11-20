@@ -7,7 +7,12 @@ set -e
   --gen-genesis-keys {{nGenesisKeys}} \
   --gen-utxo-keys {{nGenesisUtxoKeys}} \
   --supply {{genesisUtxoSupply}} \
+  {{^mainnet}}
   --testnet-magic {{protocolMagic}} \
+  {{/mainnet}}
+  {{#mainnet}}
+  --mainnet \
+  {{/mainnet}}
   --slot-coefficient {{activeSlotsCoeff}} \
   --byron-template ../genesis-templates/spec/byron.json \
   --shelley-template ../genesis-templates/spec/shelley.json \
